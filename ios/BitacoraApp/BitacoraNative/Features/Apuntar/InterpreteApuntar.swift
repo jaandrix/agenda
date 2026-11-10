@@ -59,6 +59,8 @@ struct CamposApunte: Sendable, Equatable, Decodable {
     let conGente: Bool
     let asignaturaId: String?
     let asignaturaNombre: String?
+    // Lo que no se puede guardar (fecha que no existe, «cancela la cita»...): lo decide js/apuntar.js.
+    let error: String?
 }
 
 struct ApunteInterpretado: Sendable, Equatable, Decodable {

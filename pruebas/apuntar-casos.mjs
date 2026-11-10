@@ -28,6 +28,8 @@ const extra = [
     'uno; dos; tres; cuatro; cinco; seis; siete; ocho; nueve; diez; once; doce; trece; catorce',
     'añadir a la compra huevos, harina y azúcar', 'mañana por la tarde peluquería', 'esta noche cine con Pablo', 'de 18 a 20 partido de pádel el sábado',
     'tengo que mandar el informe el lunes', 'Ñandú también acentos áéíóú', 'x'.repeat(2000),
+    'dentista el 31 de febrero', 'reunión 13/13/2026', 'cena el 32', 'regar cada 0 días', 'pagar alquiler el día 32 de cada mes', 'a las 5', '12 €',
+    'gasté 1.500,50 € en el sofá', 'viaje a Roma del 10 de mayo al 3 de abril', 'cancela la cita del dentista', '¿qué tengo mañana?', 'me han pagado 300',
 ];
 const frases = [...new Set([...JSON.parse(leer('pruebas/casos-barra.json')).apuntar.map(c => c.frase), ...extra])];
 

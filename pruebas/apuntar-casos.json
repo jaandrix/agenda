@@ -142,6 +142,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -240,6 +241,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -338,6 +340,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": true,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -436,6 +439,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -534,6 +538,7 @@
       "categoria": "c_trans",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -632,6 +637,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -730,6 +736,7 @@
       "categoria": "c_comida",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -828,6 +835,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -926,6 +934,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -1024,6 +1033,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -1122,6 +1132,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -1220,6 +1231,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -1321,6 +1333,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": "s0",
       "asignaturaNombre": "Estadística"
      }
@@ -1422,6 +1435,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": "s1",
       "asignaturaNombre": "Historia del Arte"
      }
@@ -1525,6 +1539,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -1626,6 +1641,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -1724,6 +1740,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -1822,6 +1839,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -1920,6 +1938,7 @@
       "categoria": "",
       "forzado": "serie",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -2018,6 +2037,7 @@
       "categoria": "",
       "forzado": "libro",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -2116,6 +2136,7 @@
       "categoria": "",
       "forzado": "peli",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -2214,6 +2235,7 @@
       "categoria": "",
       "forzado": "juego",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -2312,6 +2334,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -2405,6 +2428,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -2503,6 +2527,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": true,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -2596,6 +2621,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -2694,6 +2720,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -2792,6 +2819,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": true,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -2890,6 +2918,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -2988,6 +3017,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -3086,6 +3116,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -3184,6 +3215,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -3282,6 +3314,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -3380,6 +3413,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": true,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -3478,6 +3512,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -3576,6 +3611,7 @@
       "categoria": "c_trans",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -3674,6 +3710,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -3772,6 +3809,7 @@
       "categoria": "c_trans",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -3870,6 +3908,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -3968,6 +4007,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -4066,6 +4106,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -4164,6 +4205,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -4262,6 +4304,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -4360,6 +4403,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -4453,6 +4497,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -4551,6 +4596,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -4644,6 +4690,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -4745,6 +4792,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": "s2",
       "asignaturaNombre": "Inglés B2"
      }
@@ -4846,6 +4894,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": "s0",
       "asignaturaNombre": "Estadística"
      }
@@ -4947,6 +4996,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -5045,6 +5095,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -5143,6 +5194,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -5241,6 +5293,7 @@
       "categoria": "",
       "forzado": "serie",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -5339,6 +5392,7 @@
       "categoria": "",
       "forzado": "libro",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -5437,6 +5491,7 @@
       "categoria": "",
       "forzado": "peli",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -5535,6 +5590,7 @@
       "categoria": "",
       "forzado": "juego",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -5633,6 +5689,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -5731,6 +5788,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -5829,6 +5887,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -5932,6 +5991,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -6028,6 +6088,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -6126,6 +6187,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -6224,6 +6286,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -6320,6 +6383,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": "s2",
       "asignaturaNombre": "Inglés B2"
      }
@@ -6418,6 +6482,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -6511,6 +6576,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -6609,6 +6675,7 @@
       "categoria": "c_comida",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -6707,6 +6774,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -6805,6 +6873,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -6903,6 +6972,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -7001,6 +7071,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -7099,6 +7170,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -7197,6 +7269,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -7295,6 +7368,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -7393,6 +7467,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -7491,6 +7566,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -7594,6 +7670,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -7695,6 +7772,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -7793,6 +7871,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -7886,6 +7965,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -7987,6 +8067,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": "s0",
       "asignaturaNombre": "Estadística"
      }
@@ -8083,6 +8164,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": "s1",
       "asignaturaNombre": "Historia del Arte"
      }
@@ -8181,6 +8263,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -8279,6 +8362,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -8377,6 +8461,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -8475,6 +8560,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -8573,6 +8659,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -8671,6 +8758,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": true,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -8769,6 +8857,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -8867,6 +8956,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -8968,6 +9058,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": "s1",
       "asignaturaNombre": "Historia del Arte"
      }
@@ -9066,6 +9157,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -9164,6 +9256,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -9262,6 +9355,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -9355,6 +9449,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -9453,6 +9548,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -9546,6 +9642,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -9644,6 +9741,7 @@
       "categoria": "c_comida",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -9742,6 +9840,7 @@
       "categoria": "",
       "forzado": "tarea",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -9835,6 +9934,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -9933,6 +10033,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -10026,6 +10127,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -10124,6 +10226,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -10222,6 +10325,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -10320,6 +10424,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": true,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -10418,6 +10523,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -10511,6 +10617,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -10609,6 +10716,7 @@
       "categoria": "c_trans",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -10707,6 +10815,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -10805,6 +10914,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -10906,6 +11016,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": "s0",
       "asignaturaNombre": "Estadística"
      }
@@ -11007,6 +11118,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": "s3",
       "asignaturaNombre": "Psicología"
      }
@@ -11111,6 +11223,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -11214,6 +11327,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -11312,6 +11426,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -11410,6 +11525,7 @@
       "categoria": "",
       "forzado": "serie",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -11508,6 +11624,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -11606,6 +11723,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": true,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -11704,6 +11822,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -11802,6 +11921,7 @@
       "categoria": "",
       "forzado": "juego",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -11900,6 +12020,7 @@
       "categoria": "c_comida",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -11914,15 +12035,15 @@
      "tipo": "viaje",
      "describir": {
       "tarea": {
-       "texto": "tarea, lunes, 28 dic, sin hora, La playa",
+       "texto": "tarea, domingo, 28 dic, sin hora, La playa",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, lunes, 28 dic, La playa",
+       "texto": "evento, domingo, 28 dic, La playa",
        "falta": ""
       },
       "gasto": {
-       "texto": "gasto de —, La playa, lunes, 28 dic",
+       "texto": "gasto de —, La playa, domingo, 28 dic",
        "falta": "falta el importe"
       },
       "compra": {
@@ -11938,11 +12059,11 @@
        "falta": ""
       },
       "examen": {
-       "texto": "examen de ?, lunes, 28 dic",
+       "texto": "examen de ?, domingo, 28 dic",
        "falta": "no encuentro la asignatura"
       },
       "trabajo": {
-       "texto": "entrega de ?, lunes, 28 dic",
+       "texto": "entrega de ?, domingo, 28 dic",
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
@@ -11954,7 +12075,7 @@
        "falta": "faltan los días"
       },
       "viaje": {
-       "texto": "viaje a La playa, lunes, 28 dic → sábado, 2 ene",
+       "texto": "viaje a La playa, domingo, 28 dic → viernes, 2 ene",
        "falta": ""
       },
       "libro": {
@@ -11976,9 +12097,9 @@
      },
      "nada": false,
      "r": {
-      "fecha": "2026-12-28",
+      "fecha": "2025-12-28",
       "fechaDicha": true,
-      "fechaFin": "2027-01-02",
+      "fechaFin": "2026-01-02",
       "anioDicho": false,
       "hora": "",
       "horaFin": "",
@@ -11998,6 +12119,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -12096,6 +12218,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -12194,6 +12317,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -12292,6 +12416,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -12393,6 +12518,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -12494,6 +12620,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -12592,6 +12719,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -12690,6 +12818,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -12788,6 +12917,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -12886,6 +13016,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -12979,6 +13110,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -13072,6 +13204,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -13165,6 +13298,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -13258,6 +13392,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -13351,6 +13486,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -13444,6 +13580,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -13537,6 +13674,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -13630,6 +13768,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -13723,6 +13862,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -13816,6 +13956,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -13909,6 +14050,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -14007,6 +14149,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -14105,6 +14248,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -14203,6 +14347,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": true,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -14301,6 +14446,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -14399,6 +14545,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -14497,6 +14644,7 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
       "asignaturaId": null,
       "asignaturaNombre": null
      }
@@ -14595,6 +14743,1102 @@
       "categoria": "",
       "forzado": "",
       "conGente": false,
+      "error": "",
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    }
+   ]
+  },
+  {
+   "frase": "dentista el 31 de febrero",
+   "cosas": [
+    {
+     "texto": "dentista el 31 de febrero",
+     "tipo": "evento",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, miércoles, 3 mar, sin hora, Dentista",
+       "falta": "el 31 de febrero no existe"
+      },
+      "evento": {
+       "texto": "evento, miércoles, 3 mar, Dentista",
+       "falta": "el 31 de febrero no existe"
+      },
+      "gasto": {
+       "texto": "gasto de —, Dentista, miércoles, 3 mar",
+       "falta": "el 31 de febrero no existe"
+      },
+      "compra": {
+       "texto": "a la compra: Dentista",
+       "falta": "el 31 de febrero no existe"
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": "el 31 de febrero no existe"
+      },
+      "cumple": {
+       "texto": "cumpleaños de Dentista, 3 de marzo",
+       "falta": "el 31 de febrero no existe"
+      },
+      "examen": {
+       "texto": "examen de ?, miércoles, 3 mar",
+       "falta": "el 31 de febrero no existe"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, miércoles, 3 mar",
+       "falta": "el 31 de febrero no existe"
+      },
+      "recurrente": {
+       "texto": "Dentista, todos los días",
+       "falta": "el 31 de febrero no existe"
+      },
+      "clase": {
+       "texto": "clase de Dentista,  a las ?",
+       "falta": "el 31 de febrero no existe"
+      },
+      "viaje": {
+       "texto": "viaje a Dentista, miércoles, 3 mar",
+       "falta": "el 31 de febrero no existe"
+      },
+      "libro": {
+       "texto": "libro para ocio: Dentista",
+       "falta": "el 31 de febrero no existe"
+      },
+      "serie": {
+       "texto": "serie para ocio: Dentista",
+       "falta": "el 31 de febrero no existe"
+      },
+      "peli": {
+       "texto": "película para ocio: Dentista",
+       "falta": "el 31 de febrero no existe"
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Dentista",
+       "falta": "el 31 de febrero no existe"
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2027-03-03",
+      "fechaDicha": true,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": null,
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Dentista",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "salud",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "error": "el 31 de febrero no existe",
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    }
+   ]
+  },
+  {
+   "frase": "reunión 13/13/2026",
+   "cosas": [
+    {
+     "texto": "reunión 13/13/2026",
+     "tipo": "evento",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, miércoles, 13 ene, sin hora, Reunión",
+       "falta": "esa fecha no existe"
+      },
+      "evento": {
+       "texto": "evento, miércoles, 13 ene, Reunión",
+       "falta": "esa fecha no existe"
+      },
+      "gasto": {
+       "texto": "gasto de —, Reunión, miércoles, 13 ene",
+       "falta": "esa fecha no existe"
+      },
+      "compra": {
+       "texto": "a la compra: Reunión",
+       "falta": "esa fecha no existe"
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": "esa fecha no existe"
+      },
+      "cumple": {
+       "texto": "cumpleaños de Reunión, 13 de enero",
+       "falta": "esa fecha no existe"
+      },
+      "examen": {
+       "texto": "examen de ?, miércoles, 13 ene",
+       "falta": "esa fecha no existe"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, miércoles, 13 ene",
+       "falta": "esa fecha no existe"
+      },
+      "recurrente": {
+       "texto": "Reunión, todos los días",
+       "falta": "esa fecha no existe"
+      },
+      "clase": {
+       "texto": "clase de Reunión,  a las ?",
+       "falta": "esa fecha no existe"
+      },
+      "viaje": {
+       "texto": "viaje a Reunión, miércoles, 13 ene",
+       "falta": "esa fecha no existe"
+      },
+      "libro": {
+       "texto": "libro para ocio: Reunión",
+       "falta": "esa fecha no existe"
+      },
+      "serie": {
+       "texto": "serie para ocio: Reunión",
+       "falta": "esa fecha no existe"
+      },
+      "peli": {
+       "texto": "película para ocio: Reunión",
+       "falta": "esa fecha no existe"
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Reunión",
+       "falta": "esa fecha no existe"
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2027-01-13",
+      "fechaDicha": true,
+      "fechaFin": "",
+      "anioDicho": true,
+      "hora": "",
+      "horaFin": "",
+      "importe": null,
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Reunión",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "trabajo",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "error": "esa fecha no existe",
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    }
+   ]
+  },
+  {
+   "frase": "cena el 32",
+   "cosas": [
+    {
+     "texto": "cena el 32",
+     "tipo": "evento",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, miércoles, 2 dic, sin hora, Cena",
+       "falta": "el día 32 no existe"
+      },
+      "evento": {
+       "texto": "evento, miércoles, 2 dic, Cena",
+       "falta": "el día 32 no existe"
+      },
+      "gasto": {
+       "texto": "gasto de —, Cena, miércoles, 2 dic",
+       "falta": "el día 32 no existe"
+      },
+      "compra": {
+       "texto": "a la compra: Cena",
+       "falta": "el día 32 no existe"
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": "el día 32 no existe"
+      },
+      "cumple": {
+       "texto": "cumpleaños de Cena, 2 de diciembre",
+       "falta": "el día 32 no existe"
+      },
+      "examen": {
+       "texto": "examen de ?, miércoles, 2 dic",
+       "falta": "el día 32 no existe"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, miércoles, 2 dic",
+       "falta": "el día 32 no existe"
+      },
+      "recurrente": {
+       "texto": "Cena, todos los días",
+       "falta": "el día 32 no existe"
+      },
+      "clase": {
+       "texto": "clase de Cena,  a las ?",
+       "falta": "el día 32 no existe"
+      },
+      "viaje": {
+       "texto": "viaje a Cena, miércoles, 2 dic",
+       "falta": "el día 32 no existe"
+      },
+      "libro": {
+       "texto": "libro para ocio: Cena",
+       "falta": "el día 32 no existe"
+      },
+      "serie": {
+       "texto": "serie para ocio: Cena",
+       "falta": "el día 32 no existe"
+      },
+      "peli": {
+       "texto": "película para ocio: Cena",
+       "falta": "el día 32 no existe"
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Cena",
+       "falta": "el día 32 no existe"
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2026-12-02",
+      "fechaDicha": true,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": null,
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Cena",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "social",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "error": "el día 32 no existe",
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    }
+   ]
+  },
+  {
+   "frase": "regar cada 0 días",
+   "cosas": [
+    {
+     "texto": "regar cada 0 días",
+     "tipo": "recurrente",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, hoy, sin hora, Regar",
+       "falta": "cada cuántos días: tiene que ser 1 o más"
+      },
+      "evento": {
+       "texto": "evento, hoy, Regar",
+       "falta": "cada cuántos días: tiene que ser 1 o más"
+      },
+      "gasto": {
+       "texto": "gasto de —, Regar",
+       "falta": "cada cuántos días: tiene que ser 1 o más"
+      },
+      "compra": {
+       "texto": "a la compra: Regar",
+       "falta": "cada cuántos días: tiene que ser 1 o más"
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": "cada cuántos días: tiene que ser 1 o más"
+      },
+      "cumple": {
+       "texto": "cumpleaños de Regar, 5 de noviembre",
+       "falta": "cada cuántos días: tiene que ser 1 o más"
+      },
+      "examen": {
+       "texto": "examen de ?, hoy",
+       "falta": "cada cuántos días: tiene que ser 1 o más"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, hoy",
+       "falta": "cada cuántos días: tiene que ser 1 o más"
+      },
+      "recurrente": {
+       "texto": "Regar, cada 0 días",
+       "falta": "cada cuántos días: tiene que ser 1 o más"
+      },
+      "clase": {
+       "texto": "clase de Regar, cada 0 días a las ?",
+       "falta": "cada cuántos días: tiene que ser 1 o más"
+      },
+      "viaje": {
+       "texto": "viaje a Regar, hoy",
+       "falta": "cada cuántos días: tiene que ser 1 o más"
+      },
+      "libro": {
+       "texto": "libro para ocio: Regar",
+       "falta": "cada cuántos días: tiene que ser 1 o más"
+      },
+      "serie": {
+       "texto": "serie para ocio: Regar",
+       "falta": "cada cuántos días: tiene que ser 1 o más"
+      },
+      "peli": {
+       "texto": "película para ocio: Regar",
+       "falta": "cada cuántos días: tiene que ser 1 o más"
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Regar",
+       "falta": "cada cuántos días: tiene que ser 1 o más"
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2026-11-05",
+      "fechaDicha": false,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": null,
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Regar",
+      "recurrencia": {
+       "frecuencia": "intervalo",
+       "cada": 0
+      },
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "error": "cada cuántos días: tiene que ser 1 o más",
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    }
+   ]
+  },
+  {
+   "frase": "pagar alquiler el día 32 de cada mes",
+   "cosas": [
+    {
+     "texto": "pagar alquiler el día 32 de cada mes",
+     "tipo": "recurrente",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, hoy, sin hora, Pagar alquiler",
+       "falta": "el día 32 no existe en ningún mes"
+      },
+      "evento": {
+       "texto": "evento, hoy, Pagar alquiler",
+       "falta": "el día 32 no existe en ningún mes"
+      },
+      "gasto": {
+       "texto": "gasto de —, Pagar alquiler",
+       "falta": "el día 32 no existe en ningún mes"
+      },
+      "compra": {
+       "texto": "a la compra: Pagar alquiler",
+       "falta": "el día 32 no existe en ningún mes"
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": "el día 32 no existe en ningún mes"
+      },
+      "cumple": {
+       "texto": "cumpleaños de Pagar alquiler, 5 de noviembre",
+       "falta": "el día 32 no existe en ningún mes"
+      },
+      "examen": {
+       "texto": "examen de ?, hoy",
+       "falta": "el día 32 no existe en ningún mes"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, hoy",
+       "falta": "el día 32 no existe en ningún mes"
+      },
+      "recurrente": {
+       "texto": "Pagar alquiler, el día 32 de cada mes",
+       "falta": "el día 32 no existe en ningún mes"
+      },
+      "clase": {
+       "texto": "clase de Pagar alquiler, el día 32 de cada mes a las ?",
+       "falta": "el día 32 no existe en ningún mes"
+      },
+      "viaje": {
+       "texto": "viaje a Pagar alquiler, hoy",
+       "falta": "el día 32 no existe en ningún mes"
+      },
+      "libro": {
+       "texto": "libro para ocio: Pagar alquiler",
+       "falta": "el día 32 no existe en ningún mes"
+      },
+      "serie": {
+       "texto": "serie para ocio: Pagar alquiler",
+       "falta": "el día 32 no existe en ningún mes"
+      },
+      "peli": {
+       "texto": "película para ocio: Pagar alquiler",
+       "falta": "el día 32 no existe en ningún mes"
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Pagar alquiler",
+       "falta": "el día 32 no existe en ningún mes"
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2026-11-05",
+      "fechaDicha": false,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": null,
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Pagar alquiler",
+      "recurrencia": {
+       "frecuencia": "mensual",
+       "diaMes": 32
+      },
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "error": "el día 32 no existe en ningún mes",
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    }
+   ]
+  },
+  {
+   "frase": "a las 5",
+   "cosas": [
+    {
+     "texto": "a las 5",
+     "tipo": "evento",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, hoy a las 17:00, …",
+       "falta": "falta qué es"
+      },
+      "evento": {
+       "texto": "evento, hoy a las 17:00, …",
+       "falta": "falta qué es"
+      },
+      "gasto": {
+       "texto": "gasto de —",
+       "falta": "falta qué es"
+      },
+      "compra": {
+       "texto": "a la compra: …",
+       "falta": "falta qué es"
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": "falta qué es"
+      },
+      "cumple": {
+       "texto": "cumpleaños de …, 5 de noviembre",
+       "falta": "falta qué es"
+      },
+      "examen": {
+       "texto": "examen de ?, hoy a las 17:00",
+       "falta": "falta qué es"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, hoy a las 17:00",
+       "falta": "falta qué es"
+      },
+      "recurrente": {
+       "texto": "…, todos los días a las 17:00",
+       "falta": "falta qué es"
+      },
+      "clase": {
+       "texto": "clase de …,  a las 17:00",
+       "falta": "falta qué es"
+      },
+      "viaje": {
+       "texto": "viaje a …, hoy",
+       "falta": "falta qué es"
+      },
+      "libro": {
+       "texto": "libro para ocio: …",
+       "falta": "falta qué es"
+      },
+      "serie": {
+       "texto": "serie para ocio: …",
+       "falta": "falta qué es"
+      },
+      "peli": {
+       "texto": "película para ocio: …",
+       "falta": "falta qué es"
+      },
+      "juego": {
+       "texto": "videojuego para ocio: …",
+       "falta": "falta qué es"
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2026-11-05",
+      "fechaDicha": false,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "17:00",
+      "horaFin": "",
+      "importe": null,
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "error": "falta qué es",
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    }
+   ]
+  },
+  {
+   "frase": "12 €",
+   "cosas": [
+    {
+     "texto": "12 €",
+     "tipo": "gasto",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, hoy, sin hora, …",
+       "falta": "falta en qué"
+      },
+      "evento": {
+       "texto": "evento, hoy, …",
+       "falta": "falta en qué"
+      },
+      "gasto": {
+       "texto": "gasto de 12,00€",
+       "falta": "falta en qué"
+      },
+      "compra": {
+       "texto": "a la compra: …",
+       "falta": "falta en qué"
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": "falta en qué"
+      },
+      "cumple": {
+       "texto": "cumpleaños de …, 5 de noviembre",
+       "falta": "falta en qué"
+      },
+      "examen": {
+       "texto": "examen de ?, hoy",
+       "falta": "falta en qué"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, hoy",
+       "falta": "falta en qué"
+      },
+      "recurrente": {
+       "texto": "…, todos los días",
+       "falta": "falta en qué"
+      },
+      "clase": {
+       "texto": "clase de …,  a las ?",
+       "falta": "falta en qué"
+      },
+      "viaje": {
+       "texto": "viaje a …, hoy",
+       "falta": "falta en qué"
+      },
+      "libro": {
+       "texto": "libro para ocio: …",
+       "falta": "falta en qué"
+      },
+      "serie": {
+       "texto": "serie para ocio: …",
+       "falta": "falta en qué"
+      },
+      "peli": {
+       "texto": "película para ocio: …",
+       "falta": "falta en qué"
+      },
+      "juego": {
+       "texto": "videojuego para ocio: …",
+       "falta": "falta en qué"
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2026-11-05",
+      "fechaDicha": false,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": "12",
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "error": "falta en qué",
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    }
+   ]
+  },
+  {
+   "frase": "gasté 1.500,50 € en el sofá",
+   "cosas": [
+    {
+     "texto": "gasté 1.500,50 € en el sofá",
+     "tipo": "gasto",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, hoy, sin hora, Sofá",
+       "falta": ""
+      },
+      "evento": {
+       "texto": "evento, hoy, Sofá",
+       "falta": ""
+      },
+      "gasto": {
+       "texto": "gasto de 1500,50€, Sofá",
+       "falta": ""
+      },
+      "compra": {
+       "texto": "a la compra: Sofá",
+       "falta": ""
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": ""
+      },
+      "cumple": {
+       "texto": "cumpleaños de Sofá, 5 de noviembre",
+       "falta": "falta el día"
+      },
+      "examen": {
+       "texto": "examen de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "recurrente": {
+       "texto": "Sofá, todos los días",
+       "falta": ""
+      },
+      "clase": {
+       "texto": "clase de Sofá,  a las ?",
+       "falta": "faltan los días"
+      },
+      "viaje": {
+       "texto": "viaje a Sofá, hoy",
+       "falta": ""
+      },
+      "libro": {
+       "texto": "libro para ocio: Sofá",
+       "falta": ""
+      },
+      "serie": {
+       "texto": "serie para ocio: Sofá",
+       "falta": ""
+      },
+      "peli": {
+       "texto": "película para ocio: Sofá",
+       "falta": ""
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Sofá",
+       "falta": ""
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2026-11-05",
+      "fechaDicha": false,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": "1500.5",
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Sofá",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "error": "",
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    }
+   ]
+  },
+  {
+   "frase": "viaje a Roma del 10 de mayo al 3 de abril",
+   "cosas": [
+    {
+     "texto": "viaje a Roma del 10 de mayo al 3 de abril",
+     "tipo": "viaje",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, lunes, 10 may, sin hora, Roma",
+       "falta": "la fecha de fin va antes que la de inicio"
+      },
+      "evento": {
+       "texto": "evento, lunes, 10 may, Roma",
+       "falta": "la fecha de fin va antes que la de inicio"
+      },
+      "gasto": {
+       "texto": "gasto de —, Roma, lunes, 10 may",
+       "falta": "la fecha de fin va antes que la de inicio"
+      },
+      "compra": {
+       "texto": "a la compra: Roma",
+       "falta": "la fecha de fin va antes que la de inicio"
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": "la fecha de fin va antes que la de inicio"
+      },
+      "cumple": {
+       "texto": "cumpleaños de Roma, 10 de mayo",
+       "falta": "la fecha de fin va antes que la de inicio"
+      },
+      "examen": {
+       "texto": "examen de ?, lunes, 10 may",
+       "falta": "la fecha de fin va antes que la de inicio"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, lunes, 10 may",
+       "falta": "la fecha de fin va antes que la de inicio"
+      },
+      "recurrente": {
+       "texto": "Roma, todos los días",
+       "falta": "la fecha de fin va antes que la de inicio"
+      },
+      "clase": {
+       "texto": "clase de Roma,  a las ?",
+       "falta": "la fecha de fin va antes que la de inicio"
+      },
+      "viaje": {
+       "texto": "viaje a Roma, lunes, 10 may → lunes, 3 abr",
+       "falta": "la fecha de fin va antes que la de inicio"
+      },
+      "libro": {
+       "texto": "libro para ocio: Roma",
+       "falta": "la fecha de fin va antes que la de inicio"
+      },
+      "serie": {
+       "texto": "serie para ocio: Roma",
+       "falta": "la fecha de fin va antes que la de inicio"
+      },
+      "peli": {
+       "texto": "película para ocio: Roma",
+       "falta": "la fecha de fin va antes que la de inicio"
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Roma",
+       "falta": "la fecha de fin va antes que la de inicio"
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2027-05-10",
+      "fechaDicha": true,
+      "fechaFin": "2028-04-03",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": null,
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Roma",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": true,
+      "eventoTipo": "",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "error": "la fecha de fin va antes que la de inicio",
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    }
+   ]
+  },
+  {
+   "frase": "cancela la cita del dentista",
+   "cosas": [
+    {
+     "texto": "cancela la cita del dentista",
+     "tipo": "tarea",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, hoy, sin hora, Cancela la cita del dentista",
+       "falta": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo"
+      },
+      "evento": {
+       "texto": "evento, hoy, Cancela la cita del dentista",
+       "falta": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo"
+      },
+      "gasto": {
+       "texto": "gasto de —, Cancela la cita del dentista",
+       "falta": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo"
+      },
+      "compra": {
+       "texto": "a la compra: Cancela la cita del dentista",
+       "falta": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo"
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo"
+      },
+      "cumple": {
+       "texto": "cumpleaños de Cancela la cita del dentista, 5 de noviembre",
+       "falta": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo"
+      },
+      "examen": {
+       "texto": "examen de ?, hoy",
+       "falta": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, hoy",
+       "falta": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo"
+      },
+      "recurrente": {
+       "texto": "Cancela la cita del dentista, todos los días",
+       "falta": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo"
+      },
+      "clase": {
+       "texto": "clase de Cancela la cita del dentista,  a las ?",
+       "falta": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo"
+      },
+      "viaje": {
+       "texto": "viaje a Cancela la cita del dentista, hoy",
+       "falta": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo"
+      },
+      "libro": {
+       "texto": "libro para ocio: Cancela la cita del dentista",
+       "falta": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo"
+      },
+      "serie": {
+       "texto": "serie para ocio: Cancela la cita del dentista",
+       "falta": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo"
+      },
+      "peli": {
+       "texto": "película para ocio: Cancela la cita del dentista",
+       "falta": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo"
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Cancela la cita del dentista",
+       "falta": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo"
+      }
+     },
+     "nada": true,
+     "r": {
+      "fecha": "2026-11-05",
+      "fechaDicha": false,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": null,
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Cancela la cita del dentista",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "salud",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "error": "apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo",
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    }
+   ]
+  },
+  {
+   "frase": "¿qué tengo mañana?",
+   "cosas": [
+    {
+     "texto": "¿qué tengo mañana?",
+     "tipo": "tarea",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, mañana, sin hora, ¿qué tengo ?",
+       "falta": "eso es una pregunta: búscala en la barra"
+      },
+      "evento": {
+       "texto": "evento, mañana, ¿qué tengo ?",
+       "falta": "eso es una pregunta: búscala en la barra"
+      },
+      "gasto": {
+       "texto": "gasto de —, ¿qué tengo ?, mañana",
+       "falta": "eso es una pregunta: búscala en la barra"
+      },
+      "compra": {
+       "texto": "a la compra: ¿qué tengo ?",
+       "falta": "eso es una pregunta: búscala en la barra"
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": "eso es una pregunta: búscala en la barra"
+      },
+      "cumple": {
+       "texto": "cumpleaños de ¿qué tengo ?, 6 de noviembre",
+       "falta": "eso es una pregunta: búscala en la barra"
+      },
+      "examen": {
+       "texto": "examen de ?, mañana",
+       "falta": "eso es una pregunta: búscala en la barra"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, mañana",
+       "falta": "eso es una pregunta: búscala en la barra"
+      },
+      "recurrente": {
+       "texto": "¿qué tengo ?, todos los días",
+       "falta": "eso es una pregunta: búscala en la barra"
+      },
+      "clase": {
+       "texto": "clase de ¿qué tengo ?,  a las ?",
+       "falta": "eso es una pregunta: búscala en la barra"
+      },
+      "viaje": {
+       "texto": "viaje a ¿qué tengo ?, mañana",
+       "falta": "eso es una pregunta: búscala en la barra"
+      },
+      "libro": {
+       "texto": "libro para ocio: ¿qué tengo ?",
+       "falta": "eso es una pregunta: búscala en la barra"
+      },
+      "serie": {
+       "texto": "serie para ocio: ¿qué tengo ?",
+       "falta": "eso es una pregunta: búscala en la barra"
+      },
+      "peli": {
+       "texto": "película para ocio: ¿qué tengo ?",
+       "falta": "eso es una pregunta: búscala en la barra"
+      },
+      "juego": {
+       "texto": "videojuego para ocio: ¿qué tengo ?",
+       "falta": "eso es una pregunta: búscala en la barra"
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2026-11-06",
+      "fechaDicha": true,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": null,
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "¿qué tengo ?",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "error": "eso es una pregunta: búscala en la barra",
       "asignaturaId": null,
       "asignaturaNombre": null
      }

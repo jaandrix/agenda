@@ -61,6 +61,7 @@ enum CrearApunte {
         var deshacer: [String: JSONValue] = [:]
         let apunteId = id("apn", ahora, letras: 4)
         let falla = { (m: String) in Result<ApunteCreado, ErrorApunte>.failure(ErrorApunte(motivo: m)) }
+        if let e = r.error, !e.isEmpty { return falla(e) }
 
         switch tipo {
         case "gasto":
