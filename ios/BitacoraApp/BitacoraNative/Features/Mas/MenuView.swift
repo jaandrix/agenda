@@ -74,7 +74,10 @@ struct MasView: View {
         .background(Paleta.fondo.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
-        .navigationDestination(for: String.self) { destino($0) }
+        // Toda pantalla que se abre desde el menú lleva la barra del sistema (transparente): su botón de volver, con
+        // «menú» de título, y el gesto de volver desde el borde. Ocultarla quitaba las dos cosas (Documentos, 0.17).
+        .navigationTitle("menú")
+        .navigationDestination(for: String.self) { destino($0).toolbar(.visible, for: .navigationBar).navigationBarTitleDisplayMode(.inline) }
         .task(id: c.informe.revision) {
             let doc = await c.documentoVisible()
             menu = await Task.detached(priority: .userInitiated) { doc.map { MenuMas.desde($0) } }.value

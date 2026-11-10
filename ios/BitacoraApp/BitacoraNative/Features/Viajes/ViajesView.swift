@@ -121,7 +121,7 @@ struct ViajesView: View {
                 }.modifier(HojaContenido())
             }
         }
-        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden).toolbar(.hidden, for: .navigationBar)
+        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar() }.task(id: c.informe.revision) { await cargar() }
         .sheet(item: $abierto) { a in FichaViaje(id: a.id).environment(c) }
         .sheet(item: $edicion) { e in

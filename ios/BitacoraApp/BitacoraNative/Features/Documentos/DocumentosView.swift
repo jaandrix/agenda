@@ -75,7 +75,7 @@ struct DocumentosView: View {
                 }.modifier(HojaContenido())
             }
         }
-        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden).toolbar(.hidden, for: .navigationBar)
+        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar(); await cargarArchivos() }
         .task(id: c.informe.revision) { await cargar() }
         .task { await cargarArchivos() }

@@ -79,7 +79,7 @@ struct ObjetivosView: View {
                 }.modifier(HojaContenido())
             }
         }
-        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden).toolbar(.hidden, for: .navigationBar)
+        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar() }.task(id: c.informe.revision) { await cargar() }
         .sheet(item: $abierto) { a in FichaObjetivo(id: a.id).environment(c) }
         .sheet(item: $edicion) { e in EditorObjetivo(objetivo: e.objetivo).environment(c) }

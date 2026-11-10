@@ -39,7 +39,7 @@ struct DespensaView: View {
                 }.modifier(HojaContenido())
             }
         }
-        .background(Paleta.fondo.ignoresSafeArea()).toolbar(.hidden, for: .navigationBar).scrollIndicators(.hidden)
+        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar() }.task(id: c.informe.revision) { await cargar() }
         .alert(listaEditando == nil ? "nueva lista." : "editar lista.", isPresented: $mostrarNuevaLista) {
             TextField("nombre.", text: $nombreLista)

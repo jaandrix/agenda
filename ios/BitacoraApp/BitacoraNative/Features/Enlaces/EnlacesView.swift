@@ -76,7 +76,7 @@ struct EnlacesView: View {
                 }.modifier(HojaContenido())
             }
         }
-        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden).toolbar(.hidden, for: .navigationBar)
+        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar() }.task(id: c.informe.revision) { await cargar() }
         .sheet(item: $modal) { m in
             switch m {
