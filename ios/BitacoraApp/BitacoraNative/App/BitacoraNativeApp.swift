@@ -93,6 +93,7 @@ struct PrincipalView: View {
     @Environment(\.scenePhase) private var fase
     @AppStorage(Vidrio.clave) private var vidrio = false
     @Environment(\.accessibilityReduceTransparency) private var sinTransparencia
+    @State private var teclado = false
 
     static func pestanas(secundaria: Pestana) -> [BarraBitacora.Pestana] {
         [.init(id: "inicio", titulo: "inicio", icono: "inicio"),
@@ -107,11 +108,17 @@ struct PrincipalView: View {
         Group {
             if vidrio && !sinTransparencia {
                 // Glass: el contenido pasa por debajo de la barra, que es el único material de la pantalla.
-                pantallas.safeAreaInset(edge: .bottom, spacing: 0) { barra }
+                pantallas.safeAreaInset(edge: .bottom, spacing: 0) { if !teclado { barra } }
             } else {
-                VStack(spacing: 0) { pantallas; barra }
+                VStack(spacing: 0) {
+                    pantallas
+                    if !teclado { barra }
+                }
             }
         }
+        // Con el teclado abierto la barra se va (en todas las pantallas): si no, quedaba encima del teclado y tapaba el campo.
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in teclado = true; masUsados = nil }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in teclado = false }
         .overlayPreferenceValue(AnclaMenuKey.self) { ancla in
             GeometryReader { g in
                 if let lista = masUsados {
@@ -137,7 +144,7 @@ struct PrincipalView: View {
                 }
             }
         }
-        .animation(sinMovimiento ? nil : .spring(response: 0.28, dampingFraction: 0.82), value: masUsados?.map(\.vista).joined())
+        .animation(sinMovimiento ? .easeOut(duration: 0.16) : .spring(response: 0.27, dampingFraction: 0.8), value: masUsados?.map(\.vista).joined())
         .sensoryFeedback(.success, trigger: masUsados != nil) { _, abierto in abierto }
         .onChange(of: c.modal) { _, m in if m != nil { masUsados = nil } }
         .onChange(of: fase) { _, f in if f != .active { masUsados = nil } }
