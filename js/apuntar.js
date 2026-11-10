@@ -101,20 +101,11 @@ function apuntarCifrasEscritas(texto) {
     return salida;
 }
 
-// «1.500,50 €» se leía como 500,50: los miles con punto van aparte de los decimales.
-const APUNTAR_IMPORTE_RE = '(?<![\\d.,])(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)';
-function apuntarImporte(x) { return Number(/^\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?$/.test(x) ? x.replace(/\./g, '').replace(',', '.') : x.replace(',', '.')); }
-
 function interpretarApunte(texto) {
     let resto = apuntarCifrasEscritas(' ' + String(texto || '').trim() + ' ');
     const n = apuntarNorm(resto);
-    const r = { fecha: apuntarFechaBase || todayISO(), fechaDicha: false, fechaFin: '', anioDicho: false, hora: '', horaFin: '', importe: null, ingreso: false, comprar: false, nota: false, titulo: '', recurrencia: null, cumple: false, estudio: null, clase: false, viaje: false, eventoTipo: '', lugar: '', cuenta: '', categoria: '', forzado: '', conGente: false, error: '' };
+    const r = { fecha: apuntarFechaBase || todayISO(), fechaDicha: false, fechaFin: '', anioDicho: false, hora: '', horaFin: '', importe: null, ingreso: false, comprar: false, nota: false, titulo: '', recurrencia: null, cumple: false, estudio: null, clase: false, viaje: false, eventoTipo: '', lugar: '', cuenta: '', categoria: '', forzado: '', conGente: false };
     const quitar = (re) => { const m = apuntarNorm(resto).match(re); if (!m) return null; resto = resto.slice(0, m.index) + ' ' + resto.slice(m.index + m[0].length); return m; };
-    // Apuntar solo crea: «cancela la cita» o «mueve el dentista» creaban una tarea nueva con ese título.
-    const n0 = apuntarNorm(String(texto || '')).trim();
-    if (/^(?:cancela|anula|borra|elimina|mueve|pospon|aplaza|retrasa|adelanta)\b/.test(n0)
-        || /^(?:cambia|quita)\s+(?:la|el|lo|mi|las|los)\s+(?:cita|evento|tarea|reunion|cena|comida|quedada|de)\b/.test(n0)) r.error = 'apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo';
-    else if (/\?\s*$/.test(n0) || /^¿/.test(n0)) r.error = 'eso es una pregunta: búscala en la barra';
 
     quitar(/^\s*(?:y\s+)?(?:ademas|tambien|luego|despues|y|e)\s*,?\s+/);
     // La primera palabra puede decir qué es: «evento hoy comida con Lali a
@@ -136,9 +127,9 @@ function interpretarApunte(texto) {
     // Lo que falta en casa va a la compra.
     if (quitar(/^\s*(?:falta|faltan|se (?:ha|han) acabado|se acabo|se acabaron|no (?:queda|quedan|hay)|queda poco|quedan pocos|quedan pocas|necesito|necesitamos)\s+(?:de\s+)?/)) r.comprar = true;
 
-    let m = quitar(new RegExp(`[+]?\\s*${APUNTAR_IMPORTE_RE}\\s*(?:€|eur(?:os)?\\b|pavos\\b)`)) || quitar(new RegExp(`€\\s*${APUNTAR_IMPORTE_RE}`));
-    if (!m && (m = quitar(new RegExp(`\\b(?:gaste|he gastado|pague|he pagado|me ha costado|me costo|cuesta|costo|cobre|he cobrado|me han pagado|me pagan|me ingresan|ingrese|ingreso de|bizum de)\\s+${APUNTAR_IMPORTE_RE}\\b`)))) {
-        resto = ' ' + m[0].replace(/\s*[\d.,]+\s*$/, '') + ' ' + resto;
+    let m = quitar(/[+]?\s*(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur(?:os)?\b|pavos\b)/) || quitar(/€\s*(\d+(?:[.,]\d{1,2})?)/);
+    if (!m && (m = quitar(/\b(?:gaste|he gastado|pague|he pagado|me ha costado|me costo|cuesta|costo|cobre|he cobrado|me han pagado|me pagan|me ingresan|ingrese|ingreso de|bizum de)\s+(\d+(?:[.,]\d{1,2})?)\b/))) {
+        resto = ' ' + m[0].replace(/\s*\d+(?:[.,]\d{1,2})?\s*$/, '') + ' ' + resto;
     }
     // «gasto 30 gasolina», «ingreso nómina 1500», «pagar alquiler 800 el 1»: la palabra de delante ya dice que
     // el número es dinero, aunque no lleve €. Se salta el que va tras «el», «día» o «a las» (es fecha u hora).
@@ -146,7 +137,7 @@ function interpretarApunte(texto) {
         m = quitar(/(?<!\b(?:el|dia|las|del|al|y)\s)\b(\d+(?:[.,]\d{1,2})?)\b(?!\s*(?::|h\b|de\s+[a-z]+\b(?<=enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)))/);
         if (m) quitar(/^\s*(?:gasto|ingreso)\b\s*(?:de\s+)?/);
     }
-    if (m) { r.importe = apuntarImporte(m[1]); r.ingreso = /^\s*\+/.test(m[0]) || /\b(cobr|ingres|nomina|me pagan|me han pagado|me ingresan|me devolvi|devolucion)/.test(n); }
+    if (m) { r.importe = Number(m[1].replace(',', '.')); r.ingreso = /^\s*\+/.test(m[0]) || /\b(cobr|ingres|nomina|me pagan|me han pagado|me ingresan|me devolvi|devolucion)/.test(n); }
     if (r.importe != null) {
         quitar(/^\s*(?:gaste|he gastado|pague|he pagado|me ha costado|me costo|cobre|he cobrado|me han pagado|me pagan|me ingresan|ingrese|bizum de)\b/);
         if (quitar(/\b(?:en|con|pagado en|pague en)\s+(?:efectivo|metalico|cash|billetes)\b/)) r.cuenta = 'efectivo';
@@ -164,8 +155,6 @@ function interpretarApunte(texto) {
     } else if ((m = quitar(/\bcada\s+(\d{1,2}|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|quince|veinte)\s+dias\b/))) r.recurrencia = { frecuencia: 'intervalo', cada: /^\d+$/.test(m[1]) ? Number(m[1]) : APUNTAR_NUMEROS[m[1]] };
     else if ((m = quitar(/\b(?:el\s+)?(?:dia\s+)?(\d{1,2})\s+de\s+cada\s+mes\b/))) r.recurrencia = { frecuencia: 'mensual', diaMes: Number(m[1]) };
     else if (quitar(/\b(?:cada mes|todos los meses|mensualmente)\b/)) r.recurrencia = { frecuencia: 'mensual', diaMes: new Date().getDate() };
-    if (r.recurrencia?.frecuencia === 'intervalo' && !(r.recurrencia.cada >= 1)) r.error ||= 'cada cuántos días: tiene que ser 1 o más';
-    if (r.recurrencia?.frecuencia === 'mensual' && !(r.recurrencia.diaMes >= 1 && r.recurrencia.diaMes <= 31)) r.error ||= `el día ${r.recurrencia.diaMes} no existe en ningún mes`;
 
     // De qué se trata (se quita del texto lo que solo dice el tipo).
     if (quitar(/\b(?:es\s+el\s+)?(?:cumple|cumpleanos)\s+(?:de\s+)?/)) r.cumple = true;
@@ -183,19 +172,9 @@ function interpretarApunte(texto) {
 
     const base = new Date(todayISO() + 'T12:00:00');
     const dia = k => { r.fecha = apuntarFechaDe(base, k); r.fechaDicha = true; };
-    // Date corre lo que no existe («31 de febrero» daba el 3 de marzo, «13/13» enero del año siguiente): se avisa.
-    const fechaMal = f => { r.error ||= `${f} no existe`; };
-    const comprobar = (f, d, mes) => {
-        const mm = ((mes % 12) + 12) % 12;
-        if (f.getMonth() !== mm || f.getDate() !== d) fechaMal(d >= 1 && d <= 31 ? `el ${d} de ${APUNTAR_MESES[mm]}${d === 29 && mm === 1 ? ' de ' + f.getFullYear() : ''}` : 'esa fecha');
-        return f;
-    };
     const fechaDe = (d, mes, anio) => {
-        let f = comprobar(new Date(anio != null ? anio : base.getFullYear(), mes, d, 12), d, mes);
-        if (anio == null && isoLocal(f) < todayISO() && !r.cumple) {
-            f = new Date(f.getFullYear() + 1, mes, d, 12);
-            if (!r.error) comprobar(f, d, mes);
-        }
+        const f = new Date(anio != null ? anio : base.getFullYear(), mes, d, 12);
+        if (anio == null && isoLocal(f) < todayISO() && !r.cumple) f.setFullYear(f.getFullYear() + 1);
         return f;
     };
     // Momento del día (se usa como hora si no se dice otra).
@@ -207,24 +186,20 @@ function interpretarApunte(texto) {
     // Del 3 al 7 de noviembre / del 3/11 al 7/11: fecha y fecha de fin. Sin mes, «temas del 3 al 5» no son días.
     const rangoSinFechas = /\b(?:temas?|capitulos?|paginas?|pags?|ejercicios?|lecciones?|unidades?|preguntas?)\s+del?\s+\d{1,2}\s+(?:al|hasta el)\s+\d{1,2}\b(?!\s*(?:\/|de\s))/.test(n);
     if (!rangoSinFechas && (m = quitar(new RegExp(`\\bdel?\\s+(\\d{1,2})(?:\\s*(?:\\/|de\\s+)(\\d{1,2}|${APUNTAR_MESES_RE.slice(1, -1)}))?\\s+(?:al|hasta el)\\s+(\\d{1,2})(?:\\s*(?:\\/|de\\s+)(\\d{1,2}|${APUNTAR_MESES_RE.slice(1, -1)}))?\\b`)))) {
-        const mesDe = x => { const k = /^\d+$/.test(x) ? Number(x) - 1 : APUNTAR_MESES.indexOf(x); if (k < 0 || k > 11) fechaMal('esa fecha'); return k; };
+        const mesDe = x => /^\d+$/.test(x) ? Number(x) - 1 : APUNTAR_MESES.indexOf(x);
         const d1 = Number(m[1]), d2 = Number(m[3]), cruza = d2 < d1;
         let ini, fin;
         if (m[4]) {
             const mesFin = mesDe(m[4]);
             ini = fechaDe(d1, m[2] ? mesDe(m[2]) : mesFin - (cruza && !m[2] ? 1 : 0));
-            fin = comprobar(new Date(ini.getFullYear() + (mesFin < ini.getMonth() ? 1 : 0), mesFin, d2, 12), d2, mesFin);
+            fin = new Date(ini.getFullYear() + (mesFin < ini.getMonth() ? 1 : 0), mesFin, d2, 12);
         } else {
             // Sin mes («del 3 al 7», «del 28 al 2»): el próximo día de inicio, este mes o el siguiente.
             const hoyD = new Date(todayISO() + 'T12:00:00');
-            const mIni = hoyD.getMonth() + (d1 < hoyD.getDate() ? 1 : 0);
-            ini = comprobar(new Date(hoyD.getFullYear(), mIni, d1, 12), d1, mIni % 12);
-            const mFin = ini.getMonth() + (cruza ? 1 : 0);
-            fin = comprobar(new Date(ini.getFullYear(), mFin, d2, 12), d2, mFin % 12);
+            ini = new Date(hoyD.getFullYear(), hoyD.getMonth() + (d1 < hoyD.getDate() ? 1 : 0), d1, 12);
+            fin = new Date(ini.getFullYear(), ini.getMonth() + (cruza ? 1 : 0), d2, 12);
         }
         r.fecha = isoLocal(ini); r.fechaFin = isoLocal(fin); r.fechaDicha = true;
-        // «del 10 de mayo al 3 de abril» daba casi un año entero.
-        if (fin < ini || (fin - ini) / 864e5 > 120) r.error ||= 'la fecha de fin va antes que la de inicio';
     }
     else if (quitar(/\banteayer\b/)) dia(-2);
     else if (quitar(/\bayer\b/)) dia(-1);
@@ -246,15 +221,11 @@ function interpretarApunte(texto) {
     } else if ((m = quitar(new RegExp(`\\b(?:el\\s+(?:dia\\s+)?)?(\\d{1,2})\\s*(?:\\/|-|de\\s+)(\\d{1,2}|${APUNTAR_MESES_RE.slice(1, -1)})(?:\\s*(?:\\/|-|de\\s+)(\\d{4}|\\d{2}))?\\b`)))) {
         const mes = /^\d+$/.test(m[2]) ? Number(m[2]) - 1 : APUNTAR_MESES.indexOf(m[2]);
         const anio = m[3] ? Number(m[3].length === 2 ? '20' + m[3] : m[3]) : null;
-        if (mes < 0 || mes > 11) fechaMal('esa fecha');
         r.anioDicho = anio != null;
         r.fecha = isoLocal(fechaDe(Number(m[1]), mes, anio)); r.fechaDicha = true;
     } else if ((m = quitar(/\bel\s+(?:dia\s+)?(\d{1,2})\b/))) {
-        const dn = Number(m[1]);
-        let mes = base.getMonth(), d = new Date(base.getFullYear(), mes, dn, 12);
-        if (isoLocal(d) < todayISO()) d = new Date(base.getFullYear(), ++mes, dn, 12);
-        if (dn < 1 || dn > 31) fechaMal(`el día ${dn}`);
-        else comprobar(d, dn, mes % 12);
+        const d = new Date(base.getFullYear(), base.getMonth(), Number(m[1]), 12);
+        if (isoLocal(d) < todayISO()) d.setMonth(d.getMonth() + 1);
         r.fecha = isoLocal(d); r.fechaDicha = true;
     }
 
@@ -300,8 +271,6 @@ function interpretarApunte(texto) {
     const t = resto.replace(/\s+/g, ' ').replace(/^[\s,.;:-]+|[\s,.;:-]+$/g, '').replace(/^(?:el|la|los|las)\s+(?=\S)/i, m2 => (r.estudio ? '' : m2)).replace(/\s+(?:a|el|en|para|de|y|con)$/i, '').trim();
     const t2 = r.comprar ? t.replace(/^(?:el|la|los|las|un|una|unos|unas|algo de|mas)\s+/i, '') : t;
     r.titulo = t2.charAt(0).toUpperCase() + t2.slice(1);
-    // Solo una fecha, una hora o un importe no es nada que apuntar.
-    if (!r.titulo && (r.importe == null || /^[\s\d.,€+]*(?:eur(?:os)?|pavos)?\s*$/.test(n0))) r.error ||= r.importe != null ? 'falta en qué' : 'falta qué es';
 
     // Categoría y cuenta de un gasto.
     if (r.importe != null && !r.ingreso && typeof financePro !== 'undefined') {
@@ -424,11 +393,6 @@ function apuntarRecurrenciaTexto(rc) {
 
 // Lo que se va a crear, en una línea, y si le falta algo para poder hacerlo.
 function apuntarDescribir(r, tipo) {
-    const d = apuntarDescribirTipo(r, tipo);
-    if (r.error) d.falta = r.error;
-    return d;
-}
-function apuntarDescribirTipo(r, tipo) {
     if (r.comprar && tipo !== 'compra' && r.titulo && !/^comprar\b/i.test(r.titulo)) r = { ...r, titulo: 'Comprar ' + r.titulo.charAt(0).toLowerCase() + r.titulo.slice(1) };
     const cuando = `${apuntarFechaTexto(r.fecha)}${r.hora ? ` a las ${r.hora}${r.horaFin ? '–' + r.horaFin : ''}` : ''}`;
     const tit = escapeHtml(r.titulo || '…');
@@ -573,7 +537,6 @@ function openApuntar(fecha) {
 
 // Crea una cosa. Devuelve { aviso, hecho } o { error }.
 function apuntarCrear(texto, r, tipo) {
-    if (r.error) return { error: r.error };
     if (r.comprar && tipo !== 'compra' && r.titulo && !/^comprar\b/i.test(r.titulo)) r = { ...r, titulo: 'Comprar ' + r.titulo.charAt(0).toLowerCase() + r.titulo.slice(1) };
     const id = p => `${p}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const conector = (op, prefijo) => {

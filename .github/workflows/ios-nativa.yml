@@ -34,7 +34,7 @@ jobs:
 
       - name: Contrato de datos con la web
         working-directory: .
-        run: node --test pruebas/contrato-ios.mjs
+        run: node --test pruebas/contrato-ios.mjs pruebas/apuntar-p0.mjs
 
       - name: Comprobación general del repositorio
         working-directory: .
