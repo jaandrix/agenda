@@ -86,9 +86,9 @@ struct PlanView: View {
                     abrir: { t, dia in
                         c.modal = .tarea(EditorTarea(id: t.id, nueva: false, dia: dia, titulo: t.titulo, hora: t.hora, notas: t.notas, deTrabajo: t.deTrabajo, prioridad: t.prioridad))
                     },
-                    prioridad: { t, p in Task { await modelo.guardar(.parcharTarea(id: t.id, campos: ["prioridad": p ?? ""]), c) } },
                     mover: { t, dia in Task { await modelo.guardar(.moverTarea(id: t.id, dia: dia?.iso), c) } },
                     borrar: { t in Task { await modelo.guardar(.borrarTarea(id: t.id), c) } },
+                    prioridad: { t, p in Task { await modelo.guardar(.parcharTarea(id: t.id, campos: ["prioridad": p ?? ""]), c) } },
                     nueva: { dia in
                         c.modal = .tarea(EditorTarea(id: OperacionBitacora.nuevoIdTarea(sinDia: dia == nil), nueva: true, dia: dia))
                     }
