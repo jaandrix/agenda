@@ -611,6 +611,26 @@ final class OperacionesTests: XCTestCase {
         XCTAssertEqual(e?["time"], .string("20:00"))
     }
 
+    // La prioridad de la web (js/planificador.js): alta/media/baja o sin la clave; ordena lo que no tiene hora.
+    func testPrioridadComoEnLaWeb() throws {
+        let doc = try DocumentoBitacora(datos: Data(#"""
+        {"dayPlanner": {"days": {"2026-11-06": [{"id": "a", "title": "sin"}, {"id": "b", "title": "baja", "prioridad": "baja"}, {"id": "c", "title": "hora", "time": "08:00", "prioridad": "alta"},
+         {"id": "d", "title": "alta", "prioridad": "alta", "linkedAssignmentId": "w", "raro": 1}, {"id": "e", "title": "rara", "prioridad": "urgente"}]},
+         "backlog": [{"id": "x", "title": "x"}, {"id": "y", "title": "y", "prioridad": "media"}]}}
+        """#.utf8))
+        let ahora = ISO8601DateFormatter().date(from: "2026-11-06T12:00:00+01:00")!
+        let v = LecturaPlanificador.vista(doc, ahora: ahora)
+        XCTAssertEqual(v.tareas.map(\.id), ["d", "b", "a", "e", "c"])
+        XCTAssertEqual(v.tareas.map(\.prioridad), ["alta", "baja", nil, nil, "alta"])
+        XCTAssertEqual(v.sinDia.map(\.id), ["y", "x"])
+        let (r, _) = AplicarOperaciones.sobre(doc, [.parcharTarea(id: "d", campos: ["prioridad": "media"]), .parcharTarea(id: "b", campos: ["prioridad": ""])])
+        let dia = try r.valor(de: "dayPlanner")?["days"]?["2026-11-06"]?.lista ?? []
+        XCTAssertEqual(dia.first { $0["id"]?.comoId == "d" }?["prioridad"], .string("media"))
+        XCTAssertEqual(dia.first { $0["id"]?.comoId == "d" }?["raro"], .number("1"))
+        XCTAssertEqual(dia.first { $0["id"]?.comoId == "d" }?["linkedAssignmentId"], .string("w"))
+        XCTAssertNil(dia.first { $0["id"]?.comoId == "b" }?["prioridad"])
+    }
+
     func testMovimientoSinCategoriaQuedaPorRevisar() throws {
         let doc = try DocumentoBitacora(datos: Data(#"{"financePro": {"accounts": {}, "transactions": [{"id": "a", "date": "2026-11-08", "type": "expense", "amount": 1, "account": "bancos", "hora": "09:00"}, {"id": "b", "date": "2026-11-08", "type": "expense", "amount": 1, "account": "bancos", "hora": "18:00"}]}}"#.utf8))
         let (r, _) = AplicarOperaciones.sobre(doc, [.crearMovimiento(id: "c", tipo: "expense", importe: "2", cuenta: "bancos", categoria: nil, fecha: "2026-11-08", hora: "12:00", concepto: "")])

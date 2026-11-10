@@ -985,8 +985,10 @@ enum AplicarOperaciones {
         case let .parcharTarea(id, campos):
             guard let sitio = buscar(id, en: p) else { return valor ?? .object(p) }
             cambiar(sitio, en: &p) { t in
-                for (k, v) in campos where ["title", "notes", "time"].contains(k) {
+                for (k, v) in campos where ["title", "notes", "time", "prioridad"].contains(k) {
                     if k == "time", case .pendiente = sitio { continue }
+                    // Sin prioridad la web no guarda la clave (prioridad: undefined).
+                    if k == "prioridad" { if ["alta", "media", "baja"].contains(v) { t[k] = .string(v) } else { t.removeValue(forKey: k) }; continue }
                     t[k] = .string(v)
                 }
             }

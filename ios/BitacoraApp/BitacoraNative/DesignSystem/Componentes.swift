@@ -94,6 +94,10 @@ struct CabeceraSeccion: View {
 // Fila de la agenda: hora en columna fija, círculo, título y nota, filete continuo debajo. Lo arrastrado o en curso en
 // el acento. Tocar el texto abre; el círculo solo marca. Los colores se adaptan al fondo (Inicio sobre contexto).
 struct FilaAgenda: View {
+    private var prioridadTexto: Text {
+        guard let p = prioridad, !hecho else { return Text("") }
+        return Text(p + ". ").foregroundStyle(p == "alta" ? Paleta.error : (p == "media" ? colorAcento : colorSuave))
+    }
     let hora: String?
     let titulo: String
     var notas = ""
@@ -105,6 +109,8 @@ struct FilaAgenda: View {
     var colorAcento: Color = Paleta.acento
     var colorFilo: Color = Paleta.borde
     var colorSobreAcento: Color = Paleta.sobreAcento
+    // «alta», «media» o «baja»: delante del nombre y en su color, como en la web (prioEtiqueta).
+    var prioridad: String? = nil
     let marcar: () -> Void
     var abrir: (() -> Void)?
 
@@ -119,7 +125,7 @@ struct FilaAgenda: View {
             BitacoraCheck(hecho: hecho, acento: acento, colorActivo: colorAcento, colorBorde: colorFilo, colorMarca: colorSobreAcento, accion: marcar)
             Button { (abrir ?? marcar)() } label: {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(titulo)
+                    (prioridadTexto + Text(titulo))
                         .font(Tipo.poppins(16.5, .semibold, estilo: .body))
                         .foregroundStyle(hecho ? colorSuave : (acento ? colorAcento : colorTexto))
                         .strikethrough(hecho, color: colorSuave)
@@ -134,7 +140,7 @@ struct FilaAgenda: View {
         .padding(.vertical, 4)
         .overlay(alignment: .bottom) { Rectangle().fill(colorFilo).frame(height: 1) }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel([hora, titulo].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityLabel([hora, prioridad.map { "prioridad " + $0 }, titulo].compactMap { $0 }.joined(separator: ", "))
         .accessibilityValue(hecho ? "hecha" : (acento ? "pendiente, de días anteriores" : "pendiente"))
         .accessibilityAction(named: hecho ? "desmarcar" : "marcar", marcar)
         .accessibilityAction(named: "abrir") { (abrir ?? marcar)() }

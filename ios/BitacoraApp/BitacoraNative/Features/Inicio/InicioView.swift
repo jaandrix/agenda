@@ -115,7 +115,7 @@ struct InicioView: View {
         ScrollView {
             InicioCuerpo(vista: vista, ahora: Date(), estado: c.informe.estado,
                          marcar: { t in marcar(t) },
-                         abrir: { t in c.modal = .tarea(EditorTarea(id: t.id, nueva: false, dia: vista?.dia, titulo: t.titulo, hora: t.hora, notas: t.notas, deTrabajo: t.deTrabajo)) },
+                         abrir: { t in c.modal = .tarea(EditorTarea(id: t.id, nueva: false, dia: vista?.dia, titulo: t.titulo, hora: t.hora, notas: t.notas, deTrabajo: t.deTrabajo, prioridad: t.prioridad)) },
                          irA: { c.pestana = $0 },
                          foto: foto, tiempo: tiempo, bus: bus,
                          abrirEvento: { e in if let d = vista?.dia { c.modal = .ficha(e, dia: d) } },

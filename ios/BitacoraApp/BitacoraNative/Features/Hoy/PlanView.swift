@@ -84,8 +84,9 @@ struct PlanView: View {
                     marcar: { t, sinDia in Task { await modelo.marcar(t, enSinDia: sinDia, c) } },
                     marcarRecurrente: { r in Task { await modelo.marcar(r, c) } },
                     abrir: { t, dia in
-                        c.modal = .tarea(EditorTarea(id: t.id, nueva: false, dia: dia, titulo: t.titulo, hora: t.hora, notas: t.notas, deTrabajo: t.deTrabajo))
+                        c.modal = .tarea(EditorTarea(id: t.id, nueva: false, dia: dia, titulo: t.titulo, hora: t.hora, notas: t.notas, deTrabajo: t.deTrabajo, prioridad: t.prioridad))
                     },
+                    prioridad: { t, p in Task { await modelo.guardar(.parcharTarea(id: t.id, campos: ["prioridad": p ?? ""]), c) } },
                     mover: { t, dia in Task { await modelo.guardar(.moverTarea(id: t.id, dia: dia?.iso), c) } },
                     borrar: { t in Task { await modelo.guardar(.borrarTarea(id: t.id), c) } },
                     nueva: { dia in
@@ -112,6 +113,7 @@ struct PlanCuerpo: View {
         var abrir: (TareaPlan, LocalDay?) -> Void = { _, _ in }
         var mover: (TareaPlan, LocalDay?) -> Void = { _, _ in }
         var borrar: (TareaPlan) -> Void = { _ in }
+        var prioridad: (TareaPlan, String?) -> Void = { _, _ in }
         var nueva: (LocalDay?) -> Void = { _ in }
     }
 
@@ -180,7 +182,7 @@ struct PlanCuerpo: View {
                 Text("nada todavía.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
             }
             ForEach(v.tareas) { t in
-                FilaAgenda(hora: t.hora, titulo: t.titulo, notas: t.notas, hecho: t.hecha, acento: t.arrastrada) {
+                FilaAgenda(hora: t.hora, titulo: t.titulo, notas: t.notas, hecho: t.hecha, acento: t.arrastrada, prioridad: t.prioridad) {
                     acciones.marcar(t, false)
                 } abrir: { acciones.abrir(t, v.dia) }
                 .contextMenu { menu(t, v, enSinDia: false) }
@@ -204,7 +206,7 @@ struct PlanCuerpo: View {
         return VStack(alignment: .leading, spacing: 0) {
             CabeceraSeccion(titulo: "pendientes sin día.", detalle: v.sinDia.isEmpty ? nil : "\(v.sinDia.count)")
             ForEach(visibles) { t in
-                FilaAgenda(hora: nil, titulo: t.titulo, notas: t.notas, hecho: t.hecha, mostrarHora: false) {
+                FilaAgenda(hora: nil, titulo: t.titulo, notas: t.notas, hecho: t.hecha, mostrarHora: false, prioridad: t.prioridad) {
                     acciones.marcar(t, true)
                 } abrir: { acciones.abrir(t, nil) }
                 .contextMenu { menu(t, v, enSinDia: true) }
@@ -227,6 +229,14 @@ struct PlanCuerpo: View {
             if enSinDia || desplazamiento != 0 { Button("pasar a hoy.") { acciones.mover(t, hoy) } }
             if !enSinDia && desplazamiento == 0 { Button("pasar a mañana.") { acciones.mover(t, hoy.sumando(dias: 1)) } }
             if !enSinDia { Button("dejar sin día.") { acciones.mover(t, nil) } }
+            Menu("prioridad.") {
+                ForEach(["alta", "media", "baja", ""], id: \.self) { k in
+                    let nombre = k.isEmpty ? "ninguna." : k + "."
+                    Button { acciones.prioridad(t, k.isEmpty ? nil : k) } label: {
+                        if (t.prioridad ?? "") == k { Label(nombre, systemImage: "checkmark") } else { Text(nombre) }
+                    }
+                }
+            }
             Button("borrar.", role: .destructive) { acciones.borrar(t) }
         }
     }

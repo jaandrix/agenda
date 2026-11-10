@@ -9,6 +9,8 @@ struct TareaPlan: Sendable, Identifiable, Equatable {
     let arrastrada: Bool
     // Las que vienen de un trabajo de Estudios se recrean solas al abrir la web: se borran desde allí.
     let deTrabajo: Bool
+    // «alta», «media» o «baja» (js/planificador.js); nil sin prioridad.
+    var prioridad: String? = nil
 }
 
 struct RecurrenteHoy: Sendable, Identifiable, Equatable {
@@ -41,13 +43,18 @@ enum LecturaPlanificador {
                 if d == dia {
                     tareas.append(t)
                 } else if desplazamiento == 0, d < hoy, !t.hecha {
-                    tareas.append(TareaPlan(id: t.id, titulo: t.titulo, hora: t.hora, notas: t.notas, hecha: false, arrastrada: true, deTrabajo: t.deTrabajo))
+                    tareas.append(TareaPlan(id: t.id, titulo: t.titulo, hora: t.hora, notas: t.notas, hecha: false, arrastrada: true, deTrabajo: t.deTrabajo, prioridad: t.prioridad))
                 }
             }
         }
-        // Mismo orden que la línea del día de la web: por hora, y lo que no tiene hora al principio.
-        tareas.sort { minutos($0.hora) < minutos($1.hora) }
-        let sinDia = (planner?["backlog"]?.lista ?? []).compactMap(tarea).filter { !$0.hecha }
+        // Mismo orden que la línea del día de la web: lo que no tiene hora al principio, por prioridad (alta, media, baja,
+        // ninguna), y lo demás por hora. Con empate se respeta el orden guardado.
+        tareas = tareas.enumerated().sorted { a, b in
+            let ka = clave(a.element), kb = clave(b.element)
+            return ka != kb ? ka < kb : a.offset < b.offset
+        }.map(\.element)
+        let sinDia = (planner?["backlog"]?.lista ?? []).compactMap(tarea).filter { !$0.hecha }.enumerated()
+            .sorted { a, b in orden(a.element.prioridad) != orden(b.element.prioridad) ? orden(a.element.prioridad) < orden(b.element.prioridad) : a.offset < b.offset }.map(\.element)
         // La web usa el día del calendario (todayISO), no el lógico de las 4:00, para las recurrentes.
         let hoyCivil = calendario.dia(de: ahora)
         var recurrentes: [RecurrenteHoy] = []
@@ -89,8 +96,14 @@ enum LecturaPlanificador {
         let hora = o["time"]?.texto.flatMap { $0.isEmpty ? nil : $0 }
         return TareaPlan(id: o["id"]?.comoId ?? UUID().uuidString, titulo: titulo, hora: hora, notas: o["notes"]?.texto ?? "",
                          hecha: o["done"]?.booleano == true, arrastrada: o["arrastrado"]?.booleano == true,
-                         deTrabajo: o["linkedAssignmentId"] != nil || o["proyectoTareaId"] != nil)
+                         deTrabajo: o["linkedAssignmentId"] != nil || o["proyectoTareaId"] != nil,
+                         prioridad: o["prioridad"]?.texto.flatMap { ["alta", "media", "baja"].contains($0) ? $0 : nil })
     }
+
+    // PLANNER_PRIORIDAD_ORDEN (js/planificador.js).
+    static func orden(_ p: String?) -> Int { ["alta": 0, "media": 1, "baja": 2][p ?? ""] ?? 3 }
+
+    private static func clave(_ t: TareaPlan) -> Int { t.hora == nil ? orden(t.prioridad) - 10 : minutos(t.hora) }
 
     private static func minutos(_ hora: String?) -> Int {
         let p = (hora ?? "").split(separator: ":").compactMap { Int($0) }

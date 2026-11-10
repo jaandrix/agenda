@@ -35,6 +35,7 @@ struct EditorTarea: Identifiable, Equatable {
     var hora: String?
     var notas = ""
     var deTrabajo = false
+    var prioridad: String?
 }
 
 enum FaseApp: Equatable {

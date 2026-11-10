@@ -10,6 +10,7 @@ struct EditorTareaView: View {
     @State private var conHora = false
     @State private var hora = Date()
     @State private var dia: LocalDay?
+    @State private var prioridad = ""
     @State private var guardando = false
     @State private var confirmarBorrado = false
     @State private var error: String?
@@ -21,6 +22,7 @@ struct EditorTareaView: View {
         _titulo = State(initialValue: inicial.titulo)
         _notas = State(initialValue: inicial.notas)
         _dia = State(initialValue: inicial.dia)
+        _prioridad = State(initialValue: inicial.prioridad ?? "")
         if let h = inicial.hora, let fecha = EditorTareaView.fecha(de: h) {
             _conHora = State(initialValue: true)
             _hora = State(initialValue: fecha)
@@ -48,6 +50,12 @@ struct EditorTareaView: View {
                             DatePicker("hora.", selection: $hora, displayedComponents: .hourAndMinute)
                                 .environment(\.locale, Locale(identifier: "es_ES"))
                         }
+                    }
+                    Picker("prioridad.", selection: $prioridad) {
+                        Text("ninguna.").tag("")
+                        Text("alta.").tag("alta")
+                        Text("media.").tag("media")
+                        Text("baja.").tag("baja")
                     }
                 } footer: {
                     if let error { Text(error).foregroundStyle(Paleta.error) }
@@ -124,7 +132,10 @@ struct EditorTareaView: View {
         var ops: [OperacionBitacora] = []
         if inicial.nueva {
             ops.append(.crearTarea(id: inicial.id, dia: dia?.iso, titulo: limpio, hora: horaTexto))
-            if !notasLimpias.isEmpty { ops.append(.parcharTarea(id: inicial.id, campos: ["notes": notasLimpias])) }
+            var extra: [String: String] = [:]
+            if !notasLimpias.isEmpty { extra["notes"] = notasLimpias }
+            if !prioridad.isEmpty { extra["prioridad"] = prioridad }
+            if !extra.isEmpty { ops.append(.parcharTarea(id: inicial.id, campos: extra)) }
         } else {
             if dia != inicial.dia { ops.append(.moverTarea(id: inicial.id, dia: dia?.iso)) }
             // Solo lo que cambió: si la web tocó otro campo mientras tanto, se queda.
@@ -132,6 +143,7 @@ struct EditorTareaView: View {
             if limpio != inicial.titulo { campos["title"] = limpio }
             if notasLimpias != inicial.notas { campos["notes"] = notasLimpias }
             if horaTexto != inicial.hora { campos["time"] = horaTexto ?? "" }
+            if prioridad != (inicial.prioridad ?? "") { campos["prioridad"] = prioridad }
             if !campos.isEmpty { ops.append(.parcharTarea(id: inicial.id, campos: campos)) }
         }
         await enviar(ops)
