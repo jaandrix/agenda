@@ -29,11 +29,12 @@ Un commit y una compilación de Actions por corte, con push a main.
 | 2 | 2797972 | Importar extractos con la clave de la web. Ver el detalle debajo de la tabla. |
 | 3 | da20162 | Prioridad de las tareas (`alta`, `media`, `baja` o sin la clave, como en `js/planificador.js`). Ver el detalle debajo de la tabla. |
 | 3b | e300543 | El editor de tareas deja elegir cualquier fecha (`moverTarea` conserva el resto de la tarea). |
-| fix | 229ae12 | Orden de argumentos en `PlanView`; con él, el run 61 compila los cortes 1 a 3b y pasa las pruebas. |
-| Viajes | cf34eb2 | Apartado nativo de Viajes (run 63 en verde). Ver el detalle debajo de la tabla. |
+| fix | 229ae12 | Orden de argumentos en `PlanView`. |
+| Viajes | cf34eb2 | Apartado nativo de Viajes. Ver el detalle debajo de la tabla. |
 | Empleo | 11d70f9 | Apartado nativo de Empleo con la agenda laboral. Ver el detalle debajo de la tabla. |
 | P1 visual | fbc5549 | Los círculos de marcar no se veían en asfalto. Ver el detalle debajo de la tabla. |
-| fix | 911b369 | Faltaba la barra del keypath `\.locale` en el editor de tareas: el run 63 no compilaba. Lo había metido un script mío. |
+| fix | 911b369 | Faltaba la barra del keypath `\.locale` en el editor de tareas: no compilaba. Lo había metido un script mío. |
+| fix | 12c7b27 | Dos clases de prueba se llamaban `EnlacesTests` (la nueva pasa a `EnlacesNativosTests`), y un test de Apuntar esperaba el mensaje de antes de los validadores P0. |
 | Objetivos | 64bbe2d | Apartado nativo de Objetivos. Ver el detalle debajo de la tabla. |
 | Enlaces | 6adcb96 | Apartado nativo de Enlaces. Ver el detalle debajo de la tabla. |
 | Envíos | c74fbfa | Apartado nativo de Envíos. Ver el detalle debajo de la tabla. |
@@ -154,8 +155,10 @@ Un commit y una compilación de Actions por corte, con push a main.
 **Web (en espera)**
 - Llevar los validadores de Apuntar a `js/apuntar.js`. Están en `apuntar-puente.js` y se pueden copiar tal cual. Después, quitarlos del puente para no validar dos veces.
 
-**Comprobación pendiente**
-- Los apartados Objetivos, Enlaces, Envíos y Documentos se subieron juntos (90f60f4) y se comprueban en una sola compilación. Me quedé sin consultas a la API pública de GitHub y no podía seguir cada compilación por separado.
+**Compilaciones (corrección)**
+- Desde la #60 hasta la #65, ninguna compilación de iOS terminó en verde. Yo había dado por buenas algunas porque, al buscar por commit, cogía la ejecución de GitHub Pages y no la de iOS.
+- Las causas fueron cuatro: el orden de los argumentos en `PlanView`, la barra perdida del keypath `\.locale`, la clase `EnlacesTests` repetida y un test de Apuntar con el mensaje de antes. Todas están arregladas en 12c7b27.
+- Desde entonces, las compilaciones se siguen en la página web de Actions, que no tiene el límite de la API.
 
 ## Requisitos (15-CORRECCION-Y-TRAZABILIDAD-DE-REQUISITOS.md)
 
@@ -179,7 +182,7 @@ He leído la corrección vinculante del 10-11. Cómo queda cada requisito al cer
 | Enlaces con navegador dentro de la app | parcial | 6adcb96 abre en Safari; falta `SFSafariViewController` |
 | Avisos de cambios de Claude/ChatGPT | pendiente | P0: bandeja |
 | Paridad por apartado como pruebas ejecutables | parcial | Hay pruebas por apartado nuevo; falta el resto |
-| Objetivos, Enlaces, Envíos y Documentos | hecho | 64bbe2d, 6adcb96, c74fbfa y 90f60f4, comprobados en una sola compilación |
+| Objetivos, Enlaces, Envíos y Documentos | hecho | 64bbe2d, 6adcb96, c74fbfa y 90f60f4; comprobados juntos con 12c7b27 |
 
 ## Sideloadly
 
