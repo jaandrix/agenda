@@ -15,6 +15,10 @@ Claude dirige el proyecto y GPT asesora y audita.
 5. Barra, iconos y carrusel.
 6. Glass solo como tema opcional detrás de un interruptor, apagado por defecto.
 
+Ampliación de Alejandro: antes de la parte visual (punto 5), la siguiente tanda de apartados nativos, por orden de uso:
+Viajes, Empleo, Objetivos, Enlaces, Envíos y Documentos (en lectura). Cada uno es un corte vertical completo: si no da
+tiempo, se queda en la web y se anota aquí.
+
 Un commit y una compilación de Actions por corte, con push a main.
 
 ## Hecho
@@ -25,6 +29,9 @@ Un commit y una compilación de Actions por corte, con push a main.
 | 2 | 2797972 | Importar extractos con la clave de la web. Ver el detalle debajo de la tabla. |
 | 3 | da20162 | Prioridad de las tareas (`alta`, `media`, `baja` o sin la clave, como en `js/planificador.js`). Ver el detalle debajo de la tabla. |
 | 3b | e300543 | El editor de tareas deja elegir cualquier fecha (`moverTarea` conserva el resto de la tarea). |
+| fix | 229ae12 | Orden de argumentos en `PlanView`; con él, el run 61 compila los cortes 1 a 3b y pasa las pruebas. |
+| Viajes | cf34eb2 | Apartado nativo de Viajes (run 63 en verde). Ver el detalle debajo de la tabla. |
+| Empleo | 11d70f9 | Apartado nativo de Empleo con la agenda laboral. Ver el detalle debajo de la tabla. |
 
 **Corte 1, validadores de Apuntar:**
 - Bloquea fechas que no existen («31 de febrero», «13/13», «el 32», «el 31» en un mes de 30 días) y rangos al revés.
@@ -47,11 +54,25 @@ Un commit y una compilación de Actions por corte, con push a main.
 - Se cambia en el editor y en el menú de la tarea.
 - `parcharTarea` quita la clave si la tarea se queda sin prioridad.
 
+**Viajes:**
+- Lista de próximos (y en curso) y completados.
+- Crear, editar y eliminar viajes (`guardarViaje` / `borrarEntrada`).
+- Ficha con destino, fechas y compañía; itinerario por día (añadir, editar, quitar); lugares (añadir, marcar visitado, quitar).
+- Gastos del viaje: los movimientos de Finanzas marcados `viaje`, como `financeProGastosDelViaje`, más los apuntados a mano.
+- Los cambios van por `cambiarViaje` / `CambioViaje`, sobre `entries`.
+
+**Empleo:**
+- Horario por día de la semana y si sale en el calendario principal.
+- Citas `lab_` (reunión, turno, plazo u otro): crear, editar y eliminar; las pasadas, plegadas.
+- El empleo actual en la cabecera.
+- Operaciones `guardarCitaLaboral`, `borrarCitaLaboral`, `horarioLaboral` y `laboralEnPrincipal`, sobre `agendaLaboral`.
+
 **Pruebas añadidas:**
 - `pruebas/apuntar-p0.mjs`: 30 casos, sobre el mismo entorno que JavaScriptCore.
 - Frases P0 en el banco de paridad `pruebas/apuntar-casos.json`.
 - `pruebas/importar-ios-web.mjs`: comprueba con el importador real de la web que lo importado en el iPhone no se duplica.
 - `testMismaClaveQueLaWebEnLosDosSentidos` y `testPrioridadComoEnLaWeb`.
+- `ViajesTests` y `EmpleoTests`.
 - Las dos pruebas de Node corren en el workflow `ios-nativa.yml`.
 
 ## Pendiente, por prioridad
@@ -77,6 +98,20 @@ Un commit y una compilación de Actions por corte, con push a main.
   - asignatura que no existe (que avise en vez de crear un evento).
 - Rutinas, Notas, Estudios y Proyectos hasta tener el contrato completo; Enlaces nativo.
 
+**Apartados de la tanda, sin hacer (siguen en la web, en este orden)**
+- Objetivos: hitos y progreso.
+- Enlaces: favoritos, buscar y guardar desde compartir.
+- Envíos (`pedidos`): estado y la función `seguimiento-pedidos`.
+- Documentos, en lectura.
+
+**Lo que falta de Viajes y Empleo (sigue en la web)**
+- Viajes:
+  - reservas (transportes y alojamientos), listas, documentos y mapa;
+  - la pestaña Destino (tiempo y moneda);
+  - marcar en Finanzas qué gastos son del viaje.
+- Empleo:
+  - fichas de empleo, vida laboral, CV e importar el horario con IA (la vista nativa enlaza a la web).
+
 **Visual**
 - Barra, iconos (catálogo común en `Iconos.swift`) y carrusel semanal con encaje físico.
 - Glass: tema opcional tras un interruptor, apagado por defecto. Antes hay que corregir dos fallos del prototipo: en Finanzas marca «calendario.» como pestaña activa, y un logo de suscripción sale como un cuadro vacío. Tampoco puede llevar velos con desenfoque en filas ni iconos.
@@ -96,7 +131,12 @@ Un commit y una compilación de Actions por corte, con push a main.
    - un traspaso con `transferTo`;
    - un extracto que se solapa con otro ya importado.
 3. Prioridad: orden estable y conservación de los campos que iOS no conoce (`linkedAssignmentId`, `proyectoTareaId`, otros).
-4. La IPA del run final: estructura, ausencia de firma y hashes, igual que `14-AUDITORIA-IPA-RUN57.md`.
+4. Viajes y Empleo frente a la web. Puntos a revisar:
+   - que `guardarViaje` no pise reservas ni listas;
+   - que el itinerario sin día salga al final;
+   - que una cita de tipo turno se pueda guardar sin título;
+   - que `horarioLaboral` sustituya el horario entero, como `guardarHorarioLaboral`.
+5. La IPA del run final: estructura, ausencia de firma y hashes, igual que `14-AUDITORIA-IPA-RUN57.md`.
 
 ## OpenCode
 
@@ -105,6 +145,16 @@ El 10-11, `opencode run` falla en este PC con «Database is not empty and has no
 Antes de volver a delegar hay que revisar la base de datos de OpenCode del usuario: tiene una sesión rota.
 
 ## Probar en el iPhone
+
+- **Viajes** (desde «más.»):
+  - crear un viaje con fechas;
+  - añadir dos cosas al itinerario el mismo día a horas distintas: salen ordenadas;
+  - añadir un lugar y marcarlo como visitado;
+  - comprobar que el viaje se ve igual en la web.
+- **Empleo:**
+  - poner el horario;
+  - crear una cita de tipo turno sin título;
+  - apagar «en el calendario principal.» y comprobar que la cita deja de salir en el calendario.
 
 - **Apuntar.** Al escribir estas frases tiene que salir el aviso en rojo y no guardarse nada:
   - «dentista el 31 de febrero»
