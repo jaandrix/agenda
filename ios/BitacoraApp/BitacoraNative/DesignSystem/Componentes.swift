@@ -190,6 +190,9 @@ struct BarraBitacora: View {
     @Environment(\.dynamicTypeSize) private var letra
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @Namespace private var placa
+    // Pulsación larga de «menú.» (doc 03): aro de progreso, escala 0,97 y un toque suave a los 170 ms si sigue apoyado.
+    @State private var presionando = false
+    @State private var toquesPresion = 0
 
     var body: some View {
         let mitad = pestanas.count / 2
@@ -229,6 +232,18 @@ struct BarraBitacora: View {
                                 .matchedGeometryEffect(id: "placa", in: placa)
                         }
                     }
+                    .overlay {
+                        if esMenu && largo != nil {
+                            Circle().trim(from: 0, to: presionando ? 1 : 0)
+                                .stroke(Paleta.acento, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                                .rotationEffect(.degrees(-90))
+                                .frame(width: 34, height: 34)
+                                .opacity(presionando ? 1 : 0)
+                                .animation(presionando ? .linear(duration: Self.duracionLongPress) : nil, value: presionando)
+                        }
+                    }
+                    .scaleEffect(esMenu && presionando ? 0.97 : 1)
+                    .animation(.easeOut(duration: 0.12), value: presionando)
                 if !letra.isAccessibilitySize {
                     Text(p.titulo + ".")
                         .font(Tipo.poppins(10.5, on ? .bold : .medium, estilo: .caption2))
@@ -239,7 +254,17 @@ struct BarraBitacora: View {
             .frame(maxWidth: .infinity, minHeight: Self.altoHuecoLateral, maxHeight: Self.altoHuecoLateral, alignment: .center)
             .contentShape(Rectangle())
             .onTapGesture { elegir(p.id) }
-            .onLongPressGesture(minimumDuration: Self.duracionLongPress) { largo?() }
+            .onLongPressGesture(minimumDuration: Self.duracionLongPress, maximumDistance: 12) { largo?() } onPressingChanged: { p in
+                guard largo != nil else { return }
+                presionando = p
+                if p {
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(170))
+                        if presionando { toquesPresion += 1 }
+                    }
+                }
+            }
+            .sensoryFeedback(.impact(weight: .light, intensity: 0.6), trigger: toquesPresion)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(p.titulo)
             .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
@@ -317,6 +342,8 @@ struct SelectorMasUsados: View {
     var picoCentroX: CGFloat? = nil
     let elegir: (String) -> Void
     let cerrar: () -> Void
+    @State private var visible = false
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -327,8 +354,13 @@ struct SelectorMasUsados: View {
                 if n > 0 { SeparadorMenu() }
                 Button { elegir(a.vista) } label: { FilaMenu(nombre: a.nombre, inicial: a.vista) }
                     .buttonStyle(.plain)
+                    // Las cinco filas entran con 18 ms de desfase, sin rebote.
+                    .opacity(visible ? 1 : 0)
+                    .offset(y: visible || sinMovimiento ? 0 : 6)
+                    .animation(sinMovimiento ? nil : .easeOut(duration: 0.18).delay(Double(n) * 0.018), value: visible)
             }
         }
+        .onAppear { visible = true }
         .padding(.bottom, FormaBocadillo.picoAlto + 4)
         .background {
             GeometryReader { g in

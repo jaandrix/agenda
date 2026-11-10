@@ -133,20 +133,22 @@ struct PrincipalView: View {
                         let centroX = rect?.midX ?? (g.size.width - 46)
                         let x = min(max(10 + ancho / 2, centroX), g.size.width - 10 - ancho / 2)
                         let abajo = g.size.height - (rect?.minY ?? (g.size.height - BarraBitacora.altoHuecoLateral)) + 8
-                        SelectorMasUsados(apartados: lista, picoCentroX: centroX - (x - ancho / 2)) { v in
+                        let pico = centroX - (x - ancho / 2)
+                        SelectorMasUsados(apartados: lista, picoCentroX: pico) { v in
                             masUsados = nil
                             c.abrirApartado(v)
                         } cerrar: { masUsados = nil }
                         .frame(width: ancho)
                         .offset(x: x - g.size.width / 2)
                         .padding(.bottom, abajo)
-                        .transition(sinMovimiento ? .opacity : .opacity.combined(with: .scale(scale: 0.96, anchor: .bottom)))
+                        // Nace del botón: escala 0,78 → 1 anclada al pico que apunta a «menú.».
+                        .transition(sinMovimiento ? .opacity : .opacity.combined(with: .scale(scale: 0.78, anchor: UnitPoint(x: min(max(pico / ancho, 0), 1), y: 1))))
                     }
                 }
             }
         }
         .animation(sinMovimiento ? nil : .spring(response: 0.28, dampingFraction: 0.82), value: masUsados?.map(\.vista).joined())
-        .sensoryFeedback(.impact(weight: .light), trigger: masUsados != nil) { _, abierto in abierto }
+        .sensoryFeedback(.success, trigger: masUsados != nil) { _, abierto in abierto }
         .onChange(of: c.modal) { _, m in if m != nil { masUsados = nil } }
         .onChange(of: fase) { _, f in if f != .active { masUsados = nil } }
         .onChange(of: c.pestana) { masUsados = nil }
