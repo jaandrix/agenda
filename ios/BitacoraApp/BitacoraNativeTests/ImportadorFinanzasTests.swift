@@ -38,4 +38,38 @@ final class ImportadorFinanzasTests: XCTestCase {
         XCTAssertEqual(e.filas.map(\.tipo), ["expense", "income"])
         XCTAssertEqual(e.filas.map(\.importe), [Decimal(string: "2.40")!, Decimal(string: "50")!])
     }
+
+    // La clave es la de la web (dedupeKey): lo que la web ya importó no entra otra vez, y dos filas iguales son dos.
+    // El otro sentido (iPhone y luego web) lo prueba pruebas/importar-ios-web.mjs con el importador real.
+    func testMismaClaveQueLaWebEnLosDosSentidos() throws {
+        let csv = "Fecha;Concepto;Importe\n09/11/2026;Nómina;1.250,50\n10/11/2026;Mercado;-34,20\n10/11/2026;Mercado;-34,20\n11/11/2026;Café;-2,00\n"
+        let e = try ImportadorFinanzas.analizar(csv, nombre: "banco.csv")
+        let ops = ImportadorFinanzas.operaciones(e, cuenta: "bancos")
+        let cuenta = { (d: DocumentoBitacora) in try d.valor(de: "financePro")?["transactions"]?.lista ?? [] }
+
+        let vacio = try DocumentoBitacora(datos: Data(#"{"financePro":{"accounts":{},"transactions":[]}}"#.utf8))
+        let (una, _) = AplicarOperaciones.sobre(vacio, ops)
+        let (dos, _) = AplicarOperaciones.sobre(una, ops)
+        XCTAssertEqual(try cuenta(una).count, 4)
+        XCTAssertEqual(try cuenta(dos).count, 4)
+        let t = try XCTUnwrap(cuenta(una).first)
+        XCTAssertEqual(t["note"], .string("Nómina"))
+        XCTAssertNil(t["claveImport"])
+        XCTAssertNil(t["conceptoBanco"])
+        XCTAssertEqual(ClaveImportacion.claves(t), ["bancos|2026-11-09|1250.5|Nómina"])
+
+        // Como lo deja financeProEjecutarImport en la web (con el concepto cambiado a mano en uno: bankNote manda).
+        let web = try DocumentoBitacora(datos: Data(#"""
+        {"financePro":{"accounts":{},"transactions":[
+         {"id":"ptx_1","date":"2026-11-09","account":"bancos","type":"income","amount":1250.5,"note":"sueldo","bankNote":"Nómina","orden":0},
+         {"id":"ptx_2","date":"2026-11-10","account":"bancos","type":"expense","amount":34.2,"note":"Mercado","orden":1},
+         {"id":"ptx_3","date":"2026-11-10","account":"bancos","type":"expense","amount":34.2,"note":"Mercado","orden":2},
+         {"id":"ptx_4","date":"2026-11-11","account":"bancos","type":"expense","amount":2,"note":"Café","orden":3}]}}
+        """#.utf8))
+        XCTAssertEqual(try cuenta(AplicarOperaciones.sobre(web, ops).0).count, 4)
+        // Si en la web solo estaba uno de los dos mercados, entra el otro.
+        let uno = try DocumentoBitacora(datos: Data(#"{"financePro":{"accounts":{},"transactions":[{"id":"ptx_2","date":"2026-11-10","account":"bancos","type":"expense","amount":34.2,"note":"Mercado"}]}}"#.utf8))
+        let (sinUno, _) = AplicarOperaciones.sobre(uno, ops)
+        XCTAssertEqual(try cuenta(sinUno).filter { $0["note"] == .string("Mercado") }.count, 2)
+    }
 }

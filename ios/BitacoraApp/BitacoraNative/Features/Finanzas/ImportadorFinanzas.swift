@@ -87,12 +87,18 @@ enum ImportadorFinanzas {
         return ExtractoAnalizado(filas: filas, omitidas: omitidas, nombre: nombre)
     }
 
+    // La clave es la de la web (dedupeKey en js/finanzas-pro.js): cuenta|fecha|importe|concepto, con el importe como lo
+    // escribe JavaScript (12.5, 1250). Dos filas iguales en el mismo archivo son dos movimientos: `vez` dice cuál es.
+    // Así un extracto importado antes en la web no entra otra vez aquí, ni al revés.
     static func operaciones(_ extracto: ExtractoAnalizado, cuenta: String) -> [OperacionBitacora] {
-        extracto.filas.map { f in
-            let clave = f.claveBase + "_" + huella(cuenta)
-            return .importarMovimiento(id: "ptx_imp_" + huella(clave), claveImport: clave, tipo: f.tipo,
-                                       importe: NSDecimalNumber(decimal: f.importe).stringValue, cuenta: cuenta,
-                                       fecha: f.fecha, hora: f.hora, concepto: f.concepto)
+        var vistas: [String: Int] = [:]
+        return extracto.filas.map { f in
+            let importe = NSDecimalNumber(decimal: f.importe).stringValue
+            let clave = [cuenta, f.fecha, importe, f.concepto].joined(separator: "|")
+            let vez = vistas[clave, default: 0]
+            vistas[clave] = vez + 1
+            return .importarFila(id: "ptx_imp_" + huella(clave + "#" + String(vez)), clave: clave, vez: vez, tipo: f.tipo,
+                                 importe: importe, cuenta: cuenta, fecha: f.fecha, hora: f.hora, concepto: f.concepto)
         }
     }
 
@@ -174,5 +180,21 @@ enum ImportadorFinanzas {
         var h: UInt64 = 14_695_981_039_346_656_037
         for b in texto.utf8 { h ^= UInt64(b); h &*= 1_099_511_628_211 }
         return String(h, radix: 36)
+    }
+}
+
+// Las claves con las que la web reconoce un movimiento ya importado (financeProImportCSV, «existentes»):
+// cuenta|fecha|importe|concepto del banco (bankNote, o la nota), lo mismo desde la otra cuenta de un traspaso,
+// claveImport y claveImport2.
+enum ClaveImportacion {
+    static func claves(_ t: JSONValue) -> [String] {
+        guard let o = t.objeto, let fecha = o["date"]?.texto, let importe = Dinero.decimal(o["amount"]) else { return [] }
+        let nota = o["bankNote"]?.texto ?? o["note"]?.texto ?? ""
+        let cifra = NSDecimalNumber(decimal: importe).stringValue
+        var r: [String] = []
+        if let c = o["account"]?.texto { r.append([c, fecha, cifra, nota].joined(separator: "|")) }
+        if let c = o["transferTo"]?.texto, !c.isEmpty { r.append([c, fecha, cifra, nota].joined(separator: "|")) }
+        for k in ["claveImport", "claveImport2"] { if let c = o[k]?.texto, !c.isEmpty { r.append(c) } }
+        return r
     }
 }

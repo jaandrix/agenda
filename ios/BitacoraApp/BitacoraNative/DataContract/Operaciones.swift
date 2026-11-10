@@ -23,6 +23,8 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     case crearMovimiento(id: String, tipo: String, importe: String, cuenta: String, categoria: String?, fecha: String, hora: String, concepto: String)
     // Fila de un extracto bancario. `claveImport` es estable para que volver a importar el mismo archivo no duplique.
     case importarMovimiento(id: String, claveImport: String, tipo: String, importe: String, cuenta: String, fecha: String, hora: String, concepto: String)
+    // Desde la 0.17, con la clave de la web (ImportadorFinanzas.operaciones). importarMovimiento queda para lo que ya estaba en cola.
+    case importarFila(id: String, clave: String, vez: Int, tipo: String, importe: String, cuenta: String, fecha: String, hora: String, concepto: String)
     // CONTRATO-ESTUDIOS-PROYECTOS.md. Solo trabajos: en los exámenes la web no usa `done`.
     case marcarTrabajo(asignaturaId: String, id: String, hecho: Bool, momentoMs: Int64)
     // lista: "exams" o "assignments".
@@ -89,7 +91,7 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .parcharEvento: return ["entries"]
         case .guardarEvento, .guardarOcio: return ["entries"]
         case .borrarEntrada: return ["entries", "cultureLists"]
-        case .crearMovimiento, .importarMovimiento, .editarMovimiento, .borrarMovimiento, .crearTraspaso: return ["financePro"]
+        case .crearMovimiento, .importarMovimiento, .importarFila, .editarMovimiento, .borrarMovimiento, .crearTraspaso: return ["financePro"]
         case .editarItemEstudio: return ["studies", "entries", "dayPlanner"]
         case .crearProyecto, .cambiarProyecto: return ["entries"]
         case .borrarItemEstudio: return ["studies", "entries", "dayPlanner"]
@@ -732,6 +734,23 @@ enum AplicarOperaciones {
             lista.append(.object(t))
             pro["transactions"] = .array(lista)
             r["financePro"] = .some(.object(pro))
+        case let .importarFila(id, clave, vez, tipo, importe, cuenta, fecha, hora, concepto):
+            guard var pro = (valores["financePro"] ?? nil)?.objeto, let d = Dinero.decimal(texto: importe), d > 0,
+                  tipo == "income" || tipo == "expense" else { break }
+            var lista = pro["transactions"]?.lista ?? []
+            if lista.contains(where: { $0["id"]?.comoId == id }) { break }
+            // Como la web: se cuentan las veces que ya está (por cuenta, fecha, importe y concepto del banco, o por
+            // claveImport), y la fila entra solo si es una vez más de las que hay.
+            let ya = lista.reduce(0) { n, t in n + ClaveImportacion.claves(t).filter { $0 == clave }.count }
+            if ya > vez { break }
+            var t: [String: JSONValue] = ["id": .string(id), "date": .string(fecha), "account": .string(cuenta), "type": .string(tipo),
+                                          "amount": .number(NSDecimalNumber(decimal: Dinero.redondeado(d)).stringValue),
+                                          "manual": .bool(false), "needsReview": .bool(true)]
+            if !hora.isEmpty { t["hora"] = .string(hora) }
+            if !concepto.isEmpty { t["note"] = .string(concepto) }
+            lista.append(.object(t))
+            pro["transactions"] = .array(lista)
+            r["financePro"] = .some(.object(pro))
         case let .marcarTrabajo(aid, id, hecho, momento):
             guard var st = (valores["studies"] ?? nil)?.objeto, var asig = st["subjects"]?.lista,
                   let ij = buscarItem(asig, aid, "assignments", id), var s = asig[ij.0].objeto,
@@ -1026,7 +1045,7 @@ enum AplicarOperaciones {
             _ = quitar(sitio, de: &p)
             return .object(p)
 
-        case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .importarMovimiento, .marcarRutina, .crearNota, .parcharEvento,
+        case .marcarRecurrente, .guardarEvento, .borrarEntrada, .crearMovimiento, .importarMovimiento, .importarFila, .marcarRutina, .crearNota, .parcharEvento,
              .marcarTrabajo, .crearEntrega, .estadoTareaProyecto, .proyectoAHoy, .ponerCiudadTiempo, .transporteFavorita, .transporteLinea, .transporteElegirInicio, .ponerPerfil, .ponerApartado,
              .editarMovimiento, .borrarMovimiento, .crearTraspaso, .editarItemEstudio, .borrarItemEstudio, .crearProyecto, .cambiarProyecto,
              .anadirEnLista, .anadirCompra, .guardarListaCompra, .borrarListaCompra, .elegirListaCompra, .guardarItemCompra,
