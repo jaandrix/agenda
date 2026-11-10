@@ -148,9 +148,29 @@ Un commit y una compilación de Actions por corte, con push a main.
 - Empleo:
   - fichas de empleo, vida laboral, CV e importar el horario con IA (la vista nativa enlaza a la web).
 
-**Visual**
-- Barra, iconos (catálogo común en `Iconos.swift`) y carrusel semanal con encaje físico.
-- Glass: tema opcional tras un interruptor, apagado por defecto. Antes hay que corregir dos fallos del prototipo: en Finanzas marca «calendario.» como pestaña activa, y un logo de suscripción sale como un cuadro vacío. Tampoco puede llevar velos con desenfoque en filas ni iconos.
+**Visual (hecho el 10-11, sin probar en el iPhone)**
+- Barra (432c927): más baja (hueco de 54 pt, botón central de 56) y la pestaña activa la marca una placa del tinte del acento que se desliza (muelle de 220 ms; sin animación con movimiento reducido).
+- Iconos (8cad027 y 5881dfe): catálogo común `Icono(id:)` en `Iconos.swift`, lienzo de 24, trazo de 1,9 redondeado y un solo detalle lleno que toma el acento. Los cinco principales conservan el squircle de 4605e3e (doc 11); ninguno usa libro. El menú y «más usados» ya no enseñan la letra inicial.
+- Carrusel (28ed20e): el muelle arranca con la velocidad del dedo y la semana se confirma al asentarse; toque de selección al cambiar.
+- «Más usados» (e55a9d2): aro de progreso de 0,36 s y escala 0,97 al apoyar, toque suave a los 170 ms, el bocadillo nace del pico (0,78 → 1) y las filas entran escalonadas. La referencia de Pinterest no se puede abrir sin sesión: seguí la descripción del doc 03.
+- Glass (7294a91): interruptor «glass (prueba).» en ajustes, solo en este iPhone y apagado por defecto; no es un tema más. La barra es el único material y el contenido pasa por debajo; fondo con dos manchas del tema. Con «reducir transparencia», opaco.
+- Fallos del prototipo, corregidos en `prototipo-glass/index.html`: en Finanzas la cuarta pestaña es «finanzas.» y es la activa; el cuadro vacío era el carácter privado U+F8FF (logo de Apple), que solo existe en fuentes de Apple. La app no usa ese carácter.
+
+- Teclado (2c73d5d^): la barra se oculta mientras el teclado está abierto, en todas las pantallas. «Más usados» abre y cierra hacia el botón con un muelle de unos 270 ms; con movimiento reducido, solo fundido.
+- Prioridades (2c73d5d): alta #e5484d, media #d98a0b, baja #4c8df6 en temas oscuros; en claros, #C8363B, #9A5B00 y #2463C9 para llegar a 4,5:1. Ya hecha, al 60 %.
+
+- Volver atrás (ver el commit «las pantallas del menú vuelven a tener volver»): Despensa, Documentos, Empleo, Enlaces, Envíos, Objetivos, Ocio y Viajes ocultaban la barra de navegación, y con ella el botón de volver y el gesto del borde. Ahora toda pantalla que se abre desde «menú.» lleva la barra del sistema, transparente y en línea, con «menú» en el botón.
+
+**P0 de la siguiente versión: Finanzas igual que la PWA**
+- Contenido idéntico al de la PWA del móvil: mismas pestañas, bloques, orden y cifras (`renderMobileFinanzas` / `mobileFinPestana` en nucleo.js y `renderPresupuestoMovil`).
+- Única diferencia: los iconos de las suscripciones como en el escritorio, con el logo guardado en la entrada como data URL.
+- No entró en la 0.17 por cupo.
+
+**Visual (pendiente)**
+- Apuntar como en el escritorio (`js/barra.js`): un solo campo, vista previa en directo y «editar.» por cosa, sin la rejilla de iconos de tipos. El motor y los validadores no cambian. No entró por cupo.
+- «Más usados»: arrastrar el dedo desde «menú.» hasta una fila para elegirla sin soltar.
+- Glass: las pantallas pintan su propio fondo, así que las manchas solo se ven tras la barra. Extenderlo por componentes (hojas, cabeceras) si Alejandro lo aprueba.
+- Revisar los iconos a 24/30/32 pt y en todos los temas, claros y oscuros.
 
 **Web (en espera)**
 - Llevar los validadores de Apuntar a `js/apuntar.js`. Están en `apuntar-puente.js` y se pueden copiar tal cual. Después, quitarlos del puente para no validar dos veces.
@@ -175,13 +195,16 @@ He leído la corrección vinculante del 10-11. Cómo queda cada requisito al cer
 | Prioridad alta/media/baja | hecho | da20162 |
 | Mover a mañana, pasado o fecha | hecho | e300543 (editor) y el menú de la fila; desde el menú falta una fecha concreta |
 | Apuntar: validadores P0 | hecho (solo iOS) | a4bc0c0; pendiente llevarlos a la web |
-| Apuntar: barra reactiva sin parrilla de iconos | pendiente | Contrastar antes con la PWA real |
+| Apuntar: barra reactiva sin parrilla de iconos | pendiente | Pedido otra vez por Alejandro el 10-11; siguiente tarea |
 | Clave de importación PWA/iOS | hecho | 2797972 |
-| Iconos de apartados y barra | pendiente | Fase visual |
-| Modal de los cinco más usados desde Menú (tercera referencia de Pinterest) | pendiente | Fase visual; ver la referencia antes de diseñar |
+| Iconos de apartados y barra | hecho, sin probar | 8cad027 y 5881dfe; falta revisarlos en el iPhone en todos los temas |
+| Modal de los cinco más usados desde Menú (tercera referencia de Pinterest) | parcial | e55a9d2; la referencia no abre sin sesión. Falta elegir arrastrando |
 | Enlaces con navegador dentro de la app | parcial | 6adcb96 abre en Safari; falta `SFSafariViewController` |
 | Avisos de cambios de Claude/ChatGPT | pendiente | P0: bandeja |
 | Paridad por apartado como pruebas ejecutables | parcial | Hay pruebas por apartado nuevo; falta el resto |
+| Barra más baja con placa activa | hecho, sin probar | 432c927 |
+| Carrusel semanal con encaje físico | hecho, sin probar | 28ed20e |
+| Glass opcional, apagado por defecto | hecho, sin probar | 7294a91; fallos del prototipo corregidos |
 | Objetivos, Enlaces, Envíos y Documentos | hecho | 64bbe2d, 6adcb96, c74fbfa y 90f60f4; comprobados juntos con 12c7b27 |
 
 ## Sideloadly
