@@ -88,7 +88,7 @@ Un commit y una compilación de Actions por corte, con push a main.
 - Por categorías y favoritos (5 como mucho).
 - Buscar; crear (arriba, con https:// si falta), editar, duplicar, copiar la dirección y eliminar.
 - Categorías con color; al borrar una, sus enlaces pasan a otra o se quedan sin categoría.
-- Se abren en Safari. «pegar.» crea el enlace con lo copiado; la hoja de compartir del sistema necesita una extensión y SideStore no la instala.
+- Se abren en Safari. «pegar.» crea el enlace con lo copiado; la hoja de compartir del sistema necesita una extensión, que de momento no se usa (ver «Sideloadly»).
 - Operaciones sobre `links` y `linkCategories`.
 
 **Envíos:**
@@ -156,6 +156,43 @@ Un commit y una compilación de Actions por corte, con push a main.
 
 **Comprobación pendiente**
 - Los apartados Objetivos, Enlaces, Envíos y Documentos se subieron juntos (90f60f4) y se comprueban en una sola compilación. Me quedé sin consultas a la API pública de GitHub y no podía seguir cada compilación por separado.
+
+## Requisitos (15-CORRECCION-Y-TRAZABILIDAD-DE-REQUISITOS.md)
+
+He leído la corrección vinculante del 10-11. Cómo queda cada requisito al cerrar este ciclo:
+
+| Requisito | Estado | Dónde, o qué falta |
+|---|---|---|
+| Viajes, terminado antes de Asfalto | hecho | cf34eb2; reservas, listas, documentos, mapa y Destino siguen en la web |
+| Círculos de Asfalto en Inicio/Hoy y Plan | parcial | fbc5549: un solo token (`Paleta.aro`) y 3:1. Faltan capturas en el iPhone real |
+| Círculos en Rutinas y Pendientes sin día | parcial | Usan la misma `FilaAgenda` y el mismo token. Faltan capturas |
+| Estados distinguibles por forma o trazo | parcial | Pendiente: aro vacío. Completada: relleno y check. Prioridad: texto («alta.»), no solo color. Faltan seleccionada y deshabilitada |
+| Asfalto claro/oscuro, contraste aumentado, Dynamic Type, Reduce Motion | parcial | Con contraste aumentado el aro usa la tinta secundaria; el sello respeta Reduce Motion. Sin comprobar en el dispositivo |
+| Cambiar de tema no altera prioridad ni estado | hecho | El color solo se calcula al pintar; los datos no se tocan |
+| Prioridad alta/media/baja | hecho | da20162 |
+| Mover a mañana, pasado o fecha | hecho | e300543 (editor) y el menú de la fila; desde el menú falta una fecha concreta |
+| Apuntar: validadores P0 | hecho (solo iOS) | a4bc0c0; pendiente llevarlos a la web |
+| Apuntar: barra reactiva sin parrilla de iconos | pendiente | Contrastar antes con la PWA real |
+| Clave de importación PWA/iOS | hecho | 2797972 |
+| Iconos de apartados y barra | pendiente | Fase visual |
+| Modal de los cinco más usados desde Menú (tercera referencia de Pinterest) | pendiente | Fase visual; ver la referencia antes de diseñar |
+| Enlaces con navegador dentro de la app | parcial | 6adcb96 abre en Safari; falta `SFSafariViewController` |
+| Avisos de cambios de Claude/ChatGPT | pendiente | P0: bandeja |
+| Paridad por apartado como pruebas ejecutables | parcial | Hay pruebas por apartado nuevo; falta el resto |
+| Objetivos, Enlaces, Envíos y Documentos | hecho | 64bbe2d, 6adcb96, c74fbfa y 90f60f4, comprobados en una sola compilación |
+
+## Sideloadly
+
+Alejandro instala con **Sideloadly**, no con SideStore.
+- Con cuenta gratuita, la firma dura 7 días.
+- Se renueva desde el ordenador o con Sideloadly Daemon. Si el código no cambia, la misma IPA se vuelve a firmar.
+- Se instala encima con el mismo Apple ID y el mismo bundle ID; no hay que borrar la app antes.
+
+¿Sigue haciendo falta la regla de «sin extensiones ni App Group»? Mi conclusión, sin cambiarla en este ciclo:
+- Sideloadly firma extensiones, así que la causa original (SideStore no las instalaba) ya no vale.
+- Con cuenta gratuita, cada extensión gasta un App ID de los 10 por semana.
+- App Group necesita una capacidad que un equipo personal quizá no conceda.
+- Antes de quitar la regla, hay que probar una IPA de ensayo con un widget mínimo y un App Group, instalada con Sideloadly en el iPhone de Alejandro.
 
 ## Qué debe auditar GPT
 

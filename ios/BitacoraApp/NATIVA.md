@@ -56,8 +56,8 @@ la sincronización pasa a «más.».
 identidad de la envoltura (`com.bitacora.app`, «Bitácora», `bitacora://`) para sustituirla; la envoltura web solo se
 compila a mano (`ios-build.yml`). Atajo de Siri «Apuntar en Bitácora» (App Intents, sin extensión), insignia con las
 tareas de hoy sin hacer (con los avisos activados) y compartir el día desde «plan.». Sustituir la envoltura: abrirla
-antes con red para que suba lo pendiente; los datos están en la nube. Widgets: siguen fuera (SideStore no instala
-extensiones). WKWebView ya no se usa: lo no migrado va por SFSafariViewController.
+antes con red para que suba lo pendiente; los datos están en la nube. Widgets: siguen fuera (sin extensiones de
+momento: ver la regla más abajo). WKWebView ya no se usa: lo no migrado va por SFSafariViewController.
 
 **0.8.0 (08-11-2026): auditoría de la 0.7.0.** Escritura condicionada (`merge_bitacora_si`, hay que ejecutar
 `supabase/sql/merge_bitacora_si.sql`; sin ella la app usa la de siempre y «estado.» lo dice): el servidor solo escribe
@@ -229,7 +229,9 @@ Pendiente del plan: capturas a 375 y 430, hoja de edición, Calendario, Finanzas
   si viaja a otro huso, decidir cuál manda antes de escribir en el planificador.
 - **Esquema `bitacoradev://`** mientras convivan las dos apps (si las dos registran `bitacora://`, iOS elige una al
   azar). El analizador acepta ambos; al sustituir la envoltura se registra `bitacora://`.
-- **Sin extensiones ni App Group**: SideStore con cuenta gratuita no las instala. El workflow falla si aparece `PlugIns/`.
+- **Sin extensiones ni App Group**: el workflow falla si aparece `PlugIns/`. La regla venía de SideStore; Alejandro instala con
+  Sideloadly (10-11-2026), que sí firma extensiones, pero con cuenta gratuita cada una gasta un App ID (10 por semana) y App Group
+  pide una capacidad que no está claro que dé un equipo personal. Se mantiene hasta probarlo con una IPA de ensayo (PLAN-0.17.md).
 - **Navegación:** `TabView` del sistema con una `NavigationStack` por pestaña; una sola hoja a la vez (`Modal`). Sin
   transiciones propias entre pestañas.
 
@@ -239,8 +241,9 @@ Pendiente del plan: capturas a 375 y 430, hoja de edición, Calendario, Finanzas
 - Comprobar `updated_at` antes de bajar la fila no es fiable: no consta que la función del servidor lo actualice
   (su definición no está en el repo). Hace falta una revisión del servidor para ahorrar descargas.
 - Símbolos de Release sin recortar a propósito mientras es beta (ayudan a diagnosticar); recortarlos antes de TestFlight.
-- Con Apple ID gratuito, SideStore renueva la firma cada 7 días y limita a 3 apps activas (SideStore cuenta como una):
-  SideStore + envoltura + nativa llenan el cupo.
+- Se instala con **Sideloadly**. Con Apple ID gratuito la firma dura 7 días y se renueva desde el ordenador o con Sideloadly Daemon
+  (mismo Wi-Fi o USB); la misma IPA se puede volver a firmar si el código no cambia. Instalar encima con el mismo Apple ID y bundle
+  ID conserva los datos: no borrar la app antes. Cupo de 3 apps activas por cuenta gratuita.
 - No se ha medido en el dispositivo (arranque < 700 ms con copia, guía 12.4).
 
 ## Pruebas

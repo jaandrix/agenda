@@ -3,7 +3,7 @@ import UIKit
 
 // Enlaces (renderLinks y compañía en js/enlaces-proyectos.js): `links` por categorías de `linkCategories`, favoritos (5 como
 // mucho), buscar, crear, editar, duplicar, copiar y eliminar. Se abren en Safari. Guardar desde la hoja de compartir del
-// sistema necesita una extensión, que SideStore no instala: aquí se pega la dirección del portapapeles.
+// sistema necesita una extensión, que de momento no se usa (PLAN-0.17.md): aquí se pega la dirección del portapapeles.
 
 struct Enlace: Sendable, Identifiable, Equatable { let id, titulo, url, descripcion: String; let categoriaId: String?; let favorito: Bool }
 struct CategoriaEnlace: Sendable, Identifiable, Equatable { let id, nombre, color: String }

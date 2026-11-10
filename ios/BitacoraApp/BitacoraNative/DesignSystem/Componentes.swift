@@ -12,6 +12,7 @@ struct BitacoraCheck: View {
     var colorMarca: Color = Paleta.sobreAcento
     let accion: () -> Void
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
+    @Environment(\.colorSchemeContrast) private var contraste
     @State private var sello = false
 
     var body: some View {
@@ -23,7 +24,8 @@ struct BitacoraCheck: View {
             accion()
         } label: {
             ZStack {
-                Circle().strokeBorder(hecho || acento ? colorActivo : colorBorde, lineWidth: 2)
+                // Con «aumentar contraste», el aro pendiente pasa a la tinta secundaria.
+                Circle().strokeBorder(hecho || acento ? colorActivo : (contraste == .increased ? Paleta.textoSecundario : colorBorde), lineWidth: 2)
                 if hecho {
                     Circle().fill(colorActivo)
                     Image(systemName: "checkmark").font(.system(size: 13, weight: .heavy)).foregroundStyle(colorMarca)
