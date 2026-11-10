@@ -95,6 +95,9 @@ enum Paleta {
     // --border y --border-strong son la tinta con transparencia, no un gris propio.
     static let borde = Color.delTema { UIColor(rgb: $0.texto, alfa: $0.oscuro ? 0.08 : 0.07) }
     static let bordeFuerte = Color.delTema { UIColor(rgb: $0.texto, alfa: 0.16) }
+    // El aro de marcar (.m-check, --border-strong en la web). Con la raya separadora no se veía en asfalto: un control
+    // necesita 3:1 con el fondo, así que la tinta va más fuerte que cualquier borde.
+    static let aro = Color.delTema { UIColor(rgb: $0.texto, alfa: $0.oscuro ? 0.42 : 0.36) }
     // .m-ahora-bloque: el acento al 7 % sobre el fondo y un filo del acento al 16 %.
     static let tinteAcento = Color.delTema { UIColor(rgb: $0.acento, alfa: $0.oscuro ? 0.12 : 0.08) }
     static let filoAcento = Color.delTema { UIColor(rgb: $0.acento, alfa: 0.16) }

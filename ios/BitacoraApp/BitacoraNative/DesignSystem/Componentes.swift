@@ -8,7 +8,7 @@ struct BitacoraCheck: View {
     let hecho: Bool
     var acento = false
     var colorActivo: Color = Paleta.acento
-    var colorBorde: Color = Paleta.bordeFuerte
+    var colorBorde: Color = Paleta.aro
     var colorMarca: Color = Paleta.sobreAcento
     let accion: () -> Void
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
@@ -109,6 +109,7 @@ struct FilaAgenda: View {
     var colorAcento: Color = Paleta.acento
     var colorFilo: Color = Paleta.borde
     var colorSobreAcento: Color = Paleta.sobreAcento
+    var colorAro: Color = Paleta.aro
     // «alta», «media» o «baja»: delante del nombre y en su color, como en la web (prioEtiqueta).
     var prioridad: String? = nil
     let marcar: () -> Void
@@ -122,7 +123,7 @@ struct FilaAgenda: View {
                     .foregroundStyle(acento && !hecho ? colorAcento : colorSuave)
                     .frame(width: Tipo.tamano(46), alignment: .leading)
             }
-            BitacoraCheck(hecho: hecho, acento: acento, colorActivo: colorAcento, colorBorde: colorFilo, colorMarca: colorSobreAcento, accion: marcar)
+            BitacoraCheck(hecho: hecho, acento: acento, colorActivo: colorAcento, colorBorde: colorAro, colorMarca: colorSobreAcento, accion: marcar)
             Button { (abrir ?? marcar)() } label: {
                 VStack(alignment: .leading, spacing: 2) {
                     (prioridadTexto + Text(titulo))

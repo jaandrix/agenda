@@ -32,6 +32,7 @@ Un commit y una compilación de Actions por corte, con push a main.
 | fix | 229ae12 | Orden de argumentos en `PlanView`; con él, el run 61 compila los cortes 1 a 3b y pasa las pruebas. |
 | Viajes | cf34eb2 | Apartado nativo de Viajes (run 63 en verde). Ver el detalle debajo de la tabla. |
 | Empleo | 11d70f9 | Apartado nativo de Empleo con la agenda laboral. Ver el detalle debajo de la tabla. |
+| P1 visual | (este) | Los círculos de marcar no se veían en asfalto. Ver el detalle debajo de la tabla. |
 
 **Corte 1, validadores de Apuntar:**
 - Bloquea fechas que no existen («31 de febrero», «13/13», «el 32», «el 31» en un mes de 30 días) y rangos al revés.
@@ -53,6 +54,11 @@ Un commit y una compilación de Actions por corte, con push a main.
 - Lo que no tiene hora va primero y por prioridad, igual que `PLANNER_PRIORIDAD_ORDEN`. «Pendientes sin día» también se ordena por prioridad.
 - Se cambia en el editor y en el menú de la tarea.
 - `parcharTarea` quita la clave si la tarea se queda sin prioridad.
+
+**P1 visual, círculos de marcar en asfalto:**
+- El aro usaba el color de la raya separadora: tinta al 8 %.
+- Ahora usa el token `Paleta.aro`, como `.m-check` con `--border-strong` en la web, pero con más tinta (42 % en oscuro y 36 % en claro) para llegar a 3:1.
+- Vale para plan, pendientes sin día, rutinas, inicio y despensa.
 
 **Viajes:**
 - Lista de próximos (y en curso) y completados.
