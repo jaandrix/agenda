@@ -1,6 +1,10 @@
 import SwiftUI
 
-// Crear, editar, borrar y traspasar un movimiento (modales del coordinador: .movimiento y .editarMovimiento).
+// El editor de movimientos de la web (openFinanceProTransactionModal / saveFinanceProTransaction), con su mismo
+// guardado en el motor: tipo, fecha, importe, cuentas, categoría (y a qué inversión), las marcas de viaje y de
+// ahorro, y la nota. Al editar conserva de dónde vino (banco, cargo automático, pendiente...) y guarda aparte el
+// concepto del banco, para que la próxima importación lo reconozca. Guardar una categoría pone la misma a los
+// parecidos (financeProAutoCategorizar). Lo abren el coordinador (.movimiento / .editarMovimiento) y Apuntar.
 struct EditorMovimientoView: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.dismiss) private var cerrar
@@ -8,149 +12,158 @@ struct EditorMovimientoView: View {
     let tipoInicial: String
     var existente: Movimiento?
 
-    @State private var tipo = "expense"
-    @State private var destino = "efectivo"
-    @State private var confirmarBorrado = false
-    @State private var importe = ""
-    @State private var concepto = ""
-    @State private var cuenta = "bancos"
-    @State private var categoria: String?
+    struct Opcion: Codable, Identifiable, Equatable { let id, nombre: String; var tipo: String? }
+    struct Borrador: Codable, Equatable {
+        var id: String?
+        var existe: Bool
+        var tipo, fecha, importe, cuenta, destino, categoria, nota, viajeId, inversion, hora, banco: String
+        var viaje, ahorro, ajuste, categoriaAuto, pendiente: Bool
+        var cuentas, categorias, viajes, inversiones: [Opcion]
+    }
+
+    @State private var d: Borrador?
     @State private var fecha = Date()
-    @State private var cuentasEd: [CuentaSaldo] = []
-    @State private var categoriasEd: [CategoriaFin] = []
-    @State private var guardando = false
     @State private var error: String?
+    @State private var guardando = false
+    @State private var confirmarBorrado = false
     @FocusState private var enfocado: Bool
+
+    private static let iso: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"; f.timeZone = .current; return f
+    }()
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    Picker("tipo.", selection: $tipo) {
-                        Text("gasto.").tag("expense")
-                        Text("ingreso.").tag("income")
-                        Text("traspaso.").tag("transfer")
-                    }
-                    .pickerStyle(.segmented)
-                    .disabled(existente != nil)
-                    TextField("importe.", text: $importe).keyboardType(.decimalPad).focused($enfocado)
-                    TextField("concepto.", text: $concepto)
-                }
-                .listRowBackground(Paleta.superficie)
-                Section {
-                    Picker(tipo == "transfer" ? "desde." : "cuenta.", selection: $cuenta) {
-                        ForEach(cuentasEd) { Text($0.nombre.lowercased() + ".").tag($0.id) }
-                    }
-                    if tipo == "transfer" {
-                        Picker("hacia.", selection: $destino) {
-                            ForEach(cuentasEd) { Text($0.nombre.lowercased() + ".").tag($0.id) }
-                        }
-                    } else {
-                        Picker("categoría.", selection: $categoria) {
-                            Text("sin categoría.").tag(String?.none)
-                            ForEach((categoriasEd).filter { $0.tipo == nil || $0.tipo == tipo }) { Text($0.nombre.lowercased()).tag(Optional($0.id)) }
-                        }
-                    }
-                    DatePicker("día.", selection: $fecha, displayedComponents: .date).environment(\.locale, Locale(identifier: "es_ES"))
-                } footer: {
-                    if let error { Text(error).foregroundStyle(Paleta.error) }
-                }
-                .listRowBackground(Paleta.superficie)
-                if existente != nil {
-                    Section {
-                        Button("borrar movimiento.", role: .destructive) { confirmarBorrado = true }
-                    }
-                    .listRowBackground(Paleta.superficie)
-                }
+            Group {
+                if d != nil { formulario } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
             }
-            .confirmationDialog("¿borrar este movimiento?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
-                Button("borrar.", role: .destructive) { Task { await borrar() } }
-                Button("cancelar.", role: .cancel) {}
-            }
-            .font(Tipo.cuerpo)
-            .scrollContentBackground(.hidden)
             .background(Paleta.fondo)
-            .navigationTitle(existente == nil ? "nuevo movimiento." : "movimiento.")
+            .navigationTitle(existente == nil ? "nuevo movimiento." : "editar movimiento.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("guardar.") { Task { await guardar() } }.disabled(guardando || valor == nil)
-                }
+                ToolbarItem(placement: .confirmationAction) { Button("guardar.") { Task { await guardar() } }.disabled(guardando || d == nil) }
             }
-            .onAppear {
-                if let m = existente {
-                    tipo = m.tipo
-                    importe = NSDecimalNumber(decimal: m.importe).stringValue.replacingOccurrences(of: ".", with: ",")
-                    concepto = m.concepto
-                    cuenta = m.cuenta
-                    destino = m.destino.isEmpty ? destino : m.destino
-                    categoria = m.categoriaId.isEmpty ? nil : m.categoriaId
-                    if let d = LocalDay(iso: m.fecha) {
-                        var cal = Calendar(identifier: .gregorian)
-                        cal.timeZone = CalendarioBitacora.madrid.zona
-                        fecha = cal.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12)) ?? fecha
-                    }
-                } else {
-                    tipo = tipoInicial == "income" ? "income" : "expense"
-                    enfocado = true
-                }
+            .confirmationDialog("¿Eliminar este movimiento?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
+                Button("eliminar.", role: .destructive) { Task { await borrar() } }
+                Button("cancelar.", role: .cancel) {}
             }
             .task {
-                let doc = await c.documentoVisible()
-                // Solo las cuentas y las categorías: leer Finanzas entera aquí tardaba con miles de movimientos.
-                let (cs, cats) = await Task.detached { () -> ([CuentaSaldo], [CategoriaFin]) in
-                    let pro = ((try? doc?.valor(de: "financePro")) ?? nil)?.objeto ?? [:]
-                    let js = pro["accounts"]?.objeto ?? [:]
-                    var claves = LecturaFinanzas.cuentasFijas
-                    for k in js.keys.sorted() where !claves.contains(k) { claves.append(k) }
-                    let cs = claves.map { k in CuentaSaldo(id: k, nombre: js[k]?["name"]?.texto ?? (k.prefix(1).uppercased() + String(k.dropFirst())), saldo: 0, enSaldo: true) }
-                    return (cs, LecturaFinanzas.leerCategorias(pro))
-                }.value
-                cuentasEd = cs; categoriasEd = cats
+                guard d == nil, let m = try? await motorListo(c),
+                      var b = try? await m.llamar("movimientoDatos", [existente == nil ? "" : id, tipoInicial], como: Borrador.self) else { return }
+                b.id = id
+                d = b
+                fecha = Self.iso.date(from: b.fecha).map { Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: $0) ?? $0 } ?? Date()
+                if existente == nil { enfocado = true }
             }
         }
         .presentationDetents([.large])
     }
 
-    private func borrar() async {
-        do { try await c.encolar(.borrarMovimiento(id: id)); cerrar() } catch { self.error = "no se pudo borrar en este iPhone." }
+    private var b: Binding<Borrador> { Binding(get: { d! }, set: { d = $0 }) }
+
+    // financeProEsInversion: la categoría de inversión de gasto o de ingreso, o una que se llame «Inversiones».
+    private func esInversion(_ x: Borrador) -> Bool {
+        guard x.tipo == "expense" || x.tipo == "income" else { return false }
+        if x.categoria == "cat_inversion_gasto" || x.categoria == "cat_inversion_ing" { return true }
+        let n = x.categorias.first { $0.id == x.categoria }?.nombre ?? ""
+        return n.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "es_ES")).trimmingCharacters(in: .whitespaces) == "inversiones"
     }
 
-    private var valor: Decimal? { Dinero.decimal(texto: importe).flatMap { $0 > 0 ? $0 : nil } }
+    private var formulario: some View {
+        let x = d!
+        return Form {
+            Section {
+                Picker("tipo.", selection: b.tipo) {
+                    Text("gasto.").tag("expense"); Text("ingreso.").tag("income"); Text("transferencia.").tag("transfer")
+                }
+                .pickerStyle(.segmented)
+                DatePicker("fecha.", selection: $fecha, displayedComponents: .date).environment(\.locale, Locale(identifier: "es_ES"))
+                TextField("importe en euros. 0,00", text: b.importe).keyboardType(.decimalPad).focused($enfocado)
+            }
+            Section {
+                Picker(x.tipo == "transfer" ? "de qué cuenta." : "cuenta.", selection: b.cuenta) {
+                    ForEach(x.cuentas) { Text($0.nombre).tag($0.id) }
+                }
+                if x.tipo == "transfer" {
+                    Picker("a qué cuenta.", selection: b.destino) {
+                        Text("elige una cuenta.").tag("")
+                        ForEach(x.cuentas.filter { $0.id != x.cuenta }) { Text($0.nombre).tag($0.id) }
+                    }
+                } else if !x.ahorro && !x.ajuste {
+                    Picker("categoría.", selection: b.categoria) {
+                        Text("sin categoría.").tag("")
+                        ForEach(x.categorias.filter { $0.tipo == x.tipo }) { Text($0.nombre).tag($0.id) }
+                    }
+                    if x.categoriaAuto && !x.categoria.isEmpty {
+                        Text("Categoría puesta por bitácora: el 90 % o más de tus movimientos parecidos la llevan. Al guardar queda confirmada.")
+                            .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    }
+                    if esInversion(x) && x.inversiones.count > 1 {
+                        Picker("a qué inversión.", selection: b.inversion) {
+                            Text("sin elegir.").tag("")
+                            ForEach(x.inversiones) { Text($0.nombre).tag($0.id) }
+                        }
+                    }
+                }
+            }
+            if x.tipo != "transfer" {
+                Section {
+                    if x.tipo == "expense" {
+                        Toggle(isOn: b.viaje) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("gasto de viaje.")
+                                Text("Cuenta como gasto, pero no entra en los presupuestos ni en el ritmo del mes.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                            }
+                        }
+                        if x.viaje && !x.viajes.isEmpty {
+                            Picker("viaje.", selection: b.viajeId) {
+                                Text("sin un viaje concreto").tag("")
+                                ForEach(x.viajes) { Text($0.nombre).tag($0.id) }
+                            }
+                        }
+                    }
+                    Toggle(isOn: b.ahorro) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(x.tipo == "income" ? "viene de mis ahorros." : "va a mis ahorros.")
+                            Text(x.tipo == "income" ? "Sube el saldo, pero no cuenta como ingreso (lo que sacas de una hucha o un bolsillo)." : "Baja el saldo, pero no cuenta como gasto (lo que apartas a una hucha o un bolsillo).")
+                                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                        }
+                    }
+                }
+            }
+            Section {
+                TextField("nota, si quieres. Cena con amigos", text: b.nota)
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    if !x.banco.isEmpty && x.banco != x.nota { Text("en el banco: \(x.banco).") }
+                    if x.pendiente { Text("pendiente: el banco todavía no lo ha completado.") }
+                    if let error { Text(error).foregroundStyle(Paleta.error) }
+                }
+            }
+            if x.existe {
+                Section { Button("eliminar movimiento.", role: .destructive) { confirmarBorrado = true } }
+            }
+        }
+        .font(Tipo.cuerpo)
+        .scrollContentBackground(.hidden)
+    }
 
     private func guardar() async {
-        guard !guardando, let v = valor else { return }
-        guardando = true
-        defer { guardando = false }
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = CalendarioBitacora.madrid.zona
-        let d = cal.dateComponents([.year, .month, .day], from: fecha)
-        let ahora = cal.dateComponents([.hour, .minute], from: Date())
-        let dia = LocalDay(year: d.year!, month: d.month!, day: d.day!)!
-        let texto = String(concepto.trimmingCharacters(in: .whitespacesAndNewlines).prefix(300))
-        let cifra = NSDecimalNumber(decimal: v).stringValue
-        let horaTexto = String(format: "%02d:%02d", ahora.hour ?? 0, ahora.minute ?? 0)
+        guard var x = d, !guardando else { return }
+        guardando = true; defer { guardando = false }
+        x.fecha = Self.iso.string(from: fecha)
         do {
-            if existente != nil {
-                if tipo == "transfer", destino == cuenta { error = "elige dos cuentas distintas."; return }
-                try await c.encolar(.editarMovimiento(id: id, importe: cifra, concepto: texto, categoria: categoria, fecha: dia.iso, cuenta: cuenta,
-                                                      destino: tipo == "transfer" ? destino : nil))
-                cerrar()
-                return
-            }
-            if tipo == "transfer" {
-                guard destino != cuenta else { error = "elige dos cuentas distintas."; return }
-                try await c.encolar(.crearTraspaso(id: id, importe: cifra, desde: cuenta, hacia: destino, fecha: dia.iso, hora: horaTexto, concepto: texto))
-                cerrar()
-                return
-            }
-            try await c.encolar(.crearMovimiento(id: id, tipo: tipo, importe: NSDecimalNumber(decimal: v).stringValue, cuenta: cuenta,
-                                                 categoria: categoria, fecha: dia.iso, hora: horaTexto,
-                                                 concepto: texto))
-            cerrar()
-        } catch {
-            self.error = "no se pudo guardar en este iPhone."
-        }
+            let json = String(data: try JSONEncoder().encode(x), encoding: .utf8) ?? "{}"
+            let r = try await MotorFinanzas.compartido.crudo("guardarMovimiento", [json])
+            if await encolarCambiosFinanzas(r, c) { cerrar() } else { error = "no se pudo guardar en este iPhone." }
+        } catch { self.error = mensajeMotor(error, "no se pudo guardar.") }
+    }
+
+    private func borrar() async {
+        do {
+            let r = try await MotorFinanzas.compartido.crudo("borrarMovimiento", [id])
+            if await encolarCambiosFinanzas(r, c) { cerrar() } else { error = "no se pudo borrar en este iPhone." }
+        } catch { self.error = mensajeMotor(error, "no se pudo borrar.") }
     }
 }

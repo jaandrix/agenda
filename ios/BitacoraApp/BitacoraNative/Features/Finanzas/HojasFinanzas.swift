@@ -11,6 +11,21 @@ func motorListo(_ c: AppCoordinator) async throws -> MotorFinanzas {
     return m
 }
 
+// La respuesta del motor ({resultado, cambios}) a la cola, como una operación (commitFinanceChange). false si no se guardó.
+@MainActor
+func encolarCambiosFinanzas(_ datos: Data, _ c: AppCoordinator) async -> Bool {
+    guard let r = try? LectorJSON.valor(datos), let cambios = r["cambios"], cambios != .null else { return true }
+    let doc = await c.documentoVisible()
+    guard let op = CambioFinanzas.operacion(cambios, sobre: doc) else { return true }
+    do { try await c.encolar(op); return true } catch { return false }
+}
+
+// Los errores que lanza la web (`throw new Error('Introduce un importe válido')`), sin el «Error:» delante.
+func mensajeMotor(_ e: Error, _ otro: String) -> String {
+    if case let ErrorMotorFinanzas.js(m) = e { return m.replacingOccurrences(of: "Error: ", with: "") }
+    return (e as? LocalizedError)?.errorDescription ?? otro
+}
+
 // MARK: - logos
 
 // Los logos de las suscripciones y gastos fijos, como en la web (suscripcionesBuscarLogos): la función `portadas` con

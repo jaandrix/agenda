@@ -402,6 +402,64 @@
             var e = entries.find(function (x) { return String(x.id) === id; });
             return JSON.stringify(e ? { id: String(e.id), tipo: e.type, titulo: e.title || '', importe: String(e.amount != null ? e.amount : ''), dia: Number(e.renewalDay) || 1, activa: e.active !== false, cuenta: e.proAccount || '', vigilar: !!e.vigilar, web: e.logoDominio || '' } : null);
         },
+        // openFinanceProTransactionModal: el borrador del editor con lo que hace falta para pintarlo.
+        movimientoDatos: function (id, tipo) {
+            var t = id ? financePro.transactions.find(function (x) { return String(x.id) === id; }) : null;
+            var d = t ? Object.assign({}, t, { category: t.category || '', transferTo: t.transferTo || '', note: t.note || '' })
+                : { type: tipo === 'income' ? 'income' : 'expense', account: FINANCE_PRO_ACCOUNT_KEYS[0], date: todayISO(), amount: '', category: '', note: '', transferTo: '' };
+            return JSON.stringify({
+                existe: !!t,
+                tipo: d.type, fecha: d.date || todayISO(), importe: d.amount === '' || d.amount == null ? '' : String(d.amount).replace('.', ','),
+                cuenta: d.account || FINANCE_PRO_ACCOUNT_KEYS[0], destino: d.transferTo || '', categoria: d.category || '', nota: d.note || '',
+                viaje: !!d.viaje, viajeId: d.viajeId || '', ahorro: !!d.ahorro, inversion: d.investmentAccountId || '', hora: d.hora || '',
+                ajuste: financeProEsAjuste(d), categoriaAuto: !!(d.categoriaAuto && d.category), pendiente: !!d.pendiente,
+                banco: t ? String(t.bankNote || (!t.manual ? t.note || '' : '')) : '',
+                cuentas: FINANCE_PRO_ACCOUNT_KEYS.map(function (k) { return { id: k, nombre: String(nombreCuenta(k)) }; }),
+                categorias: financePro.categories.map(function (c) { return { id: String(c.id), nombre: String(c.name || c.id), tipo: c.type || '' }; }),
+                viajes: financeProViajesConFecha().map(function (v) { return { id: String(v.id), nombre: String(financeProNombreViaje(v)) }; }),
+                inversiones: (financeProfile.investmentAccounts || []).map(function (a) { return { id: String(a.id), nombre: String(a.name || 'inversión') }; })
+            });
+        },
+        // ¿Es de la categoría Inversiones? (para enseñar «a qué inversión.»)
+        esInversion: function (tipo, categoria) { return JSON.stringify(financeProEsInversion({ type: tipo, category: categoria })); },
+        // saveFinanceProTransaction, sin pantalla: mismas reglas al crear y al editar.
+        guardarMovimiento: function (datos) {
+            var d = JSON.parse(datos);
+            return JSON.stringify(enCopia(function () {
+                var amount = Math.abs(financeProParseEuroAmount(d.importe));
+                if (!(amount > 0)) throw new Error('Introduce un importe válido');
+                if (d.tipo === 'transfer' && (!d.destino || d.destino === d.cuenta)) throw new Error('Elige una cuenta destino distinta');
+                var esInv = financeProEsInversion({ type: d.tipo, category: d.categoria });
+                var entry = {
+                    id: d.id || ('ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)),
+                    date: d.fecha || todayISO(), account: d.cuenta, type: d.tipo, amount: amount,
+                    category: d.tipo === 'transfer' ? undefined : (d.categoria || undefined),
+                    investmentAccountId: d.inversion && esInv ? d.inversion : undefined,
+                    transferTo: d.tipo === 'transfer' ? d.destino : undefined,
+                    note: (d.nota || '').trim() || undefined,
+                    viaje: d.tipo === 'expense' && d.viaje ? true : undefined,
+                    viajeId: d.tipo === 'expense' && d.viaje && d.viajeId ? d.viajeId : undefined,
+                    ahorro: d.tipo !== 'transfer' && d.ahorro ? true : undefined,
+                    hora: d.hora || financeProHoraAhora(d.fecha || todayISO())
+                };
+                var prev = financePro.transactions.find(function (t) { return String(t.id) === String(entry.id); });
+                if (prev) ['manual', 'recurringEntryId', 'cicloMes', 'programadoId', 'conciliado', 'bankNote', 'pendiente', 'noDuplicadoDe', 'claveImport', 'ajuste', 'orden'].forEach(function (k) { if (prev[k] !== undefined) entry[k] = prev[k]; });
+                else entry.manual = true;
+                if (prev && !prev.manual && !prev.bankNote && prev.note && entry.note !== prev.note) entry.bankNote = prev.note;
+                if (prev && !prev.manual && !prev.claveImport) {
+                    var clave = prev.account + '|' + prev.date + '|' + prev.amount + '|' + (prev.bankNote != null ? prev.bankNote : (prev.note != null ? prev.note : ''));
+                    var nueva = entry.account + '|' + entry.date + '|' + entry.amount + '|' + (entry.bankNote != null ? entry.bankNote : (entry.note != null ? entry.note : ''));
+                    if (clave !== nueva) entry.claveImport = clave;
+                }
+                Object.keys(entry).forEach(function (k) { if (entry[k] === undefined) delete entry[k]; });
+                var idx = financePro.transactions.findIndex(function (t) { return String(t.id) === String(entry.id); });
+                if (idx >= 0) financePro.transactions[idx] = entry; else financePro.transactions.push(entry);
+                return entry.category ? financeProAutoCategorizar() : 0;
+            }));
+        },
+        borrarMovimiento: function (id) {
+            return JSON.stringify(enCopia(function () { financePro.transactions = financePro.transactions.filter(function (t) { return String(t.id) !== id; }); return true; }));
+        },
         suscripcion: function (id, accion) {
             return JSON.stringify(enCopia(function () {
                 var e = entries.find(function (x) { return String(x.id) === id; });

@@ -121,3 +121,25 @@ test('preparar Finanzas es idempotente', () => {
     const otra = JSON.parse(run('__fin.preparar()'));
     assert.equal(otra.cambios, null);
 });
+
+test('editar en el iPhone un movimiento importado no lo duplica al reimportar', () => {
+    const run = cargarMotor();
+    const estado = base();
+    importarEnMotor(run, estado, REVOLUT[0], 'online');
+    const t = estado.financePro.transactions.find(x => x.type === 'expense' && !x.pendiente);
+    const notaBanco = t.note;
+    const cargar = () => run(`__fin.cargar(${JSON.stringify(JSON.stringify(estado.financePro))}, ${JSON.stringify(JSON.stringify(estado.entries))}, '{}', null)`);
+    cargar();
+    const d = JSON.parse(run(`__fin.movimientoDatos(${JSON.stringify(String(t.id))}, '')`));
+    assert.equal(d.existe, true);
+    const r = JSON.parse(run(`__fin.guardarMovimiento(${JSON.stringify(JSON.stringify({ ...d, id: String(t.id), nota: 'otra cosa', viaje: true }))})`));
+    aplicar(estado, r.cambios);
+    const e = estado.financePro.transactions.find(x => x.id === t.id);
+    assert.equal(e.note, 'otra cosa');
+    assert.equal(e.bankNote, notaBanco);
+    assert.equal(e.viaje, true);
+    assert.equal(importarEnMotor(run, estado, REVOLUT[0], 'online').nuevos, 0);
+    cargar();
+    const b = JSON.parse(run(`__fin.borrarMovimiento(${JSON.stringify(String(t.id))})`));
+    assert.deepEqual(b.cambios.movimientos.quitar, [String(t.id)]);
+});
