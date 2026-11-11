@@ -121,7 +121,8 @@ struct EnlacesView: View {
 
     private func fila(_ e: Enlace, _ cats: [CategoriaEnlace]) -> some View {
         HStack(spacing: Espacio.s) {
-            Button { if let u = URL(string: e.url) { abrir(u) } } label: {
+            // Dentro de la app (SFSafariViewController, el mismo navegador que lo no migrado); «abrir en safari.» en el menú.
+            Button { if let u = URL(string: e.url) { if ["http", "https"].contains(u.scheme?.lowercased() ?? "") { c.web = u } else { abrir(u) } } } label: {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(e.titulo.lowercased() + ".").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).lineLimit(2)
                     Text(e.descripcion.isEmpty ? LecturaEnlaces.dominio(e.url) : e.descripcion).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(2)
@@ -133,6 +134,7 @@ struct EnlacesView: View {
             }.buttonStyle(.plain).accessibilityLabel(e.favorito ? "quitar de favoritos" : "marcar como favorito")
             Menu {
                 Button("editar.") { modal = .enlace(e, nil) }
+                Button("abrir en safari.") { if let u = URL(string: e.url) { abrir(u) } }
                 Button("duplicar.") {
                     Task { try? await c.encolar(.guardarEnlace(id: LecturaEnlaces.nuevoId("link"), titulo: e.titulo + " (copia)", url: e.url, categoriaId: e.categoriaId,
                                                                 descripcion: e.descripcion, creado: ISO8601DateFormatter().string(from: Date()))) }
