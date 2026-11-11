@@ -124,6 +124,7 @@ struct PlanCuerpo: View {
     let aviso: String?
     var acciones = Acciones()
     @State var verTodasSinDia = false
+    @State var moviendo: TareaPlan?
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 0) {
@@ -150,6 +151,7 @@ struct PlanCuerpo: View {
                 sinDia(v)
             }
         }
+        .sheet(item: $moviendo) { t in MoverAFecha(tarea: t) { d in acciones.mover(t, d) } }
     }
 
     // hoy. / mañana. / pasado.: texto, la activa en tinta con la raya del acento debajo; nada de control segmentado.
@@ -222,6 +224,34 @@ struct PlanCuerpo: View {
         }
     }
 
+    // «mover a una fecha.» desde el menú de la fila: un calendario y listo, sin abrir el editor.
+    private struct MoverAFecha: View {
+        let tarea: TareaPlan
+        let mover: (LocalDay) -> Void
+        @Environment(\.dismiss) private var cerrar
+        @State private var fecha = Date()
+
+        var body: some View {
+            NavigationStack {
+                DatePicker("fecha.", selection: $fecha, displayedComponents: .date)
+                    .datePickerStyle(.graphical)
+                    .environment(\.locale, Locale(identifier: "es_ES"))
+                    .tint(Paleta.acento)
+                    .padding(.horizontal)
+                    .navigationTitle("mover «\(tarea.titulo)».")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("mover.") { mover(CalendarioBitacora.madrid.dia(de: fecha)); cerrar() }
+                        }
+                    }
+                    .background(Paleta.fondo)
+            }
+            .presentationDetents([.medium, .large])
+        }
+    }
+
     // Lo que antes eran gestos laterales: mantener pulsado, y también por VoiceOver.
     @ViewBuilder private func menu(_ t: TareaPlan, _ v: VistaPlan, enSinDia: Bool) -> some View {
         if !t.deTrabajo {
@@ -229,6 +259,7 @@ struct PlanCuerpo: View {
             if enSinDia || desplazamiento != 0 { Button("pasar a hoy.") { acciones.mover(t, hoy) } }
             if !enSinDia && desplazamiento == 0 { Button("pasar a mañana.") { acciones.mover(t, hoy.sumando(dias: 1)) } }
             if !enSinDia { Button("dejar sin día.") { acciones.mover(t, nil) } }
+            Button("mover a una fecha.") { moviendo = t }
             Menu("prioridad.") {
                 ForEach(["alta", "media", "baja", ""], id: \.self) { k in
                     let nombre = k.isEmpty ? "ninguna." : k + "."

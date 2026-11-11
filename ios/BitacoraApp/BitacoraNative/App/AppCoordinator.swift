@@ -220,6 +220,7 @@ final class AppCoordinator {
                 self.informe = i
                 if !i.sesionRevocada { Task { await BandejaConector.revisar(self) } }
                 if i.revision != revisionAntes, AvisosLocales.activos { self.reconciliarAvisos() }
+                if i.revision != revisionAntes { Task { if let doc = await self.documentoVisible() { await Recordatorios.reconciliar(doc) } } }
                 if i.sesionRevocada, self.sesion != nil {
                     let uid = self.sesion?.userId
                     self.sesion = nil
