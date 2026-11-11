@@ -157,23 +157,23 @@ struct CalendarioView: View {
         return (cal.component(.weekday, from: f) + 5) % 7
     }
 
+    // Formateadores hechos una vez: crearlos en cada pintado costaba más que pintar la rejilla.
+    private static let utc: Calendar = { var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!; return cal }()
+    private static func formato(_ f: String) -> DateFormatter {
+        let d = DateFormatter()
+        d.locale = Locale(identifier: "es_ES")
+        d.timeZone = TimeZone(identifier: "UTC")
+        d.dateFormat = f
+        return d
+    }
+    private static let formatoMes = formato("LLLL yyyy")
+    private static let formatoDia = formato("EEEE d 'de' MMMM")
+
     private var nombreMes: String {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "es_ES")
-        f.dateFormat = "LLLL yyyy"
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "UTC")!
-        f.timeZone = cal.timeZone
-        return f.string(from: cal.date(from: DateComponents(year: modelo.mes.year, month: modelo.mes.month, day: 1, hour: 12))!) + "."
+        Self.formatoMes.string(from: Self.utc.date(from: DateComponents(year: modelo.mes.year, month: modelo.mes.month, day: 1, hour: 12))!) + "."
     }
 
     private func nombreDia(_ d: LocalDay) -> String {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "es_ES")
-        f.dateFormat = "EEEE d 'de' MMMM"
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "UTC")!
-        f.timeZone = cal.timeZone
-        return f.string(from: cal.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12))!)
+        Self.formatoDia.string(from: Self.utc.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12))!)
     }
 }

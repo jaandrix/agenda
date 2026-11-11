@@ -284,16 +284,20 @@ struct PlanCuerpo: View {
         return partes.joined(separator: ", ") + "."
     }
 
+    private static let formatoFecha: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "es_ES")
+        f.timeZone = CalendarioBitacora.madrid.zona
+        f.dateFormat = "EEEE d 'de' MMMM"
+        return f
+    }()
+
     private var fecha: String {
         let d = CalendarioBitacora.madrid.diaLogico(Date(), desplazamiento: desplazamiento)
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = CalendarioBitacora.madrid.zona
         guard let f = cal.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12)) else { return d.iso }
-        let fmt = DateFormatter()
-        fmt.locale = Locale(identifier: "es_ES")
-        fmt.timeZone = cal.timeZone
-        fmt.dateFormat = "EEEE d 'de' MMMM"
-        return fmt.string(from: f)
+        return Self.formatoFecha.string(from: f)
     }
 
     private func textoCompartir(_ v: VistaPlan) -> String {

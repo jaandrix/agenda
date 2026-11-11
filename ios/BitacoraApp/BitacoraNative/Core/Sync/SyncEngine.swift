@@ -169,10 +169,18 @@ actor SyncEngine {
     }
 
     // Lo que ve la interfaz: la base confirmada con la cola aplicada encima.
+    // Se guarda por versión del almacén: mientras no se escriba nada, todas las pantallas comparten el mismo documento.
+    private var visible: (uid: String, version: Int, doc: DocumentoBitacora)?
+
     func documentoVisible() async -> DocumentoBitacora? {
-        guard let uid, let d = await almacen.leerBase(uid: uid), let base = try? DocumentoBitacora(datos: d) else { return nil }
+        guard let uid else { return nil }
+        let v = await almacen.version
+        if let c = visible, c.uid == uid, c.version == v { return c.doc }
+        guard let d = await almacen.leerBase(uid: uid), let base = try? DocumentoBitacora(datos: d) else { return nil }
         let ops = ((try? await almacen.estado(uid: uid))?.pendientes ?? []).map(\.operacion)
-        return AplicarOperaciones.sobre(base, ops).0
+        let doc = AplicarOperaciones.sobre(base, ops).0
+        if await almacen.version == v { visible = (uid, v, doc) }
+        return doc
     }
 
     // Diagnóstico de «estado.»: reescribir la copia no cambia ninguna clave. No va en cada sincronización.
