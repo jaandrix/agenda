@@ -9,8 +9,9 @@ struct FichaEventoView: View {
     @Environment(\.dismiss) private var cerrar
     let evento: EventoDia
     let dia: LocalDay
-    @State private var entradas: [(texto: Data, etiqueta: String)] = []
+    @State private var entradas: [EntradaQR] = []
     @State private var indice = 0
+    @State private var pantallaCompleta = false
 
     var body: some View {
         NavigationStack {
@@ -26,6 +27,10 @@ struct FichaEventoView: View {
                         Text(evento.notas).font(Tipo.cuerpo).foregroundStyle(Paleta.texto).textSelection(.enabled).padding(.vertical, Espacio.m)
                     }
                     if !entradas.isEmpty { entrada }
+                    if evento.tipo == "event" {
+                        AnadirEntradaQR(eventoId: evento.id) { Task { await cargarEntradas(forzar: true) } }
+                            .padding(.top, Espacio.m)
+                    }
                     if evento.editable {
                         Button("editar.") {
                             c.modal = .evento(EditorEvento(id: evento.id, nuevo: false, fecha: dia, hora: evento.hora, titulo: evento.titulo,
@@ -43,6 +48,10 @@ struct FichaEventoView: View {
         }
         .presentationDetents(entradas.isEmpty ? [.medium, .large] : [.large])
         .task { await cargarEntradas() }
+        .fullScreenCover(isPresented: $pantallaCompleta) {
+            EntradaPantallaCompleta(titulo: evento.titulo, detalle: [evento.lugar, evento.hora ?? ""].filter { !$0.isEmpty }.joined(separator: ", "),
+                                    entradas: entradas, indice: min(indice, max(entradas.count - 1, 0)))
+        }
     }
 
     private var origen: String {
@@ -56,47 +65,47 @@ struct FichaEventoView: View {
         }
     }
 
-    // .entrada-ticket: el QR grande sobre blanco, «n de m» si hay varias.
+    // .entrada-ticket: el QR grande sobre blanco, «n de m» si hay varias. Tocarlo lo abre a pantalla entera.
     private var entrada: some View {
         let e = entradas[min(indice, entradas.count - 1)]
         return VStack(spacing: Espacio.s) {
-            if let img = Self.qr(e.texto) {
-                Image(uiImage: img).interpolation(.none).resizable().scaledToFit()
-                    .padding(Espacio.m).background(Color.white, in: RoundedRectangle(cornerRadius: Radio.control))
-                    .accessibilityLabel("código qr de la entrada")
-            }
+            Button { pantallaCompleta = true } label: { CodigoQR(datos: e.datos) }
+                .buttonStyle(.plain)
+                .accessibilityHint("abre la entrada a pantalla completa con el brillo al máximo")
+                .contextMenu {
+                    Button("abrir a pantalla completa.") { pantallaCompleta = true }
+                    Button("quitar esta entrada.", role: .destructive) { quitar(e) }
+                }
             if !e.etiqueta.isEmpty { Text(e.etiqueta).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto) }
             if entradas.count > 1 {
                 HStack {
                     Button { indice = (indice + entradas.count - 1) % entradas.count } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
+                        .accessibilityLabel("entrada anterior")
                     Text("\(indice + 1) de \(entradas.count)").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
                     Button { indice = (indice + 1) % entradas.count } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }
+                        .accessibilityLabel("entrada siguiente")
                 }
                 .foregroundStyle(Paleta.texto)
             }
-            Text("sube el brillo de la pantalla para que lo lean a la primera.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+            Button("ver a pantalla completa.") { pantallaCompleta = true }.buttonStyle(BotonPrincipal())
+            Text("con la pantalla completa el brillo sube solo. mantén pulsado el qr para quitarlo.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, Espacio.l)
     }
 
-    private func cargarEntradas() async {
-        guard evento.entradas > 0, let doc = await c.documentoVisible() else { return }
-        let lista = ((try? doc.valor(de: "entries")) ?? nil)?.lista?.first { $0["id"]?.comoId == evento.id }?["entradas"]?.lista ?? []
-        entradas = lista.compactMap { x -> (texto: Data, etiqueta: String)? in
-            // qrEntradaSvg: qrB64 son los bytes tal cual; qr, el texto en UTF-8.
-            let datos = x["qrB64"]?.texto.flatMap { Data(base64Encoded: $0) } ?? x["qr"]?.texto.map { Data($0.utf8) }
-            return datos.map { (texto: $0, etiqueta: x["etiqueta"]?.texto ?? "") }
+    private func quitar(_ e: EntradaQR) {
+        Task {
+            try? await c.encolar(OperacionesExtra.op(OperacionesExtra.quitarEntradaQR, ["eventoId": .string(evento.id), "id": .string(e.id)]))
+            await cargarEntradas(forzar: true)
         }
     }
 
-    static func qr(_ datos: Data) -> UIImage? {
-        let f = CIFilter.qrCodeGenerator()
-        f.message = datos
-        f.correctionLevel = "M"
-        guard let img = f.outputImage?.transformed(by: CGAffineTransform(scaleX: 10, y: 10)),
-              let cg = CIContext().createCGImage(img, from: img.extent) else { return nil }
-        return UIImage(cgImage: cg)
+    private func cargarEntradas(forzar: Bool = false) async {
+        guard forzar || evento.entradas > 0, let doc = await c.documentoVisible() else { return }
+        let lista = ((try? doc.valor(de: "entries")) ?? nil)?.lista?.first { $0["id"]?.comoId == evento.id }?["entradas"]?.lista ?? []
+        entradas = lista.compactMap(EntradaQR.desde)
+        indice = min(indice, max(entradas.count - 1, 0))
     }
 
     static func fecha(_ d: LocalDay) -> String {

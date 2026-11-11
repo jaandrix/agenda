@@ -20,6 +20,35 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0';
 
+// Lee un QR de una imagen que manda la IA cuando no ha podido decodificarlo ella (anadir_entrada.imagen_base64).
+// Devuelve los bytes tal cual (como binaryData de jsQR en la web), así el QR regenerado es idéntico al original.
+async function leerQRDeImagen(b64: string): Promise<{ b64: string } | null> {
+    const limpio = b64.replace(/^data:[^,]*,/, '').replace(/\s+/g, '');
+    if (limpio.length > 8_000_000) throw new Error('La imagen es demasiado grande: recórtala al QR o redúcela.');
+    let bytes: Uint8Array;
+    try { bytes = Uint8Array.from(atob(limpio), c => c.charCodeAt(0)); } catch { throw new Error('imagen_base64 no es base64 válido'); }
+    let ancho = 0, alto = 0, rgba: Uint8ClampedArray;
+    if (bytes[0] === 0x89 && bytes[1] === 0x50) {
+        const UPNG = (await import('npm:upng-js@2.1.0')).default;
+        const img = UPNG.decode(bytes.buffer);
+        ancho = img.width; alto = img.height;
+        rgba = new Uint8ClampedArray(UPNG.toRGBA8(img)[0]);
+    } else if (bytes[0] === 0xff && bytes[1] === 0xd8) {
+        const jpeg = (await import('npm:jpeg-js@0.4.4')).default;
+        const img = jpeg.decode(bytes, { useTArray: true, maxMemoryUsageInMB: 256 });
+        ancho = img.width; alto = img.height;
+        rgba = new Uint8ClampedArray(img.data.buffer, img.data.byteOffset, img.data.byteLength);
+    } else {
+        throw new Error('La imagen tiene que ser PNG o JPEG.');
+    }
+    const jsQR = (await import('npm:jsqr@1.4.0')).default;
+    const codigo = jsQR(rgba, ancho, alto, { inversionAttempts: 'attemptBoth' });
+    if (!codigo?.binaryData?.length) return null;
+    let s = '';
+    for (const b of codigo.binaryData) s += String.fromCharCode(b);
+    return { b64: btoa(s) };
+}
+
 const sbAdmin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 const ZONA = 'Europe/Madrid';
 const PROTOCOLO = '2025-06-18';
@@ -672,7 +701,7 @@ const HERRAMIENTAS = [
     },
     {
         name: 'anadir_entrada',
-        description: 'Añade una entrada con QR (concierto, partido, cine, tren...) a un evento del calendario, para enseñarla luego en la puerta desde Bitácora. Si el usuario manda la imagen de un QR, DECODIFÍCALO CON TU HERRAMIENTA DE CÓDIGO (Python: cv2.QRCodeDetector().detectAndDecode o pyzbar.pyzbar.decode) y pasa aquí su contenido exacto; si el contenido son bytes que no son texto, pásalo en qr_base64. Nunca transcribas un QR a ojo ni inventes su contenido: si no puedes ejecutar código, dile al usuario que active la ejecución de código o que la añada desde Bitácora con el botón "pegar.". Si el evento no existe, créalo antes con crear_evento.',
+        description: 'Añade una entrada con QR (concierto, partido, cine, tren, avión...) a un evento del calendario, para enseñarla luego en la puerta desde Bitácora a pantalla completa. Cuando el usuario mande la imagen o captura de un QR: 1) si puedes ejecutar código, DECODIFÍCALO (Python: cv2.QRCodeDetector().detectAndDecode, o pyzbar.pyzbar.decode, o zxing) y pasa el contenido exacto en qr; 2) si no lo consigues decodificar pero tienes el archivo, manda la imagen en imagen_base64 (PNG o JPEG, mejor recortada al QR y de menos de 1500 px; sin el prefijo data:) y Bitácora la lee en el servidor; 3) si no tienes ni código ni el archivo, crea el evento si hace falta y dile al usuario que abra el evento en la app del iPhone y toque «+ añadir entrada.» (elige la captura del carrete) o «pegar.». Nunca transcribas un QR a ojo ni inventes su contenido: un solo carácter mal y no le dejan entrar. Si el evento no existe, créalo antes con crear_evento y usa su título y fecha. Varias entradas para el mismo evento: una llamada por QR, con etiqueta (asiento, nombre...).',
         inputSchema: {
             type: 'object',
             properties: {
@@ -680,6 +709,7 @@ const HERRAMIENTAS = [
                 fecha: { type: 'string', description: 'AAAA-MM-DD del evento, para distinguir entre varios con el mismo nombre' },
                 qr: { type: 'string', description: 'Contenido de texto del QR, exacto' },
                 qr_base64: { type: 'string', description: 'Bytes del QR en base64, si no son texto' },
+                imagen_base64: { type: 'string', description: 'La imagen del QR (PNG o JPEG) en base64, si no has podido decodificarlo tú: el servidor la lee' },
                 etiqueta: { type: 'string', description: 'Opcional: fila, asiento, puerta, nombre...' },
             },
             required: ['evento'],
@@ -1127,7 +1157,12 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (a.qr_base64) {
                 try { qrB64 = btoa(atob(String(a.qr_base64).replace(/\s+/g, ''))); } catch { throw new Error('qr_base64 no es base64 válido'); }
             }
-            if (!qr && !qrB64) throw new Error('Falta el contenido del QR (qr o qr_base64), decodificado con código');
+            if (!qr && !qrB64 && a.imagen_base64) {
+                const leido = await leerQRDeImagen(String(a.imagen_base64));
+                if (!leido) throw new Error('No he encontrado ningún QR legible en esa imagen. Pide una captura más nítida o recortada al QR, o que la añada desde el evento en la app («+ añadir entrada.»).');
+                qrB64 = leido.b64;
+            }
+            if (!qr && !qrB64) throw new Error('Falta el QR: pasa su contenido en qr (decodificado con código) o la imagen en imagen_base64. Si no puedes, dile al usuario que la añada desde el evento en la app («+ añadir entrada.»).');
             const q = norm(a.evento).trim();
             const hoy2 = hoyISO();
             const candidatos = (data.entries || []).filter((e: any) => e?.type === 'event' && !e.calendarLog && (norm(e.title).includes(q) || (q.includes(norm(e.title)) && norm(e.title).length >= 3)))

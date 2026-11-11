@@ -105,6 +105,8 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     // apuntesRecientes: el registro (los últimos 40) y deshacer lo que creó uno, que queda marcado `deshecho`.
     case registrarApunte(json: String)
     case deshacerApunte(id: String)
+    // 0.18: operaciones nuevas en OperacionesExtra.swift, para no tocar este archivo en cada corte.
+    case extra(tipo: String, json: String)
 
     var claves: [String] {
         switch self {
@@ -142,6 +144,7 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         case .ponerPerfil, .ponerApartado: return ["apartadosConfig"]
         case .registrarApunte: return ["apuntesRecientes"]
         case .deshacerApunte: return ["apuntesRecientes", "dayPlanner", "entries", "financePro", "listaCompra", "notes", "studies", "recurringTasks"]
+        case let .extra(tipo, _): return OperacionesExtra.claves(tipo)
         default: return ["dayPlanner"]
         }
     }
@@ -1081,6 +1084,8 @@ enum AplicarOperaciones {
                 _ = cambiarTareaProyecto(&lista, pid, tid) { t, _ in t["estado"] = .string("curso") }
                 r["entries"] = .some(.array(lista))
             }
+        case let .extra(tipo, json):
+            r = OperacionesExtra.aplicar(tipo, json, r)
         default:
             r["dayPlanner"] = .some(aplicar(op, a: valores["dayPlanner"] ?? nil))
         }
