@@ -31,3 +31,15 @@ for (const [f, esperado] of Object.entries(ENTRAN)) test(`entra: «${f}»`, () =
     assert.equal(c.error, undefined);
     for (const [k, v] of Object.entries(esperado)) assert.equal(c[k], v, k);
 });
+
+// P1 de la 0.19: prioridad dicha, varios importes, asignatura que no existe (con asignaturas), negaciones y días dictados.
+vm.runInContext(`__contexto('{"uid":"u","categorias":[],"asignaturas":[{"id":"s0","name":"Estadística"}]}');`, ctx);
+const todo = f => JSON.parse(vm.runInContext(`__apuntar(${JSON.stringify(f)}, null)`, ctx));
+test('prioridad dicha: «llamar al banco prioridad alta»', () => { const c = leer('llamar al banco prioridad alta')[0]; assert.equal(c.prioridad, 'alta'); assert.equal(c.titulo, 'Llamar al banco'); });
+test('urgente es prioridad alta', () => assert.equal(leer('urgente: renovar el dni')[0].prioridad, 'alta'));
+test('dos importes son dos gastos', () => { const c = todo('gasté 12 en gasolina y 30 en comida'); assert.equal(c.length, 2); assert.deepEqual(c.map(x => x.tipo), ['gasto', 'gasto']); assert.deepEqual(c.map(x => x.r.importe), ['12', '30']); });
+test('asignatura que no existe avisa', () => assert.match(leer('examen de Química el 20')[0].error, /Química/));
+test('asignatura que existe entra', () => assert.equal(leer('examen de estadística el 20')[0].error, undefined));
+for (const f of ['no tengo que ir al dentista mañana', 'ya no hay cena el viernes']) test(`negación no se guarda: «${f}»`, () => assert.ok(leer(f)[0].error));
+test('«no olvidar comprar pan» entra', () => assert.equal(leer('no olvidar comprar pan')[0].error, undefined));
+test('día dictado: «el día veinte»', () => assert.equal(leer('reunión el día veinte a las diez')[0].fecha, '2026-11-20'));

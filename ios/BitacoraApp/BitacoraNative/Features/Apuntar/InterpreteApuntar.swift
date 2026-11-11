@@ -61,6 +61,8 @@ struct CamposApunte: Sendable, Equatable, Decodable {
     let asignaturaNombre: String?
     // Lo que no se puede guardar (fecha que no existe, «cancela la cita»...): lo decide js/apuntar.js.
     let error: String?
+    // «prioridad alta», «urgente» (apuntar-puente.js): alta, media o baja.
+    var prioridad: String? = nil
 }
 
 struct ApunteInterpretado: Sendable, Equatable, Decodable {

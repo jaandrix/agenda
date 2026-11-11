@@ -4861,63 +4861,63 @@
      "describir": {
       "tarea": {
        "texto": "tarea, domingo, 15 nov, sin hora, Matemáticas",
-       "falta": ""
+       "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "evento": {
        "texto": "evento, domingo, 15 nov, Matemáticas",
-       "falta": ""
+       "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "gasto": {
        "texto": "gasto de —, Matemáticas, domingo, 15 nov",
-       "falta": "falta el importe"
+       "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "compra": {
        "texto": "a la compra: Matemáticas",
-       "falta": ""
+       "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "nota": {
        "texto": "a la nota de hoy",
-       "falta": ""
+       "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "cumple": {
        "texto": "cumpleaños de Matemáticas, 15 de noviembre",
-       "falta": ""
+       "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "examen": {
        "texto": "examen de ?, domingo, 15 nov",
-       "falta": "no encuentro la asignatura"
+       "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "trabajo": {
        "texto": "entrega de ?, domingo, 15 nov",
-       "falta": "no encuentro la asignatura"
+       "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "recurrente": {
        "texto": "Matemáticas, todos los días",
-       "falta": ""
+       "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "clase": {
        "texto": "clase de Matemáticas,  a las ?",
-       "falta": "faltan los días"
+       "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "viaje": {
        "texto": "viaje a Matemáticas, domingo, 15 nov",
-       "falta": ""
+       "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "libro": {
        "texto": "libro para ocio: Matemáticas",
-       "falta": ""
+       "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "serie": {
        "texto": "serie para ocio: Matemáticas",
-       "falta": ""
+       "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "peli": {
        "texto": "película para ocio: Matemáticas",
-       "falta": ""
+       "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "juego": {
        "texto": "videojuego para ocio: Matemáticas",
-       "falta": ""
+       "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       }
      },
      "nada": false,
@@ -4948,7 +4948,8 @@
       "forzado": "",
       "conGente": false,
       "asignaturaId": null,
-      "asignaturaNombre": null
+      "asignaturaNombre": null,
+      "error": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
      }
     }
    ]
@@ -6521,23 +6522,23 @@
    "frase": "gasté 15 en cine y 20 en cena",
    "cosas": [
     {
-     "texto": "gasté 15 en cine y 20 en cena",
+     "texto": "gasté 15 en cine",
      "tipo": "gasto",
      "describir": {
       "tarea": {
-       "texto": "tarea, hoy, sin hora, Cine y 20 en cena",
+       "texto": "tarea, hoy, sin hora, Cine",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, hoy, Cine y 20 en cena",
+       "texto": "evento, hoy, Cine",
        "falta": ""
       },
       "gasto": {
-       "texto": "gasto de 15,00€, Cine y 20 en cena, comida",
+       "texto": "gasto de 15,00€, Cine, ocio",
        "falta": ""
       },
       "compra": {
-       "texto": "a la compra: Cine y 20 en cena",
+       "texto": "a la compra: Cine",
        "falta": ""
       },
       "nota": {
@@ -6545,7 +6546,7 @@
        "falta": ""
       },
       "cumple": {
-       "texto": "cumpleaños de Cine y 20 en cena, 5 de noviembre",
+       "texto": "cumpleaños de Cine, 5 de noviembre",
        "falta": "falta el día"
       },
       "examen": {
@@ -6557,31 +6558,31 @@
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
-       "texto": "Cine y 20 en cena, todos los días",
+       "texto": "Cine, todos los días",
        "falta": ""
       },
       "clase": {
-       "texto": "clase de Cine y 20 en cena,  a las ?",
+       "texto": "clase de Cine,  a las ?",
        "falta": "faltan los días"
       },
       "viaje": {
-       "texto": "viaje a Cine y 20 en cena, hoy",
+       "texto": "viaje a Cine, hoy",
        "falta": ""
       },
       "libro": {
-       "texto": "libro para ocio: Cine y 20 en cena",
+       "texto": "libro para ocio: Cine",
        "falta": ""
       },
       "serie": {
-       "texto": "serie para ocio: Cine y 20 en cena",
+       "texto": "serie para ocio: Cine",
        "falta": ""
       },
       "peli": {
-       "texto": "película para ocio: Cine y 20 en cena",
+       "texto": "película para ocio: Cine",
        "falta": ""
       },
       "juego": {
-       "texto": "videojuego para ocio: Cine y 20 en cena",
+       "texto": "videojuego para ocio: Cine",
        "falta": ""
       }
      },
@@ -6597,13 +6598,106 @@
       "ingreso": false,
       "comprar": false,
       "nota": false,
-      "titulo": "Cine y 20 en cena",
+      "titulo": "Cine",
       "recurrencia": null,
       "cumple": false,
       "estudio": null,
       "clase": false,
       "viaje": false,
       "eventoTipo": "cine",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "c_ocio",
+      "forzado": "",
+      "conGente": false,
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    },
+    {
+     "texto": "gasto 20 en cena",
+     "tipo": "gasto",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, hoy, sin hora, Cena",
+       "falta": ""
+      },
+      "evento": {
+       "texto": "evento, hoy, Cena",
+       "falta": ""
+      },
+      "gasto": {
+       "texto": "gasto de 20,00€, Cena, comida",
+       "falta": ""
+      },
+      "compra": {
+       "texto": "a la compra: Cena",
+       "falta": ""
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": ""
+      },
+      "cumple": {
+       "texto": "cumpleaños de Cena, 5 de noviembre",
+       "falta": "falta el día"
+      },
+      "examen": {
+       "texto": "examen de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "recurrente": {
+       "texto": "Cena, todos los días",
+       "falta": ""
+      },
+      "clase": {
+       "texto": "clase de Cena,  a las ?",
+       "falta": "faltan los días"
+      },
+      "viaje": {
+       "texto": "viaje a Cena, hoy",
+       "falta": ""
+      },
+      "libro": {
+       "texto": "libro para ocio: Cena",
+       "falta": ""
+      },
+      "serie": {
+       "texto": "serie para ocio: Cena",
+       "falta": ""
+      },
+      "peli": {
+       "texto": "película para ocio: Cena",
+       "falta": ""
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Cena",
+       "falta": ""
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2026-11-05",
+      "fechaDicha": false,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": "20",
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Cena",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "social",
       "lugar": "",
       "cuenta": "",
       "categoria": "c_comida",
@@ -9556,23 +9650,23 @@
    "frase": "gasté 10 en café y 5 en bollo",
    "cosas": [
     {
-     "texto": "gasté 10 en café y 5 en bollo",
+     "texto": "gasté 10 en café",
      "tipo": "gasto",
      "describir": {
       "tarea": {
-       "texto": "tarea, hoy, sin hora, Café y 5 en bollo",
+       "texto": "tarea, hoy, sin hora, Café",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, hoy, Café y 5 en bollo",
+       "texto": "evento, hoy, Café",
        "falta": ""
       },
       "gasto": {
-       "texto": "gasto de 10,00€, Café y 5 en bollo, comida",
+       "texto": "gasto de 10,00€, Café, comida",
        "falta": ""
       },
       "compra": {
-       "texto": "a la compra: Café y 5 en bollo",
+       "texto": "a la compra: Café",
        "falta": ""
       },
       "nota": {
@@ -9580,7 +9674,7 @@
        "falta": ""
       },
       "cumple": {
-       "texto": "cumpleaños de Café y 5 en bollo, 5 de noviembre",
+       "texto": "cumpleaños de Café, 5 de noviembre",
        "falta": "falta el día"
       },
       "examen": {
@@ -9592,31 +9686,31 @@
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
-       "texto": "Café y 5 en bollo, todos los días",
+       "texto": "Café, todos los días",
        "falta": ""
       },
       "clase": {
-       "texto": "clase de Café y 5 en bollo,  a las ?",
+       "texto": "clase de Café,  a las ?",
        "falta": "faltan los días"
       },
       "viaje": {
-       "texto": "viaje a Café y 5 en bollo, hoy",
+       "texto": "viaje a Café, hoy",
        "falta": ""
       },
       "libro": {
-       "texto": "libro para ocio: Café y 5 en bollo",
+       "texto": "libro para ocio: Café",
        "falta": ""
       },
       "serie": {
-       "texto": "serie para ocio: Café y 5 en bollo",
+       "texto": "serie para ocio: Café",
        "falta": ""
       },
       "peli": {
-       "texto": "película para ocio: Café y 5 en bollo",
+       "texto": "película para ocio: Café",
        "falta": ""
       },
       "juego": {
-       "texto": "videojuego para ocio: Café y 5 en bollo",
+       "texto": "videojuego para ocio: Café",
        "falta": ""
       }
      },
@@ -9632,7 +9726,7 @@
       "ingreso": false,
       "comprar": false,
       "nota": false,
-      "titulo": "Café y 5 en bollo",
+      "titulo": "Café",
       "recurrencia": null,
       "cumple": false,
       "estudio": null,
@@ -9642,6 +9736,99 @@
       "lugar": "",
       "cuenta": "",
       "categoria": "c_comida",
+      "forzado": "",
+      "conGente": false,
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    },
+    {
+     "texto": "gasto 5 en bollo",
+     "tipo": "gasto",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, hoy, sin hora, Bollo",
+       "falta": ""
+      },
+      "evento": {
+       "texto": "evento, hoy, Bollo",
+       "falta": ""
+      },
+      "gasto": {
+       "texto": "gasto de 5,00€, Bollo",
+       "falta": ""
+      },
+      "compra": {
+       "texto": "a la compra: Bollo",
+       "falta": ""
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": ""
+      },
+      "cumple": {
+       "texto": "cumpleaños de Bollo, 5 de noviembre",
+       "falta": "falta el día"
+      },
+      "examen": {
+       "texto": "examen de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "recurrente": {
+       "texto": "Bollo, todos los días",
+       "falta": ""
+      },
+      "clase": {
+       "texto": "clase de Bollo,  a las ?",
+       "falta": "faltan los días"
+      },
+      "viaje": {
+       "texto": "viaje a Bollo, hoy",
+       "falta": ""
+      },
+      "libro": {
+       "texto": "libro para ocio: Bollo",
+       "falta": ""
+      },
+      "serie": {
+       "texto": "serie para ocio: Bollo",
+       "falta": ""
+      },
+      "peli": {
+       "texto": "película para ocio: Bollo",
+       "falta": ""
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Bollo",
+       "falta": ""
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2026-11-05",
+      "fechaDicha": false,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": "5",
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Bollo",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
       "forzado": "",
       "conGente": false,
       "asignaturaId": null,
@@ -15691,6 +15878,792 @@
       "asignaturaId": null,
       "asignaturaNombre": null,
       "error": "eso es una pregunta: búscala en la barra"
+     }
+    }
+   ]
+  },
+  {
+   "frase": "llamar al banco prioridad alta",
+   "cosas": [
+    {
+     "texto": "llamar al banco prioridad alta",
+     "tipo": "tarea",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, hoy, sin hora, Llamar al banco, prioridad alta",
+       "falta": ""
+      },
+      "evento": {
+       "texto": "evento, hoy, Llamar al banco",
+       "falta": ""
+      },
+      "gasto": {
+       "texto": "gasto de —, Llamar al banco",
+       "falta": "falta el importe"
+      },
+      "compra": {
+       "texto": "a la compra: Llamar al banco",
+       "falta": ""
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": ""
+      },
+      "cumple": {
+       "texto": "cumpleaños de Llamar al banco, 5 de noviembre",
+       "falta": "falta el día"
+      },
+      "examen": {
+       "texto": "examen de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "recurrente": {
+       "texto": "Llamar al banco, todos los días",
+       "falta": ""
+      },
+      "clase": {
+       "texto": "clase de Llamar al banco,  a las ?",
+       "falta": "faltan los días"
+      },
+      "viaje": {
+       "texto": "viaje a Llamar al banco, hoy",
+       "falta": ""
+      },
+      "libro": {
+       "texto": "libro para ocio: Llamar al banco",
+       "falta": ""
+      },
+      "serie": {
+       "texto": "serie para ocio: Llamar al banco",
+       "falta": ""
+      },
+      "peli": {
+       "texto": "película para ocio: Llamar al banco",
+       "falta": ""
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Llamar al banco",
+       "falta": ""
+      }
+     },
+     "nada": true,
+     "r": {
+      "fecha": "2026-11-05",
+      "fechaDicha": false,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": null,
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Llamar al banco",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "asignaturaId": null,
+      "asignaturaNombre": null,
+      "prioridad": "alta"
+     }
+    }
+   ]
+  },
+  {
+   "frase": "urgente: renovar el dni",
+   "cosas": [
+    {
+     "texto": "urgente: renovar el dni",
+     "tipo": "tarea",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, hoy, sin hora, Renovar el dni, prioridad alta",
+       "falta": ""
+      },
+      "evento": {
+       "texto": "evento, hoy, Renovar el dni",
+       "falta": ""
+      },
+      "gasto": {
+       "texto": "gasto de —, Renovar el dni",
+       "falta": "falta el importe"
+      },
+      "compra": {
+       "texto": "a la compra: Renovar el dni",
+       "falta": ""
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": ""
+      },
+      "cumple": {
+       "texto": "cumpleaños de Renovar el dni, 5 de noviembre",
+       "falta": "falta el día"
+      },
+      "examen": {
+       "texto": "examen de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "recurrente": {
+       "texto": "Renovar el dni, todos los días",
+       "falta": ""
+      },
+      "clase": {
+       "texto": "clase de Renovar el dni,  a las ?",
+       "falta": "faltan los días"
+      },
+      "viaje": {
+       "texto": "viaje a Renovar el dni, hoy",
+       "falta": ""
+      },
+      "libro": {
+       "texto": "libro para ocio: Renovar el dni",
+       "falta": ""
+      },
+      "serie": {
+       "texto": "serie para ocio: Renovar el dni",
+       "falta": ""
+      },
+      "peli": {
+       "texto": "película para ocio: Renovar el dni",
+       "falta": ""
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Renovar el dni",
+       "falta": ""
+      }
+     },
+     "nada": true,
+     "r": {
+      "fecha": "2026-11-05",
+      "fechaDicha": false,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": null,
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Renovar el dni",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "asignaturaId": null,
+      "asignaturaNombre": null,
+      "prioridad": "alta"
+     }
+    }
+   ]
+  },
+  {
+   "frase": "gasté 12 en gasolina y 30 en comida",
+   "cosas": [
+    {
+     "texto": "gasté 12 en gasolina",
+     "tipo": "gasto",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, hoy, sin hora, Gasolina",
+       "falta": ""
+      },
+      "evento": {
+       "texto": "evento, hoy, Gasolina",
+       "falta": ""
+      },
+      "gasto": {
+       "texto": "gasto de 12,00€, Gasolina, transporte",
+       "falta": ""
+      },
+      "compra": {
+       "texto": "a la compra: Gasolina",
+       "falta": ""
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": ""
+      },
+      "cumple": {
+       "texto": "cumpleaños de Gasolina, 5 de noviembre",
+       "falta": "falta el día"
+      },
+      "examen": {
+       "texto": "examen de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "recurrente": {
+       "texto": "Gasolina, todos los días",
+       "falta": ""
+      },
+      "clase": {
+       "texto": "clase de Gasolina,  a las ?",
+       "falta": "faltan los días"
+      },
+      "viaje": {
+       "texto": "viaje a Gasolina, hoy",
+       "falta": ""
+      },
+      "libro": {
+       "texto": "libro para ocio: Gasolina",
+       "falta": ""
+      },
+      "serie": {
+       "texto": "serie para ocio: Gasolina",
+       "falta": ""
+      },
+      "peli": {
+       "texto": "película para ocio: Gasolina",
+       "falta": ""
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Gasolina",
+       "falta": ""
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2026-11-05",
+      "fechaDicha": false,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": "12",
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Gasolina",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "c_trans",
+      "forzado": "",
+      "conGente": false,
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    },
+    {
+     "texto": "gasto 30 en comida",
+     "tipo": "gasto",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, hoy, sin hora, Comida",
+       "falta": ""
+      },
+      "evento": {
+       "texto": "evento, hoy, Comida",
+       "falta": ""
+      },
+      "gasto": {
+       "texto": "gasto de 30,00€, Comida, comida",
+       "falta": ""
+      },
+      "compra": {
+       "texto": "a la compra: Comida",
+       "falta": ""
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": ""
+      },
+      "cumple": {
+       "texto": "cumpleaños de Comida, 5 de noviembre",
+       "falta": "falta el día"
+      },
+      "examen": {
+       "texto": "examen de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "recurrente": {
+       "texto": "Comida, todos los días",
+       "falta": ""
+      },
+      "clase": {
+       "texto": "clase de Comida,  a las ?",
+       "falta": "faltan los días"
+      },
+      "viaje": {
+       "texto": "viaje a Comida, hoy",
+       "falta": ""
+      },
+      "libro": {
+       "texto": "libro para ocio: Comida",
+       "falta": ""
+      },
+      "serie": {
+       "texto": "serie para ocio: Comida",
+       "falta": ""
+      },
+      "peli": {
+       "texto": "película para ocio: Comida",
+       "falta": ""
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Comida",
+       "falta": ""
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2026-11-05",
+      "fechaDicha": false,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": "30",
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Comida",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "c_comida",
+      "forzado": "",
+      "conGente": false,
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    }
+   ]
+  },
+  {
+   "frase": "examen de química el 20",
+   "cosas": [
+    {
+     "texto": "examen de química el 20",
+     "tipo": "evento",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, viernes, 20 nov, sin hora, Química",
+       "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+      },
+      "evento": {
+       "texto": "evento, viernes, 20 nov, Química",
+       "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+      },
+      "gasto": {
+       "texto": "gasto de —, Química, viernes, 20 nov",
+       "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+      },
+      "compra": {
+       "texto": "a la compra: Química",
+       "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+      },
+      "cumple": {
+       "texto": "cumpleaños de Química, 20 de noviembre",
+       "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+      },
+      "examen": {
+       "texto": "examen de ?, viernes, 20 nov",
+       "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, viernes, 20 nov",
+       "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+      },
+      "recurrente": {
+       "texto": "Química, todos los días",
+       "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+      },
+      "clase": {
+       "texto": "clase de Química,  a las ?",
+       "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+      },
+      "viaje": {
+       "texto": "viaje a Química, viernes, 20 nov",
+       "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+      },
+      "libro": {
+       "texto": "libro para ocio: Química",
+       "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+      },
+      "serie": {
+       "texto": "serie para ocio: Química",
+       "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+      },
+      "peli": {
+       "texto": "película para ocio: Química",
+       "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Química",
+       "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2026-11-20",
+      "fechaDicha": true,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": null,
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Química",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": {
+       "lista": "exams",
+       "clase": "examen"
+      },
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "asignaturaId": null,
+      "asignaturaNombre": null,
+      "error": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
+     }
+    }
+   ]
+  },
+  {
+   "frase": "no tengo que ir al dentista mañana",
+   "cosas": [
+    {
+     "texto": "no tengo que ir al dentista mañana",
+     "tipo": "evento",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, mañana, sin hora, No tengo que ir al dentista",
+       "falta": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+      },
+      "evento": {
+       "texto": "evento, mañana, No tengo que ir al dentista",
+       "falta": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+      },
+      "gasto": {
+       "texto": "gasto de —, No tengo que ir al dentista, mañana",
+       "falta": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+      },
+      "compra": {
+       "texto": "a la compra: No tengo que ir al dentista",
+       "falta": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+      },
+      "cumple": {
+       "texto": "cumpleaños de No tengo que ir al dentista, 6 de noviembre",
+       "falta": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+      },
+      "examen": {
+       "texto": "examen de ?, mañana",
+       "falta": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, mañana",
+       "falta": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+      },
+      "recurrente": {
+       "texto": "No tengo que ir al dentista, todos los días",
+       "falta": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+      },
+      "clase": {
+       "texto": "clase de No tengo que ir al dentista,  a las ?",
+       "falta": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+      },
+      "viaje": {
+       "texto": "viaje a No tengo que ir al dentista, mañana",
+       "falta": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+      },
+      "libro": {
+       "texto": "libro para ocio: No tengo que ir al dentista",
+       "falta": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+      },
+      "serie": {
+       "texto": "serie para ocio: No tengo que ir al dentista",
+       "falta": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+      },
+      "peli": {
+       "texto": "película para ocio: No tengo que ir al dentista",
+       "falta": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+      },
+      "juego": {
+       "texto": "videojuego para ocio: No tengo que ir al dentista",
+       "falta": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2026-11-06",
+      "fechaDicha": true,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": null,
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "No tengo que ir al dentista",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "salud",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "asignaturaId": null,
+      "asignaturaNombre": null,
+      "error": "eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo"
+     }
+    }
+   ]
+  },
+  {
+   "frase": "no olvidar comprar pan",
+   "cosas": [
+    {
+     "texto": "no olvidar comprar pan",
+     "tipo": "compra",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, hoy, sin hora, Comprar pan",
+       "falta": ""
+      },
+      "evento": {
+       "texto": "evento, hoy, Comprar pan",
+       "falta": ""
+      },
+      "gasto": {
+       "texto": "gasto de —, Comprar pan",
+       "falta": "falta el importe"
+      },
+      "compra": {
+       "texto": "a la compra: Pan",
+       "falta": ""
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": ""
+      },
+      "cumple": {
+       "texto": "cumpleaños de Comprar pan, 5 de noviembre",
+       "falta": "falta el día"
+      },
+      "examen": {
+       "texto": "examen de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, hoy",
+       "falta": "no encuentro la asignatura"
+      },
+      "recurrente": {
+       "texto": "Comprar pan, todos los días",
+       "falta": ""
+      },
+      "clase": {
+       "texto": "clase de Comprar pan,  a las ?",
+       "falta": "faltan los días"
+      },
+      "viaje": {
+       "texto": "viaje a Comprar pan, hoy",
+       "falta": ""
+      },
+      "libro": {
+       "texto": "libro para ocio: Comprar pan",
+       "falta": ""
+      },
+      "serie": {
+       "texto": "serie para ocio: Comprar pan",
+       "falta": ""
+      },
+      "peli": {
+       "texto": "película para ocio: Comprar pan",
+       "falta": ""
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Comprar pan",
+       "falta": ""
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2026-11-05",
+      "fechaDicha": false,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "",
+      "horaFin": "",
+      "importe": null,
+      "ingreso": false,
+      "comprar": true,
+      "nota": false,
+      "titulo": "Pan",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "asignaturaId": null,
+      "asignaturaNombre": null
+     }
+    }
+   ]
+  },
+  {
+   "frase": "reunión el día veinte a las diez",
+   "cosas": [
+    {
+     "texto": "reunión el día 20 a las diez",
+     "tipo": "evento",
+     "describir": {
+      "tarea": {
+       "texto": "tarea, viernes, 20 nov a las 10:00, Reunión",
+       "falta": ""
+      },
+      "evento": {
+       "texto": "evento, viernes, 20 nov a las 10:00, Reunión",
+       "falta": ""
+      },
+      "gasto": {
+       "texto": "gasto de —, Reunión, viernes, 20 nov",
+       "falta": "falta el importe"
+      },
+      "compra": {
+       "texto": "a la compra: Reunión",
+       "falta": ""
+      },
+      "nota": {
+       "texto": "a la nota de hoy",
+       "falta": ""
+      },
+      "cumple": {
+       "texto": "cumpleaños de Reunión, 20 de noviembre",
+       "falta": ""
+      },
+      "examen": {
+       "texto": "examen de ?, viernes, 20 nov a las 10:00",
+       "falta": "no encuentro la asignatura"
+      },
+      "trabajo": {
+       "texto": "entrega de ?, viernes, 20 nov a las 10:00",
+       "falta": "no encuentro la asignatura"
+      },
+      "recurrente": {
+       "texto": "Reunión, todos los días a las 10:00",
+       "falta": ""
+      },
+      "clase": {
+       "texto": "clase de Reunión,  a las 10:00",
+       "falta": "faltan los días"
+      },
+      "viaje": {
+       "texto": "viaje a Reunión, viernes, 20 nov",
+       "falta": ""
+      },
+      "libro": {
+       "texto": "libro para ocio: Reunión",
+       "falta": ""
+      },
+      "serie": {
+       "texto": "serie para ocio: Reunión",
+       "falta": ""
+      },
+      "peli": {
+       "texto": "película para ocio: Reunión",
+       "falta": ""
+      },
+      "juego": {
+       "texto": "videojuego para ocio: Reunión",
+       "falta": ""
+      }
+     },
+     "nada": false,
+     "r": {
+      "fecha": "2026-11-20",
+      "fechaDicha": true,
+      "fechaFin": "",
+      "anioDicho": false,
+      "hora": "10:00",
+      "horaFin": "",
+      "importe": null,
+      "ingreso": false,
+      "comprar": false,
+      "nota": false,
+      "titulo": "Reunión",
+      "recurrencia": null,
+      "cumple": false,
+      "estudio": null,
+      "clase": false,
+      "viaje": false,
+      "eventoTipo": "trabajo",
+      "lugar": "",
+      "cuenta": "",
+      "categoria": "",
+      "forzado": "",
+      "conGente": false,
+      "asignaturaId": null,
+      "asignaturaNombre": null
      }
     }
    ]

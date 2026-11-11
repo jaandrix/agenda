@@ -174,6 +174,7 @@ enum CrearApunte {
             if tipo == "tarea", let n = diasEntre(diaPlan, r.fecha), (0...2).contains(n) {
                 let tid = id("planner", ahora)
                 ops.append(.crearTarea(id: tid, dia: r.fecha, titulo: r.lugar.isEmpty ? titulo : "\(titulo) en \(r.lugar)", hora: r.hora.isEmpty ? nil : r.hora))
+                if let p = r.prioridad, ["alta", "media", "baja"].contains(p) { ops.append(.parcharTarea(id: tid, campos: ["prioridad": p])) }
                 deshacer = ["tipo": .string("tarea"), "tareaId": .string(tid)]
             } else {
                 let eid = id("evt", ahora)
