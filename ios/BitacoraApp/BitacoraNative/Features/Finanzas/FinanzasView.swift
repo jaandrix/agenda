@@ -59,6 +59,13 @@ struct FinanzasView: View {
                         }
                     }
                     .id("arriba")
+                    // Mantener pulsado el título: lo que tarda el motor (arranque, carga del documento y cada pestaña, en ms).
+                    .onLongPressGesture {
+                        Task {
+                            let m = await MotorFinanzas.compartido.ultimaMedida
+                            aviso = m.sorted { $0.key < $1.key }.map { "\($0.key): \(Int($0.value.rounded())) ms" }.joined(separator: ", ")
+                        }
+                    }
                     selector(scroll)
                     contenido
                 }

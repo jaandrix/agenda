@@ -108,3 +108,20 @@ Los puntos 1 a 7 son la 0.18, en verde en el run 43027827095. Lo marcado «0.19�
   - las cuatro hojas responden al instante y son fáciles de tocar;
   - en una receta, los cuadros de ingredientes y pasos se ven.
 - **Enlaces:** tocar un enlace lo abre dentro de la app; «···» → «abrir en safari.».
+
+## Finanzas (sesión de Finanzas)
+
+**Hecho (5789f62).** Finanzas nativa con el código de la web en JavaScriptCore (`Features/Finanzas/MotorFinanzas.swift` + `finanzas-puente.js`), sin un segundo motor:
+- Las cuatro pestañas de `renderMobileFinances`, en su orden: cuentas, planificación, movimientos y resumen. Las cifras salen de `saldoLiquido`, `financeProNeutro`, `financeSerieDiaria`, `financeBudgetUnifiedModel`, `finRes*`...
+- Importar con `financeProPrepararImport` / `financeProEjecutarImport`: pegar o archivo (CSV, TSV, TXT y .xlsx con `LectorExtracto`), cuenta detectada, filas marcables, cuadre y duplicados claros.
+- Escrituras con `CambioFinanzas` (op `extra(tipo: "finanzas")`): la web cambia una copia y vuelve la diferencia por id y campo. Lo usan importar, `prepararFinanzas`, el gestor de suscripciones, las detectadas y los logos.
+- Suscripciones: gestor (baja, alta, borrar, añadir, editar) y logos de la función `portadas`, guardados en la entrada como data URL.
+- Rendimiento: el documento entra en JS con sus bytes, una vez por revisión. Cada pestaña se calcula una vez y las otras se preparan después.
+- Pruebas: `pruebas/finanzas-ios.mjs` (lo lanza `comprobar.mjs`) y `MotorFinanzasTests`.
+
+**Pendiente (Finanzas), por valor:**
+1. Medir en el iPhone con datos reales: mantener pulsado el título «finanzas.» enseña `MotorFinanzas.ultimaMedida` (arranque, carga y cada pestaña, en ms). Objetivo: menos de 100 ms al cambiar de pestaña.
+2. Editor de movimiento como `openFinanceProTransactionModal`: marcas viaje y ahorro, pendiente, nota del banco, dividir. Hoy es el editor sencillo de antes.
+3. «más opciones.»: cuentas y saldos iniciales, ajustar saldo, categorías, reglas, duplicados y deshacer importación. Hoy abren la web.
+4. Cuadre que no cuadra: los botones de `openFinanceProCuadre` para arreglarlo. Hoy dice la diferencia y manda a la web.
+5. «inversión desde.» de la gráfica, poner o cambiar el objetivo de patrimonio y la ficha de inversión: en la web.
