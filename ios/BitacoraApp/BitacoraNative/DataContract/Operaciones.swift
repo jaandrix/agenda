@@ -1301,7 +1301,7 @@ enum AplicarOperaciones {
              .editarMovimiento, .borrarMovimiento, .crearTraspaso, .editarItemEstudio, .borrarItemEstudio, .crearProyecto, .cambiarProyecto,
              .anadirEnLista, .anadirCompra, .guardarListaCompra, .borrarListaCompra, .elegirListaCompra, .guardarItemCompra,
              .borrarItemCompra, .terminarCompra, .guardarRecetaCompra, .borrarRecetaCompra, .guardarPlatoCompra, .borrarPlatoCompra,
-             .guardarOcio, .guardarListaOcio, .borrarListaOcio, .anadirANota, .anadirClase, .registrarApunte, .deshacerApunte:
+             .guardarOcio, .guardarListaOcio, .borrarListaOcio, .anadirANota, .anadirClase, .registrarApunte, .deshacerApunte, .extra:
             return valor ?? .object(p)
         }
     }
