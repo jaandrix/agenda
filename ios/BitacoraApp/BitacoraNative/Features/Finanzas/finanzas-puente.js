@@ -460,6 +460,128 @@
         borrarMovimiento: function (id) {
             return JSON.stringify(enCopia(function () { financePro.transactions = financePro.transactions.filter(function (t) { return String(t.id) !== id; }); return true; }));
         },
+        // ---- «más opciones.» (mobileFinMenu): lo que enseñan sus modales, como datos ----
+        gestion: function () {
+            var dup = findFinanceProDuplicates();
+            var pos = findFinanceProPosiblesDuplicados(dup);
+            var item = function (t) {
+                var cat = financeProCategoryById(t.category);
+                return { id: String(t.id), texto: nombreCuenta(t.account) + ', ' + financeDateLabelShort(t.date) + (cat ? ', ' + cat.name : ''), nota: String(t.note || ''), tipo: t.type, importe: Number(t.amount) || 0 };
+            };
+            return JSON.stringify({
+                cuentas: FINANCE_PRO_ACCOUNT_KEYS.map(function (k) { return { id: k, nombre: String(nombreCuenta(k)), saldo0: Number(financePro.accounts[k].balance0 || 0), saldo: financeProAccountBalance(k) }; }),
+                categorias: financePro.categories.map(function (c) { return { id: String(c.id), nombre: String(c.name || ''), tipo: c.type || '', color: c.color || '' }; }),
+                paleta: FINANCE_PRO_PALETTE,
+                reglas: (financePro.rules || []).map(function (r) { return { id: String(r.id), texto: String(r.matchText || ''), cuenta: String(nombreCuenta(r.otherAccount)), activa: !!r.enabled }; }),
+                duplicados: dup.map(function (p) { return [item(p[0]), item(p[1])]; }),
+                posibles: pos.map(function (p) { return [item(p[0]), item(p[1])]; })
+            });
+        },
+        dividirCandidatos: function (origen, palabras) {
+            dividirCat = { origen: origen, nombre: '', palabras: palabras, fuera: new Set() };
+            var l = dividirCategoriaCandidatos();
+            dividirCat = null;
+            return JSON.stringify(l.map(function (t) { return { id: String(t.id), dia: financeDateLabelShort(t.date), concepto: String(t.note || t.bankNote || 'movimiento'), importe: Number(t.amount) || 0 }; }));
+        },
+        // La foto de antes de importar (financeFotoFinanzas), para «deshacer importación.».
+        foto: function () { return JSON.stringify(financeFotoFinanzas()); },
+        accion: function (nombre, datos) {
+            var a = JSON.parse(datos || '{}');
+            return JSON.stringify(enCopia(function () {
+                switch (nombre) {
+                case 'cuentas':
+                    a.cuentas.forEach(function (c) {
+                        if (!financePro.accounts[c.id]) return;
+                        var n = String(c.nombre || '').trim();
+                        if (n) financePro.accounts[c.id].name = n;
+                        financePro.accounts[c.id].balance0 = Number(String(c.saldo0).replace(',', '.')) || 0;
+                    });
+                    return true;
+                case 'ajustarSaldo':
+                    var target = financeProParseEuroAmount(String(a.saldo));
+                    if (!Number.isFinite(target)) throw new Error('Introduce un importe válido');
+                    var diff = Math.round((target - financeProAccountBalance(a.cuenta)) * 100) / 100;
+                    if (Math.abs(diff) < 0.01) return 'El saldo ya coincidía';
+                    financePro.transactions.push({ id: 'ptx_adj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), date: todayISO(), account: a.cuenta, type: diff > 0 ? 'income' : 'expense', amount: Math.abs(diff), note: 'Ajuste de saldo', ajuste: true });
+                    return 'Saldo ajustado, ' + (diff > 0 ? '+' : '-') + financeMoney(Math.abs(diff));
+                case 'restablecer':
+                    financePro.accounts = { efectivo: { name: 'Efectivo', balance0: 0 }, bancos: { name: 'Bancos', balance0: 0 }, online: { name: 'Online', balance0: 0 } };
+                    financePro.categories = financeProDefaultCategories();
+                    financePro.transactions = []; financePro.categoryBudgets = {}; financePro.rules = []; financePro.programados = []; financePro.historialPresupuestos = {};
+                    if (a.alcance === 'todo') financeProfile = financeProfileVacio();
+                    return true;
+                case 'categoria':
+                    var nombreCat = String(a.nombre || '').trim();
+                    if (!nombreCat) throw new Error('Ponle un nombre a la categoría');
+                    financePro.categories.push({ id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name: nombreCat, icon: 'other', color: a.color || FINANCE_PRO_PALETTE[0], type: a.tipo === 'income' ? 'income' : 'expense' });
+                    return true;
+                case 'borrarCategoria':
+                    financePro.categories = financePro.categories.filter(function (c) { return String(c.id) !== a.id; });
+                    financePro.transactions.forEach(function (t) { if (String(t.category) === a.id) delete t.category; });
+                    return true;
+                case 'dividir':
+                    dividirCat = { origen: a.origen, nombre: String(a.nombre || '').trim(), palabras: a.palabras, fuera: new Set(a.fuera || []) };
+                    var mover = dividirCategoriaCandidatos().filter(function (t) { return !dividirCat.fuera.has(String(t.id)); });
+                    if (!mover.length || !dividirCat.nombre) { dividirCat = null; throw new Error('Nada que mover'); }
+                    var origen = financeProCategoryById(dividirCat.origen);
+                    var destino = financePro.categories.find(function (c) { return c.type === 'expense' && financeProNormalizar(c.name) === financeProNormalizar(dividirCat.nombre); });
+                    if (!destino) {
+                        var usados = new Set(financePro.categories.map(function (c) { return c.color; }));
+                        destino = { id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name: dividirCat.nombre, icon: (origen && origen.icon) || 'other', color: FINANCE_PRO_PALETTE.find(function (c) { return !usados.has(c); }) || FINANCE_PRO_PALETTE[0], type: 'expense' };
+                        financePro.categories.push(destino);
+                    }
+                    mover.forEach(function (t) { t.category = destino.id; t.needsReview = false; delete t.categoriaAuto; });
+                    dividirCat = null;
+                    return mover.length + ' movimientos pasan de «' + ((origen && origen.name) || 'la categoría') + '» a «' + destino.name + '».';
+                case 'regla':
+                    var texto = String(a.texto || '').trim();
+                    if (!texto) throw new Error('Escribe el texto a buscar en el concepto');
+                    financePro.rules.push({ id: 'prule_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), enabled: true, matchText: texto, otherAccount: a.cuenta });
+                    return true;
+                case 'activarRegla':
+                    var r = financePro.rules.find(function (x) { return String(x.id) === a.id; });
+                    if (r) r.enabled = !r.enabled;
+                    return true;
+                case 'borrarRegla':
+                    financePro.rules = financePro.rules.filter(function (x) { return String(x.id) !== a.id; });
+                    return true;
+                case 'fusionar':
+                    var x1 = financePro.transactions.find(function (t) { return String(t.id) === a.a; });
+                    var x2 = financePro.transactions.find(function (t) { return String(t.id) === a.b; });
+                    if (!x1 || !x2) return false;
+                    var puntos = function (t) { return (t.manual ? 4 : 0) + (t.category ? 2 : 0) + (t.needsReview ? -1 : 0); };
+                    var base = puntos(x1) >= puntos(x2) ? x1 : x2, otra = base === x1 ? x2 : x1;
+                    if (otra.note) base.bankNote = otra.bankNote || otra.note;
+                    if (!base.note && otra.note) base.note = otra.note;
+                    if (!base.category && otra.category) { base.category = otra.category; base.needsReview = false; }
+                    if (!base.recurringEntryId && otra.recurringEntryId) { base.recurringEntryId = otra.recurringEntryId; base.cicloMes = financeProCicloMes(otra); }
+                    if (otra.pendiente) base.pendiente = true;
+                    base.conciliado = true;
+                    financePro.transactions = financePro.transactions.filter(function (t) { return t !== otra; });
+                    return true;
+                case 'noDuplicado':
+                    var y1 = financePro.transactions.find(function (t) { return String(t.id) === a.a; });
+                    var y2 = financePro.transactions.find(function (t) { return String(t.id) === a.b; });
+                    if (!y1 || !y2) return false;
+                    y1.noDuplicadoDe = (y1.noDuplicadoDe || []).concat([y2.id]);
+                    y2.noDuplicadoDe = (y2.noDuplicadoDe || []).concat([y1.id]);
+                    return true;
+                case 'volver':
+                    // financeAplicarVuelta: Finanzas como en la foto, y en las entradas solo la cuenta y el concepto del banco.
+                    var foto = a.foto;
+                    if (!foto || !foto.financePro) throw new Error('Esa copia ya no está');
+                    if (!foto.recurrentes && Array.isArray(foto.entradas)) { foto.recurrentes = {}; foto.entradas.forEach(function (e) { if (e && e.id) foto.recurrentes[e.id] = { proAccount: e.proAccount, conceptoBanco: e.conceptoBanco }; }); }
+                    financePro = JSON.parse(JSON.stringify(foto.financePro));
+                    entries.forEach(function (e) {
+                        var rr = foto.recurrentes && foto.recurrentes[e.id];
+                        if (!rr) return;
+                        ['proAccount', 'conceptoBanco'].forEach(function (k) { if (rr[k] === undefined) delete e[k]; else e[k] = rr[k]; });
+                    });
+                    return true;
+                }
+                throw new Error('acción desconocida');
+            }));
+        },
         suscripcion: function (id, accion) {
             return JSON.stringify(enCopia(function () {
                 var e = entries.find(function (x) { return String(x.id) === id; });

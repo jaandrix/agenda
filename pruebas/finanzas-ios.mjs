@@ -143,3 +143,26 @@ test('editar en el iPhone un movimiento importado no lo duplica al reimportar', 
     const b = JSON.parse(run(`__fin.borrarMovimiento(${JSON.stringify(String(t.id))})`));
     assert.deepEqual(b.cambios.movimientos.quitar, [String(t.id)]);
 });
+
+test('más opciones: ajustar saldo, reglas, categorías, dividir y volver a una foto', () => {
+    const run = cargarMotor();
+    const estado = base();
+    importarEnMotor(run, estado, REVOLUT[0], 'online');
+    const cargar = () => run(`__fin.cargar(${JSON.stringify(JSON.stringify(estado.financePro))}, ${JSON.stringify(JSON.stringify(estado.entries))}, '{}', null)`);
+    const accion = (n, d) => { cargar(); const r = JSON.parse(run(`__fin.accion(${JSON.stringify(n)}, ${JSON.stringify(JSON.stringify(d))})`)); if (r.cambios) aplicar(estado, r.cambios); return r; };
+    cargar();
+    const foto = JSON.parse(run('__fin.foto()'));
+    const g = JSON.parse(run('__fin.gestion()'));
+    assert.equal(g.cuentas.length, 3);
+    const r = accion('ajustarSaldo', { cuenta: 'online', saldo: '1000' });
+    assert.match(r.resultado, /Saldo ajustado/);
+    cargar();
+    assert.equal(Math.round(run(`financeProAccountBalance('online')`) * 100) / 100, 1000);
+    accion('regla', { texto: 'Top-up', cuenta: 'bancos' });
+    assert.equal(estado.financePro.rules.length, 1);
+    accion('categoria', { nombre: 'Bar', tipo: 'expense', color: '#ef4444' });
+    assert.ok(estado.financePro.categories.some(c => c.name === 'Bar'));
+    accion('volver', { foto });
+    assert.equal(estado.financePro.transactions.length, foto.financePro.transactions.length);
+    assert.equal(estado.financePro.rules.length, 0);
+});

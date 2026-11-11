@@ -262,6 +262,12 @@ struct ImportarExtractoView: View {
     private func ejecutar() async {
         trabajando = true; defer { trabajando = false }
         do {
+            // financeImportGuardarAntes: la foto de antes, para «deshacer importación.».
+            if let uid = c.sesion?.userId, let foto = try? await MotorFinanzas.compartido.crudo("foto"), let s = String(data: foto, encoding: .utf8) {
+                let n = (try? LectorJSON.valor(foto))?["financePro"]?["transactions"]?.lista?.count ?? 0
+                let cuenta = vista.flatMap { v in v.cuentas.first { $0.id == v.cuenta }?.nombre } ?? ""
+                FotosImportacion.guardar(uid, texto: "importación de \(cuenta)", movimientos: n, foto: s)
+            }
             let d = try await MotorFinanzas.compartido.crudo("importarEjecutar")
             guard await guardar(d) else { error = "no se pudo guardar en este iPhone. Todo sigue como estaba."; return }
             resultado = try JSONDecoder().decode(Respuesta.self, from: d).resultado

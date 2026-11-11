@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 // se preparan después, en segundo plano, para que cambiar de pestaña no espere.
 
 enum HojaFinanzas: Identifiable {
-    case importar, buscar, gestor, editarSuscripcion(String?), permitir, revisar
+    case importar, buscar, gestor, editarSuscripcion(String?), permitir, revisar, opcion(OpcionFinanzas)
     var id: String {
         switch self {
         case .importar: return "importar"
@@ -15,6 +15,7 @@ enum HojaFinanzas: Identifiable {
         case .editarSuscripcion(let id): return "sub:" + (id ?? "nueva")
         case .permitir: return "permitir"
         case .revisar: return "revisar"
+        case .opcion(let o): return "opcion:" + o.rawValue
         }
     }
 }
@@ -138,6 +139,7 @@ struct FinanzasView: View {
         case .editarSuscripcion(let id): EditorSuscripcionView(id: id) { datos in await guardar(datos) }
         case .permitir: PermitirView()
         case .revisar: RevisarMovimientosView(oculto: escondido) { f in hoja = nil; abrirTrasCerrar(f) }
+        case .opcion(let o): MasOpcionesView(opcion: o, oculto: escondido)
         }
     }
 
@@ -532,14 +534,9 @@ private struct PestanaMovimientos: View {
         }
         HStack(spacing: Espacio.l) {
             if m.total > m.filas.count { EnlaceFin(texto: "ver \(min(30, m.total - m.filas.count)) más.", accion: mas) }
-            // mobileFinMenu: lo que todavía se hace en la web.
+            // mobileFinMenu.
             Menu {
-                Button("cuentas y saldos iniciales.", action: web)
-                Button("ajustar el saldo de una cuenta.", action: web)
-                Button("categorías.", action: web)
-                Button("reglas de importación.", action: web)
-                Button("posibles duplicados.", action: web)
-                Button("deshacer importación.", action: web)
+                ForEach(OpcionFinanzas.allCases) { o in Button(o.titulo) { hoja = .opcion(o) } }
             } label: {
                 Text("más opciones.").font(Tipo.poppins(14, .medium, estilo: .footnote)).foregroundStyle(Paleta.acento).frame(minHeight: 44)
             }
