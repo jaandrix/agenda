@@ -5,7 +5,6 @@ struct AjustesView: View {
     @Environment(\.openURL) private var abrir
     @State private var confirmarSalida = false
     @State private var avisos = AvisosLocales.activos
-    @AppStorage(Vidrio.clave) private var vidrio = false
 
     var body: some View {
         List {
@@ -24,13 +23,9 @@ struct AjustesView: View {
                 }
                 .frame(minHeight: 44)
                 .listRowBackground(Paleta.superficie)
-                Toggle("glass (prueba).", isOn: $vidrio)
+                Button("restablecer apariencia.") { c.ponerLetra(.normal); c.ponerTema(.sistema) }
                     .frame(minHeight: 44)
-                    .listRowBackground(Paleta.superficie)
-                    .accessibilityHint("barra translúcida y fondo con el color del tema, solo en este iphone")
-                Button("restablecer apariencia.") { c.ponerLetra(.normal); c.ponerTema(.sistema); vidrio = false }
-                    .frame(minHeight: 44)
-                    .disabled(c.letra == .normal && c.tema == .sistema && !vidrio)
+                    .disabled(c.letra == .normal && c.tema == .sistema)
                     .listRowBackground(Paleta.superficie)
                 Toggle("pedir \(Biometria.nombre) al abrir.", isOn: Binding(get: { c.bloqueoActivo }, set: { v in Task { await c.activarBloqueo(v) } }))
                     .disabled(!Biometria.disponible)

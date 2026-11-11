@@ -9,6 +9,7 @@ struct BitacoraNativeApp: App {
     // Los títulos de navegación y las pestañas los dibuja UIKit, que no ve el `.font` de SwiftUI: sin esto salían
     // con la letra del sistema aunque Poppins estuviera cargada.
     init() {
+        UserDefaults.standard.removeObject(forKey: "bitacora.glass")
         func poppins(_ nombre: String, _ tamano: CGFloat, _ estilo: UIFont.TextStyle) -> UIFont {
             UIFontMetrics(forTextStyle: estilo).scaledFont(for: UIFont(name: nombre, size: tamano) ?? .systemFont(ofSize: tamano))
         }
@@ -91,8 +92,6 @@ struct PrincipalView: View {
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var masUsados: [Apartado]?
     @Environment(\.scenePhase) private var fase
-    @AppStorage(Vidrio.clave) private var vidrio = false
-    @Environment(\.accessibilityReduceTransparency) private var sinTransparencia
     @State private var teclado = false
 
     static func pestanas(secundaria: Pestana) -> [BarraBitacora.Pestana] {
@@ -105,16 +104,9 @@ struct PrincipalView: View {
 
     var body: some View {
         @Bindable var c = c
-        Group {
-            if vidrio && !sinTransparencia {
-                // Glass: el contenido pasa por debajo de la barra, que es el único material de la pantalla.
-                pantallas.safeAreaInset(edge: .bottom, spacing: 0) { if !teclado { barra } }
-            } else {
-                VStack(spacing: 0) {
-                    pantallas
-                    if !teclado { barra }
-                }
-            }
+        VStack(spacing: 0) {
+            pantallas
+            if !teclado { barra }
         }
         // Con el teclado abierto la barra se va (en todas las pantallas): si no, quedaba encima del teclado y tapaba el campo.
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in teclado = true; masUsados = nil }
@@ -150,7 +142,7 @@ struct PrincipalView: View {
         .onChange(of: fase) { _, f in if f != .active { masUsados = nil } }
         .onChange(of: c.pestana) { masUsados = nil }
         .onChange(of: c.rutaMas) { masUsados = nil }
-        .background(fondoPrincipal.ignoresSafeArea())
+        .background(Paleta.fondo.ignoresSafeArea())
         .overlay(alignment: .top) {
             if let aviso = c.aviso {
                 Text(aviso)
@@ -209,21 +201,6 @@ struct PrincipalView: View {
             c.abrirApuntar()
         } mantener: {
             Task { await abrirMasUsados() }
-        }
-        .conVidrio(vidrio && !sinTransparencia)
-    }
-
-    // Glass: fondo atmosférico con dos manchas del propio tema, en degradados (sin filtros de desenfoque). Se ve tras la
-    // barra y donde una pantalla no pinta su fondo.
-    @ViewBuilder private var fondoPrincipal: some View {
-        if vidrio && !sinTransparencia {
-            ZStack {
-                Paleta.fondo
-                RadialGradient(colors: [Paleta.acento.opacity(0.22), .clear], center: UnitPoint(x: 0.12, y: 0.08), startRadius: 0, endRadius: 320)
-                RadialGradient(colors: [Paleta.atencion.opacity(0.16), .clear], center: UnitPoint(x: 0.9, y: 0.8), startRadius: 0, endRadius: 360)
-            }
-        } else {
-            Paleta.fondo
         }
     }
 

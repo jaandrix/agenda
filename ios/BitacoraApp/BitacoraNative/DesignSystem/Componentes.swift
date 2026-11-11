@@ -202,8 +202,6 @@ struct BarraBitacora: View {
     // Pulsación larga de «menú.» (doc 03): aro de progreso, escala 0,97 y un toque suave a los 170 ms si sigue apoyado.
     @State private var presionando = false
     @State private var toquesPresion = 0
-    // Glass (opcional): la barra es el único material de la pantalla; filas e iconos nunca llevan desenfoque.
-    var vidrio = false
 
     var body: some View {
         let mitad = pestanas.count / 2
@@ -218,17 +216,10 @@ struct BarraBitacora: View {
         .animation(sinMovimiento ? nil : .spring(response: 0.22, dampingFraction: 0.86), value: activa)
         .background(alignment: .top) {
             UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22, style: .continuous)
-                .fill(vidrio ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(Paleta.superficie))
-                .overlay {
-                    if vidrio {
-                        UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22, style: .continuous)
-                            .fill(Paleta.superficie.opacity(0.45))
-                    }
-                }
+                .fill(Paleta.superficie)
                 .overlay(alignment: .top) {
                     UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22, style: .continuous)
-                        .stroke(vidrio ? AnyShapeStyle(LinearGradient(colors: [.white.opacity(0.32), Paleta.bordeFuerte.opacity(0.4)], startPoint: .top, endPoint: .bottom))
-                                       : AnyShapeStyle(Paleta.bordeFuerte), lineWidth: 1)
+                        .stroke(Paleta.bordeFuerte, lineWidth: 1)
                 }
                 .shadow(color: .black.opacity(0.12), radius: 8, y: -2)
                 .ignoresSafeArea(edges: .bottom)
@@ -466,12 +457,3 @@ struct BarraAvance: View {
     }
 }
 
-// Glass (doc 11): piloto opcional, solo en este iPhone y apagado por defecto. No es un tema más: el color sigue saliendo
-// del tema elegido, así no se sincroniza ni pisa los seis de la web.
-enum Vidrio {
-    static let clave = "bitacora.glass"
-}
-
-extension BarraBitacora {
-    func conVidrio(_ v: Bool) -> BarraBitacora { var b = self; b.vidrio = v; return b }
-}
