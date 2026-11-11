@@ -18,6 +18,9 @@ Los puntos 1 a 7 son la 0.18, en verde en el run 43027827095. Lo marcado «0.19�
 | 6. Despensa | 56cb3b0 | Campo con superficie y filo de 3:1 (`campoCasa`, en `DesignSystem/CamposCasa.swift`). Hojas de 44 pt a todo el ancho, sin animación. Lista agrupada al cargar. Editores con el fondo del tema. |
 | 7. Rendimiento | d350bc1 | Ver el detalle debajo. |
 | Bandeja, editar_tarea (0.19) | 29ff1ee | Cambios de tareas desde Claude: título, notas, fecha, hora y hecha, con deshacer. |
+| Bandeja, más tipos (0.19) | dba2091 | Rutinas y tareas recurrentes (crear, pausar, reactivar), enlaces y entrada_crear de viaje, cumpleaños y documento, con su deshacer. Suscripciones y gastos fijos siguen en la web. |
+| Apuntar P1 (0.19) | f4d7814 | En `apuntar-puente.js`: prioridad dicha («prioridad alta», «urgente»), varios importes como varios gastos, aviso si la asignatura no existe, negaciones («no tengo que…») y días dictados («el día veinte»). Casos en `apuntar-p0.mjs` y en el banco dorado. |
+| Concurrencia (0.19) | 0ba416f | `pruebas/concurrencia-ios.mjs`: el `doSaveData` real de la web contra un servidor con huellas y una escritura del iPhone en medio. Los cuatro casos pasan: no se pierde nada, así que no hace falta compare-and-swap ni RPC por operación. |
 | Enlaces (0.19) | 0277c15 | Se abren dentro de la app (`SFSafariViewController`, con `c.web`); «abrir en safari.» en el menú. |
 
 **QR en los eventos:**
@@ -62,20 +65,14 @@ Los puntos 1 a 7 son la 0.18, en verde en el run 43027827095. Lo marcado «0.19�
    - recorrer `dayPlanner` y avisar de los `recordatorio` que caen en esa ventana de 5 minutos;
    - en `bitacora-mcp`, al encolar algo que no es de `OPS_AUTOMATICAS`, mandar un push «Claude propone…».
    Para el iPhone nativo haría falta APNs, que con Sideloadly y cuenta gratuita no hay. Mientras, el push web llega al iPhone si la PWA tiene los avisos activados. Recomendación: hacerlo en el servidor para la PWA ya, y en la nativa cuando haya cuenta de desarrollador.
-2. **Bandeja, más tipos en el iPhone:** tarea_recurrente, hábito, enlace y entrada_crear (viaje, cumpleaños y documento). Hoy esperan a la web.
-3. **Apuntar, P1 del laboratorio:**
-   - prioridad dicha en la frase;
-   - negaciones;
-   - faltas de dictado;
-   - varios importes;
-   - asignatura que no existe.
-   Van en `apuntar-puente.js` con su caso en `pruebas/apuntar-casos.json`.
+2. **Bandeja, lo que aún espera a la web:** ocio, compra, ticket, receta, proyecto, objetivo, laboral, profe, test, tarjetas, estudios, clase, día, deseo, entrada_editar y las entradas de dinero.
+3. **Apuntar:** condiciones («si llueve, …») y más faltas de dictado que las de los días.
 4. **«Más usados»:** elegir arrastrando desde «menú.».
 5. **Viajes:** reservas, listas, documentos, mapa y Destino.
 6. **Empleo:** fichas de empleo, vida laboral y CV.
 7. **Objetivos:** Harada, kaizen y kanban.
 8. **Documentos:** subir, renombrar y borrar archivos; crear y editar fichas.
-9. **Concurrencia PWA/iPhone en `dayPlanner`** (P0 de la 0.17): prueba de guardados simultáneos.
+9. **Concurrencia:** probar también `entries` y `listaCompra` si aparecen pérdidas.
 10. **Web, en espera:** llevar los validadores de Apuntar a `js/apuntar.js`. Mostrar las subtareas y el recordatorio en la web (hoy solo se conservan).
 
 ## Probar en el iPhone
