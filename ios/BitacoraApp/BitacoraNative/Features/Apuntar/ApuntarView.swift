@@ -212,8 +212,7 @@ struct ApuntarView: View {
 
     private func quitarTrozo(_ trozo: String) {
         if let r = texto.range(of: trozo) {
-            texto = texto.replacingCharacters(in: r, with: "").trimmingCharacters(in: CharacterSet(charactersIn: " ,;.
-"))
+            texto = texto.replacingCharacters(in: r, with: "").trimmingCharacters(in: CharacterSet(charactersIn: " ,;.").union(.newlines))
         }
     }
 
