@@ -218,6 +218,7 @@ final class AppCoordinator {
                 guard let self else { return }
                 let revisionAntes = self.informe.revision
                 self.informe = i
+                if !i.sesionRevocada { Task { await BandejaConector.revisar(self) } }
                 if i.revision != revisionAntes, AvisosLocales.activos { self.reconciliarAvisos() }
                 if i.sesionRevocada, self.sesion != nil {
                     let uid = self.sesion?.userId

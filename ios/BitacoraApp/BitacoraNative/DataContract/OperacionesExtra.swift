@@ -19,7 +19,7 @@ enum OperacionesExtra {
     static func claves(_ tipo: String) -> [String] {
         switch tipo {
         case entradaQR, quitarEntradaQR: return ["entries"]
-        case quitarConector: return ["registroConector", "entries", "dayPlanner", "pedidos"]
+        case quitarConector, conector, descartarConector: return clavesConector
         default: return ["dayPlanner"]
         }
     }
@@ -78,6 +78,10 @@ enum OperacionesExtra {
             })
         case quitarConector:
             r = quitarLoDelConector(d, r)
+        case conector:
+            r = aplicarConector(d, r)
+        case descartarConector:
+            r = descartar(d, r)
         default:
             break
         }
@@ -124,7 +128,8 @@ enum OperacionesExtra {
         case ("pedido_quitar", _):
             r["pedidos"] = .some(.array(((valores["pedidos"] ?? nil)?.lista ?? []).filter { $0["id"]?.comoId != id }))
         default:
-            return r
+            guard let otro = deshacerMas(dh, valores) else { return r }
+            r = otro
         }
         l["deshecho"] = .bool(true)
         reg[n] = .object(l)
@@ -136,7 +141,7 @@ enum OperacionesExtra {
         guard l["deshecho"]?.booleano != true, let dh = l["deshacer"]?.objeto else { return false }
         switch (dh["accion"]?.texto ?? "", dh["coleccion"]?.texto ?? "") {
         case ("quitar", "tarea"), ("quitar", "evento"), ("entrada", _), ("pedido_quitar", _): return true
-        default: return false
+        default: return deshacerMasPosible(dh)
         }
     }
 }
