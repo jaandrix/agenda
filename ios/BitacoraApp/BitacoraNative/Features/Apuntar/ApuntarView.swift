@@ -64,7 +64,6 @@ struct ApuntarView: View {
                         }
                         vistaPrevia
                         if let error { Text(error).font(Tipo.pie).foregroundStyle(Paleta.error) }
-                        accesos
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, Espacio.m)
@@ -137,16 +136,38 @@ struct ApuntarView: View {
             .accessibilityLabel("qué quieres apuntar")
     }
 
+    // BARRA_PISTA (js/barra.js): con el campo vacío, ejemplos que se prueban tocándolos.
+    private static let pistas = [("cena con marta el viernes a las 21", "un evento"), ("gasté 12 en gasolina", "un gasto"),
+                                 ("dentista mañana a las 5 y comprar pan", "dos cosas"), ("nota: idea para el viaje", "una nota")]
+
     @ViewBuilder private var vistaPrevia: some View {
         if items.isEmpty {
-            Text("escribe como hablas: «cena con marta el viernes a las 9», «serie los hombres de paco», «gasté 12 en gasolina».")
-                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-        } else {
             VStack(alignment: .leading, spacing: 0) {
-                if items.count > 1 {
-                    Text("\(items.count) cosas.").font(Tipo.poppins(13, .bold, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario)
-                        .padding(.bottom, 6)
+                Text("escribe como hablas. por ejemplo:").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.bottom, 4)
+                ForEach(Self.pistas, id: \.0) { t, q in
+                    Button { texto = t; escribiendo = true } label: {
+                        HStack {
+                            Text(t).font(Tipo.cuerpo).foregroundStyle(Paleta.texto).multilineTextAlignment(.leading)
+                            Spacer(minLength: 8)
+                            Text(q + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                        }
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
                 }
+            }
+        } else {
+            let faltan = items.indices.filter { !((items[$0].describir[elegidos[$0] ?? items[$0].tipo]?.falta) ?? "").isEmpty }.count
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(items.count > 1 ? "\(items.count) cosas." : "se apuntará.").font(Tipo.poppins(13, .bold, estilo: .footnote)).foregroundStyle(Paleta.texto)
+                    Spacer()
+                    Text(faltan > 0 ? "completa lo que falta o cambia el tipo." : "toca editar. para cambiar el tipo.")
+                        .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                }
+                .padding(.bottom, 6)
                 ForEach(Array(items.enumerated()), id: \.offset) { k, it in
                     if k > 0 { Rectangle().fill(Paleta.borde).frame(height: 1) }
                     fila(k, it)
@@ -162,55 +183,37 @@ struct ApuntarView: View {
         let d = it.describir[tipo]
         let nota = !(d?.falta ?? "").isEmpty ? (d?.falta ?? "") + "." : (elegidos[k] == nil && it.nada ? "sin fecha ni hora: irá como tarea para hoy." : "")
         return HStack(alignment: .top, spacing: 12) {
+            IconoApunte(tipo: TipoApunte.icono(tipo)).frame(width: 20, height: 20).foregroundStyle(Paleta.textoSecundario).padding(.top, 2)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
+                Text((TipoApunte.nombre[tipo] ?? tipo) + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
                 Text(d?.texto ?? it.texto).font(Tipo.cuerpo).foregroundStyle(Paleta.texto).fixedSize(horizontal: false, vertical: true)
                 if !nota.isEmpty { Text(nota).font(Tipo.pie).foregroundStyle(!(d?.falta ?? "").isEmpty ? Paleta.error : Paleta.textoSecundario) }
             }
             Spacer(minLength: 0)
             Menu {
-                ForEach(TipoApunte.disponibles(contexto), id: \.0) { v, nombre in
-                    Button { elegidos[k] = v } label: { if v == tipo { Label(nombre, systemImage: "checkmark") } else { Text(nombre) } }
+                Section("es un…") {
+                    ForEach(TipoApunte.disponibles(contexto), id: \.0) { v, nombre in
+                        Button { elegidos[k] = v } label: { if v == tipo { Label(nombre, systemImage: "checkmark") } else { Text(nombre) } }
+                    }
+                }
+                if items.count > 1 {
+                    Button("quitar de lo que se apunta.", role: .destructive) { quitarTrozo(it.texto) }
                 }
             } label: {
-                Text((TipoApunte.nombre[tipo] ?? tipo) + ".")
-                    .font(Tipo.poppins(13, .semibold, estilo: .footnote))
-                    .foregroundStyle(Paleta.texto)
-                    .padding(.horizontal, 10).frame(minHeight: 32)
-                    .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+                Text("editar.").font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(Paleta.acento)
+                    .frame(minWidth: 44, minHeight: 44)
             }
-            .accessibilityLabel("tipo: \(TipoApunte.nombre[tipo] ?? tipo). cambiar")
+            .accessibilityLabel("editar: \(TipoApunte.nombre[tipo] ?? tipo). cambiar el tipo")
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 8)
         .accessibilityElement(children: .combine)
     }
 
-    private var accesos: some View {
-        let lista: [(String, String, () -> Void)] = [
-            ("tarea.", "tarea", { c.modal = .tarea(EditorTarea(id: OperacionBitacora.nuevoIdTarea(), nueva: true, dia: inicial.fechaBase ?? CalendarioBitacora.madrid.diaLogico(Date()))) }),
-            ("evento.", "evento", { c.modal = .evento(EditorEvento(id: OperacionBitacora.nuevoIdEntrada(), nuevo: true, fecha: inicial.fechaBase ?? hoy)) }),
-            ("gasto.", "gasto", { c.modal = .movimiento(OperacionBitacora.nuevoIdMovimiento(), tipo: "expense") }),
-            ("nota.", "nota", { if !texto.lowercased().hasPrefix("nota:") { texto = "nota: " + texto } ; escribiendo = true }),
-            ("compra.", "compra", { c.modal = nil; c.web = Apartados.webURL("compra") }),
-            ("rutina.", "rutina", { c.modal = nil; c.web = Apartados.webURL("habits") }),
-            ("ocio.", "ocio", { c.modal = nil; c.web = Apartados.webURL("culture") }),
-            ("viaje.", "viaje", { c.modal = nil; c.web = Apartados.webURL("travels") }),
-        ].filter { $0.1 != "compra" || !contexto.ocultos.contains("compra") }
-        return VStack(alignment: .leading, spacing: Espacio.s) {
-            Text("o elige qué quieres apuntar").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-                ForEach(lista, id: \.1) { t, icono, accion in
-                    Button(action: accion) {
-                        VStack(spacing: 6) {
-                            IconoApunte(tipo: icono).frame(width: 22, height: 22)
-                            Text(t).font(Tipo.poppins(12, .semibold, estilo: .caption))
-                        }
-                        .foregroundStyle(Paleta.texto)
-                        .frame(maxWidth: .infinity, minHeight: 64)
-                        .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
+    private func quitarTrozo(_ trozo: String) {
+        if let r = texto.range(of: trozo) {
+            texto = texto.replacingCharacters(in: r, with: "").trimmingCharacters(in: CharacterSet(charactersIn: " ,;.
+"))
         }
     }
 
@@ -329,5 +332,20 @@ struct RecientesApuntarView: View {
         if let t = cambiando { cambiar(t); return }
         aviso = estaba ? "deshecho." : "ya no estaba: lo habrías borrado o cambiado antes."
         await leer()
+    }
+}
+
+// APUNTAR_ICONO_DE (js/apuntar.js): el dibujo de cada tipo en la vista previa.
+extension TipoApunte {
+    static func icono(_ tipo: String) -> String {
+        switch tipo {
+        case "evento", "cumple", "examen", "clase": return "evento"
+        case "gasto": return "gasto"
+        case "compra": return "compra"
+        case "nota": return "nota"
+        case "viaje": return "viaje"
+        case "recurrente": return "rutina"
+        default: return "tarea"
+        }
     }
 }
