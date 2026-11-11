@@ -116,9 +116,9 @@ Los puntos 1 a 7 son la 0.18, en verde en el run 43027827095. Lo marcado «0.19�
 - Rendimiento: el documento entra en JS con sus bytes, una vez por revisión. Cada pestaña se calcula una vez y las otras se preparan después.
 - Pruebas: `pruebas/finanzas-ios.mjs` (lo lanza `comprobar.mjs`) y `MotorFinanzasTests`.
 
+**0.19 de Finanzas (hecho):** editor de movimientos como el de la web (49d0d76), «más opciones.» nativo (c18673b) y arreglar un cuadre que no cuadra (cd153ff). La compilación de cd153ff estaba en curso al cortar por cupo: comprobar que está en verde.
+
 **Pendiente (Finanzas), por valor:**
-1. Medir en el iPhone con datos reales: mantener pulsado el título «finanzas.» enseña `MotorFinanzas.ultimaMedida` (arranque, carga y cada pestaña, en ms). Objetivo: menos de 100 ms al cambiar de pestaña.
-2. Editor de movimiento como `openFinanceProTransactionModal`: marcas viaje y ahorro, pendiente, nota del banco, dividir. Hoy es el editor sencillo de antes.
-3. «más opciones.»: cuentas y saldos iniciales, ajustar saldo, categorías, reglas, duplicados y deshacer importación. Hoy abren la web.
-4. Cuadre que no cuadra: los botones de `openFinanceProCuadre` para arreglarlo. Hoy dice la diferencia y manda a la web.
-5. «inversión desde.» de la gráfica, poner o cambiar el objetivo de patrimonio y la ficha de inversión: en la web.
+1. «inversión desde.» de la gráfica, poner o cambiar el objetivo de patrimonio y la ficha de inversión: hoy abren la web.
+2. Medir en el iPhone con datos reales: mantener pulsado el título «finanzas.» enseña lo que tarda el motor (arranque, carga y cada pestaña, en ms). Objetivo: menos de 100 ms al cambiar de pestaña.
+3. Iconos de las categorías al crear una (hoy salen con el de «otros»).
