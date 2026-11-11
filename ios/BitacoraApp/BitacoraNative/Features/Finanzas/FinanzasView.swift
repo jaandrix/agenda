@@ -1,749 +1,854 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-private enum SubseccionFinanzas: String, CaseIterable, Identifiable {
-    case resumen, movimientos, presupuestos, suscripciones, patrimonio
-    var id: String { rawValue }
-    var titulo: String {
+// Finanzas como la PWA del móvil (renderMobileFinances en js/nucleo.js): las mismas cuatro pestañas, en el mismo orden,
+// con los mismos bloques y las cifras del mismo código (MotorFinanzas). Solo se calcula la pestaña que se ve; las otras
+// se preparan después, en segundo plano, para que cambiar de pestaña no espere.
+
+enum HojaFinanzas: Identifiable {
+    case importar, buscar, gestor, editarSuscripcion(String?), permitir, revisar
+    var id: String {
         switch self {
-        case .resumen: return "resumen"
-        case .movimientos: return "movimientos"
-        case .presupuestos: return "presupuestos"
-        case .suscripciones: return "suscripciones"
-        case .patrimonio: return "patrimonio"
+        case .importar: return "importar"
+        case .buscar: return "buscar"
+        case .gestor: return "gestor"
+        case .editarSuscripcion(let id): return "sub:" + (id ?? "nueva")
+        case .permitir: return "permitir"
+        case .revisar: return "revisar"
         }
     }
 }
 
 struct FinanzasView: View {
     @Environment(AppCoordinator.self) private var c
-    @State private var vista: VistaFinanzas?
+    @Environment(\.openURL) private var abrirURL
+    // La pestaña se recuerda mientras la app está abierta, como financeTab en la web.
+    @AppStorage("finanzas.pestana") private var pestanaGuardada = PestanaFinanzas.cuentas.rawValue
+    @AppStorage("bitacora-fin-extras") private var extras = false
+    @State private var rango = "6m"
+    @State private var nMov = 30
+    @State private var cuentas: ModeloCuentas?
+    @State private var movs: ModeloMovimientos?
+    @State private var plan: ModeloPlanificacion?
+    @State private var resumen: ModeloResumen?
+    @State private var oculto = false
     @State private var ver = false
-    @State private var sub: SubseccionFinanzas = .resumen
-    @State private var rango: RangoGrafica = .tresMeses
-    @State private var serie: [PuntoDia] = []
-    @State private var filtros = FiltrosMovimientos()
-    @State private var mostrarImportador = false
-    @State private var extracto: ExtractoAnalizado?
-    @State private var avisoImportacion: String?
+    @State private var hoja: HojaFinanzas?
+    @State private var aviso: String?
+    @State private var logos = LogosFinanzas.compartido
+    @State private var preparadoEn: Int = -1
+
+    private var pestana: PestanaFinanzas { PestanaFinanzas(rawValue: pestanaGuardada) ?? .cuentas }
+    private var mesNombre: String {
+        let n = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+        return n[Calendar.current.component(.month, from: Date()) - 1]
+    }
+    private var escondido: Bool { oculto && !ver }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                CabeceraContexto(titulo: "finanzas", detalle: vista.map { LecturaFinanzas.etiquetaMes($0.mesActual) }) {
-                    if let v = vista {
-                        let oculto = v.ocultar && !ver
-                        Text(cifra(v.saldoLiquido, oculto))
-                            .font(Tipo.poppins(44, .bold, estilo: .largeTitle)).monospacedDigit()
-                            .foregroundStyle(Paleta.sobreContexto).lineLimit(1).minimumScaleFactor(0.55)
-                            .padding(.top, Espacio.m)
-                        Text("saldo líquido.")
-                            .font(Tipo.pie).foregroundStyle(Paleta.sobreContextoSuave)
-                        HStack(spacing: Espacio.l) {
-                            datoCab("patrimonio", cifra(v.patrimonioOperativo, oculto))
-                            datoCab("activos", cifra(v.activosTotales, oculto))
-                        }
-                        .padding(.top, Espacio.s)
-                        if v.ocultar {
+        ScrollViewReader { scroll in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    CabeceraApartado(titulo: "finanzas", contexto: mesNombre + ".") {
+                        if oculto {
                             Button { ver.toggle() } label: {
-                                Label(ver ? "ocultar cifras" : "ver cifras", systemImage: ver ? "eye.slash" : "eye")
-                                    .font(Tipo.pie).foregroundStyle(Paleta.sobreContextoSuave)
+                                Image(systemName: ver ? "eye.slash" : "eye").font(.system(size: 17, weight: .semibold)).foregroundStyle(Paleta.textoSecundario)
+                                    .frame(width: 44, height: 44)
                             }
-                            .buttonStyle(.plain)
-                            .padding(.top, Espacio.s)
-                            .accessibilityLabel(ver ? "ocultar cifras" : "ver cifras")
-                        }
-                    } else {
-                        ProgressView().tint(Paleta.sobreContextoSuave).padding(.top, Espacio.l)
-                    }
-                }
-                VStack(alignment: .leading, spacing: 0) {
-                    if let v = vista {
-                        let oculto = v.ocultar && !ver
-                        selectorSubseccion
-                        switch sub {
-                        case .resumen: resumen(v, oculto: oculto)
-                        case .movimientos: movimientos(v, oculto: oculto)
-                        case .presupuestos: presupuestos(v, oculto: oculto)
-                        case .suscripciones: suscripciones(v, oculto: oculto)
-                        case .patrimonio: patrimonio(v, oculto: oculto)
+                            .buttonStyle(.plain).accessibilityLabel(ver ? "ocultar cifras" : "ver cifras")
                         }
                     }
+                    .id("arriba")
+                    selector(scroll)
+                    contenido
                 }
-                .modifier(HojaContenido())
+                .padding(.horizontal, 20)
+                .padding(.bottom, Espacio.xl)
             }
         }
         .scrollIndicators(.hidden)
         .background(Paleta.fondo.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
-        .task(id: c.informe.revision) { await cargarVista() }
-        .task(id: "\(rango.rawValue)-\(c.informe.revision)") { await cargarSerie() }
-        .fileImporter(isPresented: $mostrarImportador,
-                      allowedContentTypes: [.commaSeparatedText, .tabSeparatedText, .plainText, .data]) { resultado in
-            Task { await leerExtracto(resultado) }
-        }
-        .sheet(item: $extracto) { e in
-            RevisionExtractoView(extracto: e, cuentas: vista?.cuentas ?? []) { cuenta in
-                Task { await importar(e, cuenta: cuenta) }
-            }
-        }
-        .alert("importar extracto.", isPresented: Binding(get: { avisoImportacion != nil }, set: { if !$0 { avisoImportacion = nil } })) {
-            Button("aceptar.", role: .cancel) { avisoImportacion = nil }
-        } message: { Text(avisoImportacion ?? "") }
+        .task(id: "\(c.informe.revision)|\(pestanaGuardada)|\(rango)|\(extras)|\(nMov)") { await cargar() }
+        .sheet(item: $hoja) { h in hojaVista(h) }
+        .alert("finanzas.", isPresented: Binding(get: { aviso != nil }, set: { if !$0 { aviso = nil } })) {
+            Button("aceptar.", role: .cancel) { aviso = nil }
+        } message: { Text(aviso ?? "") }
     }
 
-    private func datoCab(_ etiqueta: String, _ valor: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(etiqueta + ".").font(Tipo.pie).foregroundStyle(Paleta.sobreContextoSuave)
-            Text(valor).font(Tipo.poppins(15, .semibold, estilo: .subheadline)).monospacedDigit().foregroundStyle(Paleta.sobreContexto)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    private var selectorSubseccion: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Espacio.xs) {
-                ForEach(SubseccionFinanzas.allCases) { s in
-                    let on = sub == s
-                    Button { sub = s } label: {
-                        Text(s.titulo + ".")
-                            .font(Tipo.poppins(14, on ? .semibold : .medium, estilo: .footnote))
-                            .foregroundStyle(on ? Paleta.sobreAcento : Paleta.textoSecundario)
-                            .padding(.horizontal, 12).padding(.vertical, 8)
-                            .background(on ? Paleta.acento : Paleta.tinteTexto, in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(on ? .isSelected : [])
-                }
-            }
-            .padding(.vertical, Espacio.xs)
-        }
-    }
-
-    // MARK: resumen
-    private func resumen(_ v: VistaFinanzas, oculto: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            CabeceraSeccion(titulo: "este mes.")
-            FilaLibro(etiqueta: "entra.", valor: cifra(v.ingresosMes, oculto), acento: true)
-            FilaLibro(etiqueta: "sale.", valor: cifra(v.gastosMes, oculto))
-            FilaLibro(etiqueta: "balance.", valor: cifra(v.ingresosMes - v.gastosMes, oculto))
-            estadoEnDirecto(v, oculto: oculto)
-            if v.diferenciaFuturoPendiente != 0 {
-                Text("pendiente o futuro: \(cifra(v.diferenciaFuturoPendiente, oculto)). dato informativo.")
-                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.top, Espacio.xs)
-            }
-            CabeceraSeccion(titulo: "mes anterior.")
-            FilaLibro(etiqueta: "entra.", valor: cifra(v.mesAnterior.ingresos, oculto))
-            FilaLibro(etiqueta: "sale.", valor: cifra(v.mesAnterior.gastos, oculto))
-            FilaLibro(etiqueta: "ahorro.", valor: cifra(v.mesAnterior.ahorro, oculto))
-            if !v.historialAhorro.isEmpty {
-                CabeceraSeccion(titulo: "histórico.", detalle: "meses cerrados")
-                ForEach(v.historialAhorro.suffix(6).reversed(), id: \.mes) { m in
-                    FilaLibro(etiqueta: LecturaFinanzas.etiquetaMes(m.mes).lowercased() + ".", valor: cifra(m.ahorro, oculto))
-                }
-            }
-            CabeceraSeccion(titulo: "patrimonio.", raya: true)
-            HStack(spacing: Espacio.xs) {
-                ForEach(RangoGrafica.allCases) { r in
-                    let on = rango == r
-                    Button { rango = r } label: {
-                        Text(r.etiqueta)
-                            .font(Tipo.poppins(13, on ? .semibold : .regular, estilo: .caption))
-                            .foregroundStyle(on ? Paleta.texto : Paleta.textoSecundario)
-                            .padding(.horizontal, 10).padding(.vertical, 6)
-                            .background(on ? Paleta.tinteTexto : Color.clear, in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.bottom, Espacio.s)
-            GraficaSaldo(puntos: serie, oculto: oculto)
-                .frame(height: 140)
-                .padding(.bottom, Espacio.s)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(oculto ? "gráfica de patrimonio oculta." : "gráfica de patrimonio, \(rango.etiqueta).")
-            if !oculto, let ultimo = serie.last, let primero = serie.first {
-                let delta = ultimo.valor - primero.valor
-                Text("cambio del periodo: \(delta >= 0 ? "+" : "")\(Dinero.formato(delta)).")
-                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            }
-        }
-    }
-
-    // MARK: movimientos
-    private func movimientos(_ v: VistaFinanzas, oculto: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            CabeceraSeccion(titulo: "movimientos.")
-            HStack(spacing: Espacio.s) {
-                AccionTexto(texto: "+ movimiento.") { c.modal = .movimiento(OperacionBitacora.nuevoIdMovimiento(), tipo: "expense") }
-                Spacer()
-                Button { mostrarImportador = true } label: {
-                    Text("importar extracto.").font(Tipo.pie).foregroundStyle(Paleta.acento)
+    private func selector(_ scroll: ScrollViewProxy) -> some View {
+        HStack(spacing: 4) {
+            ForEach(PestanaFinanzas.allCases) { p in
+                let on = p == pestana
+                Button {
+                    guard p != pestana else { return }
+                    pestanaGuardada = p.rawValue
+                    nMov = 30
+                    scroll.scrollTo("arriba", anchor: .top)
+                } label: {
+                    Text(p.titulo)
+                        .font(Tipo.poppins(14, on ? .semibold : .medium, estilo: .footnote))
+                        .foregroundStyle(on ? Paleta.texto : Paleta.textoSecundario)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .frame(maxWidth: .infinity, minHeight: 36)
+                        .background(on ? Paleta.superficie : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .accessibilityHint("elige un CSV o TSV del banco.")
+                .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
             }
-            Text("lee CSV y TSV en el iPhone, muestra una revisión y evita duplicar el mismo archivo.")
-                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.bottom, Espacio.s)
-            filtrosUI(v)
-            let lista = LecturaFinanzas.filtrar(v.movimientos, con: filtros)
-            if lista.isEmpty {
-                Text("no hay movimientos con estos filtros.")
-                    .font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.m)
-            } else {
-                ForEach(LecturaFinanzas.agruparPorDia(lista)) { g in
-                    Text(etiquetaDia(g.fecha))
-                        .font(Tipo.poppins(13, .semibold, estilo: .caption)).foregroundStyle(Paleta.textoSecundario)
-                        .padding(.top, Espacio.s).padding(.bottom, 2)
-                    ForEach(g.movimientos) { m in filaMovimiento(m, cuentas: v.cuentas, oculto: oculto) }
-                }
-            }
+        }
+        .padding(4)
+        .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(.top, Espacio.m)
+    }
+
+    @ViewBuilder private var contenido: some View {
+        switch pestana {
+        case .cuentas:
+            if let m = cuentas { PestanaCuentas(m: m, oculto: escondido, rango: $rango, extras: $extras, hoja: $hoja, logos: logos,
+                                                 abrir: abrirMovimiento, nuevo: nuevoMovimiento, verTodos: { pestanaGuardada = PestanaFinanzas.movimientos.rawValue },
+                                                 detectada: detectada, cobroVisto: { id in suscripcion(id, "visto") }, alta: { id in suscripcion(id, "alta") }) } else { cargando }
+        case .movimientos:
+            if let m = movs { PestanaMovimientos(m: m, oculto: escondido, hoja: $hoja, abrir: abrirMovimiento, nuevo: nuevoMovimiento,
+                                                  mas: { nMov += 30 }, web: { abrirURL(Apartados.webURL("finances")) }) } else { cargando }
+        case .planificacion:
+            if let m = plan { PestanaPlanificacion(m: m, oculto: escondido, hoja: $hoja) } else { cargando }
+        case .resumen:
+            if let m = resumen { PestanaResumen(m: m, oculto: escondido, hoja: $hoja, logos: logos, web: { abrirURL(Apartados.webURL("finances")) }) } else { cargando }
         }
     }
 
-    private func filtrosUI(_ v: VistaFinanzas) -> some View {
-        VStack(alignment: .leading, spacing: Espacio.xs) {
-            TextField("buscar concepto o categoría.", text: $filtros.busqueda)
-                .font(Tipo.cuerpo).textFieldStyle(.plain)
-                .padding(.horizontal, 12).padding(.vertical, 10)
-                .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Espacio.xs) {
-                    Menu {
-                        Button("todos los meses.") { filtros.mes = "" }
-                        ForEach(v.mesesDisponibles, id: \.self) { m in
-                            Button(LecturaFinanzas.etiquetaMes(m) + ".") { filtros.mes = m }
-                        }
-                    } label: { chip(filtros.mes.isEmpty ? "mes" : LecturaFinanzas.etiquetaMes(filtros.mes), activo: !filtros.mes.isEmpty) }
-                    Menu {
-                        Button("todas las cuentas.") { filtros.cuenta = "" }
-                        ForEach(v.cuentas) { cta in Button(cta.nombre.lowercased() + ".") { filtros.cuenta = cta.id } }
-                    } label: { chip(filtros.cuenta.isEmpty ? "cuenta" : nombreCuenta(filtros.cuenta, v), activo: !filtros.cuenta.isEmpty) }
-                    Menu {
-                        Button("todas las categorías.") { filtros.categoria = "" }
-                        ForEach(v.categorias) { cat in Button(cat.nombre.lowercased() + ".") { filtros.categoria = cat.id } }
-                    } label: { chip(filtros.categoria.isEmpty ? "categoría" : nombreCat(filtros.categoria, v), activo: !filtros.categoria.isEmpty) }
-                    Menu {
-                        Button("todos los tipos.") { filtros.tipo = "" }
-                        Button("gastos.") { filtros.tipo = "expense" }
-                        Button("ingresos.") { filtros.tipo = "income" }
-                        Button("traspasos.") { filtros.tipo = "transfer" }
-                    } label: { chip(filtros.tipo.isEmpty ? "tipo" : etiquetaTipo(filtros.tipo), activo: !filtros.tipo.isEmpty) }
-                    if filtros != FiltrosMovimientos() {
-                        Button("limpiar.") { filtros = FiltrosMovimientos() }
-                            .font(Tipo.pie).foregroundStyle(Paleta.acento).buttonStyle(.plain)
-                    }
-                }
-            }
+    private var cargando: some View {
+        ProgressView().frame(maxWidth: .infinity).padding(.top, Espacio.xl)
+    }
+
+    @ViewBuilder private func hojaVista(_ h: HojaFinanzas) -> some View {
+        switch h {
+        case .importar: ImportarExtractoView { datos in await guardar(datos) }
+        case .buscar: BusquedaMovimientosView(oculto: escondido) { f in hoja = nil; abrirTrasCerrar(f) }
+        case .gestor: GestorSuscripcionesView(logos: logos, oculto: escondido, editar: { id in hoja = .editarSuscripcion(id) }, accion: { id, a in await suscripcionAsync(id, a) })
+        case .editarSuscripcion(let id): EditorSuscripcionView(id: id) { datos in await guardar(datos) }
+        case .permitir: PermitirView()
+        case .revisar: RevisarMovimientosView(oculto: escondido) { f in hoja = nil; abrirTrasCerrar(f) }
         }
-        .padding(.bottom, Espacio.s)
     }
 
-    private func chip(_ texto: String, activo: Bool) -> some View {
-        Text(texto.lowercased() + (texto.hasSuffix(".") ? "" : "."))
-            .font(Tipo.poppins(13, activo ? .semibold : .regular, estilo: .caption))
-            .foregroundStyle(activo ? Paleta.texto : Paleta.textoSecundario)
-            .padding(.horizontal, 10).padding(.vertical, 7)
-            .background(activo ? Paleta.tinteTexto : Color.clear, in: Capsule())
-            .overlay(Capsule().stroke(Paleta.borde))
+    private func abrirMovimiento(_ f: FilaMov) { c.modal = .editarMovimiento(f.movimiento) }
+    // El editor es una hoja del coordinador: se abre cuando la de Finanzas ya se ha ido.
+    private func abrirTrasCerrar(_ f: FilaMov) {
+        Task { try? await Task.sleep(nanoseconds: 450_000_000); abrirMovimiento(f) }
+    }
+    private func nuevoMovimiento() { c.modal = .movimiento(OperacionBitacora.nuevoIdMovimiento(), tipo: "expense") }
+
+    private func detectada(_ clave: String, _ accion: String) {
+        let id = "sub_\(Int64(Date().timeIntervalSince1970 * 1000))_" + String(UUID().uuidString.prefix(4)).lowercased()
+        Task {
+            do { await guardar(try await MotorFinanzas.compartido.crudo("detectada", [clave, accion, id])) }
+            catch { aviso = "no se pudo guardar en este iPhone." }
+        }
+    }
+    private func suscripcion(_ id: String, _ accion: String) { Task { await suscripcionAsync(id, accion) } }
+    private func suscripcionAsync(_ id: String, _ accion: String) async {
+        do { await guardar(try await MotorFinanzas.compartido.crudo("suscripcion", [id, accion])) }
+        catch { aviso = "no se pudo guardar en este iPhone." }
     }
 
-    private func filaMovimiento(_ m: Movimiento, cuentas: [CuentaSaldo], oculto: Bool) -> some View {
-        Button { c.modal = .editarMovimiento(m) } label: {
+    // La respuesta del motor ({resultado, cambios}) a la cola: una operación con todo, como commitFinanceChange.
+    @discardableResult
+    private func guardar(_ datos: Data) async -> Bool {
+        do {
+            guard let r = try? LectorJSON.valor(datos), let cambios = r["cambios"], cambios != .null else { return true }
+            let doc = await c.documentoVisible()
+            guard let op = CambioFinanzas.operacion(cambios, sobre: doc) else { return true }
+            try await c.encolar(op)
+            return true
+        } catch {
+            aviso = "no se pudo guardar en este iPhone."
+            return false
+        }
+    }
+
+    private func cargar() async {
+        guard let doc = await c.documentoVisible() else { return }
+        let revision = c.informe.revision
+        let motor = MotorFinanzas.compartido
+        let tab = pestana
+        let opciones = Opciones(rango: rango, extras: extras, n: nMov)
+        do {
+            try await motor.cargar(doc, revision: String(revision))
+            oculto = ((try? doc.valor(de: "blurFinances")) ?? nil)?.booleano == true
+            try await pintar(tab, motor, opciones)
+        } catch {
+            aviso = (error as? LocalizedError)?.errorDescription ?? "no se pudo calcular finanzas."
+            return
+        }
+        // prepararFinanzas, como la web al abrir Finanzas: cargos de suscripciones, programados, historial... Si cambia
+        // algo, va a la cola y la nueva revisión vuelve a pintar. Una vez por revisión.
+        if preparadoEn != revision {
+            preparadoEn = revision
+            if let d = try? await motor.crudo("preparar") { await guardar(d) }
+        }
+        await logos.cargar(motor: motor, coordinador: c)
+        // Las otras pestañas, ya calculadas para cuando se toquen.
+        for otra in PestanaFinanzas.allCases where otra != tab {
+            guard !Task.isCancelled else { return }
+            try? await pintar(otra, motor, opciones)
+        }
+    }
+
+    struct Opciones { let rango: String; let extras: Bool; let n: Int }
+
+    private func pintar(_ tab: PestanaFinanzas, _ motor: MotorFinanzas, _ o: Opciones) async throws {
+        switch tab {
+        case .cuentas:
+            let m = try await motor.pestana("cuentas", opciones: "{\"rango\":\"\(o.rango)\",\"extras\":\(o.extras)}", como: ModeloCuentas.self)
+            if cuentas != m { cuentas = m }
+        case .movimientos:
+            let m = try await motor.pestana("movimientos", opciones: "{\"n\":\(o.n)}", como: ModeloMovimientos.self)
+            if movs != m { movs = m }
+        case .planificacion:
+            let m = try await motor.pestana("planificacion", como: ModeloPlanificacion.self)
+            if plan != m { plan = m }
+        case .resumen:
+            let m = try await motor.pestana("resumen", como: ModeloResumen.self)
+            if resumen != m { resumen = m }
+        }
+    }
+}
+
+// MARK: - piezas comunes
+
+struct EtiquetaFin: View {
+    let texto: String
+    var detalle: String?
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(texto).font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario).accessibilityAddTraits(.isHeader)
+            Spacer()
+            if let detalle { Text(detalle).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+        }
+        .padding(.top, Espacio.l).padding(.bottom, Espacio.xs)
+    }
+}
+
+struct BotonFin: View {
+    let texto: String
+    var acento = false
+    let accion: () -> Void
+    var body: some View {
+        Button(action: accion) {
+            Text(texto).font(Tipo.poppins(15, .semibold, estilo: .body))
+                .foregroundStyle(acento ? Paleta.sobreAcento : Paleta.texto)
+                .frame(maxWidth: .infinity, minHeight: 46)
+                .background(acento ? Paleta.acento : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct EnlaceFin: View {
+    let texto: String
+    let accion: () -> Void
+    var body: some View {
+        Button(action: accion) { Text(texto).font(Tipo.poppins(14, .medium, estilo: .footnote)).foregroundStyle(Paleta.acento).frame(minHeight: 44) }
+            .buttonStyle(.plain)
+    }
+}
+
+// .m-fila de un movimiento (mobileFinFilaMov): fecha corta, concepto y «categoría, cuenta», y la cifra con su signo.
+struct FilaMovView: View {
+    let f: FilaMov
+    let oculto: Bool
+    let abrir: (FilaMov) -> Void
+
+    var body: some View {
+        Button { abrir(f) } label: {
             HStack(alignment: .firstTextBaseline, spacing: Espacio.s) {
-                Text(m.hora.isEmpty ? String(m.fecha.suffix(2)) : m.hora)
-                    .font(Tipo.mono).foregroundStyle(Paleta.textoSecundario).frame(width: 42, alignment: .leading)
+                Text(f.dia).font(Tipo.poppins(13, .medium, estilo: .footnote)).monospacedDigit().foregroundStyle(Paleta.textoSecundario)
+                    .frame(width: 50, alignment: .leading)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(m.concepto.isEmpty ? (m.categoria.isEmpty ? "sin concepto" : m.categoria) : m.concepto)
-                        .font(Tipo.cuerpo).foregroundStyle(m.futuro ? Paleta.textoSecundario : Paleta.texto).lineLimit(1)
-                    let sub = m.tipo == "transfer" ? "traspaso a \(m.destinoNombre.isEmpty ? m.destino : m.destinoNombre.lowercased())" : (m.concepto.isEmpty ? "" : m.categoria)
-                    if !sub.isEmpty || m.neutro { Text(sub + (m.neutro ? (sub.isEmpty ? "neutro" : ". neutro") : "")).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(1) }
+                    (Text(f.titulo) + (f.pendiente ? Text(" pendiente.").font(Tipo.pie).foregroundColor(Paleta.textoSecundario) : Text("")))
+                        .font(Tipo.cuerpo).foregroundStyle(f.futuro ? Paleta.textoSecundario : Paleta.texto).lineLimit(1)
+                    if !f.meta.isEmpty { Text(f.meta).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(1) }
                 }
                 Spacer(minLength: Espacio.s)
-                Text(oculto ? "•••" : (m.tipo == "income" ? "+" : m.tipo == "transfer" ? "" : "−") + Dinero.formato(m.importe))
-                    .font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit()
-                    .foregroundStyle(m.tipo == "income" ? Paleta.acento : Paleta.texto)
+                HStack(spacing: 2) {
+                    if f.tipo == "transfer" { Image(systemName: "arrow.left.arrow.right").font(.system(size: 11, weight: .semibold)) }
+                    Text(oculto ? "•••" : (f.tipo == "income" ? "+" : f.tipo == "expense" ? "−" : "") + FormatoFin.dinero(f.importe))
+                        .font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit()
+                }
+                .foregroundStyle(f.tipo == "income" ? Paleta.progreso : Paleta.texto)
             }
-            .padding(.vertical, 10)
+            .padding(.vertical, 11)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
         .accessibilityElement(children: .combine)
-        .accessibilityHint("editar movimiento.")
+        .accessibilityHint("abrir el movimiento.")
     }
+}
 
-    // MARK: presupuestos
-    private func presupuestos(_ v: VistaFinanzas, oculto: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            CabeceraSeccion(titulo: "presupuestos.", detalle: LecturaFinanzas.etiquetaMes(v.presupuestosActual.mes))
-            avisoSoloLectura("presupuestos de solo lectura. cámbialos en la web.")
-            let p = v.presupuestosActual
-            FilaLibro(etiqueta: "ingresos.", valor: cifra(p.income, oculto), acento: true)
-            FilaLibro(etiqueta: "asignado.", valor: cifra(p.totalAssigned, oculto))
-            FilaLibro(etiqueta: "sin asignar.", valor: cifra(p.remaining, oculto))
-            if p.manualAssigned > 0 || p.commitmentsAssigned > 0 {
-                CabeceraSeccion(titulo: "reparto.")
-                if p.manualAssigned > 0 { FilaLibro(etiqueta: "presupuestos.", valor: cifra(p.manualAssigned, oculto)) }
-                if p.commitmentsAssigned > 0 { FilaLibro(etiqueta: "compromisos.", valor: cifra(p.commitmentsAssigned, oculto)) }
-            }
-            if !p.commitments.isEmpty {
-                CabeceraSeccion(titulo: "compromisos.")
-                ForEach(p.commitments) { c in
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack {
-                            Text(c.nombre.lowercased() + ".").font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
-                            Spacer()
-                            Text(cifra(c.charged, oculto) + " / " + cifra(c.planned, oculto))
-                                .font(Tipo.poppins(14, .semibold, estilo: .footnote)).monospacedDigit().foregroundStyle(Paleta.texto)
-                        }
-                        Text("\(c.confirmados) de \(c.n) confirmados.")
-                            .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                    }
-                    .padding(.vertical, 8)
-                    .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                    .accessibilityElement(children: .combine)
-                }
-            }
-            CabeceraSeccion(titulo: "por categoría.")
-            if p.categories.isEmpty {
-                Text("sin categorías con presupuesto.")
-                    .font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
-            } else {
-                ForEach(p.categories) { cat in
+// mobileFinPorAjustar: las incidencias (fecha o importe mal) y el aviso de los que esperan categoría.
+struct AvisoPorAjustar: View {
+    let p: PorAjustar
+    let abrir: () -> Void
+    @State private var abierto = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Espacio.s) {
+            if !p.incidencias.isEmpty {
+                DisclosureGroup(isExpanded: $abierto) {
                     VStack(alignment: .leading, spacing: 4) {
-                        HStack(alignment: .firstTextBaseline) {
-                            Text(cat.nombre.lowercased() + ".").font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
-                            Spacer()
-                            Text(cifra(cat.spent, oculto) + " / " + cifra(cat.available, oculto))
-                                .font(Tipo.poppins(14, .semibold, estilo: .footnote)).monospacedDigit().foregroundStyle(colorEstado(cat.estado))
+                        ForEach(Array(p.incidencias.enumerated()), id: \.offset) { _, i in
+                            Text("\(i.nota): \(i.motivo).").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
                         }
-                        BarraAvance(valor: min(cat.percentage / 100, 1.5), fondo: Paleta.borde, color: colorEstado(cat.estado), alto: 4)
-                        HStack {
-                            Text("queda \(cifra(cat.remaining, oculto)).")
-                            Spacer()
-                            if cat.lastMonth > 0 { Text("mes pasado \(cifra(cat.lastMonth, oculto)).") }
-                        }
+                    }.padding(.top, 4)
+                } label: {
+                    Text("\(p.incidencias.count) \(p.incidencias.count == 1 ? "movimiento tiene" : "movimientos tienen") la fecha o el importe mal y no cuentan en los saldos.")
                         .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                    }
-                    .padding(.vertical, 8)
-                    .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityValue("\(Int(cat.percentage.rounded())) por ciento, \(cat.estado).")
                 }
+                .tint(Paleta.textoSecundario)
             }
-            if v.presupuestosAnterior.categories.contains(where: { $0.spent > 0 || $0.planned > 0 }) || v.presupuestosAnterior.income > 0 {
-                CabeceraSeccion(titulo: "mes anterior.", detalle: LecturaFinanzas.etiquetaMes(v.presupuestosAnterior.mes))
-                FilaLibro(etiqueta: "asignado.", valor: cifra(v.presupuestosAnterior.totalAssigned, oculto))
-                FilaLibro(etiqueta: "sin asignar.", valor: cifra(v.presupuestosAnterior.remaining, oculto))
-            }
-        }
-    }
-
-    // MARK: suscripciones
-    private func suscripciones(_ v: VistaFinanzas, oculto: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            CabeceraSeccion(titulo: "suscripciones.")
-            avisoSoloLectura("suscripciones de solo lectura. gestiónalas en la web.")
-            if v.suscripciones.isEmpty {
-                Text("no hay suscripciones.")
-                    .font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
-            } else {
-                let activas = v.suscripciones.filter(\.activa)
-                let total = activas.reduce(Decimal(0)) { $0 + $1.equivalenteMensual }
-                FilaLibro(etiqueta: "activas.", valor: "\(activas.count)")
-                FilaLibro(etiqueta: "equivalente mensual.", valor: cifra(total, oculto), acento: true)
-                CabeceraSeccion(titulo: "lista.")
-                ForEach(v.suscripciones) { s in
+            if p.n > 0 {
+                Button(action: abrir) {
                     VStack(alignment: .leading, spacing: 2) {
-                        HStack(alignment: .firstTextBaseline) {
-                            Text(s.titulo.isEmpty ? "suscripción" : s.titulo.lowercased() + (s.titulo.hasSuffix(".") ? "" : "."))
-                                .font(Tipo.cuerpo).foregroundStyle(s.activa ? Paleta.texto : Paleta.textoSecundario)
-                            Spacer()
-                            Text(cifra(s.importe, oculto))
-                                .font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit()
-                                .foregroundStyle(s.activa ? Paleta.texto : Paleta.textoSecundario)
-                        }
-                        let detalle = [
-                            s.activa ? "activa" : "inactiva",
-                            s.frecuencia,
-                            s.proximaFecha.map { "próximo \(etiquetaDia($0))" },
-                            s.cobrosTrasBaja > 0 ? "\(s.cobrosTrasBaja) cobro(s) tras baja" : nil
-                        ].compactMap { $0 }.joined(separator: ". ")
-                        Text(detalle + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                        Text("\(p.n) \(p.n == 1 ? "movimiento" : "movimientos") por ajustar.").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
+                        Text("ponles categoría y revisa la cuenta.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
                     }
-                    .padding(.vertical, 8)
-                    .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                    .accessibilityElement(children: .combine)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .background(Paleta.tinteAcento, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
                 }
+                .buttonStyle(.plain)
             }
         }
+        .padding(.top, Espacio.m)
     }
+}
 
-    // MARK: patrimonio
-    private func patrimonio(_ v: VistaFinanzas, oculto: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            CabeceraSeccion(titulo: "patrimonio.", detalle: "completo")
-            avisoSoloLectura("patrimonio de solo lectura. base comparable en texto cuando no hay histórico suficiente.")
-            let p = v.patrimonio
-            FilaLibro(etiqueta: "total activos.", valor: cifra(p.totalActivos, oculto), acento: true)
-            FilaLibro(etiqueta: "saldo líquido.", valor: cifra(v.saldoLiquido, oculto))
-            if p.invertido > 0 { FilaLibro(etiqueta: "invertido.", valor: cifra(p.invertido, oculto)) }
-            if p.emergencia > 0 { FilaLibro(etiqueta: "emergencia.", valor: cifra(p.emergencia, oculto)) }
-            if p.vacaciones > 0 { FilaLibro(etiqueta: "vacaciones.", valor: cifra(p.vacaciones, oculto)) }
-            if p.aMano > 0 { FilaLibro(etiqueta: "a mano.", valor: cifra(p.aMano, oculto)) }
-            CabeceraSeccion(titulo: "activos.")
-            ForEach(p.activos) { a in
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(a.nombre.hasSuffix(".") ? a.nombre : a.nombre + ".").font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
-                        Spacer()
-                        Text(cifra(a.valor, oculto)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit().foregroundStyle(Paleta.texto)
+// MARK: - cuentas.
+
+private struct PestanaCuentas: View {
+    let m: ModeloCuentas
+    let oculto: Bool
+    @Binding var rango: String
+    @Binding var extras: Bool
+    @Binding var hoja: HojaFinanzas?
+    let logos: LogosFinanzas
+    let abrir: (FilaMov) -> Void
+    let nuevo: () -> Void
+    let verTodos: () -> Void
+    let detectada: (String, String) -> Void
+    let cobroVisto: (String) -> Void
+    let alta: (String) -> Void
+
+    var body: some View {
+        GraficaPatrimonio(g: m.grafica, oculto: oculto, rango: $rango, extras: $extras)
+        BotonFin(texto: "+ movimiento.", acento: true, accion: nuevo).padding(.top, Espacio.m)
+        if m.porAjustar.n > 0 || !m.porAjustar.incidencias.isEmpty { AvisoPorAjustar(p: m.porAjustar) { hoja = .revisar } }
+        // renderAvisoPresupuestos
+        if !m.avisosPresupuesto.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(Array(m.avisosPresupuesto.enumerated()), id: \.offset) { _, a in
+                    Group {
+                        if a.queda >= 0 {
+                            Text("vas al ") + Text("\(a.pct) %").bold() + Text(" en \(a.nombre): quedan \(oculto ? "•••" : FormatoFin.dinero(a.queda)) para \(a.dias) \(a.dias == 1 ? "día" : "días").")
+                        } else {
+                            Text("\(a.nombre) se ha pasado ") + Text(oculto ? "•••" : FormatoFin.dinero(-a.queda)).bold() + Text(" del presupuesto este mes.")
+                        }
                     }
-                    let base = a.porcentajeTexto.isEmpty ? (a.nota.isEmpty ? "" : a.nota) : (a.nota.isEmpty ? a.porcentajeTexto : a.nota + " " + a.porcentajeTexto)
-                    if !base.isEmpty {
-                        Text(base.hasSuffix(".") ? base : base + ".")
-                            .font(Tipo.pie).foregroundStyle(colorClase(a.clase, texto: a.porcentajeTexto))
-                    }
+                    .font(Tipo.pie).foregroundStyle(Paleta.texto)
                 }
-                .padding(.vertical, 8)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14).background(Paleta.superficie, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+            .padding(.top, Espacio.m)
+        }
+        // renderSuscripcionesDetectadas (con los que siguen cobrando tras la baja)
+        ForEach(m.detectadas.siguenCobrando) { s in
+            tarjetaSugerencia(titulo: "\(s.titulo) sigue cobrando.",
+                              texto: "La diste de baja el \(s.desde) y hay \(s.n == 1 ? "un cargo" : "\(s.n) cargos"): \(oculto ? "•••" : FormatoFin.dinero(s.importe)) el \(s.fecha).",
+                              botones: [("dar de alta.", { alta(s.id) }), ("ya lo sé.", { cobroVisto(s.id) })])
+        }
+        ForEach(m.detectadas.propuestas) { s in
+            tarjetaSugerencia(titulo: "¿\(s.nombre) es una suscripción?",
+                              texto: "unos \(oculto ? "•••" : FormatoFin.dinero(s.importe)) cada mes, hacia el día \(s.dia) (\(s.meses) meses seguidos).",
+                              botones: [("añadir.", { detectada(s.clave, "anadir") }), ("no es.", { detectada(s.clave, "ignorar") })])
+        }
+        EtiquetaFin(texto: "este mes.")
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("entra.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                Text(oculto ? "•••" : FormatoFin.dinero(m.ingresos)).font(Tipo.poppins(24, .bold, estilo: .title2)).monospacedDigit().foregroundStyle(Paleta.texto)
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("sale.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                Text(oculto ? "•••" : FormatoFin.dinero(m.gastos)).font(Tipo.poppins(24, .bold, estilo: .title2)).monospacedDigit().foregroundStyle(Paleta.texto)
+            }.frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .accessibilityElement(children: .combine)
+        if m.ingresos != 0 || m.gastos != 0 {
+            VStack(alignment: .leading, spacing: 6) {
+                BarraAvance(valor: min(1, m.ratio), fondo: Paleta.borde, color: m.ratio > 1 ? Paleta.atencion : Paleta.acento, alto: 6)
+                Text(m.ingresos > 0 ? "\(Int((m.ratio * 100).rounded())) % de lo que ha entrado, ya gastado." : "Este mes todavía no ha entrado nada.")
+                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+            }
+            .padding(.top, Espacio.s)
+        }
+        if let r = m.ritmo {
+            EtiquetaFin(texto: "ritmo.")
+            VStack(alignment: .leading, spacing: 4) {
+                textoRitmo(r).font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
+                if let p = r.previsto, p != 0 {
+                    Text("A este ritmo, unos \(oculto ? "•••" : FormatoFin.dinero(p)) a final de mes.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14).background(Paleta.superficie, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+        }
+        EtiquetaFin(texto: "cuentas.")
+        ForEach(m.cuentas) { cta in
+            FilaLibro(etiqueta: cta.nombre + ".", valor: oculto ? "•••" : FormatoFin.dinero(cta.saldo))
+        }
+        if !m.cargos.lista.isEmpty {
+            EtiquetaFin(texto: "próximos cargos.")
+            ForEach(m.cargos.lista) { x in
+                HStack(alignment: .firstTextBaseline, spacing: Espacio.s) {
+                    Text(x.cuando).font(Tipo.poppins(13, .medium, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario).frame(width: 64, alignment: .leading)
+                    LogoSuscripcion(id: x.id, titulo: x.titulo, logos: logos, lado: 22)
+                    Text(x.titulo).font(Tipo.cuerpo).foregroundStyle(Paleta.texto).lineLimit(1)
+                    Spacer()
+                    Text(oculto ? "•••" : FormatoFin.dinero(x.importe)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit().foregroundStyle(Paleta.texto)
+                }
+                .padding(.vertical, 10)
                 .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
                 .accessibilityElement(children: .combine)
             }
         }
-    }
-
-    private func avisoSoloLectura(_ texto: String) -> some View {
-        Text(texto)
-            .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            .padding(.vertical, Espacio.xs)
-            .accessibilityLabel(texto)
-    }
-
-    private func colorEstado(_ e: String) -> Color {
-        switch e {
-        case "superado": return Paleta.atencion
-        case "aviso": return Paleta.acento
-        default: return Paleta.progreso
-        }
-    }
-    private func colorClase(_ clase: String, texto: String) -> Color {
-        if texto.contains("sin base comparable") { return Paleta.textoSecundario }
-        switch clase {
-        case "sube": return Paleta.progreso
-        case "baja": return Paleta.atencion
-        default: return Paleta.textoSecundario
+        EtiquetaFin(texto: "últimos movimientos.")
+        if m.ultimos.isEmpty {
+            Text("todavía no hay movimientos. Añade uno o importa un extracto.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
+        } else {
+            ForEach(m.ultimos) { f in FilaMovView(f: f, oculto: oculto, abrir: abrir) }
+            EnlaceFin(texto: "ver todos.", accion: verTodos)
         }
     }
 
-    private func cargarVista() async {
-        let doc = await c.documentoVisible()
-        let v = await Task.detached(priority: .userInitiated) { doc.map { LecturaFinanzas.vista($0) } }.value
-        vista = v
-        if filtros.mes.isEmpty, let mes = v?.mesActual { _ = mes /* keep all months by default */ }
-    }
-    private func cargarSerie() async {
-        let doc = await c.documentoVisible()
-        let r = rango
-        // La sección se llama patrimonio: incluye inversión, emergencia y demás extras, no solo saldo líquido.
-        serie = await Task.detached(priority: .userInitiated) { doc.map { LecturaFinanzas.serieDiaria(doc: $0, meses: r.meses, conExtras: true) } ?? [] }.value
+    private func textoRitmo(_ r: ModeloCuentas.Ritmo) -> Text {
+        var t = Text(oculto ? "•••" : FormatoFin.dinero(r.gasto)).bold() + Text(" gastados hasta hoy")
+        if r.antes != 0 {
+            let dif = (oculto ? "•••" : FormatoFin.dinero(abs(r.dif))) + (r.dif > 0 ? " más" : " menos")
+            t = t + Text(", ") + Text(dif).foregroundColor(r.dif > 0 ? Paleta.atencion : Paleta.progreso) + Text(" que a día \(r.dia) de \(r.mesPasado)")
+        }
+        return t + Text(".")
     }
 
-    private func estadoEnDirecto(_ v: VistaFinanzas, oculto: Bool) -> some View {
-        let gastado = v.presupuestosActual.categories.reduce(Decimal(0)) { $0 + $1.spent }
-        let activas = v.suscripciones.filter(\.activa)
-        let mensual = activas.reduce(Decimal(0)) { $0 + $1.equivalenteMensual }
-        return VStack(alignment: .leading, spacing: 5) {
-            HStack { Text("presupuestos."); Spacer(); Text("\(cifra(gastado, oculto)) de \(cifra(v.presupuestosActual.totalAssigned, oculto))") }
-            HStack { Text("suscripciones."); Spacer(); Text("\(activas.count) activas · \(cifra(mensual, oculto))/mes") }
-            HStack { Text("patrimonio."); Spacer(); Text(cifra(v.patrimonioOperativo, oculto)) }
+    private func tarjetaSugerencia(titulo: String, texto: String, botones: [(String, () -> Void)]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(titulo).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
+            Text(texto).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+            HStack(spacing: Espacio.s) {
+                ForEach(Array(botones.enumerated()), id: \.offset) { _, b in
+                    Button(action: b.1) {
+                        Text(b.0).font(Tipo.poppins(14, .medium, estilo: .footnote)).foregroundStyle(Paleta.texto)
+                            .padding(.horizontal, 12).frame(minHeight: 36)
+                            .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+                    }.buttonStyle(.plain)
+                }
+            }
         }
-        .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-        .padding(12).background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14).background(Paleta.superficie, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
         .padding(.top, Espacio.s)
+    }
+}
+
+// MARK: - movimientos.
+
+private struct PestanaMovimientos: View {
+    let m: ModeloMovimientos
+    let oculto: Bool
+    @Binding var hoja: HojaFinanzas?
+    let abrir: (FilaMov) -> Void
+    let nuevo: () -> Void
+    let mas: () -> Void
+    let web: () -> Void
+
+    private static let meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+
+    private var grupos: [(String, [FilaMov])] {
+        var r: [(String, [FilaMov])] = []
+        for f in m.filas {
+            let mes = String(f.fecha.prefix(7))
+            if r.last?.0 == mes { r[r.count - 1].1.append(f) } else { r.append((mes, [f])) }
+        }
+        return r
+    }
+
+    private func titulo(_ mes: String) -> String {
+        guard mes.count == 7, let n = Int(mes.suffix(2)), (1...12).contains(n) else { return "sin fecha." }
+        let anio = String(mes.prefix(4))
+        return Self.meses[n - 1] + (anio != String(m.anioActual) ? " " + anio : "") + "."
+    }
+
+    var body: some View {
+        HStack(spacing: Espacio.s) {
+            BotonFin(texto: "importar extracto.") { hoja = .importar }
+            BotonFin(texto: "+ movimiento.", acento: true, accion: nuevo)
+        }
+        .padding(.top, Espacio.m)
+        if m.total > 0 {
+            Button { hoja = .buscar } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass").font(.system(size: 15, weight: .semibold))
+                    Text("buscar un movimiento.").font(Tipo.cuerpo)
+                    Spacer()
+                }
+                .foregroundStyle(Paleta.textoSecundario)
+                .padding(.horizontal, 14).frame(minHeight: 46)
+                .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, Espacio.s)
+        }
+        if m.porAjustar.n > 0 || !m.porAjustar.incidencias.isEmpty { AvisoPorAjustar(p: m.porAjustar) { hoja = .revisar } }
+        if m.filas.isEmpty {
+            Text("todavía no hay movimientos. Añade uno o importa un extracto para empezar a ver tus cuentas.")
+                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.m)
+        } else {
+            ForEach(grupos, id: \.0) { g in
+                EtiquetaFin(texto: titulo(g.0))
+                ForEach(g.1) { f in FilaMovView(f: f, oculto: oculto, abrir: abrir) }
+            }
+        }
+        HStack(spacing: Espacio.l) {
+            if m.total > m.filas.count { EnlaceFin(texto: "ver \(min(30, m.total - m.filas.count)) más.", accion: mas) }
+            // mobileFinMenu: lo que todavía se hace en la web.
+            Menu {
+                Button("cuentas y saldos iniciales.", action: web)
+                Button("ajustar el saldo de una cuenta.", action: web)
+                Button("categorías.", action: web)
+                Button("reglas de importación.", action: web)
+                Button("posibles duplicados.", action: web)
+                Button("deshacer importación.", action: web)
+            } label: {
+                Text("más opciones.").font(Tipo.poppins(14, .medium, estilo: .footnote)).foregroundStyle(Paleta.acento).frame(minHeight: 44)
+            }
+        }
+        .padding(.top, Espacio.s)
+    }
+}
+
+// MARK: - planificación.
+
+private struct PestanaPlanificacion: View {
+    let m: ModeloPlanificacion
+    let oculto: Bool
+    @Binding var hoja: HojaFinanzas?
+
+    private func color(_ s: String) -> Color { s == "superado" ? Paleta.atencion : s == "aviso" ? Paleta.acento : Paleta.progreso }
+    private func din(_ v: Double) -> String { oculto ? "•••" : FormatoFin.dinero(v) }
+
+    var body: some View {
+        if m.categorias.isEmpty && m.otros.isEmpty {
+            Text(m.ingresos != 0 ? "Todo está sin asignar: todavía no has puesto presupuestos." : "este mes no tienes presupuestos. Se reparten desde el ordenador, en Finanzas, planificación.")
+                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.m)
+        } else {
+            EtiquetaFin(texto: "presupuestos.")
+            ForEach(m.categorias) { cat in
+                let sub = [cat.refunded > 0 ? "\(din(cat.refunded)) devueltos" : nil, "el mes pasado gastaste \(din(cat.lastMonth))", cat.casillas > 1 ? "\(cat.casillas) casillas" : nil]
+                    .compactMap { $0 }.joined(separator: ", ")
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Circle().fill(cat.color.isEmpty ? Paleta.textoSecundario : Color(hexWeb: cat.color)).frame(width: 8, height: 8)
+                        Text(cat.nombre).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).lineLimit(1)
+                        Spacer()
+                        Text(din(cat.spent)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit().foregroundStyle(Paleta.texto)
+                        Text("de \(din(cat.available))").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    }
+                    BarraAvance(valor: min(100, max(2, cat.percentage)) / 100, fondo: Paleta.borde, color: color(cat.status), alto: 6)
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(sub + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(2)
+                        Spacer(minLength: Espacio.s)
+                        Text(oculto ? "•••" : cat.estado).font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(color(cat.status))
+                    }
+                    Text("plan. \(din(cat.planned))").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                }
+                .padding(.vertical, 12)
+                .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+                .accessibilityElement(children: .combine)
+                .accessibilityValue("\(Int(cat.percentage.rounded())) por ciento gastado.")
+            }
+            if !m.otros.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("otros destinos.").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
+                    ForEach(Array(m.otros.enumerated()), id: \.offset) { _, a in
+                        Text("\(a.label) \(din(a.amount))").font(Tipo.pie).foregroundStyle(Paleta.texto)
+                    }
+                    Text("Cuentan como repartido; sin categoría no se puede seguir su gasto.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                }
+                .padding(.top, Espacio.m)
+            }
+        }
+        EnlaceFin(texto: "¿me lo puedo permitir?") { hoja = .permitir }.padding(.top, Espacio.s)
+    }
+}
+
+// MARK: - resumen.
+
+private struct PestanaResumen: View {
+    let m: ModeloResumen
+    let oculto: Bool
+    @Binding var hoja: HojaFinanzas?
+    let logos: LogosFinanzas
+    let web: () -> Void
+
+    private func din(_ v: Double) -> String { oculto ? "•••" : FormatoFin.dinero(v) }
+    private func pctSinMas(_ v: Double) -> String { FormatoFin.pct(v).replacingOccurrences(of: "+", with: "") }
+
+    var body: some View {
+        panelMes("este mes.", m.esteMes, conSueldo: true)
+        panelMes("mes anterior.", m.mesAnterior, conSueldo: false)
+        panelAhorro
+        panelObjetivo
+        panelActivos
+        panelSuscripciones
+        panelPrevision
+    }
+
+    private func panel<C: View>(_ titulo: String, _ sub: String?, @ViewBuilder _ c: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(titulo).font(Tipo.poppins(17, .semibold, estilo: .headline)).foregroundStyle(Paleta.texto).accessibilityAddTraits(.isHeader)
+                Spacer()
+                if let sub { Text(sub).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+            }
+            c()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.top, Espacio.m)
+    }
+
+    private func cifra(_ t: String, negativa: Bool = false) -> some View {
+        Text(t).font(Tipo.poppins(28, .bold, estilo: .title)).monospacedDigit().foregroundStyle(negativa ? Paleta.atencion : Paleta.texto)
+    }
+
+    private func barra(_ nombre: String, _ v: Double, _ falta: Double, _ max: Double, color: Color) -> some View {
+        HStack(spacing: 8) {
+            Text(nombre).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(width: 44, alignment: .leading)
+            GeometryReader { g in
+                HStack(spacing: 0) {
+                    Rectangle().fill(color).frame(width: g.size.width * v / max)
+                    if falta > 0 { Rectangle().fill(color.opacity(0.3)).frame(width: g.size.width * falta / max) }
+                    Spacer(minLength: 0)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 3))
+                .background(Paleta.borde, in: RoundedRectangle(cornerRadius: 3))
+            }
+            .frame(height: 8)
+            Text(din(v)).font(Tipo.poppins(13, .semibold, estilo: .footnote)).monospacedDigit().foregroundStyle(Paleta.texto)
+        }
+    }
+
+    private func panelMes(_ titulo: String, _ mes: ModeloResumen.Mes, conSueldo: Bool) -> some View {
+        let neto = mes.entra - mes.sale
+        let max = Swift.max(mes.entra + mes.falta, mes.sale, mes.sueldo, 1)
+        return panel(titulo, mes.nombre + ".") {
+            cifra(oculto ? "•••" : (neto >= 0 ? "+" : "−") + FormatoFin.dinero(abs(neto)), negativa: neto < 0)
+            Text((neto >= 0 ? "te queda" : "has gastado más de lo que ha entrado") + (mes.falta > 0 ? ", y aún falta por entrar \(din(mes.falta)) del sueldo previsto" : "") + ".")
+                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+            barra("entra.", mes.entra, mes.falta, max, color: Paleta.progreso)
+            barra("sale.", mes.sale, 0, max, color: Paleta.acento)
+            if conSueldo && mes.sueldo != 0 { FilaLibro(etiqueta: "sueldo previsto.", valor: din(mes.sueldo)) }
+        }
+    }
+
+    private var panelAhorro: some View {
+        let a = m.ahorro
+        let anterior = a.meses.last
+        let conAnio = (a.meses.first?.anio).map { $0 != a.anioActual } ?? false
+        let desde = a.meses.first.map { $0.nombre + (conAnio ? " de \($0.anio)" : "") } ?? ""
+        let nota: String = {
+            guard let anterior else { return "Aparece al cerrar el primer mes con movimientos." }
+            return "de lo que entró en \(anterior.nombre), el último mes cerrado" + (a.media.map { ", frente a un \(pctSinMas($0)) de media desde \(desde)" } ?? "") + "."
+        }()
+        return panel("tasa de ahorro.", anterior.map { $0.nombre + "." } ?? "de lo que entra.") {
+            cifra(anterior == nil ? "sin datos" : anterior!.tasa == nil ? "sin ingresos" : pctSinMas(anterior!.tasa!), negativa: (anterior?.tasa ?? 0) < 0)
+            Text(nota).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+            VStack(spacing: 6) {
+                ForEach(Array(a.meses.reversed().enumerated()), id: \.offset) { _, x in filaAhorro(x, conAnio: conAnio, enCurso: false) }
+                filaAhorro(a.enCurso, conAnio: conAnio, enCurso: true)
+            }
+            .padding(.top, 4)
+        }
+    }
+
+    private func filaAhorro(_ x: ModeloResumen.MesAhorro, conAnio: Bool, enCurso: Bool) -> some View {
+        let ancho = x.tasa.map { Swift.max(2, Swift.min(100, abs($0))) } ?? 0
+        let neg = (x.tasa ?? 0) < 0
+        return HStack(spacing: 8) {
+            Text(x.nombre + (conAnio ? " \(x.anio)" : "") + (enCurso ? ", en curso" : "") + ".")
+                .font(Tipo.pie).foregroundStyle(enCurso ? Paleta.textoSecundario : Paleta.texto).frame(width: 120, alignment: .leading).lineLimit(1).minimumScaleFactor(0.8)
+            GeometryReader { g in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3).fill(Paleta.borde)
+                    RoundedRectangle(cornerRadius: 3).fill(neg ? Paleta.atencion : Paleta.progreso).frame(width: g.size.width * ancho / 100)
+                }
+            }
+            .frame(height: 8)
+            Text(x.tasa == nil ? "sin ingresos" : pctSinMas(x.tasa!)).font(Tipo.poppins(13, .semibold, estilo: .footnote)).monospacedDigit()
+                .foregroundStyle(neg ? Paleta.atencion : Paleta.texto).frame(width: 82, alignment: .trailing)
+        }
         .accessibilityElement(children: .combine)
     }
 
-    private func leerExtracto(_ resultado: Result<URL, Error>) async {
-        do {
-            let url = try resultado.get()
-            let acceso = url.startAccessingSecurityScopedResource(); defer { if acceso { url.stopAccessingSecurityScopedResource() } }
-            let datos = try Data(contentsOf: url)
-            guard let texto = String(data: datos, encoding: .utf8) ?? String(data: datos, encoding: .isoLatin1) else {
-                avisoImportacion = "no se pudo leer el texto del archivo."; return
+    private var panelObjetivo: some View {
+        let o = m.objetivo
+        let frase: String = {
+            if o.objetivo == 0 { return "Tu patrimonio es de \(din(o.actual)). Ponte un objetivo para ver cuándo llegas." }
+            if o.conseguido { return "Objetivo conseguido: tienes \(din(o.actual)) de \(din(o.objetivo))." }
+            if o.ritmo <= 0 { return "A este ritmo no llegas: en los últimos meses tu patrimonio \(o.ritmo < 0 ? "baja" : "no crece"). Te faltan \(din(o.objetivo - o.actual))." }
+            let n = o.mesesHasta ?? 0
+            return "Al ritmo de los últimos meses (\(din(o.ritmo)) al mes) llegarías en \(n) \(n == 1 ? "mes" : "meses"). Te faltan \(din(o.objetivo - o.actual))."
+        }()
+        return panel("camino al objetivo.", nil) {
+            Text(frase).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+            if o.puntos.count < 2 {
+                Text("La previsión aparece en cuanto haya un par de meses de movimientos.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+            } else if !oculto {
+                GraficaObjetivo(o: o).frame(height: 150)
             }
-            extracto = try await Task.detached { try ImportadorFinanzas.analizar(texto, nombre: url.lastPathComponent) }.value
-        } catch { avisoImportacion = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription }
+            EnlaceFin(texto: o.objetivo != 0 ? "cambiar objetivo." : "poner objetivo.", accion: web)
+        }
     }
 
-    private func importar(_ e: ExtractoAnalizado, cuenta: String) async {
-        do {
-            try await c.encolar(ImportadorFinanzas.operaciones(e, cuenta: cuenta))
-            extracto = nil
-            avisoImportacion = "\(e.filas.count) movimientos preparados. \(e.omitidas) filas omitidas."
-        } catch { avisoImportacion = "no se pudo guardar el extracto en este iPhone." }
+    private var panelActivos: some View {
+        let total = m.activos.reduce(0) { $0 + $1.valor }
+        return panel("tus activos.", "en directo.") {
+            ForEach(Array(m.activos.enumerated()), id: \.offset) { _, f in
+                HStack(alignment: .firstTextBaseline) {
+                    Text(f.nombre + ".").font(Tipo.cuerpo).foregroundStyle(Paleta.texto).lineLimit(1)
+                    Spacer()
+                    Text(din(f.valor)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit().foregroundStyle(Paleta.texto)
+                    variacion(f).frame(minWidth: 70, alignment: .trailing)
+                }
+                .accessibilityElement(children: .combine)
+            }
+            FilaLibro(etiqueta: "total.", valor: din(total))
+        }
     }
 
-    private func cifra(_ d: Decimal, _ oculto: Bool) -> String { oculto ? "•••••" : Dinero.formato(d) }
-    private func nombreCuenta(_ id: String, _ v: VistaFinanzas) -> String { (v.cuentas.first { $0.id == id }?.nombre ?? id).lowercased() }
-    private func nombreCat(_ id: String, _ v: VistaFinanzas) -> String { (v.categorias.first { $0.id == id }?.nombre ?? id).lowercased() }
-    private func etiquetaTipo(_ t: String) -> String {
-        switch t { case "income": return "ingresos"; case "expense": return "gastos"; case "transfer": return "traspasos"; default: return t }
+    @ViewBuilder private func variacion(_ f: ModeloResumen.Activo) -> some View {
+        if oculto {
+            Text("")
+        } else if f.pct == nil, let c = f.cambio, abs(c) >= 0.5 {
+            Text((c >= 0 ? "+" : "−") + FormatoFin.dinero(abs(c))).font(Tipo.pie).foregroundStyle(c < 0 ? Paleta.atencion : Paleta.progreso)
+        } else if let p = f.pct {
+            let clase = abs(p) < 0.05 ? 0 : p > 0 ? 1 : -1
+            HStack(spacing: 2) {
+                if clase != 0 { Image(systemName: clase > 0 ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill").font(.system(size: 8)) }
+                Text(FormatoFin.pct(p))
+            }
+            .font(Tipo.pie).foregroundStyle(clase > 0 ? Paleta.progreso : clase < 0 ? Paleta.atencion : Paleta.textoSecundario)
+        } else {
+            Text("sin datos").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+        }
     }
-    private func etiquetaDia(_ iso: String) -> String {
-        if iso == "sin fecha" { return "sin fecha." }
-        guard let d = LocalDay(iso: iso) else { return iso + "." }
-        let hoy = CalendarioBitacora.madrid.dia(de: Date())
-        if d == hoy { return "hoy." }
-        if d == hoy.sumando(dias: -1) { return "ayer." }
-        let meses = ["", "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
-        let m = d.month >= 1 && d.month <= 12 ? meses[d.month] : ""
-        return "\(d.day) \(m)."
-    }
-}
 
-// Gráfica editorial compacta: área y línea, sin dependencias externas.
-private struct GraficaSaldo: View {
-    let puntos: [PuntoDia]
-    let oculto: Bool
-
-    var body: some View {
-        GeometryReader { g in
-            if oculto || puntos.count < 2 {
-                RoundedRectangle(cornerRadius: Radio.control, style: .continuous).fill(Paleta.tinteTexto)
-                    .overlay(Text(oculto ? "cifras ocultas." : "sin datos suficientes.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario))
+    private var panelSuscripciones: some View {
+        let mes = m.suscripciones.reduce(0) { $0 + $1.importe }
+        return panel("suscripciones y fijos.", "\(din(mes)) al mes, \(din(mes * 12)) al año.") {
+            if m.suscripciones.isEmpty {
+                Text("No tienes suscripciones ni gastos fijos activos.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
             } else {
-                let vals = puntos.map { NSDecimalNumber(decimal: $0.valor).doubleValue }
-                let minV = vals.min() ?? 0, maxV = vals.max() ?? 1
-                let margen = max((maxV - minV) * 0.12, max(abs(maxV), 1) * 0.01)
-                let bajo = minV - margen, alto = maxV + margen
-                let rango = max(alto - bajo, 1)
-                let insetX: CGFloat = 8, insetY: CGFloat = 18
-                let w = max(g.size.width - insetX * 2, 1), h = max(g.size.height - insetY * 2, 1)
-                let step = w / CGFloat(max(puntos.count - 1, 1))
-                let pt: (Int) -> CGPoint = { i in
-                    CGPoint(x: insetX + CGFloat(i) * step, y: insetY + h - CGFloat((vals[i] - bajo) / rango) * h)
-                }
-                let linea = Path { p in
-                    p.move(to: pt(0))
-                    for i in 1..<puntos.count { p.addLine(to: pt(i)) }
-                }
-                let area = Path { p in
-                    p.move(to: CGPoint(x: insetX, y: insetY + h)); p.addLine(to: pt(0))
-                    for i in 1..<puntos.count { p.addLine(to: pt(i)) }
-                    p.addLine(to: CGPoint(x: insetX + CGFloat(puntos.count - 1) * step, y: insetY + h)); p.closeSubpath()
-                }
-                ZStack(alignment: .bottomLeading) {
-                    VStack(spacing: 0) {
-                        Rectangle().fill(Paleta.borde).frame(height: 1); Spacer()
-                        Rectangle().fill(Paleta.borde.opacity(0.65)).frame(height: 1); Spacer()
-                        Rectangle().fill(Paleta.borde).frame(height: 1)
-                    }.padding(.vertical, insetY)
-                    area.fill(Paleta.tinteAcento)
-                    linea.stroke(Paleta.acento, style: StrokeStyle(lineWidth: 2, lineJoin: .round))
-                    if !puntos.isEmpty {
-                        let p = pt(puntos.count - 1)
-                        Circle().fill(Paleta.acento).frame(width: 6, height: 6).position(p)
-                    }
-                    Text(Dinero.formato(puntos.last?.valor ?? 0))
-                        .font(Tipo.poppins(11, .medium, estilo: .caption2)).foregroundStyle(Paleta.textoSecundario)
-                        .padding(4)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                }
-                .clipShape(RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
-                .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
-            }
-        }
-    }
-}
-
-private struct RevisionExtractoView: View {
-    @Environment(\.dismiss) private var cerrar
-    let extracto: ExtractoAnalizado
-    let cuentas: [CuentaSaldo]
-    let importar: (String) -> Void
-    @State private var cuenta = "bancos"
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    Picker("cuenta.", selection: $cuenta) {
-                        ForEach(cuentas) { c in Text(c.nombre.lowercased() + ".").tag(c.id) }
-                    }
-                    LabeledContent("movimientos.", value: "\(extracto.filas.count)")
-                    if extracto.omitidas > 0 { LabeledContent("omitidos.", value: "\(extracto.omitidas)") }
-                } footer: {
-                    Text("volver a importar el mismo archivo en la misma cuenta no crea duplicados.")
-                }
-                Section("revisión.") {
-                    ForEach(extracto.filas.prefix(100)) { f in
-                        HStack(alignment: .firstTextBaseline) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(f.concepto.isEmpty ? "sin concepto" : f.concepto).lineLimit(1)
-                                Text(f.fecha).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                    ForEach(m.suscripciones) { x in
+                        Button { hoja = .gestor } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                LogoSuscripcion(id: x.id, titulo: x.titulo, logos: logos, lado: 30)
+                                Text(x.titulo).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).lineLimit(1)
+                                Text(din(x.importe)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit().foregroundStyle(Paleta.texto)
+                                Text(x.faltan == 0 ? "hoy." : x.faltan == 1 ? "mañana." : "día \(x.dia), en \(x.faltan) días.")
+                                    .font(Tipo.pie).foregroundStyle(x.faltan <= 3 ? Paleta.acento : Paleta.textoSecundario)
                             }
-                            Spacer()
-                            Text((f.tipo == "income" ? "+" : "−") + Dinero.formato(f.importe)).monospacedDigit()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(10)
+                            .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("gestionar suscripciones.")
                     }
-                    if extracto.filas.count > 100 { Text("y \(extracto.filas.count - 100) más.").foregroundStyle(Paleta.textoSecundario) }
                 }
             }
-            .navigationTitle("importar extracto.")
-            .onAppear { if !cuentas.contains(where: { $0.id == cuenta }) { cuenta = cuentas.first?.id ?? "bancos" } }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("importar.") { importar(cuenta); cerrar() }.disabled(cuenta.isEmpty || extracto.filas.isEmpty)
-                }
-            }
+            EnlaceFin(texto: "gestionar suscripciones.") { hoja = .gestor }
+        }
+    }
+
+    private var panelPrevision: some View {
+        let p = m.prevision
+        return panel("fin de mes.", "previsión.") {
+            cifra(din(p.fin), negativa: p.fin < 0)
+            Text("en tus cuentas el día \(p.ultimoDia), contando fijos\(p.variable != 0 ? ", tu gasto normal" : "")\(p.porEntrar != 0 ? " y el sueldo por entrar" : "").")
+                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+            FilaLibro(etiqueta: "fijos que quedan.", valor: din(p.fijos))
+            if p.variable != 0 { FilaLibro(etiqueta: "gasto normal hasta fin de mes.", valor: din(p.variable)) }
+            if p.porEntrar != 0 { FilaLibro(etiqueta: "sueldo por entrar.", valor: din(p.porEntrar)) }
+            if let col = p.colchon { FilaLibro(etiqueta: "colchón.", valor: String(format: "%.1f", col).replacingOccurrences(of: ".", with: ",") + " meses") }
+            if !p.top.isEmpty { FilaLibro(etiqueta: "donde más gastas.", valor: p.top) }
         }
     }
 }
 
-// Editor conservado: crear, editar, borrar y traspasar (compatible con los modales del coordinador).
-struct EditorMovimientoView: View {
-    @Environment(AppCoordinator.self) private var c
-    @Environment(\.dismiss) private var cerrar
-    let id: String
-    let tipoInicial: String
-    var existente: Movimiento?
-
-    @State private var tipo = "expense"
-    @State private var destino = "efectivo"
-    @State private var confirmarBorrado = false
-    @State private var importe = ""
-    @State private var concepto = ""
-    @State private var cuenta = "bancos"
-    @State private var categoria: String?
-    @State private var fecha = Date()
-    @State private var vista: VistaFinanzas?
-    @State private var guardando = false
-    @State private var error: String?
-    @FocusState private var enfocado: Bool
+// finResGraficaObjetivo: lo real, la previsión a este ritmo y la raya del objetivo.
+private struct GraficaObjetivo: View {
+    let o: ModeloResumen.Objetivo
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    Picker("tipo.", selection: $tipo) {
-                        Text("gasto.").tag("expense")
-                        Text("ingreso.").tag("income")
-                        Text("traspaso.").tag("transfer")
-                    }
-                    .pickerStyle(.segmented)
-                    .disabled(existente != nil)
-                    TextField("importe.", text: $importe).keyboardType(.decimalPad).focused($enfocado)
-                    TextField("concepto.", text: $concepto)
-                }
-                .listRowBackground(Paleta.superficie)
-                Section {
-                    Picker(tipo == "transfer" ? "desde." : "cuenta.", selection: $cuenta) {
-                        ForEach(vista?.cuentas ?? []) { Text($0.nombre.lowercased() + ".").tag($0.id) }
-                    }
-                    if tipo == "transfer" {
-                        Picker("hacia.", selection: $destino) {
-                            ForEach(vista?.cuentas ?? []) { Text($0.nombre.lowercased() + ".").tag($0.id) }
-                        }
-                    } else {
-                        Picker("categoría.", selection: $categoria) {
-                            Text("sin categoría.").tag(String?.none)
-                            ForEach((vista?.categorias ?? []).filter { $0.tipo == nil || $0.tipo == tipo }) { Text($0.nombre.lowercased()).tag(Optional($0.id)) }
-                        }
-                    }
-                    DatePicker("día.", selection: $fecha, displayedComponents: .date).environment(\.locale, Locale(identifier: "es_ES"))
-                } footer: {
-                    if let error { Text(error).foregroundStyle(Paleta.error) }
-                }
-                .listRowBackground(Paleta.superficie)
-                if existente != nil {
-                    Section {
-                        Button("borrar movimiento.", role: .destructive) { confirmarBorrado = true }
-                    }
-                    .listRowBackground(Paleta.superficie)
-                }
+        Canvas { ctx, size in
+            let reales = o.puntos.map(\.valor)
+            let horizonte = o.mesesHasta.map { min($0, 36) } ?? 12
+            let proy = (1...max(horizonte, 1)).map { o.actual + o.ritmo * Double($0) }
+            var todos = reales + proy
+            if o.objetivo > 0 { todos.append(o.objetivo) }
+            var lo = todos.min() ?? 0, hi = todos.max() ?? 1
+            let hueco = (hi - lo) * 0.12 != 0 ? (hi - lo) * 0.12 : (abs(hi) * 0.1 != 0 ? abs(hi) * 0.1 : 100)
+            lo -= hueco; hi += hueco
+            let total = Double(reales.count - 1 + proy.count)
+            let x = { (i: Double) in CGFloat(i / total) * size.width }
+            let y = { (v: Double) in size.height - CGFloat((v - lo) / (hi - lo)) * size.height }
+            var real = Path()
+            for (i, v) in reales.enumerated() {
+                let p = CGPoint(x: x(Double(i)), y: y(v))
+                if i == 0 { real.move(to: p) } else { real.addLine(to: p) }
             }
-            .confirmationDialog("¿borrar este movimiento?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
-                Button("borrar.", role: .destructive) { Task { await borrar() } }
-                Button("cancelar.", role: .cancel) {}
+            let i0 = Double(reales.count - 1)
+            var area = real
+            area.addLine(to: CGPoint(x: x(i0), y: size.height)); area.addLine(to: CGPoint(x: 0, y: size.height)); area.closeSubpath()
+            ctx.fill(area, with: .color(Paleta.tinteAcento))
+            if o.objetivo > 0 {
+                var l = Path(); l.move(to: CGPoint(x: 0, y: y(o.objetivo))); l.addLine(to: CGPoint(x: size.width, y: y(o.objetivo)))
+                ctx.stroke(l, with: .color(Paleta.textoSecundario), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
             }
-            .font(Tipo.cuerpo)
-            .scrollContentBackground(.hidden)
-            .background(Paleta.fondo)
-            .navigationTitle(existente == nil ? "nuevo movimiento." : "movimiento.")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("guardar.") { Task { await guardar() } }.disabled(guardando || valor == nil)
-                }
-            }
-            .onAppear {
-                if let m = existente {
-                    tipo = m.tipo
-                    importe = NSDecimalNumber(decimal: m.importe).stringValue.replacingOccurrences(of: ".", with: ",")
-                    concepto = m.concepto
-                    cuenta = m.cuenta
-                    destino = m.destino.isEmpty ? destino : m.destino
-                    categoria = m.categoriaId.isEmpty ? nil : m.categoriaId
-                    if let d = LocalDay(iso: m.fecha) {
-                        var cal = Calendar(identifier: .gregorian)
-                        cal.timeZone = CalendarioBitacora.madrid.zona
-                        fecha = cal.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12)) ?? fecha
-                    }
-                } else {
-                    tipo = tipoInicial == "income" ? "income" : "expense"
-                    enfocado = true
-                }
-            }
-            .task {
-                let doc = await c.documentoVisible()
-                vista = await Task.detached { doc.map { LecturaFinanzas.vista($0) } }.value
-            }
+            var hoy = Path(); hoy.move(to: CGPoint(x: x(i0), y: 0)); hoy.addLine(to: CGPoint(x: x(i0), y: size.height))
+            ctx.stroke(hoy, with: .color(Paleta.borde), lineWidth: 1)
+            ctx.stroke(real, with: .color(Paleta.acento), style: StrokeStyle(lineWidth: 2, lineJoin: .round))
+            var prev = Path(); prev.move(to: CGPoint(x: x(i0), y: y(o.actual)))
+            for (k, v) in proy.enumerated() { prev.addLine(to: CGPoint(x: x(i0 + Double(k + 1)), y: y(v))) }
+            ctx.stroke(prev, with: .color(Paleta.acento.opacity(0.6)), style: StrokeStyle(lineWidth: 2, dash: [5, 4]))
         }
-        .presentationDetents([.large])
+        .accessibilityLabel("Patrimonio de los últimos meses y su previsión" + (o.fecha.isEmpty ? "." : ", llegarías al objetivo en \(o.fecha)."))
     }
+}
 
-    private func borrar() async {
-        do { try await c.encolar(.borrarMovimiento(id: id)); cerrar() } catch { self.error = "no se pudo borrar en este iPhone." }
-    }
-
-    private var valor: Decimal? { Dinero.decimal(texto: importe).flatMap { $0 > 0 ? $0 : nil } }
-
-    private func guardar() async {
-        guard !guardando, let v = valor else { return }
-        guardando = true
-        defer { guardando = false }
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = CalendarioBitacora.madrid.zona
-        let d = cal.dateComponents([.year, .month, .day], from: fecha)
-        let ahora = cal.dateComponents([.hour, .minute], from: Date())
-        let dia = LocalDay(year: d.year!, month: d.month!, day: d.day!)!
-        let texto = String(concepto.trimmingCharacters(in: .whitespacesAndNewlines).prefix(300))
-        let cifra = NSDecimalNumber(decimal: v).stringValue
-        let horaTexto = String(format: "%02d:%02d", ahora.hour ?? 0, ahora.minute ?? 0)
-        do {
-            if existente != nil {
-                if tipo == "transfer", destino == cuenta { error = "elige dos cuentas distintas."; return }
-                try await c.encolar(.editarMovimiento(id: id, importe: cifra, concepto: texto, categoria: categoria, fecha: dia.iso, cuenta: cuenta,
-                                                      destino: tipo == "transfer" ? destino : nil))
-                cerrar()
-                return
-            }
-            if tipo == "transfer" {
-                guard destino != cuenta else { error = "elige dos cuentas distintas."; return }
-                try await c.encolar(.crearTraspaso(id: id, importe: cifra, desde: cuenta, hacia: destino, fecha: dia.iso, hora: horaTexto, concepto: texto))
-                cerrar()
-                return
-            }
-            try await c.encolar(.crearMovimiento(id: id, tipo: tipo, importe: NSDecimalNumber(decimal: v).stringValue, cuenta: cuenta,
-                                                 categoria: categoria, fecha: dia.iso, hora: horaTexto,
-                                                 concepto: texto))
-            cerrar()
-        } catch {
-            self.error = "no se pudo guardar en este iPhone."
-        }
+extension Color {
+    // Colores de categoría guardados como «#rrggbb» (financeProCategoryColor).
+    init(hexWeb: String) {
+        let h = hexWeb.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        let v = UInt32(h, radix: 16) ?? 0x78716c
+        self.init(red: Double((v >> 16) & 0xff) / 255, green: Double((v >> 8) & 0xff) / 255, blue: Double(v & 0xff) / 255)
     }
 }

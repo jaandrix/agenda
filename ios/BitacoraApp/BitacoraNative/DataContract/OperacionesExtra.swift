@@ -20,6 +20,7 @@ enum OperacionesExtra {
         switch tipo {
         case entradaQR, quitarEntradaQR: return ["entries"]
         case quitarConector, conector, descartarConector: return clavesConector
+        case CambioFinanzas.tipo: return CambioFinanzas.claves
         default: return ["dayPlanner"]
         }
     }
@@ -82,6 +83,8 @@ enum OperacionesExtra {
             r = aplicarConector(d, r)
         case descartarConector:
             r = descartar(d, r)
+        case CambioFinanzas.tipo:
+            r = CambioFinanzas.aplicar(d, r)
         default:
             break
         }

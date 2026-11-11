@@ -122,6 +122,9 @@ for (const archivo of archivosJs) if (!archivo.startsWith('bajo-demanda/') && !c
 
 const pruebasDinero = spawnSync(process.execPath, ['--test', join(raiz, 'pruebas', 'finanzas.mjs')], { encoding: 'utf8' });
 if (pruebasDinero.status !== 0) fallos.push(`las pruebas de Finanzas no pasan (node --test pruebas/finanzas.mjs):\n${(pruebasDinero.stdout || pruebasDinero.stderr).trim().slice(-1500)}`);
+// Finanzas del iPhone usa este mismo código (MotorFinanzas): si un cambio aquí rompe la app nativa, se ve antes de subir.
+const pruebasDineroIos = spawnSync(process.execPath, ['--test', join(raiz, 'pruebas', 'finanzas-ios.mjs')], { encoding: 'utf8' });
+if (pruebasDineroIos.status !== 0) fallos.push(`las pruebas de Finanzas del iPhone no pasan (node --test pruebas/finanzas-ios.mjs):\n${(pruebasDineroIos.stdout || pruebasDineroIos.stderr).trim().slice(-1500)}`);
 const pruebasNube = spawnSync(process.execPath, ['--test', join(raiz, 'pruebas', 'sincronizar.mjs')], { encoding: 'utf8' });
 if (pruebasNube.status !== 0) fallos.push(`las pruebas de sincronizar no pasan (node --test pruebas/sincronizar.mjs):\n${(pruebasNube.stdout || pruebasNube.stderr).trim().slice(-1500)}`);
 

@@ -23,10 +23,8 @@
         (lista || []).forEach(function (x, i) { m[x && x.id != null ? String(x.id) : '#' + i] = x; });
         return m;
     }
-    function diffLista(antes, despues, conClave) {
+    function diffLista(antes, despues) {
         var a = porId(antes), d = porId(despues), r = { anadir: [], cambiar: [], quitar: [] };
-        var vistas = {};
-        var claves = function (t) { return conClave && typeof financeProTxDedupeKeys === 'function' ? [] : []; };
         Object.keys(a).forEach(function (id) { if (!(id in d)) r.quitar.push(id); });
         (despues || []).forEach(function (x, i) {
             var id = x && x.id != null ? String(x.id) : '#' + i;
@@ -101,7 +99,7 @@
             titulo: String(t.note || t.bankNote || (cat && cat.name) || 'movimiento'),
             pendiente: !!t.pendiente,
             meta: [cat && cat.name, financePro.accounts[t.account] && financePro.accounts[t.account].name].filter(Boolean).join(', ').toLowerCase(),
-            importe: Number(t.amount) || 0,
+            importe: Number(t.amount) || 0, cifra: String(Number(t.amount) || 0),
             cuenta: t.account || '', destino: t.transferTo || '', categoria: t.category || '', nota: String(t.note || ''),
             hora: t.hora || '', futuro: !!(t.date && t.date > todayISO()), neutro: financeProNeutro(t), revisar: !!t.needsReview
         };
@@ -295,7 +293,9 @@
         txs.forEach(function (t) { var m = String(t.date).slice(0, 7); (grupos[m] = grupos[m] || []).push(t); });
         return {
             total: txs.length, vacio: financePro.transactions.length ? 'Ningún movimiento coincide con este filtro.' : 'Todavía no hay movimientos. Añade uno o importa un extracto bancario.',
-            anios: financeProTxFilterYears(),
+            anios: financeProTxFilterYears().map(String),
+            cuentas: FINANCE_PRO_ACCOUNT_KEYS.map(function (k) { return { id: k, nombre: String(nombreCuenta(k)) }; }),
+            categorias: (financePro.categories || []).map(function (c) { return { id: String(c.id), nombre: String(c.name || c.id) }; }),
             grupos: Object.keys(grupos).sort().reverse().map(function (m) {
                 var l = grupos[m];
                 var inc = l.filter(function (t) { return t.type === 'income' && !financeProNeutro(t); }).reduce(function (s, t) { return s + Number(t.amount); }, 0);
@@ -313,8 +313,8 @@
         var filas = financeProFilasDelExtracto(imp);
         var nFuera = filas.filter(function (f) { return f.fuera; }).length;
         var n = filas.length - imp.excluidas.size;
-        var cuadre = null;
-        try { cuadre = financeProTieneSaldo(imp) ? financeProCuadreExtracto(imp) : null; } catch (e) { cuadre = null; }
+        var conSaldo = false;
+        try { conSaldo = !!financeProTieneSaldo(imp); } catch (e) {}
         return {
             cuenta: imp.mapping.account, cuentaDetectada: !!imp.cuentaDetectada, confirmada: financeProCuentaConfirmada(imp),
             cuentas: FINANCE_PRO_ACCOUNT_KEYS.map(function (k) { return { id: k, nombre: String(nombreCuenta(k)) }; }),
@@ -324,7 +324,7 @@
                 return { fila: f.fila, fecha: f.date || '', dia: f.date ? financeDateLabelShort(f.date) : 'sin fecha', concepto: String(f.desc || '').slice(0, 60),
                     importe: Number.isFinite(f.val) ? f.val : null, fuera: f.fuera || '', ya: imp.yaApuntadas.has(f.fila), marcada: !imp.excluidas.has(f.fila) };
             }),
-            cuadre: cuadre ? JSON.parse(JSON.stringify(cuadre)) : null
+            conSaldo: conSaldo
         };
     }
 
@@ -362,8 +362,46 @@
         serie: function (rango, extras) { return JSON.stringify(grafica(rango, !!extras)); },
         buscar: function (f) { return JSON.stringify(buscar(JSON.parse(f))); },
         gestor: function () { return JSON.stringify(gestorSuscripciones()); },
+        // openFinanceProReviewModal: los que esperan categoría.
+        revisar: function () { return JSON.stringify(financeProOrdenados().filter(function (t) { return t.needsReview; }).slice(0, 300).map(fila)); },
         permitir: function (precio) { return JSON.stringify(asistPermitir(Number(precio) || 0)); },
         // Suscripciones: lo mismo que suscripcionDarDeBaja / DarDeAlta / CobroVisto / Borrar, devuelto como cambios.
+        // saveEntry (entradas.js) para una suscripción o un gasto fijo: mismos campos, mezcla con la entrada de antes, el logo
+        // se vuelve a buscar si cambia el nombre o la web, el estado pasa por suscripcionCambiarEstado y lo nuevo lleva altaDesde.
+        guardarSuscripcion: function (datos) {
+            var f = JSON.parse(datos);
+            return JSON.stringify(enCopia(function () {
+                var type = f.tipo === 'fixed_expense' ? 'fixed_expense' : 'subscription';
+                var entry = { id: f.id, title: String(f.titulo || '').trim(), type: type, date: '', categoryId: getCategoryIdForType(type), tags: [] };
+                entry.amount = parseFloat(f.importe) || 0;
+                entry.renewalDay = parseInt(f.dia) || 1;
+                entry.active = f.activa !== false;
+                entry.proAccount = f.cuenta || '';
+                entry.vigilar = !!f.vigilar;
+                var web = String(f.web || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split(/[/?#]/)[0];
+                var idx = entries.findIndex(function (e) { return String(e.id) === String(f.id); });
+                var previa = idx >= 0 ? entries[idx] : null;
+                entry.date = (previa && previa.date) || todayISO();
+                if (previa) { entry.tags = previa.tags || []; }
+                if (!previa || previa.title !== entry.title || (previa.logoDominio || '') !== web) { entry.logo = undefined; entry.logoIntento = undefined; }
+                entry.logoDominio = web || undefined;
+                if (previa) {
+                    var nueva = Object.assign({}, previa, entry);
+                    Object.keys(nueva).forEach(function (k) { if (nueva[k] === undefined) delete nueva[k]; });
+                    entries[idx] = nueva;
+                    if ((previa.active !== false) !== (entry.active !== false)) { nueva.active = previa.active; suscripcionCambiarEstado(nueva, entry.active !== false); }
+                } else {
+                    entry.altaDesde = todayISO();
+                    Object.keys(entry).forEach(function (k) { if (entry[k] === undefined) delete entry[k]; });
+                    entries.push(entry);
+                }
+                return true;
+            }));
+        },
+        suscripcionDatos: function (id) {
+            var e = entries.find(function (x) { return String(x.id) === id; });
+            return JSON.stringify(e ? { id: String(e.id), tipo: e.type, titulo: e.title || '', importe: String(e.amount != null ? e.amount : ''), dia: Number(e.renewalDay) || 1, activa: e.active !== false, cuenta: e.proAccount || '', vigilar: !!e.vigilar, web: e.logoDominio || '' } : null);
+        },
         suscripcion: function (id, accion) {
             return JSON.stringify(enCopia(function () {
                 var e = entries.find(function (x) { return String(x.id) === id; });
@@ -406,6 +444,7 @@
         importarCuenta: function (k) { imp.mapping.account = k; imp.excluidas = null; imp.cuentaConfirmada = true; return JSON.stringify(vistaImport()); },
         importarConfirmar: function () { imp.cuentaConfirmada = true; return JSON.stringify(vistaImport()); },
         importarFila: function (fila, marcada) {
+            fila = Number(fila); marcada = marcada === true || marcada === 'true';
             imp.excluidas = new Set(imp.excluidas);
             if (marcada) imp.excluidas.delete(fila); else imp.excluidas.add(fila);
             return JSON.stringify(vistaImport());
@@ -421,7 +460,7 @@
                 var quitados = cuadre ? financeProResolverDuplicados(cuadre) : 0;
                 if (quitados) { invalidar(); cuadre = financeProCuadreExtracto(imp); }
                 return { nuevos: financePro.transactions.length - antes, texto: financeProResumenImport(x), quitados: quitados || 0,
-                    cuadre: cuadre ? { cuadra: !!cuadre.cuadra, esperado: cuadre.esperado, saldoBanco: cuadre.saldoBanco, retenido: cuadre.retenido || 0, saldoApp: cuadre.saldoApp != null ? cuadre.saldoApp : null } : null };
+                    cuadre: cuadre ? { cuadra: !!cuadre.cuadra, esperado: cuadre.esperado, actual: cuadre.actual, diff: cuadre.diff || 0, saldoBanco: cuadre.saldoBanco != null ? cuadre.saldoBanco : null, retenido: cuadre.retenido || 0, cuenta: String(nombreCuenta(cuadre.cuenta)) } : null };
             });
             imp = null;
             return JSON.stringify(r);

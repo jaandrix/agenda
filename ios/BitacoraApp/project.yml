@@ -79,6 +79,31 @@ targets:
         buildPhase: resources
       - path: ../../js/apuntar.js
         buildPhase: resources
+      # Finanzas calcula e importa con el mismo código de la web, en JavaScriptCore (Features/Finanzas/MotorFinanzas.swift).
+      - path: BitacoraNative/Features/Finanzas/finanzas-entorno.js
+        buildPhase: resources
+      - path: BitacoraNative/Features/Finanzas/finanzas-puente.js
+        buildPhase: resources
+      - path: ../../js/nucleo.js
+        buildPhase: resources
+      - path: ../../js/datos.js
+        buildPhase: resources
+      - path: ../../js/entradas.js
+        buildPhase: resources
+      - path: ../../js/finanzas.js
+        buildPhase: resources
+      - path: ../../js/finanzas-pro.js
+        buildPhase: resources
+      - path: ../../js/presupuesto.js
+        buildPhase: resources
+      - path: ../../js/suscripciones.js
+        buildPhase: resources
+      - path: ../../js/finanzas-resumen.js
+        buildPhase: resources
+      - path: ../../js/inversion.js
+        buildPhase: resources
+      - path: ../../js/asistente.js
+        buildPhase: resources
       - path: BitacoraWidgets/Fonts
         buildPhase: resources
         excludes:
