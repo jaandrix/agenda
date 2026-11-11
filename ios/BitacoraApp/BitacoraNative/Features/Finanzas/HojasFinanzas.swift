@@ -131,6 +131,8 @@ struct ImportarExtractoView: View {
     @State private var resultado: ResultadoImportacion?
     @State private var error: String?
     @State private var trabajando = false
+    @State private var sobranMarcados = Set<String>()
+    @State private var arreglado: String?
 
     var body: some View {
         NavigationStack {
@@ -142,12 +144,10 @@ struct ImportarExtractoView: View {
                             if q.cuadra {
                                 Text("saldo cuadrado con el extracto: " + (q.retenido > 0 ? "\(FormatoFin.dinero(q.saldoBanco ?? q.esperado)) en el banco menos \(FormatoFin.dinero(q.retenido)) retenidos que aún no enseña, \(FormatoFin.dinero(q.esperado))" : FormatoFin.dinero(q.esperado)) + ".")
                                     .foregroundStyle(Paleta.progreso)
-                            } else {
-                                Text("el saldo de \(q.cuenta.lowercased()) no cuadra con el extracto: el banco dice \(FormatoFin.dinero(q.esperado)) y Bitácora \(FormatoFin.dinero(q.actual)) (\(FormatoFin.dinero(q.diff)) de diferencia). Revísalo en la web, en Finanzas, para ver qué sobra o falta.")
-                                    .foregroundStyle(Paleta.atencion)
                             }
                         }
                     }
+                    if let q = r.cuadre, !q.cuadra { cuadreView(q) }
                 } else if let v = vista {
                     vistaPrevia(v)
                 } else {
@@ -222,6 +222,63 @@ struct ImportarExtractoView: View {
         } footer: {
             Text("Las que parecen ya apuntadas (mismo importe en 4 días, o dos que suman uno) salen desmarcadas. Puedes cambiar cualquiera.")
         }
+    }
+
+    // openFinanceProCuadre: el saldo no cuadra. Lo que sobra o falta entre las fechas del extracto y los tres arreglos.
+    @ViewBuilder private func cuadreView(_ q: ResultadoImportacion.Cuadre) -> some View {
+        Section("el saldo no cuadra.") {
+            FilaLibro(etiqueta: "el extracto dice", valor: FormatoFin.dinero(q.esperado))
+            FilaLibro(etiqueta: "bitácora dice", valor: FormatoFin.dinero(q.actual))
+            FilaLibro(etiqueta: "diferencia", valor: (q.diff > 0 ? "+" : "") + FormatoFin.dinero(q.diff), acento: q.diff != 0)
+            if let d = q.detalle {
+                Text("Saldo de \(q.cuenta) a \(d.hasta), ya descontados los cargos pendientes. He cruzado uno a uno los movimientos del \(d.desde) al \(d.hasta) con el extracto.")
+                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+            }
+        }
+        if let arreglado {
+            Section { Text(arreglado).foregroundStyle(Paleta.progreso) }
+        } else if let d = q.detalle {
+            if !d.sobran.isEmpty {
+                Section("sobran en bitácora (no están en el extracto).") {
+                    ForEach(d.sobran) { t in
+                        Toggle(isOn: Binding(get: { sobranMarcados.contains(t.id) }, set: { if $0 { sobranMarcados.insert(t.id) } else { sobranMarcados.remove(t.id) } })) {
+                            HStack { Text(t.dia).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(width: 52, alignment: .leading); Text(t.concepto).lineLimit(1); Spacer(); Text((t.tipo == "income" ? "+" : "-") + FormatoFin.dinero(t.importe)).monospacedDigit() }
+                        }
+                    }
+                    Button("quitar los marcados.") { Task { await arreglar("cuadreQuitar", ["ids": Array(sobranMarcados)]) } }.disabled(sobranMarcados.isEmpty)
+                }
+                .onAppear { if sobranMarcados.isEmpty { sobranMarcados = Set(d.sobran.map(\.id)) } }
+            }
+            if !d.faltan.isEmpty {
+                Section("faltan en bitácora (están en el extracto).") {
+                    ForEach(Array(d.faltan.enumerated()), id: \.offset) { _, f in
+                        HStack { Text(f.dia).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(width: 52, alignment: .leading); Text(f.concepto).lineLimit(1); Spacer(); Text((f.importe > 0 ? "+" : "") + FormatoFin.dinero(f.importe)).monospacedDigit() }
+                    }
+                }
+            }
+            Section {
+                Button("ajustar el saldo a \(FormatoFin.dinero(q.esperado)).") { Task { await arreglar("cuadreAjustar", [:]) } }
+                Button("fijar el saldo de partida.") { Task { await arreglar("cuadreFijar", [:], foto: "saldo de partida de \(q.cuenta)") } }
+            } footer: {
+                let suma = d.sobran.reduce(0) { $0 + abs($1.importe) }
+                Text("Fijar el saldo de partida no añade ningún movimiento: cambia con cuánto empezaba la cuenta para que coincida con el extracto. Es lo que toca al importar el historial de meses atrás. Antes, quita lo que sobra si son ajustes de saldo antiguos. "
+                     + (!d.sobran.isEmpty && abs(suma - abs(q.diff)) < 0.005 ? "Lo que sobra explica justo la diferencia: quitándolo, cuadra." : !d.sobran.isEmpty || !d.faltan.isEmpty ? "Revisa la lista: si la diferencia viene de antes de estas fechas, el ajuste la deja a cero sin tocar nada más." : "Los movimientos de estas fechas coinciden: la diferencia viene de antes. El ajuste la deja a cero sin tocar tu histórico."))
+            }
+        }
+    }
+
+    private func arreglar(_ accion: String, _ datos: [String: Any], foto: String? = nil) async {
+        trabajando = true; defer { trabajando = false }
+        do {
+            let m = try await motorListo(c)
+            if let foto, let uid = c.sesion?.userId, let f = try? await m.crudo("foto"), let s = String(data: f, encoding: .utf8) {
+                FotosImportacion.guardar(uid, texto: foto, movimientos: (try? LectorJSON.valor(f))?["financePro"]?["transactions"]?.lista?.count ?? 0, foto: s)
+            }
+            let json = String(data: try JSONSerialization.data(withJSONObject: datos), encoding: .utf8) ?? "{}"
+            let r = try await m.crudo("accion", [accion, json])
+            guard await encolarCambiosFinanzas(r, c) else { error = "no se pudo guardar en este iPhone."; return }
+            arreglado = (try? LectorJSON.valor(r))?["resultado"]?.texto ?? "hecho."
+        } catch { self.error = mensajeMotor(error, "no se pudo arreglar.") }
     }
 
     private func leerArchivo(_ r: Result<URL, Error>) async {

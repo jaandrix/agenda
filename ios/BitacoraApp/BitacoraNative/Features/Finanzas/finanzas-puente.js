@@ -307,6 +307,7 @@
 
     // ---- importar ----
     var imp = null;
+    var ultimoCuadre = null;
     function vistaImport() {
         if (!imp) return null;
         renderFinanceProImportFilas(imp);
@@ -566,6 +567,30 @@
                     y1.noDuplicadoDe = (y1.noDuplicadoDe || []).concat([y2.id]);
                     y2.noDuplicadoDe = (y2.noDuplicadoDe || []).concat([y1.id]);
                     return true;
+                // openFinanceProCuadre: los tres arreglos de un cuadre que no cuadra.
+                case 'cuadreQuitar':
+                    var ids = new Set((a.ids || []).map(String));
+                    if (!ids.size) return false;
+                    financePro.transactions = financePro.transactions.filter(function (t) { return !ids.has(String(t.id)); });
+                    invalidar();
+                    var c1 = ultimoCuadre, saldo = c1 ? Math.round(financeProAccountBalance(c1.cuenta) * 100) / 100 : 0;
+                    return ids.size + (ids.size === 1 ? ' movimiento quitado. ' : ' movimientos quitados. ') + (c1 && Math.abs(saldo - c1.esperado) < 0.005 ? 'Cuadra con el extracto.' : 'Saldo: ' + financeMoney(saldo) + '.');
+                case 'cuadreAjustar':
+                    var c2 = ultimoCuadre;
+                    if (!c2) return false;
+                    var d2 = Math.round((c2.esperado - c2.actual) * 100) / 100;
+                    if (Math.abs(d2) < 0.005) return false;
+                    financePro.transactions.push({ id: 'ptx_adj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), date: c2.hasta, account: c2.cuenta, type: d2 > 0 ? 'income' : 'expense', amount: Math.abs(d2), note: 'Ajuste de saldo', ajuste: true });
+                    ultimoCuadre = null;
+                    return 'Saldo ajustado al del extracto: ' + financeMoney(c2.esperado);
+                case 'cuadreFijar':
+                    var c3 = ultimoCuadre;
+                    if (!c3) return false;
+                    var d3 = Math.round((c3.esperado - (c3.retenido || 0) - c3.actual) * 100) / 100;
+                    if (Math.abs(d3) < 0.005) return false;
+                    financePro.accounts[c3.cuenta].balance0 = Math.round((Number(financePro.accounts[c3.cuenta].balance0 || 0) + d3) * 100) / 100;
+                    ultimoCuadre = null;
+                    return financeProCuentaNombre(c3.cuenta) + ' empieza ahora con ' + financeMoney(financePro.accounts[c3.cuenta].balance0) + ' y cuadra con el extracto: ' + financeMoney(c3.esperado);
                 case 'volver':
                     // financeAplicarVuelta: Finanzas como en la foto, y en las entradas solo la cuenta y el concepto del banco.
                     var foto = a.foto;
@@ -639,8 +664,14 @@
                 var cuadre = financeProCuadreExtracto(imp);
                 var quitados = cuadre ? financeProResolverDuplicados(cuadre) : 0;
                 if (quitados) { invalidar(); cuadre = financeProCuadreExtracto(imp); }
+                ultimoCuadre = cuadre && !cuadre.cuadra ? JSON.parse(JSON.stringify(cuadre)) : null;
+                var detalle = ultimoCuadre ? {
+                    desde: financeDateLabelShort(cuadre.desde), hasta: financeDateLabelShort(cuadre.hasta),
+                    sobran: (cuadre.sobran || []).map(function (t) { return { id: String(t.id), dia: financeDateLabelShort(t.date), concepto: String(t.note || t.bankNote || (financeProCategoryById(t.category) || {}).name || 'movimiento'), tipo: t.type, importe: Number(t.amount) || 0 }; }),
+                    faltan: (cuadre.faltan || []).map(function (f) { return { dia: financeDateLabelShort(f.fechas[0]), concepto: String(f.desc || ''), importe: Number(f.val) || 0 }; })
+                } : null;
                 return { nuevos: financePro.transactions.length - antes, texto: financeProResumenImport(x), quitados: quitados || 0,
-                    cuadre: cuadre ? { cuadra: !!cuadre.cuadra, esperado: cuadre.esperado, actual: cuadre.actual, diff: cuadre.diff || 0, saldoBanco: cuadre.saldoBanco != null ? cuadre.saldoBanco : null, retenido: cuadre.retenido || 0, cuenta: String(nombreCuenta(cuadre.cuenta)) } : null };
+                    cuadre: cuadre ? { cuadra: !!cuadre.cuadra, esperado: cuadre.esperado, actual: cuadre.actual, diff: cuadre.diff || 0, saldoBanco: cuadre.saldoBanco != null ? cuadre.saldoBanco : null, retenido: cuadre.retenido || 0, cuenta: String(nombreCuenta(cuadre.cuenta)), detalle: detalle } : null };
             });
             imp = null;
             return JSON.stringify(r);

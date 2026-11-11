@@ -166,3 +166,16 @@ test('más opciones: ajustar saldo, reglas, categorías, dividir y volver a una 
     assert.equal(estado.financePro.transactions.length, foto.financePro.transactions.length);
     assert.equal(estado.financePro.rules.length, 0);
 });
+
+test('un cuadre que no cuadra se arregla fijando el saldo de partida', () => {
+    const run = cargarMotor();
+    const estado = base();
+    estado.financePro.accounts.online.balance0 = aperturaRevolut() + 50;
+    const r = importarEnMotor(run, estado, REVOLUT[0], 'online');
+    assert.equal(r.cuadre.cuadra, false);
+    assert.ok(r.cuadre.detalle);
+    run(`__fin.cargar(${JSON.stringify(JSON.stringify(estado.financePro))}, '[]', '{}', null)`);
+    const f = JSON.parse(run(`__fin.accion('cuadreFijar', '{}')`));
+    aplicar(estado, f.cambios);
+    assert.equal(Math.round(estado.financePro.accounts.online.balance0 * 100) / 100, aperturaRevolut());
+});

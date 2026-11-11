@@ -147,7 +147,10 @@ struct VistaImportacion: Decodable, Equatable {
 }
 
 struct ResultadoImportacion: Decodable, Equatable {
-    struct Cuadre: Decodable, Equatable { let cuadra: Bool; let esperado, actual, diff, retenido: Double; let saldoBanco: Double?; let cuenta: String }
+    struct Sobra: Decodable, Equatable, Identifiable { let id, dia, concepto, tipo: String; let importe: Double }
+    struct Falta: Decodable, Equatable { let dia, concepto: String; let importe: Double }
+    struct Detalle: Decodable, Equatable { let desde, hasta: String; let sobran: [Sobra]; let faltan: [Falta] }
+    struct Cuadre: Decodable, Equatable { let cuadra: Bool; let esperado, actual, diff, retenido: Double; let saldoBanco: Double?; let cuenta: String; let detalle: Detalle? }
     let nuevos: Int
     let texto: String
     let quitados: Int
