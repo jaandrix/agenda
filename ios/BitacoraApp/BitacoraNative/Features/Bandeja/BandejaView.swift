@@ -57,7 +57,8 @@ enum BandejaConector {
 
     static func opConector(_ f: FilaBandeja, origen: String) -> OperacionBitacora {
         OperacionesExtra.op(OperacionesExtra.conector, ["ref": .string("ia_" + f.id), "op": .object(f.op), "origen": .string(origen),
-                                                        "cuando": .string(ahoraISO()), "hoy": .string(CalendarioBitacora.madrid.dia(de: Date()).iso)])
+                                                        "cuando": .string(ahoraISO()), "hoy": .string(CalendarioBitacora.madrid.dia(de: Date()).iso),
+                                                        "ahoraMs": .number(String(Int64(Date().timeIntervalSince1970 * 1000)))])
     }
 
     // aplicarBandejaConector: como mucho cada 30 s, al sincronizar y al volver a la app.
@@ -93,7 +94,8 @@ enum BandejaConector {
         let origenes = Set(filas.map { $0.op["origen"]?.texto == "siri" ? "Siri" : ($0.op["origen"]?.texto == "correo" || $0.tipo == "correo") ? "tu correo" : "Claude" })
         let quien = origenes.count == 1 ? origenes.first! : "fuera de la app"
         let nombres: [String: (String, String)] = ["tarea": ("tarea", "tareas"), "correo": ("tarea", "tareas"), "evento": ("evento", "eventos"),
-                                                   "pedido": ("envío", "envíos"), "entrada": ("entrada con qr", "entradas con qr"), "nota": ("nota", "notas")]
+                                                   "pedido": ("envío", "envíos"), "entrada": ("entrada con qr", "entradas con qr"), "nota": ("nota", "notas"),
+                                                   "editar_tarea": ("cambio de tarea", "cambios de tareas")]
         var cuenta: [String: Int] = [:]
         var orden: [String] = []
         for f in filas {

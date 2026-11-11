@@ -6,8 +6,8 @@ import Foundation
 extension OperacionesExtra {
     static let conector = "conector"
     static let descartarConector = "descartarConector"
-    static let tiposConector: Set<String> = ["tarea", "evento", "correo", "pedido", "entrada", "nota", "movimiento", "borrar"]
-    static let clavesConector = ["registroConector", "entries", "dayPlanner", "pedidos", "notes", "financePro"]
+    static let tiposConector: Set<String> = ["tarea", "editar_tarea", "evento", "correo", "pedido", "entrada", "nota", "movimiento", "borrar"]
+    static let clavesConector = ["registroConector", "entries", "dayPlanner", "pedidos", "notes", "financePro", "studies"]
 
     static func descartar(_ d: [String: JSONValue], _ valores: [String: JSONValue?]) -> [String: JSONValue?] {
         var r = valores
@@ -51,6 +51,22 @@ extension OperacionesExtra {
                 var l = fp["transactions"]?.lista ?? []
                 meter(&l); fp["transactions"] = .array(l); r["financePro"] = .some(.object(fp))
             } else { return nil }
+        case ("tarea", _):
+            // editar_tarea: la tarea vuelve a como estaba y a su sitio.
+            guard let antes = dh["antes"]?.objeto, let item = antes["item"], !id.isEmpty else { return nil }
+            var p = AplicarOperaciones.planificador(valores["dayPlanner"] ?? nil)
+            var dias = p["days"]?.objeto ?? [:]
+            for (k, v) in dias { dias[k] = .array((v.lista ?? []).filter { $0["id"]?.comoId != id }) }
+            var b = (p["backlog"]?.lista ?? []).filter { $0["id"]?.comoId != id }
+            let i = antes["i"].flatMap { Int(EscritorJSON.texto($0)) }
+            if let dia = antes["dia"]?.texto {
+                var l = dias[dia]?.lista ?? []
+                l.insert(item, at: min(max(0, i ?? l.count), l.count)); dias[dia] = .array(l)
+            } else {
+                b.insert(item, at: min(max(0, i ?? b.count), b.count))
+            }
+            p["days"] = .object(dias); p["backlog"] = .array(b)
+            r["dayPlanner"] = .some(.object(p))
         case ("nota", _):
             guard let nid = dh["notaId"]?.comoId, var notas = (valores["notes"] ?? nil)?.lista,
                   let n = notas.firstIndex(where: { $0["id"]?.comoId == nid }), var nota = notas[n].objeto else { return nil }
@@ -72,7 +88,7 @@ extension OperacionesExtra {
 
     static func deshacerMasPosible(_ dh: [String: JSONValue]) -> Bool {
         switch (dh["accion"]?.texto ?? "", dh["coleccion"]?.texto ?? "") {
-        case ("quitar", "movimiento"), ("reinsertar", "tarea"), ("reinsertar", "evento"), ("reinsertar", "movimiento"), ("nota", _): return true
+        case ("tarea", _), ("quitar", "movimiento"), ("reinsertar", "tarea"), ("reinsertar", "evento"), ("reinsertar", "movimiento"), ("nota", _): return true
         default: return false
         }
     }
@@ -114,6 +130,49 @@ extension OperacionesExtra {
             resumen = tipo == "correo" ? "correo «\(corto(t("titulo")))» en tareas pendientes."
                 : "tarea «\(corto(t("titulo")))»" + (!fecha.isEmpty && !hora.isEmpty ? " el \(fecha) a las \(hora)." : " en tareas pendientes.")
             deshacer = .object(["accion": .string("quitar"), "coleccion": .string("tarea"), "id": .string(ref)])
+        case "editar_tarea":
+            // moverTareaConector: con día y hora va a la línea de ese día; sin alguno de los dos, a pendientes sin día.
+            let id = t("id")
+            guard let sitio = AplicarOperaciones.buscar(id, en: planner), var it = AplicarOperaciones.tareaEn(sitio, planner) else { return valores }
+            let antesDia: String?, antesI: Int
+            switch sitio { case let .dia(k, n): antesDia = k; antesI = n; case let .pendiente(n): antesDia = nil; antesI = n }
+            let antes: JSONValue = .object(["item": .object(it), "dia": antesDia.map(JSONValue.string) ?? .null, "i": .number(String(antesI))])
+            let c = op["cambios"]?.objeto ?? [:]
+            func ct(_ k: String) -> String? { c[k]?.texto }
+            if let x = ct("titulo") { it["title"] = .string(x) }
+            if let x = ct("notas") { it["notes"] = .string(x) }
+            let sinFecha = c["sinFecha"]?.booleano == true
+            if ct("fecha") != nil || ct("hora") != nil || sinFecha {
+                switch sitio {
+                case let .dia(k, n):
+                    var dias = planner["days"]?.objeto ?? [:]
+                    var l = dias[k]?.lista ?? []; l.remove(at: n); dias[k] = .array(l); planner["days"] = .object(dias)
+                case let .pendiente(n):
+                    var l = planner["backlog"]?.lista ?? []; l.remove(at: n); planner["backlog"] = .array(l)
+                }
+                let dia = sinFecha ? nil : (ct("fecha").flatMap { $0.isEmpty ? nil : $0 } ?? antesDia)
+                let hora = sinFecha ? "" : (ct("hora").flatMap { $0.isEmpty ? nil : $0 } ?? it["time"]?.texto ?? "")
+                if let dia, !hora.isEmpty {
+                    it["time"] = .string(hora)
+                    _ = AplicarOperaciones.poner(it, en: dia, de: &planner)
+                } else {
+                    it.removeValue(forKey: "time")
+                    var b = planner["backlog"]?.lista ?? []; b.insert(.object(it), at: 0); planner["backlog"] = .array(b)
+                }
+            } else {
+                AplicarOperaciones.cambiar(sitio, en: &planner) { $0 = it }
+            }
+            r["dayPlanner"] = .some(.object(planner))
+            if let hecha = c["hecha"]?.booleano {
+                let ms = Int64(EscritorJSON.texto(d["ahoraMs"] ?? .number("0"))) ?? 0
+                r = AplicarOperaciones.aplicar(.marcarTarea(id: id, hecha: hecha, momentoMs: ms), a: r)
+            }
+            let que = [c["hecha"]?.booleano == true ? "hecha" : c["hecha"]?.booleano == false ? "pendiente otra vez" : "",
+                       sinFecha ? "a tareas pendientes" : (ct("fecha") != nil || ct("hora") != nil) ? "al \(ct("fecha") ?? antesDia ?? "mismo día")" + (ct("hora").map { " a las " + $0 } ?? "") : "",
+                       ct("titulo") != nil ? "nuevo título" : ""].filter { !$0.isEmpty }.joined(separator: ", ")
+            tipoLinea = "cambio"
+            resumen = "tarea «\(corto(t("resumen")))»: \(que.isEmpty ? "cambiada" : que)."
+            deshacer = .object(["accion": .string("tarea"), "id": .string(id), "antes": antes])
         case "evento":
             if entradas.contains(where: { $0["id"]?.comoId == ref }) { return r }
             entradas.append(.object(["id": .string(ref), "title": .string(t("titulo")), "type": .string("event"), "categoryId": .string("cat_evento"),
