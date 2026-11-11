@@ -1,5 +1,6 @@
 import SwiftUI
 
+private struct GrupoDespensa: Sendable { let seccion: String; let items: [ItemDespensa] }
 private enum PestanaDespensa: String, CaseIterable, Identifiable { case lista, historial, recetas, plan; var id: String { rawValue } }
 private enum ModalDespensa: Identifiable {
     case item(ItemDespensa?), receta(RecetaDespensa?), terminar, plato(String)
@@ -15,6 +16,10 @@ struct DespensaView: View {
     @State private var mostrarNuevaLista = false
     @State private var nombreLista = ""
     @State private var listaEditando: ListaDespensa?
+    // Agrupado una vez por versión de los datos, no en cada pintado: cambiar de hoja no recalcula la lista.
+    @State private var grupos: [GrupoDespensa] = []
+    @State private var enCarro: [ItemDespensa] = []
+    @FocusState private var escribiendo: Bool
 
     var body: some View {
         ScrollView {
@@ -26,7 +31,7 @@ struct DespensaView: View {
                             .font(Tipo.pie).foregroundStyle(Paleta.sobreContextoSuave).padding(.top, 2)
                     }
                 }
-                VStack(alignment: .leading, spacing: 0) {
+                LazyVStack(alignment: .leading, spacing: 0) {
                     selector
                     if let v = vista {
                         switch pestana {
@@ -63,24 +68,36 @@ struct DespensaView: View {
     }
 
     private var detalleCabecera: String? { vista.map { "\($0.listas.count) listas. \($0.recetas.count) recetas." } }
+    // Las cuatro hojas a todo el ancho, de 44 pt y sin animación: el cambio es inmediato.
     private var selector: some View {
-        ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: Espacio.xs) {
+        HStack(spacing: 4) {
             ForEach(PestanaDespensa.allCases) { p in
-                Button { pestana = p } label: { Text(p.rawValue + ".").font(Tipo.poppins(14, pestana == p ? .semibold : .medium, estilo: .footnote))
-                    .padding(.horizontal, 12).padding(.vertical, 8).foregroundStyle(pestana == p ? Paleta.sobreAcento : Paleta.textoSecundario)
-                    .background(pestana == p ? Paleta.acento : Paleta.tinteTexto, in: Capsule()) }.buttonStyle(.plain)
+                Button { var t = Transaction(); t.disablesAnimations = true; withTransaction(t) { pestana = p } } label: {
+                    Text(p.rawValue + ".").font(Tipo.poppins(14, pestana == p ? .semibold : .medium, estilo: .footnote))
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .foregroundStyle(pestana == p ? Paleta.sobreAcento : Paleta.texto)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(pestana == p ? Paleta.acento : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(pestana == p ? [.isSelected] : [])
             }
-        }.padding(.vertical, Espacio.xs) }
+        }
+        .padding(4)
+        .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(.vertical, Espacio.s)
     }
 
     private func lista(_ v: VistaDespensa) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: Espacio.xs) {
                 ForEach(v.listas) { l in Button { Task { try? await c.encolar(.elegirListaCompra(id: l.id)) } } label: {
-                    Text(l.nombre.lowercased() + ".").font(Tipo.pie).padding(.horizontal, 10).padding(.vertical, 7)
+                    Text(l.nombre.lowercased() + ".").font(Tipo.pie).padding(.horizontal, 12).frame(minHeight: 44)
                         .foregroundStyle(v.listaActual?.id == l.id ? Paleta.texto : Paleta.textoSecundario)
-                        .background(v.listaActual?.id == l.id ? Paleta.tinteTexto : Color.clear, in: Capsule()) }.buttonStyle(.plain) }
-                Button("+ lista.") { listaEditando = nil; nombreLista = ""; mostrarNuevaLista = true }.font(Tipo.pie).buttonStyle(.plain).foregroundStyle(Paleta.acento)
+                        .background(v.listaActual?.id == l.id ? Paleta.tinteTexto : Color.clear, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .contentShape(Rectangle()) }.buttonStyle(.plain) }
+                Button("+ lista.") { listaEditando = nil; nombreLista = ""; mostrarNuevaLista = true }.font(Tipo.pie).buttonStyle(.plain).foregroundStyle(Paleta.acento).frame(minHeight: 44)
                 if let actual = v.listaActual {
                     Menu("acciones.") {
                         Button("renombrar.") { listaEditando = actual; nombreLista = actual.nombre; mostrarNuevaLista = true }
@@ -89,8 +106,18 @@ struct DespensaView: View {
                 }
             } }
             HStack(spacing: Espacio.s) {
-                TextField("añadir a la lista.", text: $textoRapido).font(Tipo.cuerpo).submitLabel(.done).onSubmit { Task { await anadirRapido() } }
-                Button("añadir.") { Task { await anadirRapido() } }.font(Tipo.pie).buttonStyle(.bordered).disabled(textoRapido.trimmingCharacters(in: .whitespaces).isEmpty)
+                TextField("añadir a la lista.", text: $textoRapido, prompt: Text("añadir a la lista: leche, 2 tomates…").foregroundColor(Paleta.textoSecundario))
+                    .font(Tipo.cuerpo).foregroundStyle(Paleta.texto).submitLabel(.done).focused($escribiendo)
+                    .onSubmit { Task { await anadirRapido(); escribiendo = true } }
+                    .campoCasa(activo: escribiendo)
+                Button { Task { await anadirRapido() } } label: {
+                    Text("añadir.").font(Tipo.poppins(14, .semibold, estilo: .footnote)).foregroundStyle(Paleta.sobreAcento)
+                        .padding(.horizontal, 14).frame(minHeight: 48)
+                        .background(Paleta.acento, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .disabled(textoRapido.trimmingCharacters(in: .whitespaces).isEmpty)
+                .opacity(textoRapido.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 1)
             }.padding(.vertical, Espacio.s)
             if !v.frecuentes.isEmpty {
                 CabeceraSeccion(titulo: "lo de siempre.")
@@ -99,12 +126,11 @@ struct DespensaView: View {
                 } } }
             }
             if let l = v.listaActual {
-                ForEach(LecturaDespensa.secciones, id: \.self) { sec in
-                    let items = l.items.filter { ($0.seccion.isEmpty ? "otros" : $0.seccion) == sec && !$0.hecho }
-                    if !items.isEmpty { CabeceraSeccion(titulo: (LecturaDespensa.nombres[sec] ?? sec) + ".")
-                        ForEach(items) { filaItem($0, lista: l) } }
+                ForEach(grupos, id: \.seccion) { g in
+                    CabeceraSeccion(titulo: (LecturaDespensa.nombres[g.seccion] ?? g.seccion) + ".")
+                    ForEach(g.items) { filaItem($0, lista: l) }
                 }
-                let hechos = l.items.filter(\.hecho)
+                let hechos = enCarro
                 if !hechos.isEmpty { CabeceraSeccion(titulo: "en el carro.", detalle: "\(hechos.count)")
                     ForEach(hechos) { filaItem($0, lista: l) }
                     Button("terminar la compra.") { modal = .terminar }.buttonStyle(BotonPrincipal()).padding(.top, Espacio.m)
@@ -166,7 +192,19 @@ struct DespensaView: View {
         Button("pasar ingredientes que faltan a la lista.") { Task { await planALista(v) } }.buttonStyle(BotonPrincipal()).padding(.top, Espacio.m)
     } }
 
-    private func cargar() async { let d = await c.documentoVisible(); vista = await Task.detached { d.map { LecturaDespensa.vista($0) } }.value }
+    private func cargar() async {
+        let d = await c.documentoVisible()
+        let (v, g, h) = await Task.detached { () -> (VistaDespensa?, [GrupoDespensa], [ItemDespensa]) in
+            guard let v = d.map({ LecturaDespensa.vista($0) }) else { return (nil, [], []) }
+            let items = v.listaActual?.items ?? []
+            var porSeccion: [String: [ItemDespensa]] = [:]
+            for i in items where !i.hecho { porSeccion[i.seccion.isEmpty ? "otros" : i.seccion, default: []].append(i) }
+            let g = LecturaDespensa.secciones.compactMap { s in porSeccion[s].map { GrupoDespensa(seccion: s, items: $0) } }
+                + porSeccion.keys.filter { !LecturaDespensa.secciones.contains($0) }.sorted().map { GrupoDespensa(seccion: $0, items: porSeccion[$0]!) }
+            return (v, g, items.filter(\.hecho))
+        }.value
+        vista = v; grupos = g; enCarro = h
+    }
     private func guardarLista() async { let n = nombreLista, previa = listaEditando; nombreLista = ""; listaEditando = nil; try? await c.encolar(.guardarListaCompra(id: previa?.id ?? OperacionBitacora.nuevoIdProyecto("lista"), nombre: n)) }
     private func anadirRapido() async { guard let l = vista?.listaActual else { return }; let t = textoRapido; textoRapido = ""; try? await c.encolar(.anadirCompra(listaId: l.id, textos: [t], ids: [OperacionBitacora.nuevoIdProyecto("cmp")])) }
     private func guardarItem(_ previo: ItemDespensa?, _ texto: String, _ cantidad: String, _ seccion: String, _ precio: String) async { guard let l = vista?.listaActual else { return }; try? await c.encolar(.guardarItemCompra(listaId: l.id, id: previo?.id ?? OperacionBitacora.nuevoIdProyecto("cmp"), texto: texto, cantidad: cantidad, seccion: seccion, precio: precio.isEmpty ? nil : precio, hecho: previo?.hecho ?? false, recetas: previo?.recetas ?? [])) }
@@ -186,19 +224,19 @@ private struct EditorItemDespensa: View {
     @Environment(\.dismiss) private var cerrar; let guardar: (String, String, String, String) -> Void
     @State private var texto: String; @State private var cantidad: String; @State private var seccion: String; @State private var precio: String
     init(item: ItemDespensa?, seccionInicial: String, guardar: @escaping (String, String, String, String) -> Void) { self.guardar = guardar; _texto = State(initialValue: item?.texto ?? ""); _cantidad = State(initialValue: item?.cantidad ?? ""); _seccion = State(initialValue: seccionInicial); _precio = State(initialValue: item?.precio.map { NSDecimalNumber(decimal: $0).stringValue } ?? "") }
-    var body: some View { NavigationStack { Form { TextField("producto.", text: $texto); TextField("cantidad.", text: $cantidad); Picker("sección.", selection: $seccion) { ForEach(LecturaDespensa.secciones, id: \.self) { Text((LecturaDespensa.nombres[$0] ?? $0) + ".").tag($0) } }; TextField("precio estimado.", text: $precio).keyboardType(.decimalPad) }.navigationTitle("producto.").toolbar { ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }; ToolbarItem(placement: .confirmationAction) { Button("guardar.") { guardar(texto, cantidad, seccion, precio); cerrar() }.disabled(texto.trimmingCharacters(in: .whitespaces).isEmpty) } } } }
+    var body: some View { NavigationStack { Form { TextField("producto.", text: $texto); TextField("cantidad.", text: $cantidad); Picker("sección.", selection: $seccion) { ForEach(LecturaDespensa.secciones, id: \.self) { Text((LecturaDespensa.nombres[$0] ?? $0) + ".").tag($0) } }; TextField("precio estimado.", text: $precio).keyboardType(.decimalPad) }.formularioCasa().navigationTitle("producto.").toolbar { ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }; ToolbarItem(placement: .confirmationAction) { Button("guardar.") { guardar(texto, cantidad, seccion, precio); cerrar() }.disabled(texto.trimmingCharacters(in: .whitespaces).isEmpty) } } } }
 }
 private struct EditorRecetaDespensa: View {
     @Environment(\.dismiss) private var cerrar; let guardar: (String, Int, [String], [String], String) -> Void
     @State private var nombre: String; @State private var raciones: Int; @State private var ingredientes: String; @State private var pasos: String; @State private var notas: String
     init(receta: RecetaDespensa?, guardar: @escaping (String, Int, [String], [String], String) -> Void) { self.guardar = guardar; _nombre = State(initialValue: receta?.nombre ?? ""); _raciones = State(initialValue: receta?.raciones ?? 2); _ingredientes = State(initialValue: receta?.ingredientes.map { $0.cantidad + "|" + $0.texto }.joined(separator: "\n") ?? ""); _pasos = State(initialValue: receta?.pasos.joined(separator: "\n") ?? ""); _notas = State(initialValue: receta?.notas ?? "") }
-    var body: some View { NavigationStack { Form { TextField("nombre.", text: $nombre); Stepper("\(raciones) raciones.", value: $raciones, in: 1...24); Section("ingredientes, uno por línea.") { TextEditor(text: $ingredientes).frame(minHeight: 130) }; Section("pasos, uno por línea.") { TextEditor(text: $pasos).frame(minHeight: 110) }; TextField("notas.", text: $notas, axis: .vertical) }.navigationTitle("receta.").toolbar { ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }; ToolbarItem(placement: .confirmationAction) { Button("guardar.") { guardar(nombre, raciones, ingredientes.components(separatedBy: .newlines).filter { !$0.isEmpty }, pasos.components(separatedBy: .newlines).filter { !$0.isEmpty }, notas); cerrar() }.disabled(nombre.isEmpty) } } } }
+    var body: some View { NavigationStack { Form { TextField("nombre.", text: $nombre); Stepper("\(raciones) raciones.", value: $raciones, in: 1...24); Section("ingredientes, uno por línea.") { TextEditor(text: $ingredientes).editorCasa(alto: 130) }; Section("pasos, uno por línea.") { TextEditor(text: $pasos).editorCasa(alto: 110) }; TextField("notas.", text: $notas, axis: .vertical) }.formularioCasa().navigationTitle("receta.").toolbar { ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }; ToolbarItem(placement: .confirmationAction) { Button("guardar.") { guardar(nombre, raciones, ingredientes.components(separatedBy: .newlines).filter { !$0.isEmpty }, pasos.components(separatedBy: .newlines).filter { !$0.isEmpty }, notas); cerrar() }.disabled(nombre.isEmpty) } } } }
 }
 private struct TerminarCompraView: View {
     @Environment(\.dismiss) private var cerrar; let guardar: (String, String, Bool) -> Void; @State private var tienda = ""; @State private var total = ""; @State private var finanzas = true
-    var body: some View { NavigationStack { Form { TextField("tienda.", text: $tienda); TextField("total real.", text: $total).keyboardType(.decimalPad); Toggle("registrar gasto en Finanzas.", isOn: $finanzas) }.navigationTitle("terminar compra.").toolbar { ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }; ToolbarItem(placement: .confirmationAction) { Button("terminar.") { guardar(tienda, total, finanzas); cerrar() } } } } }
+    var body: some View { NavigationStack { Form { TextField("tienda.", text: $tienda); TextField("total real.", text: $total).keyboardType(.decimalPad); Toggle("registrar gasto en Finanzas.", isOn: $finanzas) }.formularioCasa().navigationTitle("terminar compra.").toolbar { ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }; ToolbarItem(placement: .confirmationAction) { Button("terminar.") { guardar(tienda, total, finanzas); cerrar() } } } } }
 }
 private struct EditorPlatoView: View {
     @Environment(\.dismiss) private var cerrar; let dia: String; let recetas: [RecetaDespensa]; let guardar: (String, String, RecetaDespensa?) -> Void; @State private var momento = "comida"; @State private var nombre = ""; @State private var recetaId = ""
-    var body: some View { NavigationStack { Form { Picker("momento.", selection: $momento) { ForEach(["desayuno", "comida", "merienda", "cena"], id: \.self) { Text($0 + ".").tag($0) } }; if !recetas.isEmpty { Picker("receta.", selection: $recetaId) { Text("escrito a mano.").tag(""); ForEach(recetas) { Text($0.nombre).tag($0.id) } }.onChange(of: recetaId) { _, id in if let r = recetas.first(where: { $0.id == id }) { nombre = r.nombre } } }; TextField("plato.", text: $nombre) }.navigationTitle(dia).toolbar { ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }; ToolbarItem(placement: .confirmationAction) { Button("guardar.") { guardar(momento, nombre, recetas.first { $0.id == recetaId }); cerrar() }.disabled(nombre.isEmpty) } } } }
+    var body: some View { NavigationStack { Form { Picker("momento.", selection: $momento) { ForEach(["desayuno", "comida", "merienda", "cena"], id: \.self) { Text($0 + ".").tag($0) } }; if !recetas.isEmpty { Picker("receta.", selection: $recetaId) { Text("escrito a mano.").tag(""); ForEach(recetas) { Text($0.nombre).tag($0.id) } }.onChange(of: recetaId) { _, id in if let r = recetas.first(where: { $0.id == id }) { nombre = r.nombre } } }; TextField("plato.", text: $nombre) }.formularioCasa().navigationTitle(dia).toolbar { ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }; ToolbarItem(placement: .confirmationAction) { Button("guardar.") { guardar(momento, nombre, recetas.first { $0.id == recetaId }); cerrar() }.disabled(nombre.isEmpty) } } } }
 }
