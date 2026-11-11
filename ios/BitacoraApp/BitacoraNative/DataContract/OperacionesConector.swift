@@ -6,8 +6,18 @@ import Foundation
 extension OperacionesExtra {
     static let conector = "conector"
     static let descartarConector = "descartarConector"
-    static let tiposConector: Set<String> = ["tarea", "editar_tarea", "evento", "correo", "pedido", "entrada", "nota", "movimiento", "borrar"]
-    static let clavesConector = ["registroConector", "entries", "dayPlanner", "pedidos", "notes", "financePro", "studies"]
+    static let tiposConector: Set<String> = ["tarea", "editar_tarea", "evento", "correo", "pedido", "entrada", "nota", "movimiento", "borrar",
+                                                   "tarea_recurrente", "habito", "enlace", "entrada_crear"]
+    static let clavesConector = ["registroConector", "entries", "dayPlanner", "pedidos", "notes", "financePro", "studies", "recurringTasks", "habits", "links"]
+    // entrada_crear: solo lo que no es dinero (las suscripciones y gastos fijos son de Finanzas y esperan a la web).
+    static let entradasCrear: [String: (categoria: String, nombre: String)] = ["travel": ("cat_viaje", "viaje"), "birthday": ("cat_general", "cumpleaños"), "document": ("cat_general", "documento")]
+
+    // tiposConector deja pasar el tipo; esto mira además los datos (entrada_crear de dinero se queda para la web).
+    static func sabeAplicar(_ op: [String: JSONValue]) -> Bool {
+        guard let t = op["tipo"]?.texto, tiposConector.contains(t) else { return false }
+        if t == "entrada_crear" { return entradasCrear[op["entryType"]?.texto ?? ""] != nil }
+        return true
+    }
 
     static func descartar(_ d: [String: JSONValue], _ valores: [String: JSONValue?]) -> [String: JSONValue?] {
         var r = valores
@@ -51,6 +61,16 @@ extension OperacionesExtra {
                 var l = fp["transactions"]?.lista ?? []
                 meter(&l); fp["transactions"] = .array(l); r["financePro"] = .some(.object(fp))
             } else { return nil }
+        case ("habito_quitar", _), ("recurrente_quitar", _), ("enlace_quitar", _):
+            let k = dh["accion"]?.texto == "habito_quitar" ? "habits" : dh["accion"]?.texto == "enlace_quitar" ? "links" : "recurringTasks"
+            r[k] = .some(.array(((valores[k] ?? nil)?.lista ?? []).filter { $0["id"]?.comoId != id }))
+        case ("habito_activo", _), ("recurrente_activo", _):
+            let k = dh["accion"]?.texto == "habito_activo" ? "habits" : "recurringTasks"
+            var l = (valores[k] ?? nil)?.lista ?? []
+            guard let n = l.firstIndex(where: { $0["id"]?.comoId == id }), var o = l[n].objeto else { return nil }
+            o["activo"] = .bool(dh["antes"]?.booleano ?? true)
+            l[n] = .object(o)
+            r[k] = .some(.array(l))
         case ("tarea", _):
             // editar_tarea: la tarea vuelve a como estaba y a su sitio.
             guard let antes = dh["antes"]?.objeto, let item = antes["item"], !id.isEmpty else { return nil }
@@ -88,7 +108,8 @@ extension OperacionesExtra {
 
     static func deshacerMasPosible(_ dh: [String: JSONValue]) -> Bool {
         switch (dh["accion"]?.texto ?? "", dh["coleccion"]?.texto ?? "") {
-        case ("tarea", _), ("quitar", "movimiento"), ("reinsertar", "tarea"), ("reinsertar", "evento"), ("reinsertar", "movimiento"), ("nota", _): return true
+        case ("habito_quitar", _), ("recurrente_quitar", _), ("enlace_quitar", _), ("habito_activo", _), ("recurrente_activo", _),
+             ("tarea", _), ("quitar", "movimiento"), ("reinsertar", "tarea"), ("reinsertar", "evento"), ("reinsertar", "movimiento"), ("nota", _): return true
         default: return false
         }
     }
@@ -173,6 +194,53 @@ extension OperacionesExtra {
             tipoLinea = "cambio"
             resumen = "tarea «\(corto(t("resumen")))»: \(que.isEmpty ? "cambiada" : que)."
             deshacer = .object(["accion": .string("tarea"), "id": .string(id), "antes": antes])
+        case "habito", "tarea_recurrente":
+            let k = tipo == "habito" ? "habits" : "recurringTasks"
+            var l = (valores[k] ?? nil)?.lista ?? []
+            if t("accion") == "crear" {
+                if l.contains(where: { $0["id"]?.comoId == ref }) { return valores }
+                var o: [String: JSONValue] = ["id": .string(ref), "activo": .bool(true), "completadas": .object([:])]
+                if tipo == "habito" { o["texto"] = .string(t("texto")) } else { (op["datos"]?.objeto ?? [:]).forEach { o[$0.key] = $0.value } }
+                l.append(.object(o))
+                let nombre = tipo == "habito" ? t("texto") : (op["datos"]?["texto"]?.texto ?? "")
+                resumen = tipo == "habito" ? "rutina nueva «\(corto(nombre))»." : "tarea recurrente «\(corto(nombre))» (\(op["datos"]?["frecuencia"]?.texto ?? ""))."
+                deshacer = .object(["accion": .string(tipo == "habito" ? "habito_quitar" : "recurrente_quitar"), "id": .string(ref)])
+            } else {
+                let id = t("id")
+                guard let n = l.firstIndex(where: { $0["id"]?.comoId == id }), var o = l[n].objeto else { return valores }
+                let antes = o["activo"]?.booleano ?? true
+                let activo = op["activo"]?.booleano == true
+                o["activo"] = .bool(activo)
+                l[n] = .object(o)
+                let nombre = corto(o["texto"]?.texto ?? "")
+                resumen = tipo == "habito" ? "rutina «\(nombre)» \(activo ? "reactivado" : "en pausa")." : "tarea recurrente «\(nombre)» \(activo ? "reactivada" : "en pausa")."
+                deshacer = .object(["accion": .string(tipo == "habito" ? "habito_activo" : "recurrente_activo"), "id": .string(id), "antes": .bool(antes)])
+            }
+            r[k] = .some(.array(l))
+            tipoLinea = tipo == "habito" ? "rutina" : "recurrente"
+        case "enlace":
+            var l = (valores["links"] ?? nil)?.lista ?? []
+            if l.contains(where: { $0["id"]?.comoId == ref || $0["url"]?.texto == t("url") }) { return valores }
+            l.insert(.object(["id": .string(ref), "title": .string(t("titulo")), "url": .string(t("url")), "categoryId": .string(t("categoryId")),
+                              "createdAt": .string(cuando)]), at: 0)
+            r["links"] = .some(.array(l))
+            resumen = "enlace «\(corto(t("titulo")))»."
+            deshacer = .object(["accion": .string("enlace_quitar"), "id": .string(ref)])
+        case "entrada_crear":
+            let tipoE = t("entryType")
+            guard let info = entradasCrear[tipoE] else { return valores }
+            if entradas.contains(where: { $0["id"]?.comoId == ref }) { return valores }
+            var o: [String: JSONValue] = ["id": .string(ref), "type": .string(tipoE), "categoryId": .string(info.categoria), "tags": .array([])]
+            (op["datos"]?.objeto ?? [:]).forEach { if $0.key != "sinValidar" { o[$0.key] = $0.value } }
+            entradas.append(.object(o))
+            r["entries"] = .some(.array(entradas))
+            let titulo = corto(o["title"]?.texto ?? "")
+            let fecha = o["date"]?.texto ?? ""
+            let extra = tipoE == "travel" && !fecha.isEmpty ? ", \(fecha)" : tipoE == "document" && !fecha.isEmpty ? ", caduca \(fecha)"
+                : tipoE == "birthday" && fecha.count >= 10 ? ", \(fecha.suffix(2))/\(fecha.dropFirst(5).prefix(2))" : ""
+            tipoLinea = tipoE == "travel" ? "viaje" : tipoE == "birthday" ? "cumpleaños" : "documento"
+            resumen = "\(info.nombre) «\(titulo)»\(extra)."
+            deshacer = .object(["accion": .string("quitar"), "coleccion": .string("evento"), "id": .string(ref)])
         case "evento":
             if entradas.contains(where: { $0["id"]?.comoId == ref }) { return r }
             entradas.append(.object(["id": .string(ref), "title": .string(t("titulo")), "type": .string("event"), "categoryId": .string("cat_evento"),

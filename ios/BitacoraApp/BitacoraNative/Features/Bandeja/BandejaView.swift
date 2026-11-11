@@ -73,7 +73,7 @@ enum BandejaConector {
         let eventos = Set((((try? doc?.valor(de: "entries")) ?? nil)?.lista ?? []).compactMap { $0["id"]?.comoId })
         var nuevos = Set<String>()
         var aplicar: [FilaBandeja] = []
-        for f in filas where automaticas.contains(f.tipo) && OperacionesExtra.tiposConector.contains(f.tipo) {
+        for f in filas where automaticas.contains(f.tipo) && OperacionesExtra.sabeAplicar(f.op) {
             // Una entrada cuyo evento aún no está (lo crea otra fila que la web no ha aplicado) espera a la siguiente vuelta.
             if f.tipo == "entrada", let eid = f.op["eventoId"]?.comoId, !eventos.contains(eid), !nuevos.contains(eid) { continue }
             if f.tipo == "evento" { nuevos.insert("ia_" + f.id) }
@@ -95,7 +95,9 @@ enum BandejaConector {
         let quien = origenes.count == 1 ? origenes.first! : "fuera de la app"
         let nombres: [String: (String, String)] = ["tarea": ("tarea", "tareas"), "correo": ("tarea", "tareas"), "evento": ("evento", "eventos"),
                                                    "pedido": ("envío", "envíos"), "entrada": ("entrada con qr", "entradas con qr"), "nota": ("nota", "notas"),
-                                                   "editar_tarea": ("cambio de tarea", "cambios de tareas")]
+                                                   "editar_tarea": ("cambio de tarea", "cambios de tareas"), "habito": ("rutina", "rutinas"),
+                                                   "tarea_recurrente": ("tarea recurrente", "tareas recurrentes"), "enlace": ("enlace", "enlaces"),
+                                                   "entrada_crear": ("entrada", "entradas")]
         var cuenta: [String: Int] = [:]
         var orden: [String] = []
         for f in filas {
@@ -198,7 +200,7 @@ struct BandejaView: View {
 
     private func fila(_ f: FilaBandeja) -> some View {
         let d = BandejaConector.describir(f.op)
-        let sabe = OperacionesExtra.tiposConector.contains(f.tipo)
+        let sabe = OperacionesExtra.sabeAplicar(f.op)
         return VStack(alignment: .leading, spacing: 4) {
             Text(d.tipo + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
             Text(d.texto).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
@@ -239,7 +241,7 @@ struct BandejaView: View {
     }
 
     private func aceptar(_ filas: [FilaBandeja]) {
-        let sabe = filas.filter { OperacionesExtra.tiposConector.contains($0.tipo) }
+        let sabe = filas.filter { OperacionesExtra.sabeAplicar($0.op) }
         guard !sabe.isEmpty else { return }
         trabajando = true
         Task {
