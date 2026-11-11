@@ -5,6 +5,8 @@ su propia sección al final de este archivo.
 
 ## Hecho (todo menos Finanzas)
 
+Los puntos 1 a 7 son la 0.18, en verde en el run 43027827095. Lo marcado «0.19» es del punto 8 y va aparte.
+
 | Punto | Commit | Qué |
 |---|---|---|
 | 1. Glass fuera | d373292 | Sin interruptor, sin `bitacora.glass` (se borra al arrancar), sin `conVidrio` ni manchas. La barra vuelve a ser opaca. |
@@ -14,8 +16,9 @@ su propia sección al final de este archivo.
 | 4. Apuntar | 1fd3b9c, 68e4f49 | Un campo, vista previa en directo y «editar.» por cosa (tipo o quitarla). Sin la rejilla de iconos. Ejemplos de `BARRA_PISTA` con el campo vacío. |
 | 5. Recordatorios | cbca21a | Ver el detalle debajo. También van las subtareas y «mover a una fecha.» en el menú de la fila. |
 | 6. Despensa | 56cb3b0 | Campo con superficie y filo de 3:1 (`campoCasa`, en `DesignSystem/CamposCasa.swift`). Hojas de 44 pt a todo el ancho, sin animación. Lista agrupada al cargar. Editores con el fondo del tema. |
-| 7. Rendimiento | (siguiente commit) | Ver el detalle debajo. |
-| Enlaces | (siguiente commit) | Se abren dentro de la app (`SFSafariViewController`, con `c.web`); «abrir en safari.» en el menú. |
+| 7. Rendimiento | d350bc1 | Ver el detalle debajo. |
+| Bandeja, editar_tarea (0.19) | 29ff1ee | Cambios de tareas desde Claude: título, notas, fecha, hora y hecha, con deshacer. |
+| Enlaces (0.19) | 0277c15 | Se abren dentro de la app (`SFSafariViewController`, con `c.web`); «abrir en safari.» en el menú. |
 
 **QR en los eventos:**
 - En la ficha de un evento propio salen «+ añadir entrada.» (foto o captura del carrete) y «pegar.».
@@ -59,7 +62,7 @@ su propia sección al final de este archivo.
    - recorrer `dayPlanner` y avisar de los `recordatorio` que caen en esa ventana de 5 minutos;
    - en `bitacora-mcp`, al encolar algo que no es de `OPS_AUTOMATICAS`, mandar un push «Claude propone…».
    Para el iPhone nativo haría falta APNs, que con Sideloadly y cuenta gratuita no hay. Mientras, el push web llega al iPhone si la PWA tiene los avisos activados. Recomendación: hacerlo en el servidor para la PWA ya, y en la nativa cuando haya cuenta de desarrollador.
-2. **Bandeja, más tipos en el iPhone:** editar_tarea, tarea_recurrente, hábito, enlace y entrada_crear (viaje, cumpleaños y documento). Hoy esperan a la web.
+2. **Bandeja, más tipos en el iPhone:** tarea_recurrente, hábito, enlace y entrada_crear (viaje, cumpleaños y documento). Hoy esperan a la web.
 3. **Apuntar, P1 del laboratorio:**
    - prioridad dicha en la frase;
    - negaciones;
