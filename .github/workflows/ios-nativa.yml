@@ -13,6 +13,7 @@ on:
       - 'pruebas/comprobar.mjs'
       - 'js/apuntar.js'
       - 'pruebas/apuntar-casos.mjs'
+      - 'pruebas/concurrencia-ios.mjs'
   workflow_dispatch: {}
 
 permissions:
@@ -34,7 +35,7 @@ jobs:
 
       - name: Contrato de datos con la web
         working-directory: .
-        run: node --test pruebas/contrato-ios.mjs pruebas/apuntar-p0.mjs pruebas/importar-ios-web.mjs
+        run: node --test pruebas/contrato-ios.mjs pruebas/apuntar-p0.mjs pruebas/importar-ios-web.mjs pruebas/concurrencia-ios.mjs
 
       - name: Comprobación general del repositorio
         working-directory: .
