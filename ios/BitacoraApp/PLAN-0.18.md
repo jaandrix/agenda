@@ -122,3 +122,5 @@ Los puntos 1 a 7 son la 0.18, en verde en el run 43027827095. Lo marcado «0.19�
 1. «inversión desde.» de la gráfica, poner o cambiar el objetivo de patrimonio y la ficha de inversión: hoy abren la web.
 2. Medir en el iPhone con datos reales: mantener pulsado el título «finanzas.» enseña lo que tarda el motor (arranque, carga y cada pestaña, en ms). Objetivo: menos de 100 ms al cambiar de pestaña.
 3. Iconos de las categorías al crear una (hoy salen con el de «otros»).
+
+- 12-11: c65e38f arregla la sección «nueva regla.» (la compilación de 187e99a fallaba ahí). La del 12-11 no llegó a correr: GitHub no asignó un Mac.
