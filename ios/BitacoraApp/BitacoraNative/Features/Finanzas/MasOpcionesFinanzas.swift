@@ -255,10 +255,12 @@ struct MasOpcionesView: View {
                 .swipeActions { Button("eliminar.", role: .destructive) { Task { await accion("borrarRegla", ["id": r.id], ok: nil) } } }
             }
         }
-        Section("nueva regla.") {
+        Section {
             TextField("el concepto contiene. p. ej. Top-up by *1185", text: $textoRegla).textInputAutocapitalization(.never)
             Picker("es un traspaso con.", selection: $cuentaRegla) { ForEach(m.cuentas) { Text($0.nombre).tag($0.id) } }
             Button("+ añadir regla.") { Task { await accion("regla", ["texto": textoRegla, "cuenta": cuentaRegla], ok: nil); textoRegla = "" } }
+        } header: {
+            Text("nueva regla.")
         } footer: {
             Text("Si el importe del movimiento importado es positivo, se suma aquí y se resta de esa otra cuenta; si es negativo, al revés.")
         }
