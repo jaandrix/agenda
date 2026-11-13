@@ -102,7 +102,7 @@ struct DespensaView: View {
     }
 
     private func lista(_ v: VistaDespensa) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        LazyVStack(alignment: .leading, spacing: 0) {
             ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: Espacio.xs) {
                 ForEach(v.listas) { l in Button { Task { try? await c.encolar(.elegirListaCompra(id: l.id)) } } label: {
                     Text(l.nombre.lowercased() + ".").font(Tipo.pie).padding(.horizontal, 12).frame(minHeight: 44)
@@ -185,7 +185,7 @@ struct DespensaView: View {
             .accessibilityAction(named: "eliminar") { borrar(item, de: lista) }
     }
 
-    private func historial(_ v: VistaDespensa) -> some View { VStack(alignment: .leading, spacing: 0) {
+    private func historial(_ v: VistaDespensa) -> some View { LazyVStack(alignment: .leading, spacing: 0) {
         CabeceraSeccion(titulo: "historial.", detalle: "\(v.historial.count)")
         if v.historial.isEmpty { Text("aquí aparecerán las compras terminadas y los tickets.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l) }
         ForEach(v.historial) { x in VStack(alignment: .leading, spacing: 3) { HStack { Text(x.tienda.isEmpty ? "compra." : x.tienda.lowercased() + ".").font(Tipo.cuerpoFuerte); Spacer(); Text(Dinero.formato(x.total)).font(Tipo.cuerpoFuerte).monospacedDigit() }
@@ -193,7 +193,7 @@ struct DespensaView: View {
                 .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }.padding(.vertical, 10).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) } }
     } }
 
-    private func recetas(_ v: VistaDespensa) -> some View { VStack(alignment: .leading, spacing: 0) {
+    private func recetas(_ v: VistaDespensa) -> some View { LazyVStack(alignment: .leading, spacing: 0) {
         HStack { CabeceraSeccion(titulo: "recetas.", detalle: "\(v.recetas.count)"); Spacer(); AccionTexto(texto: "+ receta.") { modal = .receta(nil) } }
         if v.recetas.isEmpty { Text("guarda tus recetas y pasa sus ingredientes a la cesta en un toque.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l) }
         ForEach(v.recetas) { r in

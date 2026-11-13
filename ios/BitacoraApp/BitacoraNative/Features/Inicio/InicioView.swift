@@ -130,6 +130,7 @@ struct InicioView: View {
                          elegirPoste: { elegirPoste($0) },
                          elegir: { d in elegido = d == vista?.hoy ? nil : d },
                          aviso: aviso)
+            .equatable()
         }
         .scrollIndicators(.hidden)
         .background(Paleta.contexto.ignoresSafeArea())
@@ -366,6 +367,14 @@ struct InicioCuerpo: View {
     }
 }
 
+extension InicioCuerpo: Equatable {
+    // `ahora` no cuenta: el bloque «siguiente.» tiene su propio reloj (TimelineView) y la portada se rehace al cambiar de día.
+    static func == (a: InicioCuerpo, b: InicioCuerpo) -> Bool {
+        a.vista == b.vista && a.estado == b.estado && a.foto == b.foto && a.tiempo == b.tiempo && a.bus == b.bus
+            && a.aviso == b.aviso && a.nombresPostes == b.nombresPostes
+    }
+}
+
 // Lo siguiente con hora (o la siguiente tarea útil; si no hay nada, «día despejado.»), con lo que falta y el bus si lo
 // hay. Solo esta pieza se repinta cada minuto.
 struct BloqueSiguiente: View {
@@ -466,20 +475,13 @@ struct CarruselDias: View {
 
     private var base: LocalDay { estado.lunesVisible(semanaInicio: dias.first ?? dia) }
     private var marcado: LocalDay { estado.diaMarcado(dia: dia) }
-    private var semanas: [[LocalDay]] {
-        [-7, 0, 7].map { delta in (0..<7).map { base.sumando(dias: delta + $0) } }
-    }
 
     var body: some View {
         GeometryReader { geo in
             let ancho = max(geo.size.width, 1)
-            HStack(spacing: 0) {
-                ForEach(Array(semanas.enumerated()), id: \.offset) { _, semana in
-                    HStack(spacing: 0) { ForEach(semana, id: \.self) { celda($0) } }
-                        .frame(width: ancho)
-                }
-            }
-            .offset(x: -ancho + arrastre)
+            PaginasSemanas(base: base, marcado: marcado, hoy: hoy, conCosas: conCosas, ancho: ancho, tocar: { tocar($0) })
+                .equatable()
+                .offset(x: -ancho + arrastre)
             .contentShape(Rectangle())
             .simultaneousGesture(pendiente == 0 ? gesto(ancho: ancho) : nil)
         }
@@ -572,9 +574,34 @@ struct CarruselDias: View {
         return dir < 0 ? 7 : -7
     }
 
+}
+
+// Las tres semanas del carrusel (anterior, la que se ve y la siguiente). Equatable: mientras el dedo arrastra solo
+// cambia el desplazamiento de fuera y estas celdas no se vuelven a calcular.
+struct PaginasSemanas: View, Equatable {
+    let base: LocalDay
+    let marcado: LocalDay
+    let hoy: LocalDay
+    let conCosas: Set<LocalDay>
+    let ancho: CGFloat
+    let tocar: (LocalDay) -> Void
+
+    static func == (a: PaginasSemanas, b: PaginasSemanas) -> Bool {
+        a.base == b.base && a.marcado == b.marcado && a.hoy == b.hoy && a.conCosas == b.conCosas && a.ancho == b.ancho
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach([-7, 0, 7], id: \.self) { delta in
+                HStack(spacing: 0) { ForEach(0..<7, id: \.self) { celda(base.sumando(dias: delta + $0)) } }
+                    .frame(width: ancho)
+            }
+        }
+    }
+
     private func celda(_ d: LocalDay) -> some View {
         let sel = d == marcado
-        let letra = Self.letras[d.indiceSemanaLunes]
+        let letra = CarruselDias.letras[d.indiceSemanaLunes]
         return Button { tocar(d) } label: {
             VStack(spacing: Tipo.tamano(1.5)) {
                 Text(letra).font(Tipo.poppins(10.5, sel ? .semibold : .medium, estilo: .caption2))

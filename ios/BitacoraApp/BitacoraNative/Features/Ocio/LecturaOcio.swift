@@ -14,6 +14,8 @@ struct EntradaOcio: Sendable, Identifiable, Equatable {
     let notas: String
     let enlace: String
     let portada: String
+    // Título y autor ya normalizados para buscar sin rehacerlo en cada tecla (0.20).
+    var buscable = ""
 }
 
 struct ListaOcio: Sendable, Identifiable, Equatable {
@@ -44,7 +46,8 @@ enum LecturaOcio {
                 fechaFin: valor["endDate"]?.texto ?? "", anio: anio,
                 valoracion: valoracion(valor),
                 notas: valor["notes"]?.texto ?? "", enlace: valor["url"]?.texto ?? "",
-                portada: valor["portada"]?.texto ?? ""
+                portada: valor["portada"]?.texto ?? "",
+                buscable: normalizar((valor["title"]?.texto ?? "") + " " + (valor["author"]?.texto ?? ""))
             )
         }.sorted { a, b in
             let fa = a.fechaFin.isEmpty ? a.fechaInicio : a.fechaFin

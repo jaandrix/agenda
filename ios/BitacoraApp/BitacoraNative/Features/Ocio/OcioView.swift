@@ -80,7 +80,8 @@ struct OcioView: View {
 
     private func biblioteca(_ v: VistaOcio) -> some View {
         let tipo = pestana.rawValue
-        let filtradas = v.entradas.filter { $0.tipo == tipo && (busqueda.isEmpty || LecturaOcio.normalizar($0.titulo + " " + $0.autor).contains(LecturaOcio.normalizar(busqueda))) }
+        let q = LecturaOcio.normalizar(busqueda)
+        let filtradas = v.entradas.filter { $0.tipo == tipo && (q.isEmpty || $0.buscable.contains(q)) }
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: Espacio.s) {
                 BuscadorOcio(texto: $busqueda, placeholder: "buscar \(pestana.titulo).")

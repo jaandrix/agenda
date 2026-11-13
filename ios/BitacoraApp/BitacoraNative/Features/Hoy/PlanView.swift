@@ -94,6 +94,7 @@ struct PlanView: View {
                     }
                 )
             )
+            .equatable()
             .padding(.horizontal, Espacio.l - 4)
             .padding(.bottom, Espacio.xl)
         }
@@ -102,6 +103,13 @@ struct PlanView: View {
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
         .task(id: "\(c.informe.revision)-\(modelo.desplazamiento)") { await modelo.cargar(c) }
+    }
+}
+
+// Solo se rehace si cambia lo que pinta: los informes de la nube llegan a todas las pestañas vivas.
+extension PlanCuerpo: Equatable {
+    static func == (a: PlanCuerpo, b: PlanCuerpo) -> Bool {
+        a.carga == b.carga && a.desplazamiento == b.desplazamiento && a.estado == b.estado && a.pendientes == b.pendientes && a.aviso == b.aviso
     }
 }
 

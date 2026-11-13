@@ -108,15 +108,21 @@ struct FichaEventoView: View {
         indice = min(indice, max(entradas.count - 1, 0))
     }
 
-    static func fecha(_ d: LocalDay) -> String {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "es_ES")
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "EEEE d 'de' MMMM"
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "UTC")!
-        return f.string(from: cal.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12))!)
+    // Formateadores hechos una vez (0.20): el carrusel de Inicio pedía 21 fechas en cada fotograma del arrastre y cada
+    // una creaba su DateFormatter.
+    private static let utc: Calendar = { var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: "UTC")!; return c }()
+    private static func formato(_ f: String) -> DateFormatter {
+        let d = DateFormatter()
+        d.locale = Locale(identifier: "es_ES")
+        d.timeZone = TimeZone(identifier: "UTC")
+        d.dateFormat = f
+        return d
     }
+    private static let formatoLargo = formato("EEEE d 'de' MMMM")
+    private static let formatoCorto = formato("EEE")
+    static func mediodia(_ d: LocalDay) -> Date { utc.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12))! }
+
+    static func fecha(_ d: LocalDay) -> String { formatoLargo.string(from: mediodia(d)) }
 }
 
 // openTiempo: la previsión de los próximos días y la ciudad (la misma que usa la web, `ciudadTiempo`).
@@ -206,12 +212,6 @@ struct TiempoView: View {
 
     static func diaCorto(_ iso: String) -> String {
         guard let d = LocalDay(iso: iso) else { return iso }
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "es_ES")
-        f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "EEE"
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "UTC")!
-        return f.string(from: cal.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12))!).replacingOccurrences(of: ".", with: "")
+        return formatoCorto.string(from: mediodia(d)).replacingOccurrences(of: ".", with: "")
     }
 }
