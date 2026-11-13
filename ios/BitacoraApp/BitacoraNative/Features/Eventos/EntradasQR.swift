@@ -42,27 +42,14 @@ enum LectorQR {
     }
 }
 
-// El QR con la marca de agua de Bitácora en el centro (la «b.» de qrEntradaSvg).
+// El QR con la «b.» integrada (QRMarcado): hueco limpio, placa del tema y ojos redondeados. Si el dibujo propio
+// falla, el del sistema sin marca, que siempre se lee.
 struct CodigoQR: View {
     let datos: Data
     var body: some View {
-        if let img = LectorQR.imagen(datos) {
+        if let img = QRMarcado.imagen(datos, placa: QRMarcado.colorPlaca(), letra: QRMarcado.colorLetra(), punto: UIColor(rgb: 0xE5532B)) ?? LectorQR.imagen(datos) {
             Image(uiImage: img).interpolation(.none).resizable().scaledToFit()
-                .overlay {
-                    GeometryReader { g in
-                        let lado = g.size.width * 0.2
-                        ZStack {
-                            RoundedRectangle(cornerRadius: lado * 0.21, style: .continuous).fill(Color(red: 0.188, green: 0.184, blue: 0.173))
-                            HStack(alignment: .lastTextBaseline, spacing: 0) {
-                                Text("b").font(.system(size: lado * 0.72, weight: .heavy, design: .rounded)).foregroundStyle(Color(red: 0.937, green: 0.929, blue: 0.89))
-                                Circle().fill(Color(red: 0.898, green: 0.353, blue: 0.169)).frame(width: lado * 0.17, height: lado * 0.17)
-                            }
-                        }
-                        .frame(width: lado, height: lado)
-                        .position(x: g.size.width / 2, y: g.size.height / 2)
-                    }
-                }
-                .padding(18)
+                .padding(6)
                 .background(Color.white, in: RoundedRectangle(cornerRadius: Radio.control))
                 .accessibilityLabel("código qr de la entrada")
         }
@@ -107,7 +94,17 @@ struct EntradaPantallaCompleta: View {
             }
         }
         .padding(20)
-        .background(Color.white.ignoresSafeArea())
+        // La marca de agua, sutil: «bitácora.» grande abajo, casi del color del papel. No toca el QR.
+        .background(alignment: .bottom) {
+            ZStack(alignment: .bottom) {
+                Color.white.ignoresSafeArea()
+                Text("bitácora.").font(Tipo.poppins(64, .bold, estilo: .largeTitle)).kerning(-2.5)
+                .foregroundStyle(.black.opacity(0.035))
+                .lineLimit(1).minimumScaleFactor(0.5)
+                .padding(.bottom, 28)
+                .accessibilityHidden(true)
+            }
+        }
         .preferredColorScheme(.light)
         .onAppear {
             brilloAntes = UIScreen.main.brightness
