@@ -153,6 +153,8 @@ struct EditorMovimientoView: View {
         guard var x = d, !guardando else { return }
         guardando = true; defer { guardando = false }
         x.fecha = Self.iso.string(from: fecha)
+        let t0 = Date()
+        defer { let ms = Date().timeIntervalSince(t0) * 1000; Task { await MotorFinanzas.compartido.anotar("guardar movimiento (total)", ms: ms) } }
         do {
             let json = String(data: try JSONEncoder().encode(x), encoding: .utf8) ?? "{}"
             let r = try await MotorFinanzas.compartido.crudo("guardarMovimiento", [json])

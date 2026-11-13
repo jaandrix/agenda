@@ -56,4 +56,34 @@ final class MotorFinanzasTests: XCTestCase {
         XCTAssertEqual(e["active"], .bool(false))
         XCTAssertEqual(e["bajas"]?.lista?.count, 1)
     }
+
+    // 0.20: la escritura se queda en el motor y, cuando vuelve por la cola, el documento es lo mismo y no se recalcula.
+    func testLaEscrituraVuelveIgualYNoSeRecalcula() async throws {
+        let doc = try DocumentoBitacora(datos: Data(base.utf8))
+        let m = MotorFinanzas()
+        try await m.cargar(doc)
+        let r = try LectorJSON.valor(try await m.crudo("suscripcion", ["sub_1", "baja"]))
+        let tras = try await m.llamar("gestor", como: ModeloGestor.self)
+        XCTAssertEqual(tras.activas.count, 0)
+        let op = try XCTUnwrap(CambioFinanzas.operacion(try XCTUnwrap(r["cambios"]), sobre: doc))
+        let (nuevo, _) = AplicarOperaciones.sobre(doc, [op])
+        try await m.cargar(nuevo)
+        let medidas = await m.ultimaMedida
+        XCTAssertNotNil(medidas["cargar (igual)"])
+        // Si la operación no hubiera llegado, el documento de antes manda.
+        try await m.cargar(doc)
+        let antes = try await m.llamar("gestor", como: ModeloGestor.self)
+        XCTAssertEqual(antes.activas.count, 1)
+    }
+
+    func testUnMovimientoNuevoLlevaSuVezDelMotor() async throws {
+        let doc = try DocumentoBitacora(datos: Data(base.utf8))
+        let m = MotorFinanzas()
+        try await m.cargar(doc)
+        let json = #"{"tipo":"expense","importe":"12,5","cuenta":"bancos","categoria":"","fecha":"2026-11-02","nota":"Café"}"#
+        let r = try LectorJSON.valor(try await m.crudo("guardarMovimiento", [json]))
+        let anadir = try XCTUnwrap(r["cambios"]?["movimientos"]?["anadir"]?.lista)
+        XCTAssertEqual(anadir.first?["clave"]?.texto, "bancos|2026-11-02|12.5|Café")
+        XCTAssertEqual(anadir.first?["vez"], .number("1"))
+    }
 }

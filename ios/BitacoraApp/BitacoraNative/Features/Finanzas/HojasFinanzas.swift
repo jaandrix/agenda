@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 @MainActor
 func motorListo(_ c: AppCoordinator) async throws -> MotorFinanzas {
     let m = MotorFinanzas.compartido
-    if let doc = await c.documentoVisible() { try await m.cargar(doc, revision: String(c.informe.revision)) }
+    if let doc = await c.documentoVisible() { try await m.cargar(doc) }
     return m
 }
 

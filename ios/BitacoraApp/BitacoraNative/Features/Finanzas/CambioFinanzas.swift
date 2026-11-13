@@ -17,7 +17,9 @@ enum CambioFinanzas {
     // De la respuesta del motor (`{resultado, cambios}`) a la operación, con `vez` contada sobre el documento de partida.
     static func operacion(_ cambios: JSONValue, sobre doc: DocumentoBitacora?) -> OperacionBitacora? {
         guard var c = cambios.objeto else { return nil }
-        if var mov = c["movimientos"]?.objeto, let anadir = mov["anadir"]?.lista, !anadir.isEmpty {
+        // `vez` ya viene contada del motor (finanzas-puente.js); si no, se cuenta aquí sobre el documento.
+        if var mov = c["movimientos"]?.objeto, let anadir = mov["anadir"]?.lista, !anadir.isEmpty,
+           anadir.contains(where: { $0["vez"] == nil && $0["t"].map { !ClaveImportacion.claves($0).isEmpty } == true }) {
             var cuenta: [String: Int] = [:]
             let antes = ((try? doc?.valor(de: "financePro")) ?? nil)?["transactions"]?.lista ?? []
             for t in antes { for k in ClaveImportacion.claves(t) { cuenta[k, default: 0] += 1 } }

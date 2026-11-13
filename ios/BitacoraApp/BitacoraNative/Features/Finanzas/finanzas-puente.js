@@ -7,6 +7,8 @@
     var n2 = function (v) { return Math.round((Number(v) || 0) * 100) / 100; };
     var MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
+    // `cambio`: la última llamada dejó el estado cambiado (MotorFinanzas lo lee para olvidar lo calculado).
+    var cambio = false;
     function invalidar() {
         financeSaldosCache = null;
         if (typeof invalidarCachesDerivadas === 'function') { try { invalidarCachesDerivadas(); } catch (e) {} }
@@ -51,7 +53,18 @@
         var tx = diffLista(pro0.transactions, pro1.transactions);
         // Para no duplicar si la operación se vuelve a aplicar sobre una nube que ya tiene la misma fila (otra importación
         // del mismo extracto en la web): las claves con las que la web la reconoce y cuántas había antes.
-        tx.anadir = tx.anadir.map(function (t) { return { t: t, claves: clavesTx(t) }; });
+        // Con `vez` contada aquí, Swift no tiene que decodificar todo financePro en el hilo principal para contarla.
+        if (tx.anadir.length) {
+            var cuenta = {};
+            (pro0.transactions || []).forEach(function (t) { clavesTx(t).forEach(function (k) { cuenta[k] = (cuenta[k] || 0) + 1; }); });
+            tx.anadir = tx.anadir.map(function (t) {
+                var k = clavesTx(t)[0];
+                if (k === undefined) return { t: t };
+                var vez = cuenta[k] || 0;
+                cuenta[k] = vez + 1;
+                return { t: t, clave: k, vez: vez };
+            });
+        }
         return {
             movimientos: tx,
             pro: diffObjeto(pro0, pro1, 'transactions'),
@@ -59,11 +72,26 @@
             entradas: diffLista(ent0, ent1)
         };
     }
+    // Lo mismo que ClaveImportacion.claves en Swift (Dinero.decimal y NSDecimalNumber.stringValue para la cifra).
+    function cifraClave(v) {
+        if (typeof v === 'number') return isFinite(v) ? String(v) : null;
+        if (typeof v !== 'string') return null;
+        var s = v.trim();
+        if (!s || !/^[0-9.,+-]+$/.test(s)) return null;
+        if (s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(/,/g, '.');
+        if ((s.match(/\./g) || []).length > 1) return null;
+        var n = Number(s);
+        return isFinite(n) ? String(n) : null;
+    }
     function clavesTx(t) {
-        if (!t || !t.date || !t.account) return [];
+        if (!t || typeof t !== 'object' || typeof t.date !== 'string') return [];
+        var cifra = cifraClave(t.amount);
+        if (cifra === null) return [];
+        var nota = typeof t.bankNote === 'string' ? t.bankNote : typeof t.note === 'string' ? t.note : '';
         var r = [];
-        var nota = t.bankNote != null ? t.bankNote : (t.note || '');
-        r.push([t.account, t.date, Number(t.amount), nota].join('|'));
+        if (typeof t.account === 'string') r.push([t.account, t.date, cifra, nota].join('|'));
+        if (typeof t.transferTo === 'string' && t.transferTo) r.push([t.transferTo, t.date, cifra, nota].join('|'));
+        ['claveImport', 'claveImport2'].forEach(function (k) { if (typeof t[k] === 'string' && t[k]) r.push(t[k]); });
         return r;
     }
     function vacia(d) {
@@ -71,15 +99,17 @@
             && !Object.keys(d.pro).length && !Object.keys(d.perfil).length
             && !d.entradas.anadir.length && !d.entradas.cambiar.length && !d.entradas.quitar.length;
     }
-    // Ejecuta una función de la web; si cambia algo, devuelve la diferencia y deja el estado como estaba (la app lo
-    // recibirá ya cambiado por la cola, como cualquier escritura).
+    // Ejecuta una función de la web y devuelve lo que cambió. El estado se queda ya cambiado (escritura incremental): la
+    // app lo recibe por la cola como cualquier escritura, y al volver, `cargar` ve que es lo mismo y no recalcula nada.
+    // Si la operación no llegara a la cola, `cargar` encuentra la diferencia y vuelve a lo del documento.
     function enCopia(fn) {
         var f = foto();
         var res;
         try { res = fn(); } catch (e) { restaurar(f); throw e; }
         var d = diferencia(f);
-        restaurar(f);
-        return { resultado: res === undefined ? null : res, cambios: vacia(d) ? null : d };
+        var hay = !vacia(d);
+        if (hay) { cambio = true; invalidar(); }
+        return { resultado: res === undefined ? null : res, cambios: hay ? d : null };
     }
     function restaurar(f) {
         financePro = JSON.parse(f.pro); financeProfile = JSON.parse(f.perfil); entries = JSON.parse(f.entries);
@@ -329,35 +359,72 @@
         };
     }
 
-    g.__fin = {
-        cargar: function (pro, ent, perfil, inv, extra) {
-            financePro = pro ? JSON.parse(pro) : financePro;
-            entries = ent ? JSON.parse(ent) : [];
-            financeProfile = perfil ? JSON.parse(perfil) : financeProfile;
-            if (inv && typeof investmentData !== 'undefined') investmentData = JSON.parse(inv);
-            if (typeof filteredEntries !== 'undefined') filteredEntries = entries.slice();
-            // Lo que la web normaliza al cargar (loadData en datos.js), sin guardar: así las cifras parten de lo mismo.
-            var fp = financeProfile;
-            if (!fp || typeof fp !== 'object') fp = financeProfile = { cash: 0, cashTarget: 0, invested: 0, investedTarget: 0, emergency: 0, emergencyTarget: 0, vacation: 0, vacationTarget: 0, salaryForecast: {}, history: [] };
-            fp.salaryForecast = fp.salaryForecast || {};
-            ['history', 'oneOffIncome', 'movements', 'customAccounts', 'investmentContributions', 'chartSeries', 'savingsGoals'].forEach(function (k) { if (!Array.isArray(fp[k])) fp[k] = []; });
-            ['salaryReal', 'budgets'].forEach(function (k) { if (!fp[k] || typeof fp[k] !== 'object') fp[k] = {}; });
-            fp.recordatorioDia = Number.isFinite(fp.recordatorioDia) ? fp.recordatorioDia : null;
-            fp.ultimoCierreMensual = fp.ultimoCierreMensual || null;
-            financePro.enabled = true;
-            financePro.accounts = (financePro.accounts && typeof financePro.accounts === 'object') ? financePro.accounts : {};
-            ['efectivo', 'bancos', 'online'].forEach(function (k) { financePro.accounts[k] = financePro.accounts[k] || { name: k[0].toUpperCase() + k.slice(1), balance0: 0 }; });
-            financePro.categories = Array.isArray(financePro.categories) && financePro.categories.length ? financePro.categories : financeProDefaultCategories();
-            financeProDefaultCategories().forEach(function (def) { if (!financePro.categories.some(function (c) { return c.id === def.id; })) financePro.categories.push(def); });
-            var regalo = financePro.categories.find(function (c) { return c.id === 'cat_regalo'; });
-            if (regalo && regalo.name === 'Regalos') regalo.name = 'Aportaciones';
-            financePro.transactions = Array.isArray(financePro.transactions) ? financePro.transactions : [];
-            financePro.categoryBudgets = (financePro.categoryBudgets && typeof financePro.categoryBudgets === 'object') ? financePro.categoryBudgets : {};
-            financePro.rules = Array.isArray(financePro.rules) ? financePro.rules : [];
-            financePro.programados = Array.isArray(financePro.programados) ? financePro.programados : [];
-            invalidar();
+    // Lo que la web normaliza al cargar (loadData en datos.js), sin guardar: así las cifras parten de lo mismo.
+    function normalizar(n) {
+        var fp = n.perfil;
+        if (!fp || typeof fp !== 'object') fp = n.perfil = { cash: 0, cashTarget: 0, invested: 0, investedTarget: 0, emergency: 0, emergencyTarget: 0, vacation: 0, vacationTarget: 0, salaryForecast: {}, history: [] };
+        fp.salaryForecast = fp.salaryForecast || {};
+        ['history', 'oneOffIncome', 'movements', 'customAccounts', 'investmentContributions', 'chartSeries', 'savingsGoals'].forEach(function (k) { if (!Array.isArray(fp[k])) fp[k] = []; });
+        ['salaryReal', 'budgets'].forEach(function (k) { if (!fp[k] || typeof fp[k] !== 'object') fp[k] = {}; });
+        fp.recordatorioDia = Number.isFinite(fp.recordatorioDia) ? fp.recordatorioDia : null;
+        fp.ultimoCierreMensual = fp.ultimoCierreMensual || null;
+        var p = n.pro;
+        if (!p || typeof p !== 'object') p = n.pro = {};
+        p.enabled = true;
+        p.accounts = (p.accounts && typeof p.accounts === 'object') ? p.accounts : {};
+        ['efectivo', 'bancos', 'online'].forEach(function (k) { p.accounts[k] = p.accounts[k] || { name: k[0].toUpperCase() + k.slice(1), balance0: 0 }; });
+        p.categories = Array.isArray(p.categories) && p.categories.length ? p.categories : financeProDefaultCategories();
+        financeProDefaultCategories().forEach(function (def) { if (!p.categories.some(function (c) { return c.id === def.id; })) p.categories.push(def); });
+        var regalo = p.categories.find(function (c) { return c.id === 'cat_regalo'; });
+        if (regalo && regalo.name === 'Regalos') regalo.name = 'Aportaciones';
+        p.transactions = Array.isArray(p.transactions) ? p.transactions : [];
+        p.categoryBudgets = (p.categoryBudgets && typeof p.categoryBudgets === 'object') ? p.categoryBudgets : {};
+        p.rules = Array.isArray(p.rules) ? p.rules : [];
+        p.programados = Array.isArray(p.programados) ? p.programados : [];
+        if (!Array.isArray(n.ent)) n.ent = [];
+    }
+    // Igualdad de JSON (lo que no es JSON, como undefined, cuenta como que no está). Se sale en la primera diferencia.
+    function igual(a, b) {
+        if (a === b) return true;
+        if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
+        var la = Array.isArray(a);
+        if (la !== Array.isArray(b)) return false;
+        if (la) {
+            if (a.length !== b.length) return false;
+            for (var i = 0; i < a.length; i++) if (!igual(a[i], b[i])) return false;
             return true;
+        }
+        var na = 0, nb = 0, k;
+        for (k in a) {
+            if (a[k] === undefined) continue;
+            na++;
+            if (!igual(a[k], b[k])) return false;
+        }
+        for (k in b) if (b[k] !== undefined) nb++;
+        return na === nb;
+    }
+
+    g.__fin = {
+        // `comparar`: si lo que llega es lo mismo que ya hay (la vuelta de una escritura propia, una sincronización que no
+        // trae nada nuevo), se queda todo como está y no se recalcula nada. La comparación es exacta, campo a campo.
+        cargar: function (pro, ent, perfil, inv, comparar) {
+            var n = {
+                pro: pro ? JSON.parse(pro) : financePro,
+                ent: ent ? JSON.parse(ent) : [],
+                perfil: perfil ? JSON.parse(perfil) : financeProfile,
+                inv: inv && typeof investmentData !== 'undefined' ? JSON.parse(inv) : undefined
+            };
+            normalizar(n);
+            if (comparar && igual(n.pro, financePro) && igual(n.ent, entries) && igual(n.perfil, financeProfile)
+                && (n.inv === undefined || igual(n.inv, investmentData))) return 'igual';
+            financePro = n.pro; entries = n.ent; financeProfile = n.perfil;
+            if (n.inv !== undefined) investmentData = n.inv;
+            if (typeof filteredEntries !== 'undefined') filteredEntries = entries.slice();
+            invalidar();
+            return 'nuevo';
         },
+        invalidar: function () { invalidar(); return true; },
+        cambio: function () { var c = cambio; cambio = false; return c; },
         preparar: function () { return JSON.stringify(enCopia(function () { return prepararFinanzas(); })); },
         pestana: function (tab, opciones) { return JSON.stringify(pestanas[tab](JSON.parse(opciones || '{}'))); },
         serie: function (rango, extras) { return JSON.stringify(grafica(rango, !!extras)); },
@@ -462,9 +529,10 @@
             return JSON.stringify(enCopia(function () { financePro.transactions = financePro.transactions.filter(function (t) { return String(t.id) !== id; }); return true; }));
         },
         // ---- «más opciones.» (mobileFinMenu): lo que enseñan sus modales, como datos ----
-        gestion: function () {
-            var dup = findFinanceProDuplicates();
-            var pos = findFinanceProPosiblesDuplicados(dup);
+        // Los duplicados solo cuando se abren (findFinanceProDuplicates es cuadrático: casi 1 s con 3.000 movimientos en Node).
+        gestion: function (conDuplicados) {
+            var dup = conDuplicados ? findFinanceProDuplicates() : [];
+            var pos = conDuplicados ? findFinanceProPosiblesDuplicados(dup) : [];
             var item = function (t) {
                 var cat = financeProCategoryById(t.category);
                 return { id: String(t.id), texto: nombreCuenta(t.account) + ', ' + financeDateLabelShort(t.date) + (cat ? ', ' + cat.name : ''), nota: String(t.note || ''), tipo: t.type, importe: Number(t.amount) || 0 };

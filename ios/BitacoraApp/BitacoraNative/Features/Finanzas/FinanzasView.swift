@@ -37,7 +37,6 @@ struct FinanzasView: View {
     @State private var hoja: HojaFinanzas?
     @State private var aviso: String?
     @State private var logos = LogosFinanzas.compartido
-    @State private var preparadoEn: Int = -1
 
     private var pestana: PestanaFinanzas { PestanaFinanzas(rawValue: pestanaGuardada) ?? .cuentas }
     private var mesNombre: String {
@@ -180,12 +179,11 @@ struct FinanzasView: View {
 
     private func cargar() async {
         guard let doc = await c.documentoVisible() else { return }
-        let revision = c.informe.revision
         let motor = MotorFinanzas.compartido
         let tab = pestana
         let opciones = Opciones(rango: rango, extras: extras, n: nMov)
         do {
-            try await motor.cargar(doc, revision: String(revision))
+            try await motor.cargar(doc)
             oculto = ((try? doc.valor(de: "blurFinances")) ?? nil)?.booleano == true
             try await pintar(tab, motor, opciones)
         } catch {
@@ -193,10 +191,10 @@ struct FinanzasView: View {
             return
         }
         // prepararFinanzas, como la web al abrir Finanzas: cargos de suscripciones, programados, historial... Si cambia
-        // algo, va a la cola y la nueva revisión vuelve a pintar. Una vez por revisión.
-        if preparadoEn != revision {
-            preparadoEn = revision
-            if let d = try? await motor.crudo("preparar") { await guardar(d) }
+        // algo, va a la cola y se vuelve a pintar lo que se ve. Una vez por estado (el motor lo lleva).
+        if let d = try? await motor.preparar(), (try? LectorJSON.valor(d))?["cambios"].map({ $0 != .null }) == true {
+            await guardar(d)
+            try? await pintar(tab, motor, opciones)
         }
         await logos.cargar(motor: motor, coordinador: c)
         // Las otras pestañas, ya calculadas para cuando se toquen.

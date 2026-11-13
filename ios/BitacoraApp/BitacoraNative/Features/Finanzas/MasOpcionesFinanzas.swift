@@ -390,7 +390,7 @@ struct MasOpcionesView: View {
     // MARK: común
 
     private func recargar() async {
-        guard let motor = try? await motorListo(c), let r = try? await motor.llamar("gestion", como: ModeloGestion.self) else { return }
+        guard let motor = try? await motorListo(c), let r = try? await motor.llamar("gestion", [opcion == .duplicados ? "1" : ""], como: ModeloGestion.self) else { return }
         m = r
     }
 

@@ -105,7 +105,18 @@ test('las cuatro pestañas, la búsqueda y el gestor salen sin errores', () => {
     assert.equal(JSON.parse(run('__fin.gestor()')).activas.length, 1);
     const baja = JSON.parse(run(`__fin.suscripcion('sub_1', 'baja')`));
     assert.equal(baja.cambios.entradas.cambiar[0].poner.active, false);
-    assert.equal(JSON.parse(run('__fin.gestor()')).activas.length, 1, 'el motor no guarda: la baja vuelve como cambio');
+    // Escritura incremental: el motor se queda con la baja hasta que vuelve el documento.
+    assert.equal(JSON.parse(run('__fin.gestor()')).activas.length, 0);
+    assert.equal(run('__fin.cambio()'), true);
+    // Si la operación no llegó a la cola, el documento de antes manda.
+    const doc = c => `__fin.cargar(${JSON.stringify(JSON.stringify(estado.financePro))}, ${JSON.stringify(JSON.stringify(estado.entries))}, '{}', null, ${c})`;
+    assert.equal(run(doc(true)), 'nuevo');
+    assert.equal(JSON.parse(run('__fin.gestor()')).activas.length, 1);
+    // Y si llega lo mismo que ya hay, no se recalcula nada.
+    assert.equal(run(doc(true)), 'igual');
+    aplicar(estado, baja.cambios);
+    run(`__fin.suscripcion('sub_1', 'baja')`);
+    assert.equal(run(doc(true)), 'igual', 'la vuelta de la propia escritura es lo mismo');
 });
 
 test('preparar Finanzas es idempotente', () => {
