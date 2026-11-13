@@ -119,7 +119,7 @@ struct FichaEventoView: View {
         return d
     }
     private static let formatoLargo = formato("EEEE d 'de' MMMM")
-    private static let formatoCorto = formato("EEE")
+    static let formatoCorto = formato("EEE")
     static func mediodia(_ d: LocalDay) -> Date { utc.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12))! }
 
     static func fecha(_ d: LocalDay) -> String { formatoLargo.string(from: mediodia(d)) }
@@ -212,6 +212,6 @@ struct TiempoView: View {
 
     static func diaCorto(_ iso: String) -> String {
         guard let d = LocalDay(iso: iso) else { return iso }
-        return formatoCorto.string(from: mediodia(d)).replacingOccurrences(of: ".", with: "")
+        return FichaEventoView.formatoCorto.string(from: FichaEventoView.mediodia(d)).replacingOccurrences(of: ".", with: "")
     }
 }
