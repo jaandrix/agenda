@@ -26,6 +26,8 @@ struct VistaInicio: Equatable {
     // mobileBusPoste: la primera parada de bus guardada, si Transporte está a la vista.
     var poste: String?
     var lineas: [String] = []
+    // Todas las paradas de bus guardadas (claves «bus:N»), para elegir desde Inicio cuál se ve.
+    var postes: [String] = []
     // El día elegido en la semana (mobileElegirDia); nil es hoy.
     var elegido: LocalDay?
     var dia: LocalDay { elegido ?? hoy }
@@ -66,6 +68,7 @@ struct VistaInicio: Equatable {
         if Apartados.visible("transporte", doc), let fav = LecturaTransporte.posteInicio(tr) {
             v.poste = String(fav.dropFirst(4))
             v.lineas = tr?["lineas"]?[fav]?.lista?.compactMap(\.texto) ?? []
+            v.postes = LecturaTransporte.postesBus(tr)
         }
         return v
     }
@@ -110,6 +113,7 @@ struct InicioView: View {
     @State private var tiempo: Tiempo?
     @State private var bus: TiemposParada?
     @State private var elegido: LocalDay?
+    @State private var nombresPostes: [String: String] = [:]
 
     var body: some View {
         ScrollView {
@@ -122,6 +126,8 @@ struct InicioView: View {
                          abrirPerfil: { c.web = Apartados.webURL("friends") },
                          abrirTiempo: { c.modal = .tiempo },
                          abrirBus: { c.pestana = .mas; c.rutaMas = ["transporte"] },
+                         nombresPostes: nombresPostes,
+                         elegirPoste: { elegirPoste($0) },
                          elegir: { d in elegido = d == vista?.hoy ? nil : d },
                          aviso: aviso)
         }
@@ -135,6 +141,13 @@ struct InicioView: View {
         // de día lógico (4:00). El bus, cada 30 s y solo mientras se ve Inicio. Los servicios (foto, tiempo) no dependen
         // del día elegido.
         .task(id: vista?.hoy) { await esperarCambioDeDia() }
+        .task(id: vista?.postes.count ?? 0) {
+            guard (vista?.postes.count ?? 0) > 1 else { return }
+            let todas = await c.entorno.servicios.transporte.paradas()
+            var n: [String: String] = [:]
+            for p in todas where p.tipo == "bus" { n[p.clave] = p.nombre.lowercased() }
+            nombresPostes = n
+        }
         .task(id: vista?.poste) {
             while !Task.isCancelled {
                 await cargarBus()
@@ -188,6 +201,21 @@ struct InicioView: View {
         return Int(a.temp.rounded()) != Int(b.temp.rounded()) || a.tipo != b.tipo || a.clave != b.clave || a.dias != b.dias
     }
 
+    // transporteElegirInicio: se ve al momento y la vista se rehace con lo guardado.
+    private func elegirPoste(_ clave: String) {
+        guard clave != "bus:" + (vista?.poste ?? ""), var v = vista else { return }
+        v.poste = String(clave.dropFirst(4))
+        v.lineas = []
+        bus = nil
+        vista = v
+        Task {
+            do { try await c.encolar(.transporteElegirInicio(clave: clave)); aviso = nil } catch {
+                aviso = "no se pudo guardar el cambio en este iPhone."
+                await cargar()
+            }
+        }
+    }
+
     private func cargarBus() async {
         guard let poste = vista?.poste else { bus = nil; return }
         bus = await c.entorno.servicios.transporte.tiempos(poste: poste)
@@ -227,6 +255,8 @@ struct InicioCuerpo: View {
     var abrirPerfil: () -> Void = {}
     var abrirTiempo: () -> Void = {}
     var abrirBus: () -> Void = {}
+    var nombresPostes: [String: String] = [:]
+    var elegirPoste: (String) -> Void = { _ in }
     var elegir: (LocalDay) -> Void = { _ in }
     var aviso: String?
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
@@ -245,7 +275,8 @@ struct InicioCuerpo: View {
                         .foregroundStyle(cs).padding(.top, Tipo.tamano(Espacio.s))
                     CarruselDias(dias: v.semana, dia: v.dia, hoy: v.hoy, conCosas: v.conCosas, elegir: elegir)
                     TimelineView(.everyMinute) { ctx in
-                        BloqueSiguiente(vista: v, ahora: v.dia == v.hoy ? max(ctx.date, ahora) : ahora, bus: bus, abrirBus: abrirBus)
+                        BloqueSiguiente(vista: v, ahora: v.dia == v.hoy ? max(ctx.date, ahora) : ahora, bus: bus, abrirBus: abrirBus,
+                                        nombres: nombresPostes, elegirPoste: elegirPoste)
                     }
                     .id(v.dia)
                 }
@@ -342,6 +373,8 @@ struct BloqueSiguiente: View {
     let ahora: Date
     var bus: TiemposParada?
     var abrirBus: () -> Void = {}
+    var nombres: [String: String] = [:]
+    var elegirPoste: (String) -> Void = { _ in }
 
     private var minutoActual: Int {
         var cal = Calendar(identifier: .gregorian)
@@ -380,7 +413,10 @@ struct BloqueSiguiente: View {
             } else {
                 Text("día despejado.").font(Tipo.poppins(22, .bold, estilo: .title3)).foregroundStyle(Paleta.sobreContexto)
             }
-            if esHoy, vista.poste != nil {
+            if esHoy, let poste = vista.poste {
+                SelectorPoste(poste: poste, postes: vista.postes, nombres: nombres, elegir: elegirPoste, abrirTransporte: abrirBus)
+                    .padding(.top, 6)
+                    .overlay(alignment: .top) { Rectangle().fill(Paleta.filoContexto).frame(height: 1) }
                 Button(action: abrirBus) {
                     HStack(alignment: .center, spacing: Tipo.tamano(10)) {
                         IconoBus().fill(Paleta.sobreContexto).frame(width: Tipo.tamano(20), height: Tipo.tamano(20))
@@ -392,8 +428,6 @@ struct BloqueSiguiente: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .padding(.top, 6)
-                .overlay(alignment: .top) { Rectangle().fill(Paleta.filoContexto).frame(height: 1) }
                 .accessibilityLabel("tu bus")
             }
         }
@@ -560,6 +594,55 @@ struct CarruselDias: View {
         .buttonStyle(.plain)
         .accessibilityLabel(FichaEventoView.fecha(d) + (d == hoy ? ", hoy" : ""))
         .accessibilityAddTraits(sel ? .isSelected : [])
+    }
+}
+
+// La parada que se ve en Inicio, siempre nombrada. Con más de una guardada, tocarla abre la lista con la elegida
+// marcada; «elegir en transporte.» lleva a la página entera.
+struct SelectorPoste: View {
+    let poste: String
+    let postes: [String]
+    let nombres: [String: String]
+    let elegir: (String) -> Void
+    let abrirTransporte: () -> Void
+
+    private func nombre(_ clave: String) -> String {
+        let n = "poste " + String(clave.dropFirst(4))
+        return nombres[clave].map { n + ", " + $0 } ?? n
+    }
+
+    private var etiqueta: some View {
+        HStack(spacing: 6) {
+            Text(nombre("bus:" + poste) + ".").font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(Paleta.sobreContextoSuave)
+                .lineLimit(1).truncationMode(.tail)
+            if postes.count > 1 {
+                Text("cambiar.").font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(Paleta.progreso)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(minHeight: 36)
+        .contentShape(Rectangle())
+    }
+
+    var body: some View {
+        let actual = "bus:" + poste
+        if postes.count > 1 {
+            Menu {
+                Section("parada en inicio.") {
+                    ForEach(postes, id: \.self) { k in
+                        Button { elegir(k) } label: {
+                            if k == actual { Label(nombre(k), systemImage: "checkmark") } else { Text(nombre(k)) }
+                        }
+                    }
+                }
+                Button("elegir en transporte.", action: abrirTransporte)
+            } label: { etiqueta }
+            .buttonStyle(.plain)
+            .accessibilityLabel("parada en inicio: " + nombre(actual))
+            .accessibilityHint("cambia la parada que se ve aquí")
+        } else {
+            etiqueta.accessibilityElement(children: .combine)
+        }
     }
 }
 

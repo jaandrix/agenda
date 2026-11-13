@@ -14,6 +14,7 @@ struct TransporteView: View {
     @State private var abierta: String?
     @State private var verTodas: Set<String> = []
     @State private var aviso: String?
+    @State private var enInicio: String?
 
     var body: some View {
         ScrollView {
@@ -92,6 +93,7 @@ struct TransporteView: View {
         let tr = ((try? doc.valor(de: "servicios")) ?? nil)?["transporte"]
         favoritas = tr?["favoritos"]?.lista?.compactMap(\.texto) ?? []
         lineas = (tr?["lineas"]?.objeto ?? [:]).mapValues { $0.lista?.compactMap(\.texto) ?? [] }
+        enInicio = Apartados.visible("transporte", doc) ? LecturaTransporte.posteInicio(tr) : nil
     }
 
     private func recargar(forzar: Bool) async {
@@ -113,15 +115,39 @@ struct TransporteView: View {
         VStack(alignment: .leading, spacing: 0) {
             cabecera(p, estrella: false)
             llegadas(p, compacto: true)
-            HStack {
+            HStack(spacing: Espacio.m) {
                 Text(pie(p)).font(Tipo.pie).foregroundStyle(Paleta.textoApagado)
                 Spacer()
+                if p.tipo == "bus" { marcaInicio(p) }
                 Button("quitar.") { favorita(p.clave, false) }.font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(minHeight: 44)
             }
         }
         .padding(.horizontal, 16).padding(.top, 12)
         .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .padding(.top, Espacio.m)
+    }
+
+    // La parada de Inicio lleva su sello lleno; las demás de bus, «poner en inicio.».
+    @ViewBuilder private func marcaInicio(_ p: Parada) -> some View {
+        if enInicio == p.clave {
+            Text("en inicio.").font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(Paleta.sobreAcento)
+                .padding(.horizontal, 10).frame(minHeight: 30)
+                .background(Paleta.acento, in: RoundedRectangle(cornerRadius: Radio.control))
+                .accessibilityLabel("esta parada sale en inicio")
+        } else {
+            Button("poner en inicio.") { ponerEnInicio(p.clave) }.font(Tipo.pie).foregroundStyle(Paleta.acento).frame(minHeight: 44)
+        }
+    }
+
+    private func ponerEnInicio(_ clave: String) {
+        let antes = enInicio
+        enInicio = clave
+        Task {
+            do { try await c.encolar(.transporteElegirInicio(clave: clave)); aviso = nil } catch {
+                enInicio = antes
+                aviso = "no se pudo guardar en este iPhone."
+            }
+        }
     }
 
     private func resultado(_ p: Parada) -> some View {
@@ -271,5 +297,9 @@ enum LecturaTransporte {
         let buses = (tr?["favoritos"]?.lista ?? []).compactMap(\.texto).filter { $0.hasPrefix("bus:") }
         if let e = tr?["posteInicio"]?.texto, buses.contains(e) { return e }
         return buses.first
+    }
+
+    static func postesBus(_ tr: JSONValue?) -> [String] {
+        (tr?["favoritos"]?.lista ?? []).compactMap(\.texto).filter { $0.hasPrefix("bus:") }
     }
 }

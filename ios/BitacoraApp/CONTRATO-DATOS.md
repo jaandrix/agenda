@@ -83,7 +83,7 @@ Tipo y valor por defecto según `loadData`. «id» = sus listas se fusionan elem
 | `apuntesRecientes` | lista, `[]` (40 como mucho) | `id` | instantes | apuntar.js | | |
 | `calendarioFeedVersion` | número, `0` | | | ajustes | `Number()` | invalida el enlace .ics firmado |
 | `bienvenida` | objeto o `null` | | | bienvenida.js | | |
-| `servicios` | objeto, `{}` | `compartidos`, `ocultos`... | | servicios.js, compartir.js | | tokens de Siri y correo |
+| `servicios` | objeto, `{}` | `compartidos`, `ocultos`... | | servicios.js, compartir.js | | tokens de Siri y correo; `transporte.posteInicio` («bus:N», la parada de Inicio, debe estar en `favoritos`; la PWA la lee en `mobileBusPoste` y la conserva) |
 
 ## Lo que la nativa hace con cada bloque (v1)
 
