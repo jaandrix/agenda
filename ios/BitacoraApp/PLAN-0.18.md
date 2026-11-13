@@ -124,3 +124,4 @@ Los puntos 1 a 7 son la 0.18, en verde en el run 43027827095. Lo marcado «0.19�
 3. Iconos de las categorías al crear una (hoy salen con el de «otros»).
 
 - 12-11: c65e38f arregla la sección «nueva regla.» (la compilación de 187e99a fallaba ahí). La del 12-11 no llegó a correr: GitHub no asignó un Mac.
+- 13-11: la compilación 43468131783 no corrió (GitHub no asignó un Mac); relanzada.
