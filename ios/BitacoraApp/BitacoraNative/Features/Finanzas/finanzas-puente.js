@@ -415,6 +415,56 @@
         return na === nb;
     }
 
+    // ---- presupuestos (js/presupuesto.js): el borrador de la app, sobre el plan de la web ----
+    // El borrador de Swift solo lleva lo que se edita (sueldo, aportaciones y casillas: id, nombre, importe, categoría,
+    // `auto` y `limiteManual`); el plan se rehace sobre el de la web conservando lo demás de cada casilla, como
+    // enterFinanceBudgetEdit + updateFinanceBudgetDraft + presupuestoQuitarCasilla + presupuestoHeredar.
+    function presMes(m) { return /^\d{4}-\d{2}$/.test(m || '') ? m : financeMonthKey(); }
+    function presBorrador(plan) {
+        return {
+            salary: Number(plan.salary) || 0, contributions: Number(plan.contributions) || 0, heredado: false,
+            autoQuitadas: Object.assign({}, plan.autoQuitadas || {}),
+            allocations: (plan.allocations || []).map(function (a) {
+                var x = { id: String(a.id), label: String(a.label || ''), amount: Number(a.amount) || 0, categoryId: String(a.categoryId || '') };
+                if (a.auto) x.auto = String(a.auto);
+                if (a.limiteManual) x.limiteManual = true;
+                return x;
+            })
+        };
+    }
+    function presPlan(month, b) {
+        var base = b.heredado ? {} : JSON.parse(JSON.stringify(presupuestoPlanDe(month).plan));
+        var originales = base.allocations || [], antes = {};
+        originales.forEach(function (a) { antes[String(a.id)] = a; });
+        var plan = Object.assign(base, { salary: Math.max(0, Number(b.salary) || 0), contributions: Math.max(0, Number(b.contributions) || 0) });
+        plan.allocations = (b.allocations || []).map(function (x) {
+            var a = Object.assign({}, antes[x.id] || {}, { id: x.id, label: String(x.label || ''), amount: Math.max(0, Number(x.amount) || 0) });
+            if (a.auto || x.auto) { a.auto = a.auto || x.auto; if (x.limiteManual) a.limiteManual = true; }
+            else a.categoryId = String(x.categoryId || '');
+            return a;
+        });
+        var quitadas = Object.assign({}, b.autoQuitadas || {});
+        originales.forEach(function (a) { if (a.auto && !plan.allocations.some(function (x) { return x.id === String(a.id); })) quitadas[a.auto] = true; });
+        if (Object.keys(quitadas).length || plan.autoQuitadas) plan.autoQuitadas = quitadas;
+        return plan;
+    }
+    function presVista(month, plan) {
+        var m = financeBudgetUnifiedModel(month, plan, null);
+        var cats = {};
+        m.categories.forEach(function (c) {
+            cats[c.categoryId] = { nombre: String(c.name), gastado: c.spent, devuelto: c.refunded, disponible: c.available, estado: presupuestoEstadoTexto(c), status: c.status, mesPasado: c.lastMonth };
+        });
+        var comp = {};
+        m.commitments.forEach(function (c) { comp[String(c.allocation.id)] = { nombre: String(c.nombre), n: c.n, alMes: budgetAutoResumen(c.tipo).total, cargado: c.charged }; });
+        var rec = presupuestoPlanDe(month).recorded;
+        return {
+            mes: month, titulo: financeMonthLabel(month), cerrado: !!rec,
+            ingresos: m.income, aportacionesReales: m.contributionsReal, presupuestos: m.manualAssigned, compromisos: m.commitmentsAssigned, sinAsignar: m.remaining,
+            categorias: cats, comprometido: comp,
+            opciones: (financePro.categories || []).filter(function (c) { return c.type === 'expense'; }).map(function (c) { return { id: String(c.id), nombre: String(c.name || c.id), icono: c.icon || 'other', color: c.color || '' }; })
+        };
+    }
+
     g.__fin = {
         // `comparar`: si lo que llega es lo mismo que ya hay (la vuelta de una escritura propia, una sincronización que no
         // trae nada nuevo), se queda todo como está y no se recalcula nada. La comparación es exacta, campo a campo.
@@ -538,6 +588,36 @@
         },
         borrarMovimiento: function (id) {
             return JSON.stringify(enCopia(function () { financePro.transactions = financePro.transactions.filter(function (t) { return String(t.id) !== id; }); return true; }));
+        },
+        // ---- presupuestos del mes en el móvil ----
+        presupuestoDatos: function (mes) {
+            var month = presMes(mes);
+            var plan = presupuestoPlanDe(month).plan;
+            return JSON.stringify({ borrador: presBorrador(plan), vista: presVista(month, plan), mesAnterior: longtermMonthOffset(month, -1), mesSiguiente: longtermMonthOffset(month, 1) });
+        },
+        presupuestoModelo: function (mes, borrador) {
+            var month = presMes(mes);
+            return JSON.stringify(presVista(month, presPlan(month, JSON.parse(borrador))));
+        },
+        presupuestoHeredar: function (mes) {
+            var month = presMes(mes);
+            var prev = longtermMonthOffset(month, -1);
+            var fuente = (financeProfile.budgetHistory || []).find(function (h) { return h.month === prev; }) || (financeProfile.budgetPlans || {})[prev];
+            if (!fuente || (!fuente.salary && !fuente.contributions && !(fuente.allocations || []).length)) throw new Error('No hay planificación de ' + financeMonthLabel(prev));
+            var b = presBorrador({ salary: fuente.salary, contributions: fuente.contributions, autoQuitadas: fuente.autoQuitadas,
+                allocations: (fuente.allocations || []).map(function (a) { return Object.assign({}, a, { id: 'ba_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) }); }) });
+            b.heredado = true;
+            return JSON.stringify(b);
+        },
+        // saveFinanceBudgetDraft: una sola escritura de budgetPlans[mes].
+        guardarPresupuesto: function (mes, borrador) {
+            var month = presMes(mes);
+            var plan = presPlan(month, JSON.parse(borrador));
+            return JSON.stringify(enCopia(function () {
+                if (!financeProfile.budgetPlans || typeof financeProfile.budgetPlans !== 'object') financeProfile.budgetPlans = {};
+                financeProfile.budgetPlans[month] = JSON.parse(JSON.stringify(plan));
+                return true;
+            }));
         },
         // ---- «más opciones.» (mobileFinMenu): lo que enseñan sus modales, como datos ----
         // Los duplicados solo cuando se abren (findFinanceProDuplicates es cuadrático: casi 1 s con 3.000 movimientos en Node).

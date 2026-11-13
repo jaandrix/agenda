@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 // se preparan después, en segundo plano, para que cambiar de pestaña no espere.
 
 enum HojaFinanzas: Identifiable {
-    case importar, buscar, gestor, editarSuscripcion(String?), permitir, revisar, opcion(OpcionFinanzas)
+    case importar, buscar, gestor, editarSuscripcion(String?), permitir, revisar, opcion(OpcionFinanzas), presupuesto
     var id: String {
         switch self {
         case .importar: return "importar"
@@ -15,6 +15,7 @@ enum HojaFinanzas: Identifiable {
         case .editarSuscripcion(let id): return "sub:" + (id ?? "nueva")
         case .permitir: return "permitir"
         case .revisar: return "revisar"
+        case .presupuesto: return "presupuesto"
         case .opcion(let o): return "opcion:" + o.rawValue
         }
     }
@@ -139,6 +140,7 @@ struct FinanzasView: View {
         case .permitir: PermitirView()
         case .revisar: RevisarMovimientosView(oculto: escondido) { f in hoja = nil; abrirTrasCerrar(f) }
         case .opcion(let o): MasOpcionesView(opcion: o, oculto: escondido)
+        case .presupuesto: EditorPresupuestoView()
         }
     }
 
@@ -559,8 +561,9 @@ private struct PestanaPlanificacion: View {
 
     var body: some View {
         if m.categorias.isEmpty && m.otros.isEmpty {
-            Text(m.ingresos != 0 ? "Todo está sin asignar: todavía no has puesto presupuestos." : "este mes no tienes presupuestos. Se reparten desde el ordenador, en Finanzas, planificación.")
+            Text(m.ingresos != 0 ? "Todo está sin asignar: todavía no has puesto presupuestos." : "este mes no tienes presupuestos.")
                 .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.m)
+            BotonFin(texto: "repartir el mes.", acento: true) { hoja = .presupuesto }
         } else {
             EtiquetaFin(texto: "presupuestos.")
             ForEach(m.categorias) { cat in
@@ -597,6 +600,9 @@ private struct PestanaPlanificacion: View {
                 }
                 .padding(.top, Espacio.m)
             }
+        }
+        if !(m.categorias.isEmpty && m.otros.isEmpty) {
+            BotonFin(texto: "editar presupuestos.") { hoja = .presupuesto }.padding(.top, Espacio.m)
         }
         EnlaceFin(texto: "¿me lo puedo permitir?") { hoja = .permitir }.padding(.top, Espacio.s)
     }

@@ -190,3 +190,25 @@ test('un cuadre que no cuadra se arregla fijando el saldo de partida', () => {
     aplicar(estado, f.cambios);
     assert.equal(Math.round(estado.financePro.accounts.online.balance0 * 100) / 100, aperturaRevolut());
 });
+
+test('presupuestos en el móvil: borrador, cifras y una sola escritura de budgetPlans[mes]', () => {
+    const run = cargarMotor();
+    const mes = run('financeMonthKey()');
+    const pro = { transactions: [{ id: 'a', type: 'expense', amount: 30, account: 'bancos', date: mes + '-02', category: 'cat_comida' }] };
+    const perfil = { budgetPlans: { [mes]: { salary: 1500, contributions: 0, allocations: [{ id: 'x1', label: 'súper', amount: 200, categoryId: 'cat_comida', raro: 7 }] } } };
+    const ent = [{ id: 's1', type: 'subscription', title: 'Netflix', amount: 12.99, renewalDay: 3, active: true }];
+    run(`__fin.cargar(${JSON.stringify(JSON.stringify(pro))}, ${JSON.stringify(JSON.stringify(ent))}, ${JSON.stringify(JSON.stringify(perfil))}, null)`);
+    const d = JSON.parse(run(`__fin.presupuestoDatos('')`));
+    assert.equal(d.vista.categorias.cat_comida.gastado, 30);
+    d.borrador.allocations[0].amount = 250;
+    d.borrador.allocations = d.borrador.allocations.filter(a => !a.auto);
+    const v = JSON.parse(run(`__fin.presupuestoModelo('${mes}', ${JSON.stringify(JSON.stringify(d.borrador))})`));
+    assert.equal(v.sinAsignar, 1250);
+    const g = JSON.parse(run(`__fin.guardarPresupuesto('${mes}', ${JSON.stringify(JSON.stringify(d.borrador))})`));
+    assert.deepEqual(Object.keys(g.cambios.perfil), ['budgetPlans']);
+    const plan = g.cambios.perfil.budgetPlans[mes];
+    assert.equal(plan.allocations[0].raro, 7, 'conserva lo que la app no conoce');
+    assert.equal(plan.autoQuitadas.subscription, true, 'quitar la automática no la vuelve a poner');
+    // La misma cifra que la web con ese plan.
+    assert.equal(JSON.parse(run(`__fin.pestana('planificacion')`)).categorias[0].planned, 250);
+});
