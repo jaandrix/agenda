@@ -229,3 +229,25 @@ test('gastos del mes por categoría: sin neutros ni traspasos, de más a menos y
     assert.equal(r.totalAnterior, 40);
     assert.equal(r.categorias.find(c => c.id === 'cat_comida').icono, 'food');
 });
+
+test('objetivo, inversión desde y ficha de inversión en el iPhone', () => {
+    const run = cargarMotor();
+    const mes = run('financeMonthKey()'), prev = run(`longtermMonthOffset('${mes}', -1)`);
+    const perfil = { investmentAccounts: [{ id: 'inv1', name: 'Indexado', contributions: [{ month: prev, amount: 100, value: 1050, guardado: true }] }] };
+    run(`__fin.cargar('{}', '[]', ${JSON.stringify(JSON.stringify(perfil))}, null)`);
+    const o = JSON.parse(run(`__fin.guardarObjetivo('{"cuentas":"5000","emergencia":3000,"inversion":-4}')`));
+    assert.equal(o.cambios.perfil.cashTarget, 5000);
+    assert.equal(o.cambios.perfil.investedTarget, 0);
+    const desde = JSON.parse(run(`__fin.inversionDesde('2026-03-01')`));
+    assert.equal(desde.cambios.perfil.inversionDesde, '2026-03-01');
+    const d = JSON.parse(run(`__fin.inversionDatos('inv1', '')`));
+    assert.equal(d.mes, mes);
+    assert.equal(d.aportacion, 100, 'hereda la aportación del mes anterior');
+    assert.equal(d.valorMes, null, 'el valor no se hereda');
+    assert.equal(d.proyeccion.length, 5);
+    assert.throws(() => run(`__fin.inversionGuardarMes('inv1', '${mes}', '100', '')`), /valor de la cuenta/);
+    const g = JSON.parse(run(`__fin.inversionGuardarMes('inv1', '${mes}', '100', '1180,5')`));
+    const acc = g.cambios.perfil.investmentAccounts[0];
+    assert.equal(acc.contributions.find(c => c.month === mes).value, 1180.5);
+    assert.equal(JSON.parse(run(`__fin.inversionDatos('inv1', '')`)).estado.startsWith('guardado'), true);
+});

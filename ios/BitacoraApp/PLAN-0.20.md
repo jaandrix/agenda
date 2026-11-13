@@ -75,6 +75,10 @@ y solo corre en la web; los eventos del editor del iPhone se guardaban como «ot
 - Categorías con los iconos de la web (c9424b6), «Regalos» de gasto (`cat_regalos_gasto`), icono al crear una.
 - Importar: «importar N movimientos.» y «hecho.» abajo y a todo el ancho.
 - «al año» de suscripciones y fijos: en iOS cuenta solo las suscripciones.
+- Editar presupuestos en el móvil (6f8111c): borrador, cifras de `financeBudgetUnifiedModel`, una sola escritura de
+  `budgetPlans[mes]`, compromisos, copiar el mes anterior y cambiar de mes.
+- Gastos del mes por categoría en el resumen (1e1e53e), con el mes anterior.
+- Objetivo de patrimonio, «inversión desde.» y ficha de inversión en nativo (el mes, referencia, proyección e histórico).
 
 **Pendiente en la web (no se ha tocado `js/`):**
 - `finResPanelSuscripciones` (js/finanzas-resumen.js) multiplica por 12 la suma de suscripciones y gastos fijos para

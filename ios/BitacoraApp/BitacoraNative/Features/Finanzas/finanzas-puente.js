@@ -616,6 +616,110 @@
                 mesAnterior: lista.length && lista[0] < month ? prev : '', mesSiguiente: month < financeMonthKey() ? longtermMonthOffset(month, 1) : ''
             });
         },
+        // ---- objetivo de patrimonio (openFinanceTargetEditor / saveFinanceTargetEditor) ----
+        objetivoDatos: function () {
+            return JSON.stringify({ cuentas: Number(financeProfile.cashTarget || 0), emergencia: Number(financeProfile.emergencyTarget || 0), inversion: Number(financeProfile.investedTarget || 0) });
+        },
+        guardarObjetivo: function (datos) {
+            var a = JSON.parse(datos);
+            return JSON.stringify(enCopia(function () {
+                financeProfile.cashTarget = Math.max(0, Number(a.cuentas) || 0);
+                financeProfile.emergencyTarget = Math.max(0, Number(a.emergencia) || 0);
+                financeProfile.investedTarget = Math.max(0, Number(a.inversion) || 0);
+                refreshCurrentMonthSnapshot();
+                return true;
+            }));
+        },
+        // ponerInversionDesde (la gráfica con inversión y emergencia).
+        inversionDesde: function (fecha) {
+            return JSON.stringify(enCopia(function () { financeProfile.inversionDesde = /^\d{4}-\d{2}-\d{2}$/.test(fecha || '') ? fecha : null; return true; }));
+        },
+        // ---- ficha de una cuenta de inversión (js/inversion.js) ----
+        // openFichaInversion: al abrirla, las aportaciones que salen de los movimientos se ponen al día.
+        inversionAbrir: function (id) {
+            return JSON.stringify(enCopia(function () { if (invCuenta(id) && invSincronizarMovimientos()) syncInvestedTotal(); return true; }));
+        },
+        inversionDatos: function (id, mes) {
+            var acc = invCuenta(id);
+            if (!acc) throw new Error('Esa inversión ya no está');
+            var d = invDatos(acc), hoy = financeMonthKey(), m = presMes(mes || hoy);
+            var existe = (acc.contributions || []).find(function (c) { return c.month === m; });
+            var anterior = (acc.contributions || []).filter(function (c) { return c.month < m; }).sort(function (a, b) { return b.month.localeCompare(a.month); })[0];
+            var heredado = !existe && anterior;
+            var movMes = invTraspasosPorMes(acc)[m];
+            var aportacion = movMes ? movMes.suma : existe ? Number(existe.amount) || 0 : anterior ? Number(anterior.amount) || 0 : null;
+            var distinto = !!(movMes && existe && existe.guardado && Math.abs((Number(existe.amount) || 0) - movMes.suma) > 0.005);
+            var valor = existe && existe.value !== undefined && existe.value !== null && existe.value !== '' ? Number(existe.value) : null;
+            var ref = invReferencia(acc, d, m, aportacion || 0);
+            var largo = function (iso) { var x = new Date(iso + 'T12:00:00'); return x.getDate() + ' de ' + MESES[x.getMonth()]; };
+            var estado = existe && existe.guardado ? 'guardado' + (existe.guardadoEn ? ' el ' + largo(existe.guardadoEn) : '') + '.'
+                : existe && existe.desdeCorreo ? 'rellenado con el correo del banco y tus movimientos: revísalo y guárdalo.'
+                : existe && existe.deMovimientos ? 'aportación de tus movimientos: falta el valor de la cuenta.'
+                : existe ? 'apuntado.' : heredado ? 'sin guardar: trae lo de ' + financeMonthLabel(anterior.month).toLowerCase() + '.' : 'sin guardar.';
+            var R = invRentabilidadSupuesta(), A = d.ultimaAportacion, P = d.valor;
+            var texto = function (h) { return String(h || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(); };
+            var orden = [hoy].concat(d.meses.map(function (x) { return x.c.month; }));
+            var meses = orden.filter(function (x, i) { return orden.indexOf(x) === i; }).sort().reverse();
+            return JSON.stringify({
+                nombre: String(acc.name || 'inversión'),
+                valor: d.valor, aportado: d.aportado, ganancia: d.ganancia, acumulada: d.acumulada, media: d.media, anual: d.anual,
+                mes: m, mesTitulo: financeMonthLabel(m).toLowerCase(), meses: meses.map(function (x) { return { id: x, titulo: financeMonthLabel(x).toLowerCase() }; }),
+                aportacion: aportacion, deMovimientos: !!movMes,
+                movimientos: movMes ? movMes.lista.map(function (t) { return { dia: invFechaCorta(t.date), importe: (t.type === 'income' ? -1 : 1) * Math.abs(Number(t.amount) || 0) }; }) : [],
+                distinto: distinto, guardadoAportacion: existe ? Number(existe.amount) || 0 : 0, sumaMovimientos: movMes ? movMes.suma : 0,
+                valorMes: valor, referencia: ref ? { valor: ref.valor, texto: texto(ref.texto) } : null, estado: estado,
+                correo: existe && existe.correo ? Number(existe.correo.valor) || 0 : null,
+                tasa: R, extra: INV_EXTRA, ultimaAportacion: A,
+                proyeccion: INV_HORIZONTES.map(function (a) { var n = a * 12; return { anios: a, puesto: P + A * n, base: invFuturo(P, A, R, n), mas: invFuturo(P, A + INV_EXTRA, R, n) }; }),
+                historico: d.meses.slice().reverse().map(function (x, i, l) {
+                    return { mes: x.c.month, titulo: financeMonthLabel(x.c.month).toLowerCase(), aportacion: x.amount, aportado: x.aportado, valor: x.value, ganancia: x.ganancia,
+                        rent: x === d.meses[0] ? null : x.rent, origen: x.c.guardado ? 'guardado.' : x.c.desdeCorreo ? 'del correo.' : x.c.deMovimientos ? 'de movimientos.' : 'a mano.' };
+                })
+            });
+        },
+        // invGuardarMes, sin preguntar: la app pregunta antes si el valor se aleja más de un 10 % de la referencia.
+        inversionGuardarMes: function (id, mes, aportacionTxt, valorTxt) {
+            return JSON.stringify(enCopia(function () {
+                var acc = invCuenta(id);
+                if (!acc) throw new Error('Esa inversión ya no está');
+                var m = presMes(mes);
+                var movMes = invTraspasosPorMes(acc)[m];
+                var aportacion = movMes ? movMes.suma : Number(String(aportacionTxt).replace(',', '.'));
+                if (!isFinite(aportacion) || aportacion < 0 || (!movMes && String(aportacionTxt).trim() === '')) throw new Error('Pon la aportación del mes');
+                var valor = Number(String(valorTxt).replace(',', '.'));
+                if (String(valorTxt).trim() === '' || !isFinite(valor)) throw new Error('Pon el valor de la cuenta');
+                acc.contributions = acc.contributions || [];
+                var previo = acc.contributions.find(function (c) { return c.month === m; });
+                var fila = Object.assign({}, previo || {}, { month: m, amount: Math.round(aportacion * 100) / 100, value: Math.round(valor * 100) / 100, guardado: true, guardadoEn: todayISO() });
+                delete fila.desdeCorreo;
+                if (movMes) fila.deMovimientos = true; else delete fila.deMovimientos;
+                acc.contributions = acc.contributions.filter(function (c) { return c.month !== m; }).concat(fila);
+                syncInvestedTotal();
+                if (m === financeMonthKey()) refreshCurrentMonthSnapshot();
+                return financeMonthLabel(m) + ' guardado';
+            }));
+        },
+        inversionUsarMovimientos: function (id, mes) {
+            return JSON.stringify(enCopia(function () {
+                var acc = invCuenta(id), m = presMes(mes);
+                var movMes = acc && invTraspasosPorMes(acc)[m];
+                var c = movMes && (acc.contributions || []).find(function (x) { return x.month === m; });
+                if (!c) return false;
+                c.amount = movMes.suma;
+                c.deMovimientos = true;
+                invSincronizarMovimientos();
+                syncInvestedTotal();
+                return true;
+            }));
+        },
+        inversionTasa: function (v) {
+            return JSON.stringify(enCopia(function () {
+                var n = Number(String(v).replace(',', '.'));
+                if (!isFinite(n)) throw new Error('Pon un número');
+                financeProfile.inversionRentabilidad = Math.max(-20, Math.min(30, n));
+                return true;
+            }));
+        },
         // ---- presupuestos del mes en el móvil ----
         presupuestoDatos: function (mes) {
             var month = presMes(mes);

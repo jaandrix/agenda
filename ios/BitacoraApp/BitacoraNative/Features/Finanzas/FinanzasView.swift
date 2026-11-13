@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 // se preparan después, en segundo plano, para que cambiar de pestaña no espere.
 
 enum HojaFinanzas: Identifiable {
-    case importar, buscar, gestor, editarSuscripcion(String?), permitir, revisar, opcion(OpcionFinanzas), presupuesto
+    case importar, buscar, gestor, editarSuscripcion(String?), permitir, revisar, opcion(OpcionFinanzas), presupuesto, objetivo, inversion(String)
     var id: String {
         switch self {
         case .importar: return "importar"
@@ -16,6 +16,8 @@ enum HojaFinanzas: Identifiable {
         case .permitir: return "permitir"
         case .revisar: return "revisar"
         case .presupuesto: return "presupuesto"
+        case .objetivo: return "objetivo"
+        case .inversion(let id): return "inversion:" + id
         case .opcion(let o): return "opcion:" + o.rawValue
         }
     }
@@ -141,6 +143,8 @@ struct FinanzasView: View {
         case .revisar: RevisarMovimientosView(oculto: escondido) { f in hoja = nil; abrirTrasCerrar(f) }
         case .opcion(let o): MasOpcionesView(opcion: o, oculto: escondido)
         case .presupuesto: EditorPresupuestoView()
+        case .objetivo: ObjetivoPatrimonioView()
+        case .inversion(let id): FichaInversionView(id: id, oculto: escondido)
         }
     }
 
@@ -735,7 +739,7 @@ private struct PestanaResumen: View {
             } else if !oculto {
                 GraficaObjetivo(o: o).frame(height: 150)
             }
-            EnlaceFin(texto: o.objetivo != 0 ? "cambiar objetivo." : "poner objetivo.", accion: web)
+            EnlaceFin(texto: o.objetivo != 0 ? "cambiar objetivo." : "poner objetivo.") { hoja = .objetivo }
         }
     }
 
@@ -743,13 +747,21 @@ private struct PestanaResumen: View {
         let total = m.activos.reduce(0) { $0 + $1.valor }
         return panel("tus activos.", "en directo.") {
             ForEach(Array(m.activos.enumerated()), id: \.offset) { _, f in
-                HStack(alignment: .firstTextBaseline) {
-                    Text(f.nombre + ".").font(Tipo.cuerpo).foregroundStyle(Paleta.texto).lineLimit(1)
-                    Spacer()
-                    Text(din(f.valor)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit().foregroundStyle(Paleta.texto)
-                    variacion(f).frame(minWidth: 70, alignment: .trailing)
+                // Las cuentas de inversión abren su ficha (openFichaInversion).
+                Button { if !f.ficha.isEmpty { hoja = .inversion(f.ficha) } } label: {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(f.nombre + ".").font(Tipo.cuerpo).foregroundStyle(Paleta.texto).lineLimit(1)
+                        if !f.ficha.isEmpty { Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Paleta.textoSecundario) }
+                        Spacer()
+                        Text(din(f.valor)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit().foregroundStyle(Paleta.texto)
+                        variacion(f).frame(minWidth: 70, alignment: .trailing)
+                    }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .disabled(f.ficha.isEmpty)
                 .accessibilityElement(children: .combine)
+                .accessibilityHint(f.ficha.isEmpty ? "" : "abrir la ficha de la inversión.")
             }
             FilaLibro(etiqueta: "total.", valor: din(total))
         }

@@ -82,6 +82,7 @@ struct GraficaPatrimonio: View {
                         .foregroundStyle(Paleta.acento).frame(minHeight: 40)
                 }
                 .buttonStyle(.plain)
+                if g.extras { InversionDesdeView(actual: g.inversionDesde) }
             }
         }
         .padding(.top, Espacio.m)
