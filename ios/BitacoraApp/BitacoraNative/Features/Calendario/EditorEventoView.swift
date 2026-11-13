@@ -25,6 +25,12 @@ struct EditorEventoView: View {
     @State private var confirmarBorrado = false
     @State private var error: String?
     @FocusState private var enfocado: Bool
+    // Tipo de ocio explícito (ValorarOcio): con él, Bitácora crea «valorar …» tres horas después del final.
+    @State private var ocio = ""
+    @State private var ocioInicial = ""
+    @State private var ocioTocado = false
+    static let opcionesOcio: [(String, String)] = [("", "nada."), ("movie", "película."), ("series", "serie."), ("concierto", "concierto."),
+                                                   ("teatro", "teatro."), ("book", "libro."), ("game", "videojuego.")]
 
     private static var cal: Calendar {
         var c = Calendar(identifier: .gregorian)
@@ -51,6 +57,14 @@ struct EditorEventoView: View {
                     TextField("qué es.", text: $titulo).focused($enfocado)
                     TextField("dónde.", text: $lugar)
                     TextField("notas.", text: $notas, axis: .vertical).lineLimit(1...4)
+                }
+                .listRowBackground(Paleta.superficie)
+                Section {
+                    Picker("de ocio.", selection: Binding(get: { ocio }, set: { ocio = $0; ocioTocado = true })) {
+                        ForEach(Self.opcionesOcio, id: \.0) { Text($0.1).tag($0.0) }
+                    }
+                } footer: {
+                    if !ocio.isEmpty { Text("tres horas después de que acabe, bitácora te pondrá «valorar \(ValorarOcio.nombre(ocio))» en el plan.") }
                 }
                 .listRowBackground(Paleta.superficie)
                 Section {
@@ -82,6 +96,17 @@ struct EditorEventoView: View {
                 Button("cancelar.", role: .cancel) {}
             }
             .onAppear { if inicial.nuevo { enfocado = true } }
+            .onChange(of: titulo) { _, t in
+                guard inicial.nuevo, !ocioTocado else { return }
+                ocio = ValorarOcio.clase(["title": .string(t)]) ?? ""
+            }
+            .task {
+                guard !inicial.nuevo, let doc = await c.documentoVisible(),
+                      let e = (((try? doc.valor(de: "entries")) ?? nil)?.lista ?? []).first(where: { $0["id"]?.comoId == inicial.id })?.objeto else { return }
+                let v = ValorarOcio.clase(e) ?? ""
+                if !ocioTocado { ocio = v }
+                ocioInicial = v
+            }
         }
         .presentationDetents([.large])
     }
@@ -103,7 +128,14 @@ struct EditorEventoView: View {
         if limpio(notas, 2000) != inicial.notas { campos["notes"] = limpio(notas, 2000) }
         if dia != inicial.fecha { campos["date"] = dia.iso }
         if horaTexto != inicial.hora { campos["time"] = horaTexto ?? "" }
+        if ocio != ocioInicial { campos.merge(Self.camposOcio(ocio)) { _, b in b } }
         return .parcharEvento(id: inicial.id, campos: campos)
+    }
+
+    // Para la web, película, concierto y teatro también van en `eventType` (cine, concierto, teatro).
+    static func camposOcio(_ ocio: String) -> [String: String] {
+        let tipo = ["movie": "cine", "concierto": "concierto", "teatro": "teatro"][ocio] ?? "otro"
+        return ["ocioTipo": ocio, "eventType": tipo]
     }
 
     // El id viene decidido al abrir: dos toques en «guardar.» guardan el mismo evento una vez.
@@ -112,7 +144,9 @@ struct EditorEventoView: View {
         guardando = true
         defer { guardando = false }
         do {
-            try await c.encolar(op)
+            var ops = [op]
+            if inicial.nuevo, !ocio.isEmpty { ops.append(.parcharEvento(id: inicial.id, campos: Self.camposOcio(ocio))) }
+            try await c.encolar(ops)
             cerrar()
         } catch {
             self.error = "no se pudo guardar en este iPhone."

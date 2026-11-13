@@ -1328,7 +1328,7 @@ enum AplicarOperaciones {
             }
         case let .parcharEvento(id, campos):
             guard let n = lista.firstIndex(where: { $0["id"]?.comoId == id }), var e = lista[n].objeto else { return valor }
-            for (k, v) in campos where ["title", "notes", "time", "date", "place"].contains(k) { e[k] = .string(v) }
+            for (k, v) in campos where ["title", "notes", "time", "date", "place", "eventType", "ocioTipo"].contains(k) { e[k] = .string(v) }
             lista[n] = .object(e)
         case let .borrarEntrada(id):
             guard lista.contains(where: { $0["id"]?.comoId == id }) else { return valor }
