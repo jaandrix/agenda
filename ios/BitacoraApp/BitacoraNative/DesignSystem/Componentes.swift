@@ -28,13 +28,15 @@ struct BitacoraCheck: View {
                 Circle().strokeBorder(hecho || acento ? colorActivo : (contraste == .increased ? Paleta.textoSecundario : colorBorde), lineWidth: 2)
                 if hecho {
                     Circle().fill(colorActivo)
-                    Image(systemName: "checkmark").font(.system(size: 13, weight: .heavy)).foregroundStyle(colorMarca)
+                    Image(systemName: "checkmark").font(.system(size: Tipo.tamano(10), weight: .heavy)).foregroundStyle(colorMarca)
                 }
             }
-            .frame(width: 32, height: 32)
+            // 0.20: de 32 a 22 pt (un 31 % menos) a petición de Alejandro; el aro conserva su trazo de 2 y su color, así
+            // que el contraste en asfalto no baja, y el toque sigue siendo de 44.
+            .frame(width: Tipo.tamano(22), height: Tipo.tamano(22))
             .scaleEffect(sello ? 1.1 : 1)
             .animation(sinMovimiento ? nil : .easeOut(duration: Duracion.sello), value: sello)
-            .frame(width: 44, height: 44)
+            .frame(width: max(44, Tipo.tamano(22)), height: max(44, Tipo.tamano(22)))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
