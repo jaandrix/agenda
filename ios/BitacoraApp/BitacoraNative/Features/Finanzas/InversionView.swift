@@ -283,9 +283,7 @@ struct FichaInversionView: View {
                                 Spacer()
                                 Text(h.valor.map { din($0) } ?? "sin valor").monospacedDigit().foregroundStyle(Paleta.texto)
                             }
-                            Text("aportación \(din(h.aportacion)), aportado \(din(h.aportado))"
-                                 + (h.ganancia.map { oculto ? "" : ", ganancia \($0 >= 0 ? "+" : "−")\(FormatoFin.dinero(abs($0)))" } ?? "")
-                                 + (h.rent.map { ", \(pct($0, 2))" } ?? "") + ", \(h.origen)")
+                            Text(lineaHistorico(h))
                                 .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
                         }
                     }
@@ -298,6 +296,17 @@ struct FichaInversionView: View {
         .scrollDismissesKeyboard(.interactively)
     }
 
+    private func lineaHistorico(_ h: DatosInversion.Hist) -> String {
+        var partes = ["aportación \(din(h.aportacion))", "aportado \(din(h.aportado))"]
+        if let g = h.ganancia, !oculto {
+            let signo = g >= 0 ? "+" : "−"
+            partes.append("ganancia " + signo + FormatoFin.dinero(abs(g)))
+        }
+        if let r = h.rent { partes.append(pct(r, 2)) }
+        partes.append(h.origen)
+        return partes.joined(separator: ", ")
+    }
+
     private func cargar(_ m: String) async {
         do {
             let motor = try await motorListo(c)
@@ -305,7 +314,7 @@ struct FichaInversionView: View {
             d = r; mes = r.mes
             aportacion = texto(r.aportacion); valor = texto(r.valorMes); tasa = texto(r.tasa)
             error = nil
-        } catch { error = mensajeMotor(error, "no se pudo abrir la inversión.") }
+        } catch { self.error = mensajeMotor(error, "no se pudo abrir la inversión.") }
     }
 
     // invGuardarMes: un valor muy lejos de lo esperable suele ser un error al teclear; se pregunta antes.
