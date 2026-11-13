@@ -295,7 +295,7 @@
                 },
                 objetivo: { puntos: camino.puntos.map(function (p) { return [p.m, n2(p.v)]; }), actual: camino.actual, ritmo: camino.ritmo, objetivo: camino.objetivo, mesesHasta: camino.mesesHasta, conseguido: camino.conseguido, fecha: fechaObj },
                 activos: finResActivos().map(function (f) { return { nombre: String(f.nombre).toLowerCase(), valor: f.valor, pct: f.pct === undefined || (f.pct !== null && !isFinite(f.pct)) ? null : f.pct, cambio: f.cambio == null ? null : f.cambio, ficha: f.ficha || '' }; }),
-                suscripciones: subs.map(function (x) { return { id: String(x.e.id), titulo: String(x.e.title || 'sin nombre'), importe: Number(x.e.amount), dia: x.d, faltan: x.faltan }; }),
+                suscripciones: subs.map(function (x) { return { id: String(x.e.id), titulo: String(x.e.title || 'sin nombre'), tipo: String(x.e.type), importe: Number(x.e.amount), dia: x.d, faltan: x.faltan }; }),
                 prevision: { fin: saldo - fijos - variable + porEntrar, ultimoDia: diasMes, fijos: fijos, variable: variable, porEntrar: porEntrar, colchon: medio ? (saldo + Number(financeProfile.emergency || 0)) / medio : null, top: top ? String((financeProCategoryById(top[0]) || {}).name || 'sin categoría').toLowerCase() : '' }
             };
         }
