@@ -212,3 +212,20 @@ test('presupuestos en el móvil: borrador, cifras y una sola escritura de budget
     // La misma cifra que la web con ese plan.
     assert.equal(JSON.parse(run(`__fin.pestana('planificacion')`)).categorias[0].planned, 250);
 });
+
+test('gastos del mes por categoría: sin neutros ni traspasos, de más a menos y con el mes anterior', () => {
+    const run = cargarMotor();
+    const mes = run('financeMonthKey()'), prev = run(`longtermMonthOffset('${mes}', -1)`);
+    const tx = (id, type, amount, date, extra = {}) => ({ id, type, amount, account: 'bancos', date, ...extra });
+    const pro = { transactions: [
+        tx('a', 'expense', 30, mes + '-02', { category: 'cat_comida' }), tx('b', 'expense', 60, mes + '-03', { category: 'cat_ocio' }),
+        tx('c', 'expense', 20, mes + '-03', { category: 'cat_comida' }), tx('d', 'expense', 40, prev + '-03', { category: 'cat_comida' }),
+        tx('e', 'expense', 500, mes + '-04', { ahorro: true }), tx('f', 'transfer', 300, mes + '-04', { transferTo: 'online' }),
+        tx('g', 'expense', 100, mes + '-05', { category: 'cat_inversion_gasto' }), tx('h', 'income', 999, mes + '-05', { category: 'cat_sueldo' }) ] };
+    run(`__fin.cargar(${JSON.stringify(JSON.stringify(pro))}, '[]', '{}', null)`);
+    const r = JSON.parse(run(`__fin.gastosMes('')`));
+    assert.deepEqual(r.categorias.map(c => [c.id, c.total, c.anterior]), [['cat_ocio', 60, 0], ['cat_comida', 50, 40]]);
+    assert.equal(r.total, 110);
+    assert.equal(r.totalAnterior, 40);
+    assert.equal(r.categorias.find(c => c.id === 'cat_comida').icono, 'food');
+});

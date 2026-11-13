@@ -589,6 +589,33 @@
         borrarMovimiento: function (id) {
             return JSON.stringify(enCopia(function () { financePro.transactions = financePro.transactions.filter(function (t) { return String(t.id) !== id; }); return true; }));
         },
+        // Gastos del mes por categoría, con el mes anterior al lado. Sin lo neutro (financeProNeutro: ahorro, ajustes e
+        // inversión) ni los traspasos (no son gasto).
+        gastosMes: function (mes) {
+            var month = presMes(mes), prev = longtermMonthOffset(month, -1);
+            var suma = {}, n = {}, antes = {}, meses = {};
+            financePro.transactions.forEach(function (t) {
+                if (t.type !== 'expense' || financeProNeutro(t) || typeof t.date !== 'string') return;
+                var m = t.date.slice(0, 7), k = t.category || '', v = Number(t.amount) || 0;
+                meses[m] = true;
+                if (m === month) { suma[k] = (suma[k] || 0) + v; n[k] = (n[k] || 0) + 1; }
+                else if (m === prev) antes[k] = (antes[k] || 0) + v;
+            });
+            var total = 0, totalAntes = 0;
+            Object.keys(suma).forEach(function (k) { total += suma[k]; });
+            Object.keys(antes).forEach(function (k) { totalAntes += antes[k]; });
+            var cats = Object.keys(suma).map(function (k) {
+                var c = financeProCategoryById(k);
+                return { id: k, nombre: String((c && c.name) || 'sin categoría').toLowerCase(), icono: (c && c.icon) || 'other', color: (c && c.color) || '',
+                    total: n2(suma[k]), anterior: n2(antes[k] || 0), n: n[k] };
+            }).sort(function (a, b) { return b.total - a.total; });
+            var lista = Object.keys(meses).sort();
+            return JSON.stringify({
+                mes: month, titulo: financeMonthLabel(month), anteriorNombre: MESES[Number(prev.slice(5)) - 1],
+                total: n2(total), totalAnterior: n2(totalAntes), categorias: cats,
+                mesAnterior: lista.length && lista[0] < month ? prev : '', mesSiguiente: month < financeMonthKey() ? longtermMonthOffset(month, 1) : ''
+            });
+        },
         // ---- presupuestos del mes en el móvil ----
         presupuestoDatos: function (mes) {
             var month = presMes(mes);

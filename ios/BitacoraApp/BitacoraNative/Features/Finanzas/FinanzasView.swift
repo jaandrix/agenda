@@ -623,6 +623,7 @@ private struct PestanaResumen: View {
     var body: some View {
         panelMes("este mes.", m.esteMes, conSueldo: true)
         panelMes("mes anterior.", m.mesAnterior, conSueldo: false)
+        GastosPorCategoriaView(oculto: oculto)
         panelAhorro
         panelObjetivo
         panelActivos
