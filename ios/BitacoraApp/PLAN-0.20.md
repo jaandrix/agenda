@@ -91,3 +91,15 @@ y solo corre en la web; los eventos del editor del iPhone se guardaban como «ot
 - `documentoVisible` (SyncEngine, común) vuelve a aplicar todas las operaciones pendientes sobre la base en cada
   escritura, y `CambioFinanzas.aplicar` decodifica `financePro` entero cada vez. Con muchas operaciones en cola y
   miles de movimientos se nota. No es de Finanzas: proponerlo a la sesión del resto de `ios/`.
+
+**Compilación:** 43476336072 (0a067f1) en verde, con los siete pasos.
+
+## Probar en el iPhone (0.20, Finanzas)
+
+- **Rendimiento:** cambiar de pestaña y guardar un movimiento; mantener pulsado «finanzas.» enseña lo que tarda cada cosa (apuntar «guardar movimiento (total)», «cargar (igual)» y cada pestaña).
+- **Categorías:** la lista lleva el icono de cada gasto; el editor enseña todas las categorías con su icono; existe «Regalos» (gasto); en «más opciones.», «categorías.», una nueva propone icono por el nombre y no deja crearla sin icono.
+- **Importar:** abajo, «importar N movimientos.» y, al acabar, «hecho.».
+- **Resumen:** «suscripciones y fijos.» dice «al año» solo de las suscripciones; «gastos por categoría.» con flechas de mes.
+- **Planificación:** «editar presupuestos.» (o «repartir el mes.»): cambiar un importe, añadir una casilla con categoría, guardar y ver que la web dice lo mismo.
+- **Objetivo e inversión:** «poner objetivo.» en el resumen; tocar la cuenta de inversión en «tus activos.» abre su ficha; en la gráfica con inversión y emergencia, «inversión desde.».
+

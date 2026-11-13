@@ -251,3 +251,11 @@ test('objetivo, inversión desde y ficha de inversión en el iPhone', () => {
     assert.equal(acc.contributions.find(c => c.month === mes).value, 1180.5);
     assert.equal(JSON.parse(run(`__fin.inversionDatos('inv1', '')`)).estado.startsWith('guardado'), true);
 });
+
+test('el resumen dice de qué tipo es cada suscripción o gasto fijo (para «al año»)', () => {
+    const run = cargarMotor();
+    const ent = [{ id: 's1', type: 'subscription', title: 'Netflix', amount: 12.99, renewalDay: 3, active: true }, { id: 'f1', type: 'fixed_expense', title: 'Alquiler', amount: 500, renewalDay: 1, active: true }];
+    run(`__fin.cargar('{}', ${JSON.stringify(JSON.stringify(ent))}, '{}', null)`);
+    const r = JSON.parse(run(`__fin.pestana('resumen', '{}')`));
+    assert.deepEqual(r.suscripciones.map(s => s.tipo).sort(), ['fixed_expense', 'subscription']);
+});
