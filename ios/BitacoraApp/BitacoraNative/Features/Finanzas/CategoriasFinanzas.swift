@@ -4,13 +4,14 @@ import SwiftUI
 // por Alejandro en una rejilla de 48): IconosCategorias.xcassets tiene esos mismos SVG, uno por clave (`fincat-<clave>`),
 // como plantilla para teñirlos con el color de la categoría.
 enum IconosCategoria {
-    static let lista: [(clave: String, nombre: String)] = [
-        ("food", "Comida y bebida"), ("home", "Vivienda"), ("car", "Transporte"), ("bag", "Compras"), ("ticket", "Ocio"),
-        ("heart", "Salud"), ("phone", "Comunicación"), ("bank", "Comisiones e impuestos"), ("book", "Educación"),
-        ("family", "Familia y mascotas"), ("briefcase", "Sueldo / trabajo"), ("coin", "Ingreso extra"), ("trend", "Inversiones"),
-        ("gift", "Regalos"), ("repeat", "Reembolsos"), ("plane", "Viajes"), ("paw", "Mascotas"), ("dumbbell", "Deporte"),
-        ("laptop", "Tecnología"), ("sparkle", "Bienestar y belleza"), ("key", "Alquileres"), ("star", "Coleccionables"),
-        ("fuel", "Gasolina"), ("other", "Otros")
+    struct Icono: Identifiable { let clave, nombre: String; var id: String { clave } }
+    static let lista: [Icono] = [
+        .init(clave: "food", nombre: "Comida y bebida"), .init(clave: "home", nombre: "Vivienda"), .init(clave: "car", nombre: "Transporte"), .init(clave: "bag", nombre: "Compras"), .init(clave: "ticket", nombre: "Ocio"),
+        .init(clave: "heart", nombre: "Salud"), .init(clave: "phone", nombre: "Comunicación"), .init(clave: "bank", nombre: "Comisiones e impuestos"), .init(clave: "book", nombre: "Educación"),
+        .init(clave: "family", nombre: "Familia y mascotas"), .init(clave: "briefcase", nombre: "Sueldo / trabajo"), .init(clave: "coin", nombre: "Ingreso extra"), .init(clave: "trend", nombre: "Inversiones"),
+        .init(clave: "gift", nombre: "Regalos"), .init(clave: "repeat", nombre: "Reembolsos"), .init(clave: "plane", nombre: "Viajes"), .init(clave: "paw", nombre: "Mascotas"), .init(clave: "dumbbell", nombre: "Deporte"),
+        .init(clave: "laptop", nombre: "Tecnología"), .init(clave: "sparkle", nombre: "Bienestar y belleza"), .init(clave: "key", nombre: "Alquileres"), .init(clave: "star", nombre: "Coleccionables"),
+        .init(clave: "fuel", nombre: "Gasolina"), .init(clave: "other", nombre: "Otros")
     ]
     private static let claves = Set(lista.map(\.clave))
 
@@ -76,7 +77,7 @@ struct RejillaIconos: View {
 
     var body: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 8) {
-            ForEach(IconosCategoria.lista, id: \.clave) { i in
+            ForEach(IconosCategoria.lista) { i in
                 Button { seleccion = i.clave } label: {
                     IconoCategoria(icono: i.clave, color: seleccion == i.clave ? color : "", tam: 40)
                         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Paleta.texto, lineWidth: seleccion == i.clave ? 2 : 0))
