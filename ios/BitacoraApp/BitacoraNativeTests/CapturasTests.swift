@@ -71,6 +71,15 @@ final class CapturasTests: XCTestCase {
                 InicioCuerpo(vista: inicio, ahora: ahora, estado: .reposo)
             }
         }
+        // Una por tema (0.20): cada uno se tiene que reconocer por la portada y la barra.
+        let temaAntes = TemaActivo.elegido
+        for t in TemaElegido.allCases where t != .sistema {
+            TemaActivo.elegido = t
+            try guardarPantalla("inicio-390-tema-" + t.rawValue, oscuro: t.esquema == .dark, activa: "inicio") {
+                InicioCuerpo(vista: inicio, ahora: ahora, estado: .reposo)
+            }
+        }
+        TemaActivo.elegido = temaAntes
         let previa = LetraActiva.elegida
         defer { LetraActiva.elegida = previa }
         LetraActiva.elegida = .grande

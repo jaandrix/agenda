@@ -37,21 +37,54 @@ struct TemaTokens {
     // Contexto, progreso y atención siempre se derivan del propio tema. No existe una portada o barra azul global.
     var contexto: UInt32 = 0, sobreContexto: UInt32 = 0, progreso: UInt32 = 0, sobreProgreso: UInt32 = 0, atencion: UInt32 = 0
 
+    // Personalidad de cada tema (0.20). Sin valor, lo de siempre: título en tinta, barra de la superficie, filos de tinta.
+    var titulo: UInt32?
+    var barra: UInt32?, sobreBarra: UInt32?, sobreBarraSuave: UInt32?, acentoBarra: UInt32?
+    var filo: UInt32?, bordeAlfa: CGFloat?, aroAlfa: CGFloat?
+
     func con(_ c: UInt32, _ sc: UInt32, _ p: UInt32, _ sp: UInt32, _ a: UInt32) -> TemaTokens {
         var t = self
         (t.contexto, t.sobreContexto, t.progreso, t.sobreProgreso, t.atencion) = (c, sc, p, sp, a)
         return t
     }
 
+    func estilo(titulo: UInt32? = nil, barra: UInt32? = nil, sobreBarra: UInt32? = nil, sobreBarraSuave: UInt32? = nil,
+                acentoBarra: UInt32? = nil, filo: UInt32? = nil, bordeAlfa: CGFloat? = nil, aroAlfa: CGFloat? = nil) -> TemaTokens {
+        var t = self
+        t.titulo = titulo; t.barra = barra; t.sobreBarra = sobreBarra; t.sobreBarraSuave = sobreBarraSuave
+        t.acentoBarra = acentoBarra; t.filo = filo; t.bordeAlfa = bordeAlfa; t.aroAlfa = aroAlfa
+        return t
+    }
+
     static func de(_ t: TemaElegido, sistemaOscuro: Bool) -> TemaTokens {
         switch t {
         case .sistema: return de(sistemaOscuro ? .asfalto : .papel, sistemaOscuro: sistemaOscuro)
-        case .asfalto: return TemaTokens(fondo: 0x121211, superficie: 0x1D1D1B, texto: 0xF4F2EB, secundario: 0xA29F96, acento: 0xC96A5A, sobreAcento: 0x161514, punto: 0x2A2A27, oscuro: true).con(0x121211, 0xF4F2EB, 0xC96A5A, 0x161514, 0xE08FA6)
-        case .papel: return TemaTokens(fondo: 0xEFEEE9, superficie: 0xFFFFFF, texto: 0x302F2C, secundario: 0x736F63, acento: 0xA64235, sobreAcento: 0xFFFFFF, punto: 0xE2E0D9, oscuro: false).con(0xEFEEE9, 0x302F2C, 0xA64235, 0xFFFFFF, 0xA34C65)
-        case .acuarela: return TemaTokens(fondo: 0xE7E2D9, superficie: 0xF2EFE9, texto: 0x161514, secundario: 0x625D55, acento: 0x8A2233, sobreAcento: 0xFFFFFF, punto: 0xD2CCC1, oscuro: false).con(0xE7E2D9, 0x161514, 0x8A2233, 0xFFFFFF, 0x8A2233)
-        case .pizarra: return TemaTokens(fondo: 0xC0C8CA, superficie: 0xD4D8DD, texto: 0x1A2D42, secundario: 0x2E4156, acento: 0x2E4156, sobreAcento: 0xD4D8DD, punto: 0xAAB7B7, oscuro: false).con(0xC0C8CA, 0x1A2D42, 0x2E4156, 0xD4D8DD, 0x8A3A52)
-        case .oliva: return TemaTokens(fondo: 0xF7F5EE, superficie: 0xEFF1E8, texto: 0x252A22, secundario: 0x687064, acento: 0x8B4F70, sobreAcento: 0xFFFEFA, punto: 0xDDE4CE, oscuro: false).con(0xF7F5EE, 0x252A22, 0x8B4F70, 0xFFFEFA, 0x8B4F70)
-        case .fundador: return TemaTokens(fondo: 0x1A1916, superficie: 0x23211D, texto: 0xF1EAD8, secundario: 0xB0A68F, acento: 0xD4B06A, sobreAcento: 0x1A1916, punto: 0x3A362D, oscuro: true).con(0x1A1916, 0xF1EAD8, 0xD4B06A, 0x1A1916, 0xE0907E)
+        // Retoque de la 0.20 (pedido de Alejandro: «que tengan un poco más de personalidad, que se diferencien más»).
+        // Texto y secundario cumplen AA (4,5:1) sobre fondo y superficie en todos.
+        // asfalto: grafito casi monocromo, superficies apenas elevadas con filo fino; la arcilla solo en lo activo.
+        case .asfalto: return TemaTokens(fondo: 0x111213, superficie: 0x1A1B1D, texto: 0xEDEDEA, secundario: 0x9C9D9A, acento: 0xC96A5A, sobreAcento: 0x161514, punto: 0x26272A, oscuro: true)
+            .con(0x111213, 0xEDEDEA, 0xC96A5A, 0x161514, 0xE08FA6)
+            .estilo(barra: 0x161719, bordeAlfa: 0.10, aroAlfa: 0.44)
+        // papel: crema cálido y tinta casi negra; separadores como renglones; títulos en tinta.
+        case .papel: return TemaTokens(fondo: 0xF3EFE6, superficie: 0xFBF8F2, texto: 0x1F1D1A, secundario: 0x6A655B, acento: 0xA64235, sobreAcento: 0xFFFFFF, punto: 0xE4DED2, oscuro: false)
+            .con(0xF3EFE6, 0x1F1D1A, 0xA64235, 0xFFFFFF, 0xA34C65)
+            .estilo(titulo: 0x1F1D1A, barra: 0xFBF8F2, filo: 0x3A2E1E, bordeAlfa: 0.11, aroAlfa: 0.38)
+        // teja: piedra cálida; el granate en los títulos grandes y en la barra; superficies un punto más oscuras.
+        case .acuarela: return TemaTokens(fondo: 0xE8E2D8, superficie: 0xDDD5C8, texto: 0x161514, secundario: 0x58524A, acento: 0x8A2233, sobreAcento: 0xFFFFFF, punto: 0xCDC4B6, oscuro: false)
+            .con(0xE8E2D8, 0x161514, 0x8A2233, 0xFFFFFF, 0x8A2233)
+            .estilo(titulo: 0x8A2233, barra: 0x8A2233, sobreBarra: 0xFBF4EC, sobreBarraSuave: 0xE2C3C6, acentoBarra: 0xF2C9A8, filo: 0x5A3A2E, bordeAlfa: 0.12)
+        // pizarra: gris azulado, tinta azul marino; barra #1A2D42 con iconos claros; superficies frías.
+        case .pizarra: return TemaTokens(fondo: 0xC0C8CB, superficie: 0xD2D9DF, texto: 0x1A2D42, secundario: 0x33465A, acento: 0x2E4156, sobreAcento: 0xE6ECF0, punto: 0xAAB6BA, oscuro: false)
+            .con(0xC0C8CB, 0x1A2D42, 0x2E4156, 0xE6ECF0, 0x8A3A52)
+            .estilo(titulo: 0x1A2D42, barra: 0x1A2D42, sobreBarra: 0xEEF2F5, sobreBarraSuave: 0xA9B9C8, acentoBarra: 0xBFD6E6, filo: 0x1A2D42, bordeAlfa: 0.13)
+        // oliva: marfil, verde oliva y la ciruela como acento secundario (progreso y avisos).
+        case .oliva: return TemaTokens(fondo: 0xF6F4EA, superficie: 0xECEFE1, texto: 0x232821, secundario: 0x5D6659, acento: 0x5C6B34, sobreAcento: 0xFFFEF8, punto: 0xDCE3CB, oscuro: false)
+            .con(0xF6F4EA, 0x232821, 0x8B4F70, 0xFFFEF8, 0x8B4F70)
+            .estilo(titulo: 0x3D4824, barra: 0xECEFE1, acentoBarra: 0x5C6B34, filo: 0x3D4824, bordeAlfa: 0.10)
+        // fundador: negro carbón y dorado cálido de verdad; filo dorado tenue en las superficies.
+        case .fundador: return TemaTokens(fondo: 0x141311, superficie: 0x1D1B17, texto: 0xF2EBDA, secundario: 0xB4A98F, acento: 0xC99A4B, sobreAcento: 0x141311, punto: 0x37322A, oscuro: true)
+            .con(0x141311, 0xF2EBDA, 0xC99A4B, 0x141311, 0xE0907E)
+            .estilo(titulo: 0xE3C281, barra: 0x1A1814, acentoBarra: 0xC99A4B, filo: 0xC99A4B, bordeAlfa: 0.20, aroAlfa: 0.5)
         }
     }
 }
@@ -93,11 +126,11 @@ enum Paleta {
     static let punto = Color.delTema { UIColor(rgb: $0.punto) }                                      // --m-punto
     static let error = Color.delTema { UIColor(rgb: $0.oscuro ? 0xF2B8B5 : 0xB3261E) }
     // --border y --border-strong son la tinta con transparencia, no un gris propio.
-    static let borde = Color.delTema { UIColor(rgb: $0.texto, alfa: $0.oscuro ? 0.08 : 0.07) }
-    static let bordeFuerte = Color.delTema { UIColor(rgb: $0.texto, alfa: 0.16) }
+    static let borde = Color.delTema { UIColor(rgb: $0.filo ?? $0.texto, alfa: $0.bordeAlfa ?? ($0.oscuro ? 0.08 : 0.07)) }
+    static let bordeFuerte = Color.delTema { UIColor(rgb: $0.filo ?? $0.texto, alfa: min(0.32, ($0.bordeAlfa ?? 0.08) * 2)) }
     // El aro de marcar (.m-check, --border-strong en la web). Con la raya separadora no se veía en asfalto: un control
     // necesita 3:1 con el fondo, así que la tinta va más fuerte que cualquier borde.
-    static let aro = Color.delTema { UIColor(rgb: $0.texto, alfa: $0.oscuro ? 0.42 : 0.36) }
+    static let aro = Color.delTema { UIColor(rgb: $0.texto, alfa: $0.aroAlfa ?? ($0.oscuro ? 0.42 : 0.36)) }
     // .m-ahora-bloque: el acento al 7 % sobre el fondo y un filo del acento al 16 %.
     static let tinteAcento = Color.delTema { UIColor(rgb: $0.acento, alfa: $0.oscuro ? 0.12 : 0.08) }
     static let filoAcento = Color.delTema { UIColor(rgb: $0.acento, alfa: 0.16) }
@@ -111,6 +144,14 @@ enum Paleta {
     static let progreso = Color.delTema { UIColor(rgb: $0.progreso) }
     static let sobreProgreso = Color.delTema { UIColor(rgb: $0.sobreProgreso) }
     static let atencion = Color.delTema { UIColor(rgb: $0.atencion) }
+    // Títulos grandes y barra de abajo, propios de cada tema (0.20).
+    static let titulo = Color.delTema { UIColor(rgb: $0.titulo ?? $0.texto) }
+    static let barra = Color.delTema { UIColor(rgb: $0.barra ?? $0.superficie) }
+    static let sobreBarra = Color.delTema { UIColor(rgb: $0.sobreBarra ?? $0.texto) }
+    static let sobreBarraSuave = Color.delTema { UIColor(rgb: $0.sobreBarraSuave ?? $0.secundario) }
+    static let acentoBarra = Color.delTema { UIColor(rgb: $0.acentoBarra ?? $0.acento) }
+    static let tinteBarra = Color.delTema { UIColor(rgb: $0.acentoBarra ?? $0.acento, alfa: $0.barra != nil && $0.sobreBarra != nil ? 0.2 : ($0.oscuro ? 0.12 : 0.08)) }
+    static let filoBarra = Color.delTema { UIColor(rgb: $0.sobreBarra ?? $0.filo ?? $0.texto, alfa: $0.sobreBarra != nil ? 0.12 : min(0.32, ($0.bordeAlfa ?? 0.08) * 2)) }
     // El punto oficial del logo «b.»: no cambia con el tema ni se usa en controles.
     static let marca = Color(uiColor: UIColor(rgb: 0xE5532B))
 }

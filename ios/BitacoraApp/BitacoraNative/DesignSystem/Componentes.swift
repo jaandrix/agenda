@@ -54,7 +54,7 @@ struct CabeceraApartado<Accion: View>: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
-                (Text(titulo).foregroundColor(Paleta.texto) + Text(".").foregroundColor(Paleta.progreso))
+                (Text(titulo).foregroundColor(Paleta.titulo) + Text(".").foregroundColor(Paleta.progreso))
                     .font(Tipo.tituloApartado)
                     .kerning(-2.1)
                     .lineLimit(1).minimumScaleFactor(0.6)
@@ -218,10 +218,10 @@ struct BarraBitacora: View {
         .animation(sinMovimiento ? nil : .spring(response: 0.22, dampingFraction: 0.86), value: activa)
         .background(alignment: .top) {
             UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22, style: .continuous)
-                .fill(Paleta.superficie)
+                .fill(Paleta.barra)
                 .overlay(alignment: .top) {
                     UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22, style: .continuous)
-                        .stroke(Paleta.bordeFuerte, lineWidth: 1)
+                        .stroke(Paleta.filoBarra, lineWidth: 1)
                 }
                 .shadow(color: .black.opacity(0.12), radius: 8, y: -2)
                 .ignoresSafeArea(edges: .bottom)
@@ -233,20 +233,20 @@ struct BarraBitacora: View {
         let esMenu = p.id == "mas"
         let largo = esMenu ? mantener : nil
         let base = VStack(spacing: 1) {
-                IconoBarra(id: p.icono, activo: on, detalle: Paleta.acento)
-                    .foregroundStyle(on ? Paleta.texto : Paleta.textoSecundario)
+                IconoBarra(id: p.icono, activo: on, detalle: Paleta.acentoBarra)
+                    .foregroundStyle(on ? Paleta.sobreBarra : Paleta.sobreBarraSuave)
                     .frame(width: 24, height: 24)
                     .frame(width: 46, height: Self.tamanoIconoLateral)
                     .background {
                         if on {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Paleta.tinteAcento)
+                            RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Paleta.tinteBarra)
                                 .matchedGeometryEffect(id: "placa", in: placa)
                         }
                     }
                     .overlay {
                         if esMenu && largo != nil {
                             Circle().trim(from: 0, to: presionando ? 1 : 0)
-                                .stroke(Paleta.acento, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                                .stroke(Paleta.acentoBarra, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                                 .rotationEffect(.degrees(-90))
                                 .frame(width: 34, height: 34)
                                 .opacity(presionando ? 1 : 0)
@@ -258,7 +258,7 @@ struct BarraBitacora: View {
                 if !letra.isAccessibilitySize {
                     Text(p.titulo + ".")
                         .font(Tipo.poppins(10.5, on ? .bold : .medium, estilo: .caption2))
-                        .foregroundStyle(on ? Paleta.texto : Paleta.textoSecundario)
+                        .foregroundStyle(on ? Paleta.sobreBarra : Paleta.sobreBarraSuave)
                         .lineLimit(1).minimumScaleFactor(0.75)
                 }
             }
@@ -416,7 +416,7 @@ struct CabeceraContexto<Contenido: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                (Text(titulo).foregroundColor(Paleta.sobreContexto) + Text(".").foregroundColor(Paleta.progreso))
+                (Text(titulo).foregroundColor(Paleta.titulo) + Text(".").foregroundColor(Paleta.progreso))
                     .font(Tipo.titulo).kerning(-1.2).lineLimit(1).minimumScaleFactor(0.6)
                     .accessibilityAddTraits(.isHeader)
                 Spacer(minLength: Espacio.s)
