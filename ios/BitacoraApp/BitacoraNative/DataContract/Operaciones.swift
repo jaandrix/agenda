@@ -900,7 +900,11 @@ enum AplicarOperaciones {
             o["startDate"] = .string(fechaInicio); o["endDate"] = .string(fechaFin)
             o["date"] = .string(fechaInicio.isEmpty ? fechaFin : fechaInicio)
             o["year"] = Dinero.decimal(texto: anio).map { .number(NSDecimalNumber(decimal: $0).stringValue) } ?? .null
-            o["rating"] = Dinero.decimal(texto: valoracion).map { .number(NSDecimalNumber(decimal: $0).stringValue) } ?? .number("0")
+            // Medias estrellas (0.20): la web compara `rating` con enteros (entry.rating === r), así que ahí va la parte
+            // entera y el valor con medio en `ratingMedia`, que la web conserva al editar (Object.assign).
+            let nota = min(5, max(0, (NSDecimalNumber(decimal: Dinero.decimal(texto: valoracion) ?? 0).doubleValue * 2).rounded() / 2))
+            o["rating"] = .number(String(Int(nota)))
+            if nota != nota.rounded(.down) { o["ratingMedia"] = .number(String(nota)) } else { o.removeValue(forKey: "ratingMedia") }
             o["notes"] = .string(String(notas.prefix(4000))); o["url"] = .string(String(enlace.prefix(1000))); o["portada"] = .string(String(portada.prefix(2000)))
             if let n = lista.firstIndex(where: { $0["id"]?.comoId == id }) { lista[n] = .object(o) } else { lista.append(.object(o)) }
             r["entries"] = .some(.array(lista))

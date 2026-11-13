@@ -66,4 +66,23 @@ final class ValorarOcioTests: XCTestCase {
         XCTAssertEqual(ValorarOcio.tituloLimpio("concierto de Rosalía"), "Rosalía")
         XCTAssertEqual(ValorarOcio.tituloLimpio("teatro"), "teatro")
     }
+
+    // Medias estrellas: `rating` entero para la web y el medio en `ratingMedia`; si la web cambia la nota, manda la web.
+    func testMediasEstrellasCompatiblesConLaWeb() throws {
+        let d = try doc(#"{"entries":[]}"#)
+        let (r, _) = AplicarOperaciones.sobre(d, [.guardarOcio(id: "m", tipo: "movie", titulo: "Dune", autor: "", estado: "", fechaInicio: "2026-11-12",
+                                                              fechaFin: "", anio: "2021", valoracion: "3.5", notas: "", enlace: "", portada: "")])
+        let e = try XCTUnwrap(((try r.valor(de: "entries")) ?? nil)?.lista?.first)
+        XCTAssertEqual(e["rating"], .number("3"))
+        XCTAssertEqual(e["ratingMedia"], .number("3.5"))
+        XCTAssertEqual(LecturaOcio.vista(r).entradas.first?.valoracion, 3.5)
+        XCTAssertEqual(LecturaOcio.textoNota(3.5), "3,5 de 5.")
+        let web = try doc(#"{"entries":[{"id":"m","type":"movie","title":"Dune","rating":4,"ratingMedia":3.5}]}"#)
+        XCTAssertEqual(LecturaOcio.vista(web).entradas.first?.valoracion, 4)
+        let (r2, _) = AplicarOperaciones.sobre(r, [.guardarOcio(id: "m", tipo: "movie", titulo: "Dune", autor: "", estado: "", fechaInicio: "2026-11-12",
+                                                               fechaFin: "", anio: "2021", valoracion: "4.0", notas: "", enlace: "", portada: "")])
+        let e2 = try XCTUnwrap(((try r2.valor(de: "entries")) ?? nil)?.lista?.first)
+        XCTAssertEqual(e2["rating"], .number("4"))
+        XCTAssertNil(e2["ratingMedia"])
+    }
 }

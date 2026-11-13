@@ -9,7 +9,8 @@ struct EntradaOcio: Sendable, Identifiable, Equatable {
     let fechaInicio: String
     let fechaFin: String
     let anio: String
-    let valoracion: Int
+    // De 0 a 5 en medios puntos. La web guarda enteros en `rating`; el medio va en `ratingMedia` (ver guardarOcio).
+    let valoracion: Double
     let notas: String
     let enlace: String
     let portada: String
@@ -41,7 +42,7 @@ enum LecturaOcio {
                 autor: valor["author"]?.texto ?? "", estado: valor["status"]?.texto ?? estadoInicial(tipo),
                 fechaInicio: valor["startDate"]?.texto ?? valor["date"]?.texto ?? "",
                 fechaFin: valor["endDate"]?.texto ?? "", anio: anio,
-                valoracion: NSDecimalNumber(decimal: Dinero.decimal(valor["rating"]) ?? 0).intValue,
+                valoracion: valoracion(valor),
                 notas: valor["notes"]?.texto ?? "", enlace: valor["url"]?.texto ?? "",
                 portada: valor["portada"]?.texto ?? ""
             )
@@ -56,6 +57,17 @@ enum LecturaOcio {
                              entryIds: (valor["entryIds"]?.lista ?? []).compactMap(\.comoId))
         }
         return VistaOcio(entradas: entradas, listas: listas)
+    }
+
+    // `ratingMedia` solo vale si sigue de acuerdo con `rating` (si la web cambió la nota, manda la web).
+    static func valoracion(_ v: JSONValue) -> Double {
+        let r = NSDecimalNumber(decimal: Dinero.decimal(v["rating"]) ?? 0).doubleValue
+        if let m = Dinero.decimal(v["ratingMedia"]).map({ NSDecimalNumber(decimal: $0).doubleValue }), m.rounded(.down) == r.rounded(.down) { return m }
+        return r
+    }
+
+    static func textoNota(_ v: Double) -> String {
+        v == v.rounded() ? "\(Int(v)) de 5." : String(format: "%.1f", v).replacingOccurrences(of: ".", with: ",") + " de 5."
     }
 
     static func estadoInicial(_ tipo: String) -> String {

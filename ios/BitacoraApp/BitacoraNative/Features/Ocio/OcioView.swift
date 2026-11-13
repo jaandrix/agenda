@@ -49,6 +49,7 @@ struct OcioView: View {
             switch m {
             case .entrada(let entrada, let tipo):
                 EditorOcio(entrada: entrada, tipo: tipo) { datos in Task { await guardar(datos, previo: entrada) } }
+                    .environment(c)
             case .lista(let lista):
                 EditorListaOcio(lista: lista, entradas: vista?.entradas ?? []) { nombre, ids in Task { await guardarLista(lista, nombre, ids) } }
             }
@@ -82,8 +83,12 @@ struct OcioView: View {
         let filtradas = v.entradas.filter { $0.tipo == tipo && (busqueda.isEmpty || LecturaOcio.normalizar($0.titulo + " " + $0.autor).contains(LecturaOcio.normalizar(busqueda))) }
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: Espacio.s) {
-                TextField("buscar.", text: $busqueda).font(Tipo.cuerpo)
-                Button("+ añadir.") { modal = .entrada(nil, tipo) }.font(Tipo.pie).buttonStyle(.bordered)
+                BuscadorOcio(texto: $busqueda, placeholder: "buscar \(pestana.titulo).")
+                Button { modal = .entrada(nil, tipo) } label: {
+                    Text("+ añadir.").font(Tipo.poppins(15, .semibold, estilo: .subheadline)).foregroundStyle(Paleta.sobreAcento)
+                        .padding(.horizontal, 14).frame(minHeight: 48)
+                        .background(Paleta.acento, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }.buttonStyle(.plain)
             }.padding(.vertical, Espacio.s)
             HStack(spacing: Espacio.s) {
                 if pestana == .book { Button("importar goodreads.") { abrirImportador(.goodreads) }.buttonStyle(.plain) }
@@ -93,19 +98,21 @@ struct OcioView: View {
             if filtradas.isEmpty {
                 Text(busqueda.isEmpty ? "todavía no hay nada aquí." : "no hay resultados.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l)
             }
-            ForEach(filtradas) { entrada in fila(entrada) }
+            LazyVStack(spacing: 0) { ForEach(filtradas) { entrada in fila(entrada) } }
         }
     }
 
     private func fila(_ entrada: EntradaOcio) -> some View {
         HStack(spacing: Espacio.m) {
-            portada(entrada)
+            PortadaOcio(url: entrada.portada, titulo: entrada.titulo)
             Button { modal = .entrada(entrada, entrada.tipo) } label: {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(entrada.titulo.lowercased() + ".").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).lineLimit(2)
-                    let meta = [entrada.autor, entrada.anio, entrada.estado].filter { !$0.isEmpty }.joined(separator: ". ")
-                    if !meta.isEmpty { Text(meta).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(2) }
-                    if entrada.valoracion > 0 { Text("\(entrada.valoracion) de 5.").font(Tipo.pie).foregroundStyle(Paleta.acento) }
+                    let meta = [entrada.autor, entrada.anio, entrada.estado.lowercased(), Self.cuando(entrada)].filter { !$0.isEmpty }.joined(separator: ", ")
+                    if !meta.isEmpty { Text(meta + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(2) }
+                    if entrada.valoracion > 0 {
+                        EstrellasOcio(valor: entrada.valoracion, tamano: 13).accessibilityLabel(LecturaOcio.textoNota(entrada.valoracion))
+                    }
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }.buttonStyle(.plain)
             if let url = URL(string: entrada.enlace), !entrada.enlace.isEmpty {
@@ -119,14 +126,13 @@ struct OcioView: View {
             .swipeActions { Button("borrar", role: .destructive) { Task { try? await c.encolar(.borrarEntrada(id: entrada.id)) } } }
     }
 
-    @ViewBuilder private func portada(_ entrada: EntradaOcio) -> some View {
-        if let url = URL(string: entrada.portada), !entrada.portada.isEmpty {
-            AsyncImage(url: url) { imagen in imagen.resizable().scaledToFill() } placeholder: { Color.clear }
-                .frame(width: 44, height: 62).clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        } else {
-            RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Paleta.tinteContexto).frame(width: 44, height: 62)
-                .overlay(Text(String(entrada.titulo.prefix(1)).lowercased()).font(Tipo.poppins(20, .bold, estilo: .title3)).foregroundStyle(Paleta.contexto))
-        }
+    // «visto el 12 nov.» / «terminado el …»: cuándo, de un vistazo.
+    static func cuando(_ e: EntradaOcio) -> String {
+        let f = e.fechaFin.isEmpty ? e.fechaInicio : e.fechaFin
+        guard let d = LocalDay(iso: f) else { return "" }
+        let mes = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"][d.month - 1]
+        let verbo = e.tipo == "movie" ? "vista" : (e.fechaFin.isEmpty ? "desde" : (e.tipo == "series" ? "terminada" : "terminado"))
+        return "\(verbo) el \(d.day) \(mes)" + (d.year == CalendarioBitacora.madrid.dia(de: Date()).year ? "" : " \(d.year)")
     }
 
     private func listas(_ v: VistaOcio) -> some View {
@@ -148,9 +154,19 @@ struct OcioView: View {
     }
 
     private func guardar(_ d: DatosEditorOcio, previo: EntradaOcio?) async {
-        try? await c.encolar(.guardarOcio(id: previo?.id ?? OperacionBitacora.nuevoIdProyecto("ocio"), tipo: d.tipo,
+        let id = previo?.id ?? OperacionBitacora.nuevoIdProyecto("ocio")
+        let op = { (portada: String) in OperacionBitacora.guardarOcio(id: id, tipo: d.tipo,
             titulo: d.titulo, autor: d.autor, estado: d.estado, fechaInicio: d.fechaInicio, fechaFin: d.fechaFin,
-            anio: d.anio, valoracion: String(d.valoracion), notas: d.notas, enlace: d.enlace, portada: d.portada))
+            anio: d.anio, valoracion: String(d.valoracion), notas: d.notas, enlace: d.enlace, portada: portada) }
+        var ops = [op(d.portada)]
+        // Valorarla da por hecha su tarea «valorar …» (completarTareaValorarPelicula).
+        if d.valoracion > 0 { ops.append(OperacionesExtra.op(ValorarOcio.completar, ["entradaId": .string(id)])) }
+        do { try await c.encolar(ops); aviso = nil } catch { aviso = "no se pudo guardar en este iPhone."; return }
+        // portadaAuto: sin portada, se busca sola y se pone si el título coincide.
+        guard d.portada.isEmpty else { return }
+        let r = await BuscarPortadas.buscar(c, tipo: d.tipo, q: d.tipo == "book" && !d.autor.isEmpty ? d.titulo + " " + d.autor : d.titulo,
+                                            anio: d.tipo == "movie" || d.tipo == "series" ? d.anio : "")
+        if let buena = BuscarPortadas.mejor(r, titulo: d.titulo) { try? await c.encolar(op(buena.imagen)) }
     }
 
     private func guardarLista(_ previa: ListaOcio?, _ nombre: String, _ ids: [String]) async {
@@ -186,42 +202,158 @@ struct OcioView: View {
 
 private struct DatosEditorOcio {
     let tipo: String; let titulo: String; let autor: String; let estado: String; let fechaInicio: String; let fechaFin: String
-    let anio: String; let valoracion: Int; let notas: String; let enlace: String; let portada: String
+    let anio: String; let valoracion: Double; let notas: String; let enlace: String; let portada: String
 }
 
+// Editor de una película, serie, libro o juego: portada buscada en la función `portadas`, cuándo la viste (o
+// empezaste y terminaste) con fechas de verdad, y nota con medias estrellas.
 private struct EditorOcio: View {
     @Environment(\.dismiss) private var cerrar
+    @Environment(AppCoordinator.self) private var c
     let tipo: String
+    let nueva: Bool
     let guardar: (DatosEditorOcio) -> Void
     @State private var titulo: String; @State private var autor: String; @State private var estado: String
-    @State private var fechaInicio: String; @State private var fechaFin: String; @State private var anio: String
-    @State private var valoracion: Int; @State private var notas: String; @State private var enlace: String; @State private var portada: String
+    @State private var conInicio: Bool; @State private var inicio: Date
+    @State private var conFin: Bool; @State private var fin: Date
+    @State private var anio: String
+    @State private var valoracion: Double; @State private var notas: String; @State private var enlace: String; @State private var portada: String
+    @State private var candidatas: [CandidataPortada] = []
+    @State private var buscando = false
+    @State private var sinResultados = false
+
+    private static var cal: Calendar { var c = Calendar(identifier: .gregorian); c.timeZone = CalendarioBitacora.madrid.zona; return c }
+    private static func fecha(_ iso: String) -> Date? {
+        guard let d = LocalDay(iso: iso) else { return nil }
+        return cal.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12))
+    }
+    private static func iso(_ f: Date) -> String {
+        let d = cal.dateComponents([.year, .month, .day], from: f)
+        return String(format: "%04d-%02d-%02d", d.year ?? 2000, d.month ?? 1, d.day ?? 1)
+    }
 
     init(entrada: EntradaOcio?, tipo: String, guardar: @escaping (DatosEditorOcio) -> Void) {
-        self.tipo = tipo; self.guardar = guardar
+        self.tipo = tipo; self.guardar = guardar; self.nueva = entrada == nil
         _titulo = State(initialValue: entrada?.titulo ?? ""); _autor = State(initialValue: entrada?.autor ?? "")
-        _estado = State(initialValue: entrada?.estado ?? LecturaOcio.estadoInicial(tipo)); _fechaInicio = State(initialValue: entrada?.fechaInicio ?? "")
-        _fechaFin = State(initialValue: entrada?.fechaFin ?? ""); _anio = State(initialValue: entrada?.anio ?? "")
+        _estado = State(initialValue: entrada?.estado ?? LecturaOcio.estadoInicial(tipo))
+        let i = Self.fecha(entrada?.fechaInicio ?? ""), f = Self.fecha(entrada?.fechaFin ?? "")
+        // Una película nueva se apunta como vista hoy: es lo normal al añadirla.
+        _conInicio = State(initialValue: i != nil || (entrada == nil && tipo == "movie"))
+        _inicio = State(initialValue: i ?? Date())
+        _conFin = State(initialValue: f != nil)
+        _fin = State(initialValue: f ?? Date())
+        _anio = State(initialValue: entrada?.anio ?? "")
         _valoracion = State(initialValue: entrada?.valoracion ?? 0); _notas = State(initialValue: entrada?.notas ?? "")
         _enlace = State(initialValue: entrada?.enlace ?? ""); _portada = State(initialValue: entrada?.portada ?? "")
     }
 
     var body: some View {
-        NavigationStack { Form {
-            TextField("título.", text: $titulo)
-            if tipo == "book" { TextField("autor.", text: $autor) }
-            TextField("año.", text: $anio).keyboardType(.numberPad)
-            TextField(tipo == "movie" ? "fecha." : "fecha de inicio.", text: $fechaInicio).textContentType(.dateTime)
-            if tipo != "movie" { TextField("fecha de finalización.", text: $fechaFin).textContentType(.dateTime) }
-            if !estados.isEmpty { Picker("estado.", selection: $estado) { ForEach(estados, id: \.self) { Text($0.lowercased() + ".").tag($0) } } }
-            Stepper(valoracion == 0 ? "sin valorar." : "\(valoracion) de 5.", value: $valoracion, in: 0...5)
-            Section("notas.") { TextEditor(text: $notas).frame(minHeight: 90) }
-            TextField("enlace.", text: $enlace).keyboardType(.URL).textInputAutocapitalization(.never)
-            TextField("url de portada.", text: $portada).keyboardType(.URL).textInputAutocapitalization(.never)
-        }.navigationTitle(LecturaOcio.nombre(tipo) + ".").toolbar {
-            ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
-            ToolbarItem(placement: .confirmationAction) { Button("guardar.") { guardar(.init(tipo: tipo, titulo: titulo, autor: autor, estado: estado, fechaInicio: fechaInicio, fechaFin: fechaFin, anio: anio, valoracion: valoracion, notas: notas, enlace: enlace, portada: portada)); cerrar() }.disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty) }
-        } }
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("título.", text: $titulo)
+                    if tipo == "book" { TextField("autor.", text: $autor) }
+                    TextField("año.", text: $anio).keyboardType(.numberPad)
+                }.listRowBackground(Paleta.superficie)
+                seccionPortada.listRowBackground(Paleta.superficie)
+                Section("cuándo.") {
+                    if tipo == "movie" {
+                        Toggle("la he visto.", isOn: $conInicio)
+                        if conInicio { DatePicker("el día.", selection: $inicio, displayedComponents: .date) }
+                    } else {
+                        Toggle("empecé.", isOn: $conInicio)
+                        if conInicio { DatePicker("el día.", selection: $inicio, displayedComponents: .date) }
+                        Toggle("terminé.", isOn: $conFin)
+                        if conFin { DatePicker("el día.", selection: $fin, in: (conInicio ? inicio : .distantPast)..., displayedComponents: .date) }
+                        if !estados.isEmpty {
+                            Picker("estado.", selection: $estado) { ForEach(estados, id: \.self) { Text($0.lowercased() + ".").tag($0) } }
+                        }
+                    }
+                }
+                .listRowBackground(Paleta.superficie)
+                .environment(\.locale, Locale(identifier: "es_ES"))
+                .onChange(of: estado) { _, e in if e.hasPrefix("Complet") && !conFin { conFin = true; fin = Date() } }
+                .onChange(of: conFin) { _, si in if si, let completo = estados.first(where: { $0.hasPrefix("Complet") }), !estado.hasPrefix("Abandon") { estado = completo } }
+                Section {
+                    HStack {
+                        EstrellasOcio(valor: valoracion, tamano: 30) { valoracion = $0 }
+                        Spacer()
+                        if valoracion > 0 { Button("quitar.") { valoracion = 0 }.font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).buttonStyle(.plain) }
+                    }
+                } header: { Text("tu nota.") } footer: {
+                    Text(valoracion == 0 ? "sin valorar. toca la mitad de una estrella para media." : LecturaOcio.textoNota(valoracion))
+                }
+                .listRowBackground(Paleta.superficie)
+                Section("notas.") { TextEditor(text: $notas).editorCasa(alto: 90) }.listRowBackground(Paleta.superficie)
+                Section { TextField("enlace.", text: $enlace).keyboardType(.URL).textInputAutocapitalization(.never) }.listRowBackground(Paleta.superficie)
+            }
+            .font(Tipo.cuerpo)
+            .formularioCasa()
+            .navigationTitle(LecturaOcio.nombre(tipo) + ".")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("guardar.") {
+                        let i = conInicio ? Self.iso(inicio) : "", f = tipo != "movie" && conFin ? Self.iso(fin) : ""
+                        guardar(.init(tipo: tipo, titulo: titulo, autor: autor, estado: estado, fechaInicio: i, fechaFin: f, anio: anio,
+                                      valoracion: valoracion, notas: notas, enlace: enlace, portada: portada))
+                        cerrar()
+                    }.disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+    }
+
+    private var seccionPortada: some View {
+        Section {
+            HStack(alignment: .top, spacing: Espacio.m) {
+                PortadaOcio(url: portada, titulo: titulo.isEmpty ? "?" : titulo, ancho: 64)
+                VStack(alignment: .leading, spacing: 6) {
+                    Button(buscando ? "buscando…" : "buscar portada.") { Task { await buscar() } }
+                        .font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.acento)
+                        .disabled(buscando || titulo.trimmingCharacters(in: .whitespaces).isEmpty)
+                    if !portada.isEmpty { Button("quitar.") { portada = "" }.font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+                    if sinResultados { Text("no he encontrado portadas con ese título.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            if !candidatas.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 10) {
+                        ForEach(candidatas) { k in
+                            Button {
+                                portada = k.imagen
+                                if anio.isEmpty { anio = String(k.anio.prefix(4)) }
+                                if tipo == "book", autor.isEmpty { autor = k.autor }
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    PortadaOcio(url: k.imagen, titulo: k.titulo, ancho: 70)
+                                        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(portada == k.imagen ? Paleta.acento : .clear, lineWidth: 3))
+                                    Text(k.titulo.lowercased()).font(Tipo.poppins(11, .medium, estilo: .caption2)).foregroundStyle(Paleta.texto).lineLimit(2)
+                                    if !k.anio.isEmpty { Text(k.anio).font(Tipo.poppins(11, .regular, estilo: .caption2)).foregroundStyle(Paleta.textoSecundario) }
+                                }
+                                .frame(width: 70, alignment: .leading)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("portada de \(k.titulo)" + (k.anio.isEmpty ? "" : ", \(k.anio)") + (portada == k.imagen ? ", elegida" : ""))
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+            TextField("o pega la url de una imagen.", text: $portada).keyboardType(.URL).textInputAutocapitalization(.never).font(Tipo.pie)
+        } header: { Text("portada.") }
+    }
+
+    private func buscar() async {
+        buscando = true
+        defer { buscando = false }
+        let q = tipo == "book" && !autor.isEmpty ? titulo + " " + autor : titulo
+        candidatas = await BuscarPortadas.buscar(c, tipo: tipo, q: q, anio: tipo == "movie" || tipo == "series" ? anio : "")
+        sinResultados = candidatas.isEmpty
+        if portada.isEmpty, let m = BuscarPortadas.mejor(candidatas, titulo: titulo) { portada = m.imagen; if anio.isEmpty { anio = String(m.anio.prefix(4)) } }
     }
 
     private var estados: [String] {

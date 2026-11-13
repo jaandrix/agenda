@@ -44,7 +44,7 @@ Tipo y valor por defecto según `loadData`. «id» = sus listas se fusionan elem
 
 | Clave | Tipo, por defecto | Elementos e id | Fechas | Lo escriben | Al cargar | Notas |
 |---|---|---|---|---|---|---|
-| `entries` | lista, `[]` | eventos, viajes, cumpleaños, exámenes...; `id` | `date`, `endDate`, `startDate` civiles; `time` HH:MM | entradas.js, viajes.js, eventos.js, conector, apuntar | `·` pasa a comas en título/notas/lugar; `normalizeWorkCotizationData`; absorbe `plannedTrips` | `type` decide la forma; `ejemplo: true` para la semana de ejemplo |
+| `entries` | lista, `[]` | eventos, viajes, cumpleaños, exámenes...; `id` | `date`, `endDate`, `startDate` civiles; `time` HH:MM | entradas.js, viajes.js, eventos.js, conector, apuntar | `·` pasa a comas en título/notas/lugar; `normalizeWorkCotizationData`; absorbe `plannedTrips` | `type` decide la forma; `ejemplo: true` para la semana de ejemplo. Desde la 0.20 (iPhone, la web los conserva): `ratingMedia` (nota con medio punto; `rating` lleva la parte entera y manda si no coincide), y en eventos `ocioTipo` (movie, series, book, game, concierto, teatro) y `valorarTareaId` (ya se creó su «valorar …»; las tareas llevan `valorarPeliculaId`, `valorarOcioId` o `valorarEventoId`) |
 | `categories` | lista, `getDefaultCategories()` | `id` (`cat_...`) | | entradas.js | rosa de `cat_evento` pasa a negro; se ponen ids que falten | |
 | `userName` | texto, `''` | | | ajustes | | |
 | `investmentData` | objeto, `{initial:0, rate:7, monthly:0}` | | | finanzas | `migrateInvestmentData` | heredado |
