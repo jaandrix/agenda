@@ -179,7 +179,13 @@ struct InicioView: View {
         if let uid, foto == nil { foto = s.perfil.guardada(uid) }
         async let t = s.tiempo.actual(ciudad, forzar: forzar)
         if let uid { foto = await s.perfil.foto(uid) ?? foto }
-        if let nuevo = await t { tiempo = nuevo }
+        if let nuevo = await t, Self.cambiaTiempo(tiempo, nuevo) { tiempo = nuevo }
+    }
+
+    // La consulta trae una hora nueva cada vez: solo se repinta si cambia lo que se ve o la previsión.
+    static func cambiaTiempo(_ a: Tiempo?, _ b: Tiempo) -> Bool {
+        guard let a else { return true }
+        return Int(a.temp.rounded()) != Int(b.temp.rounded()) || a.tipo != b.tipo || a.clave != b.clave || a.dias != b.dias
     }
 
     private func cargarBus() async {
@@ -299,20 +305,7 @@ struct InicioCuerpo: View {
                     .buttonStyle(.plain).frame(minWidth: 44, minHeight: 44, alignment: .leading)
                     .accessibilityLabel("mi perfil")
                 Spacer()
-                if estado != .reposo {
-                    IndicadorSync(estado: estado)
-                } else if let t = tiempo {
-                    Button(action: abrirTiempo) {
-                        HStack(spacing: 6) {
-                            Image(systemName: Tiempo.simbolo[t.tipo] ?? "cloud.fill").font(.system(size: Tipo.tamano(15)))
-                            Text("\(Int(t.temp.rounded()))°").font(Tipo.poppins(15, .semibold)).monospacedDigit()
-                        }
-                        .foregroundStyle(ct)
-                        .frame(minWidth: 44, minHeight: 44, alignment: .trailing)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(vista?.ciudad.nombre ?? ""): \(Tiempo.texto[t.tipo] ?? ""), \(Int(t.temp.rounded())) grados")
-                }
+                HuecoNubeTiempo(estado: estado, tiempo: tiempo, ciudad: vista?.ciudad.nombre ?? "", color: ct, abrirTiempo: abrirTiempo)
             }
         }
         .frame(minHeight: max(52, Tipo.tamano(52)))
