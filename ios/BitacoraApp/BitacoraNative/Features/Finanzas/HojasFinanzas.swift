@@ -170,13 +170,35 @@ struct ImportarExtractoView: View {
             .navigationTitle("importar extracto.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button(resultado == nil ? "cancelar." : "hecho.") { cerrar() } }
+                if resultado == nil { ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } } }
+            }
+            // La acción que cierra el paso, abajo y a todo el ancho: importar (con cuántos) y, al acabar, «hecho.».
+            .safeAreaInset(edge: .bottom) {
+                if resultado != nil || vista != nil {
+                    VStack(spacing: 0) {
+                        if resultado != nil {
+                            BotonFin(texto: "hecho.", acento: true) { cerrar() }
+                        } else if let v = vista {
+                            BotonFin(texto: trabajando ? "importando…" : textoImportar(v), acento: v.confirmada) { Task { await ejecutar() } }
+                                .disabled(!v.confirmada || trabajando)
+                        }
+                    }
+                    .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 8)
+                    .background(Paleta.fondo.ignoresSafeArea(edges: .bottom))
+                    .overlay(alignment: .top) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+                }
             }
             .fileImporter(isPresented: $elegir, allowedContentTypes: [.commaSeparatedText, .tabSeparatedText, .plainText, .spreadsheet, .data]) { r in
                 Task { await leerArchivo(r) }
             }
             .disabled(trabajando)
         }
+    }
+
+    private func textoImportar(_ v: VistaImportacion) -> String {
+        guard v.confirmada else { return "elige la cuenta primero." }
+        let n = v.nuevas
+        return n == 0 ? "comprobar el saldo con el extracto." : "importar \(n) \(n == 1 ? "movimiento" : "movimientos")."
     }
 
     @ViewBuilder private func vistaPrevia(_ v: VistaImportacion) -> some View {
@@ -197,8 +219,6 @@ struct ImportarExtractoView: View {
                      + (v.fuera > 0 ? ", \(v.fuera) \(v.fuera == 1 ? "no cuenta" : "no cuentan") (anuladas o de una hucha)" : "") + ", de \(v.total) filas.")
                     .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
             }
-            Button(v.confirmada ? v.boton : "elige la cuenta primero.") { Task { await ejecutar() } }
-                .font(Tipo.cuerpoFuerte).disabled(!v.confirmada)
         }
         Section {
             ForEach(v.filas) { f in
