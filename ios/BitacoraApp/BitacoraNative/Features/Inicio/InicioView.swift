@@ -430,14 +430,15 @@ struct CarruselDias: View {
     @State private var arrastre: CGFloat = 0
     @State private var eje: Bool?
     @State private var pendiente: Int = 0
-    @State private var centroLocal: LocalDay?
+    @State private var estado = EstadoCarrusel()
     @State private var semanasPasadas = 0
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     static let letras = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
     static let umbral: CGFloat = 44
     static let umbralPredicho: CGFloat = 70
 
-    private var base: LocalDay { centroLocal ?? dias.first ?? dia.inicioSemanaLunes }
+    private var base: LocalDay { estado.lunesVisible(semanaInicio: dias.first ?? dia) }
+    private var marcado: LocalDay { estado.diaMarcado(dia: dia) }
     private var semanas: [[LocalDay]] {
         [-7, 0, 7].map { delta in (0..<7).map { base.sumando(dias: delta + $0) } }
     }
@@ -460,22 +461,26 @@ struct CarruselDias: View {
         .sensoryFeedback(.selection, trigger: semanasPasadas)
         .padding(.top, Espacio.s)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(FichaEventoView.fecha(dia) + (dia == hoy ? ", hoy" : ""))
+        .accessibilityLabel(FichaEventoView.fecha(marcado) + (marcado == hoy ? ", hoy" : ""))
         .accessibilityValue("día elegido")
         .accessibilityAdjustableAction { d in
-            if d == .increment { elegir(dia.sumando(dias: 1)) } else if d == .decrement { elegir(dia.sumando(dias: -1)) }
+            if d == .increment { tocar(marcado.sumando(dias: 1)) } else if d == .decrement { tocar(marcado.sumando(dias: -1)) }
         }
-        .accessibilityAction(named: "semana anterior") { elegir(dia.sumando(dias: -7)) }
-        .accessibilityAction(named: "semana siguiente") { elegir(dia.sumando(dias: 7)) }
-        .accessibilityAction(named: "ir a hoy.") { elegir(hoy) }
+        .accessibilityAction(named: "semana anterior") { tocar(marcado.sumando(dias: -7)) }
+        .accessibilityAction(named: "semana siguiente") { tocar(marcado.sumando(dias: 7)) }
+        .accessibilityAction(named: "ir a hoy.") { tocar(hoy) }
         .onChange(of: dia) {
             if pendiente != 0 { pendiente = 0; arrastre = 0 }
-            let lunes = dia.inicioSemanaLunes
-            if centroLocal == lunes || (dias.first == lunes) { centroLocal = nil }
+            var tx = Transaction(); tx.disablesAnimations = true
+            withTransaction(tx) { estado.llega(dia) }
         }
-        .onChange(of: dias) { _, nuevos in
-            if let c = centroLocal, nuevos.first == c { centroLocal = nil }
-        }
+    }
+
+    private func tocar(_ d: LocalDay) {
+        guard d != marcado else { return }
+        var tx = Transaction(); tx.disablesAnimations = true
+        withTransaction(tx) { estado.tocar(d) }
+        elegir(d)
     }
 
     private func gesto(ancho: CGFloat) -> some Gesture {
@@ -498,11 +503,10 @@ struct CarruselDias: View {
                         withAnimation(Self.muelle(velocidad: vx, desde: arrastre, hasta: 0)) { arrastre = 0 }
                     }
                 } else {
-                    let nuevoCentro = base.sumando(dias: paso)
-                    let nuevoDia = dia.sumando(dias: paso)
                     if sinMovimiento {
                         var tx = Transaction(); tx.disablesAnimations = true
-                        withTransaction(tx) { centroLocal = nuevoCentro; arrastre = 0 }
+                        var nuevoDia = dia
+                        withTransaction(tx) { nuevoDia = estado.paso(paso, semanaInicio: dias.first ?? dia, dia: dia); arrastre = 0 }
                         elegir(nuevoDia)
                     } else {
                         pendiente = paso
@@ -513,7 +517,11 @@ struct CarruselDias: View {
                         } completion: {
                             guard pendiente == esperado else { return }
                             var tx = Transaction(); tx.disablesAnimations = true
-                            withTransaction(tx) { centroLocal = nuevoCentro; arrastre = 0; pendiente = 0 }
+                            var nuevoDia = dia
+                            withTransaction(tx) {
+                                nuevoDia = estado.paso(paso, semanaInicio: dias.first ?? dia, dia: dia)
+                                arrastre = 0; pendiente = 0
+                            }
                             semanasPasadas += 1
                             elegir(nuevoDia)
                         }
@@ -538,9 +546,9 @@ struct CarruselDias: View {
     }
 
     private func celda(_ d: LocalDay) -> some View {
-        let sel = d == dia
+        let sel = d == marcado
         let letra = Self.letras[d.indiceSemanaLunes]
-        return Button { elegir(d) } label: {
+        return Button { tocar(d) } label: {
             VStack(spacing: Tipo.tamano(1.5)) {
                 Text(letra).font(Tipo.poppins(10.5, sel ? .semibold : .medium, estilo: .caption2))
                     .lineLimit(1).minimumScaleFactor(0.65)
