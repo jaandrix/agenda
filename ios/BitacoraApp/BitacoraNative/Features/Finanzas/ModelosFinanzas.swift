@@ -21,7 +21,7 @@ struct PuntoSerie: Decodable, Equatable {
 }
 
 struct FilaMov: Decodable, Identifiable, Equatable {
-    let id, fecha, dia, tipo, titulo, meta, cifra, cuenta, destino, categoria, nota, hora: String
+    let id, fecha, dia, tipo, titulo, meta, cifra, cuenta, destino, categoria, nota, hora, icono, color, categoriaNombre: String
     let pendiente, futuro, neutro, revisar: Bool
     let importe: Double
 

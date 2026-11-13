@@ -21,7 +21,7 @@ enum OpcionFinanzas: String, Identifiable, CaseIterable {
 
 struct ModeloGestion: Decodable, Equatable {
     struct Cuenta: Decodable, Equatable, Identifiable { let id, nombre: String; let saldo0, saldo: Double }
-    struct Categoria: Decodable, Equatable, Identifiable { let id, nombre, tipo, color: String }
+    struct Categoria: Decodable, Equatable, Identifiable { let id, nombre, tipo, color, icono: String }
     struct Regla: Decodable, Equatable, Identifiable { let id, texto, cuenta: String; let activa: Bool }
     struct Item: Decodable, Equatable, Identifiable { let id, texto, nota, tipo: String; let importe: Double }
     let cuentas: [Cuenta]
@@ -74,6 +74,7 @@ struct MasOpcionesView: View {
     @State private var nuevaCat = ""
     @State private var tipoCat = "expense"
     @State private var colorCat = ""
+    @State private var iconoCat = ""
     @State private var borrarCat: ModeloGestion.Categoria?
     @State private var dividir = false
     @State private var origen = ""
@@ -181,7 +182,7 @@ struct MasOpcionesView: View {
                 if lista.isEmpty { Text("ninguna.").foregroundStyle(Paleta.textoSecundario) }
                 ForEach(lista) { cat in
                     HStack {
-                        Circle().fill(cat.color.isEmpty ? Paleta.textoSecundario : Color(hexWeb: cat.color)).frame(width: 10, height: 10)
+                        IconoCategoria(icono: cat.icono, color: cat.color, tam: 28)
                         Text(cat.nombre)
                         Spacer()
                         Button { borrarCat = cat } label: { Image(systemName: "xmark").foregroundStyle(Paleta.error) }.buttonStyle(.plain)
@@ -192,6 +193,7 @@ struct MasOpcionesView: View {
         }
         Section("nueva categoría.") {
             TextField("nombre.", text: $nuevaCat)
+                .onChange(of: nuevaCat) { _, n in if let i = IconosCategoria.adivinar(n) { iconoCat = i } }
             Picker("tipo.", selection: $tipoCat) { Text("gasto.").tag("expense"); Text("ingreso.").tag("income") }.pickerStyle(.segmented)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
@@ -202,9 +204,14 @@ struct MasOpcionesView: View {
                     }
                 }.padding(.vertical, 4)
             }
-            Button("+ añadir categoría.") {
-                Task { await accion("categoria", ["nombre": nuevaCat, "tipo": tipoCat, "color": colorCat.isEmpty ? (m.paleta.first ?? "") : colorCat], ok: nil); nuevaCat = "" }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(iconoCat.isEmpty ? "elige un icono." : "icono.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                RejillaIconos(seleccion: $iconoCat, color: colorCat.isEmpty ? (m.paleta.first ?? "") : colorCat)
             }
+            Button("+ añadir categoría.") {
+                Task { await accion("categoria", ["nombre": nuevaCat, "tipo": tipoCat, "icono": iconoCat, "color": colorCat.isEmpty ? (m.paleta.first ?? "") : colorCat], ok: nil); nuevaCat = ""; iconoCat = "" }
+            }
+            .disabled(nuevaCat.trimmingCharacters(in: .whitespaces).isEmpty || iconoCat.isEmpty)
         }
         Section("dividir una categoría.") {
             Text("Saca de una categoría los movimientos cuyo concepto lleva alguna de estas palabras. Con «*» al final cuentan también las que empiezan así. Después Bitácora aprende y los nuevos caen solos.")

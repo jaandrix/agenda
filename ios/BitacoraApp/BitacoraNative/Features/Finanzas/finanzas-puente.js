@@ -117,6 +117,14 @@
         invalidar();
     }
 
+    // «Regalos» como categoría de gasto (0.20, pedido de Alejandro). La de ingreso `cat_regalo` se llama «Aportaciones»
+    // desde hace tiempo; esta es otra, con id fijo para que dos dispositivos no la creen dos veces. Si ya hay una de gasto
+    // que se llame así, no se toca.
+    function asegurarRegalos() {
+        var hay = financePro.categories.some(function (c) { return c.id === 'cat_regalos_gasto' || (c.type === 'expense' && financeProNormalizar(c.name || '') === 'regalos'); });
+        if (!hay) financePro.categories.push({ id: 'cat_regalos_gasto', name: 'Regalos', icon: 'gift', type: 'expense', color: FINANCE_PRO_PALETTE[13] });
+    }
+
     function nombreCuenta(k) { return (financePro.accounts && financePro.accounts[k] && financePro.accounts[k].name) || k || ''; }
     function fechaCorta(iso) {
         var d = new Date((iso || todayISO()) + 'T12:00:00');
@@ -131,7 +139,10 @@
             meta: [cat && cat.name, financePro.accounts[t.account] && financePro.accounts[t.account].name].filter(Boolean).join(', ').toLowerCase(),
             importe: Number(t.amount) || 0, cifra: String(Number(t.amount) || 0),
             cuenta: t.account || '', destino: t.transferTo || '', categoria: t.category || '', nota: String(t.note || ''),
-            hora: t.hora || '', futuro: !!(t.date && t.date > todayISO()), neutro: financeProNeutro(t), revisar: !!t.needsReview
+            hora: t.hora || '', futuro: !!(t.date && t.date > todayISO()), neutro: financeProNeutro(t), revisar: !!t.needsReview,
+            icono: t.type === 'transfer' ? '' : financeProNeutro(t) ? (financeProEsInversion(t) ? 'trend' : 'coin') : (cat && cat.icon) || 'other',
+            color: t.type === 'transfer' || financeProNeutro(t) ? '' : (cat && cat.color) || '',
+            categoriaNombre: String((cat && cat.name) || '').toLowerCase()
         };
     }
     function porAjustar() {
@@ -425,7 +436,7 @@
         },
         invalidar: function () { invalidar(); return true; },
         cambio: function () { var c = cambio; cambio = false; return c; },
-        preparar: function () { return JSON.stringify(enCopia(function () { return prepararFinanzas(); })); },
+        preparar: function () { return JSON.stringify(enCopia(function () { var r = prepararFinanzas(); asegurarRegalos(); return r; })); },
         pestana: function (tab, opciones) { return JSON.stringify(pestanas[tab](JSON.parse(opciones || '{}'))); },
         serie: function (rango, extras) { return JSON.stringify(grafica(rango, !!extras)); },
         buscar: function (f) { return JSON.stringify(buscar(JSON.parse(f))); },
@@ -483,7 +494,7 @@
                 ajuste: financeProEsAjuste(d), categoriaAuto: !!(d.categoriaAuto && d.category), pendiente: !!d.pendiente,
                 banco: t ? String(t.bankNote || (!t.manual ? t.note || '' : '')) : '',
                 cuentas: FINANCE_PRO_ACCOUNT_KEYS.map(function (k) { return { id: k, nombre: String(nombreCuenta(k)) }; }),
-                categorias: financePro.categories.map(function (c) { return { id: String(c.id), nombre: String(c.name || c.id), tipo: c.type || '' }; }),
+                categorias: financePro.categories.map(function (c) { return { id: String(c.id), nombre: String(c.name || c.id), tipo: c.type || '', icono: c.icon || 'other', color: c.color || '' }; }),
                 viajes: financeProViajesConFecha().map(function (v) { return { id: String(v.id), nombre: String(financeProNombreViaje(v)) }; }),
                 inversiones: (financeProfile.investmentAccounts || []).map(function (a) { return { id: String(a.id), nombre: String(a.name || 'inversión') }; })
             });
@@ -539,7 +550,7 @@
             };
             return JSON.stringify({
                 cuentas: FINANCE_PRO_ACCOUNT_KEYS.map(function (k) { return { id: k, nombre: String(nombreCuenta(k)), saldo0: Number(financePro.accounts[k].balance0 || 0), saldo: financeProAccountBalance(k) }; }),
-                categorias: financePro.categories.map(function (c) { return { id: String(c.id), nombre: String(c.name || ''), tipo: c.type || '', color: c.color || '' }; }),
+                categorias: financePro.categories.map(function (c) { return { id: String(c.id), nombre: String(c.name || ''), tipo: c.type || '', color: c.color || '', icono: c.icon || 'other' }; }),
                 paleta: FINANCE_PRO_PALETTE,
                 reglas: (financePro.rules || []).map(function (r) { return { id: String(r.id), texto: String(r.matchText || ''), cuenta: String(nombreCuenta(r.otherAccount)), activa: !!r.enabled }; }),
                 duplicados: dup.map(function (p) { return [item(p[0]), item(p[1])]; }),
@@ -582,7 +593,7 @@
                 case 'categoria':
                     var nombreCat = String(a.nombre || '').trim();
                     if (!nombreCat) throw new Error('Ponle un nombre a la categoría');
-                    financePro.categories.push({ id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name: nombreCat, icon: 'other', color: a.color || FINANCE_PRO_PALETTE[0], type: a.tipo === 'income' ? 'income' : 'expense' });
+                    financePro.categories.push({ id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name: nombreCat, icon: FINANCE_PRO_CATEGORY_ICON_SET.some(function (i) { return i.key === a.icono; }) ? a.icono : 'other', color: a.color || FINANCE_PRO_PALETTE[0], type: a.tipo === 'income' ? 'income' : 'expense' });
                     return true;
                 case 'borrarCategoria':
                     financePro.categories = financePro.categories.filter(function (c) { return String(c.id) !== a.id; });

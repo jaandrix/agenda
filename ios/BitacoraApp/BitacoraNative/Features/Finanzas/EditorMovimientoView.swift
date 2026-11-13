@@ -12,7 +12,7 @@ struct EditorMovimientoView: View {
     let tipoInicial: String
     var existente: Movimiento?
 
-    struct Opcion: Codable, Identifiable, Equatable { let id, nombre: String; var tipo: String? }
+    struct Opcion: Codable, Identifiable, Equatable { let id, nombre: String; var tipo: String?; var icono: String?; var color: String? }
     struct Borrador: Codable, Equatable {
         var id: String?
         var existe: Bool
@@ -91,9 +91,9 @@ struct EditorMovimientoView: View {
                         ForEach(x.cuentas.filter { $0.id != x.cuenta }) { Text($0.nombre).tag($0.id) }
                     }
                 } else if !x.ahorro && !x.ajuste {
-                    Picker("categoría.", selection: b.categoria) {
-                        Text("sin categoría.").tag("")
-                        ForEach(x.categorias.filter { $0.tipo == x.tipo }) { Text($0.nombre).tag($0.id) }
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("categoría.")
+                        SelectorCategoria(opciones: x.categorias.filter { $0.tipo == x.tipo }, seleccion: b.categoria)
                     }
                     if x.categoriaAuto && !x.categoria.isEmpty {
                         Text("Categoría puesta por bitácora: el 90 % o más de tus movimientos parecidos la llevan. Al guardar queda confirmada.")

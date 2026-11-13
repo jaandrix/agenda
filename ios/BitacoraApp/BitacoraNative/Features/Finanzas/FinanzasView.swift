@@ -271,13 +271,17 @@ struct FilaMovView: View {
 
     var body: some View {
         Button { abrir(f) } label: {
-            HStack(alignment: .firstTextBaseline, spacing: Espacio.s) {
-                Text(f.dia).font(Tipo.poppins(13, .medium, estilo: .footnote)).monospacedDigit().foregroundStyle(Paleta.textoSecundario)
-                    .frame(width: 50, alignment: .leading)
+            HStack(alignment: .center, spacing: Espacio.s) {
+                if f.icono.isEmpty {
+                    Image(systemName: "arrow.left.arrow.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Paleta.textoSecundario)
+                        .frame(width: 32, height: 32).background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                } else {
+                    IconoCategoria(icono: f.icono, color: f.color, tam: 32)
+                }
                 VStack(alignment: .leading, spacing: 2) {
                     (Text(f.titulo) + (f.pendiente ? Text(" pendiente.").font(Tipo.pie).foregroundColor(Paleta.textoSecundario) : Text("")))
                         .font(Tipo.cuerpo).foregroundStyle(f.futuro ? Paleta.textoSecundario : Paleta.texto).lineLimit(1)
-                    if !f.meta.isEmpty { Text(f.meta).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(1) }
+                    Text([f.dia, f.meta].filter { !$0.isEmpty }.joined(separator: ", ")).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(1)
                 }
                 Spacer(minLength: Espacio.s)
                 HStack(spacing: 2) {
@@ -287,7 +291,7 @@ struct FilaMovView: View {
                 }
                 .foregroundStyle(f.tipo == "income" ? Paleta.progreso : Paleta.texto)
             }
-            .padding(.vertical, 11)
+            .padding(.vertical, 9)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -563,8 +567,8 @@ private struct PestanaPlanificacion: View {
                 let sub = [cat.refunded > 0 ? "\(din(cat.refunded)) devueltos" : nil, "el mes pasado gastaste \(din(cat.lastMonth))", cat.casillas > 1 ? "\(cat.casillas) casillas" : nil]
                     .compactMap { $0 }.joined(separator: ", ")
                 VStack(alignment: .leading, spacing: 6) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Circle().fill(cat.color.isEmpty ? Paleta.textoSecundario : Color(hexWeb: cat.color)).frame(width: 8, height: 8)
+                    HStack(alignment: .center) {
+                        IconoCategoria(icono: cat.icono, color: cat.color, tam: 26)
                         Text(cat.nombre).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).lineLimit(1)
                         Spacer()
                         Text(din(cat.spent)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit().foregroundStyle(Paleta.texto)
