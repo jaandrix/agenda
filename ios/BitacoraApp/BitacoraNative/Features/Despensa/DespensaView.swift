@@ -3,8 +3,8 @@ import SwiftUI
 private struct GrupoDespensa: Sendable { let seccion: String; let items: [ItemDespensa] }
 private enum PestanaDespensa: String, CaseIterable, Identifiable { case lista, historial, recetas, plan; var id: String { rawValue } }
 private enum ModalDespensa: Identifiable {
-    case item(ItemDespensa?), receta(RecetaDespensa?), terminar, plato(String)
-    var id: String { switch self { case .item(let x): return "item-\(x?.id ?? "nuevo")"; case .receta(let x): return "receta-\(x?.id ?? "nueva")"; case .terminar: return "terminar"; case .plato(let d): return "plato-\(d)" } }
+    case item(ItemDespensa?), receta(RecetaDespensa?), terminar, plato(String), pasar(RecetaDespensa)
+    var id: String { switch self { case .item(let x): return "item-\(x?.id ?? "nuevo")"; case .receta(let x): return "receta-\(x?.id ?? "nueva")"; case .terminar: return "terminar"; case .plato(let d): return "plato-\(d)"; case .pasar(let r): return "pasar-\(r.id)" } }
 }
 
 struct DespensaView: View {
@@ -20,6 +20,8 @@ struct DespensaView: View {
     @State private var grupos: [GrupoDespensa] = []
     @State private var enCarro: [ItemDespensa] = []
     @FocusState private var escribiendo: Bool
+    // Lo que se acaba de pasar a la cesta, unos segundos.
+    @State private var hecho: String?
 
     var body: some View {
         ScrollView {
@@ -33,6 +35,14 @@ struct DespensaView: View {
                 }
                 LazyVStack(alignment: .leading, spacing: 0) {
                     selector
+                    if let hecho {
+                        Text(hecho).font(Tipo.pie).foregroundStyle(Paleta.texto)
+                            .padding(.horizontal, 14).padding(.vertical, 10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Paleta.tinteAcento, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .padding(.bottom, Espacio.s)
+                            .accessibilityAddTraits(.updatesFrequently)
+                    }
                     if let v = vista {
                         switch pestana {
                         case .lista: lista(v)
@@ -63,6 +73,8 @@ struct DespensaView: View {
             case .plato(let dia): EditorPlatoView(dia: dia, recetas: vista?.recetas ?? []) { momento, nombre, receta in
                 Task { await guardarPlato(dia, momento, nombre, receta) }
             }
+            case .pasar(let r):
+                if let l = vista?.listaActual { PasarRecetaView(receta: r, lista: l) { elegidos in Task { await pasarReceta(r, elegidos, a: l) } } }
         }
         }
     }
@@ -121,9 +133,14 @@ struct DespensaView: View {
             }.padding(.vertical, Espacio.s)
             if !v.frecuentes.isEmpty {
                 CabeceraSeccion(titulo: "lo de siempre.")
-                ScrollView(.horizontal, showsIndicators: false) { HStack { ForEach(v.frecuentes) { f in
-                    Button(f.texto + ".") { textoRapido = f.texto; Task { await anadirRapido() } }.font(Tipo.pie).buttonStyle(.bordered)
-                } } }
+                ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: Espacio.xs) { ForEach(v.frecuentes) { f in
+                    Button { textoRapido = f.texto; Task { await anadirRapido() } } label: {
+                        Text("+ " + f.texto.lowercased()).font(Tipo.pie).foregroundStyle(Paleta.texto)
+                            .padding(.horizontal, 12).frame(minHeight: 40)
+                            .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Paleta.borde, lineWidth: 1))
+                    }.buttonStyle(.plain).accessibilityLabel("añadir \(f.texto)")
+                } }.padding(.vertical, 2) }
             }
             if let l = v.listaActual {
                 ForEach(grupos, id: \.seccion) { g in
@@ -172,16 +189,43 @@ struct DespensaView: View {
         CabeceraSeccion(titulo: "historial.", detalle: "\(v.historial.count)")
         if v.historial.isEmpty { Text("aquí aparecerán las compras terminadas y los tickets.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l) }
         ForEach(v.historial) { x in VStack(alignment: .leading, spacing: 3) { HStack { Text(x.tienda.isEmpty ? "compra." : x.tienda.lowercased() + ".").font(Tipo.cuerpoFuerte); Spacer(); Text(Dinero.formato(x.total)).font(Tipo.cuerpoFuerte).monospacedDigit() }
-            Text("\(x.fecha). \(x.productos) productos. \(x.fuente == "ticket" ? "ticket" : "manual")" + (x.sinComprar.isEmpty ? "" : ". \(x.sinComprar.count) faltaron"))
+            Text("\(Self.fechaCorta(x.fecha)), \(x.productos) productos, \(x.fuente == "ticket" ? "con ticket" : "a mano")" + (x.sinComprar.isEmpty ? "." : ", \(x.sinComprar.count) faltaron."))
                 .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }.padding(.vertical, 10).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) } }
     } }
 
     private func recetas(_ v: VistaDespensa) -> some View { VStack(alignment: .leading, spacing: 0) {
         HStack { CabeceraSeccion(titulo: "recetas.", detalle: "\(v.recetas.count)"); Spacer(); AccionTexto(texto: "+ receta.") { modal = .receta(nil) } }
-        ForEach(v.recetas) { r in VStack(alignment: .leading, spacing: 4) { HStack { Button { modal = .receta(r) } label: { HStack { Text(r.nombre.lowercased() + ".").font(Tipo.cuerpoFuerte); Spacer(); Text("\(r.raciones) raciones").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) } }.buttonStyle(.plain); Menu { Button("eliminar receta.", role: .destructive) { Task { try? await c.encolar(.borrarRecetaCompra(id: r.id)) } } } label: { Image(systemName: "ellipsis").foregroundStyle(Paleta.textoSecundario).frame(width: 36, height: 36) } }
-            Text(r.ingredientes.map { [$0.cantidad, $0.texto].filter { !$0.isEmpty }.joined(separator: " ") }.joined(separator: ", ")).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(3)
-            Button("añadir lo que falta.") { Task { await anadirReceta(r) } }.font(Tipo.pie).buttonStyle(.plain).foregroundStyle(Paleta.acento)
-        }.padding(.vertical, 10).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) } }
+        if v.recetas.isEmpty { Text("guarda tus recetas y pasa sus ingredientes a la cesta en un toque.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l) }
+        ForEach(v.recetas) { r in
+            let ya = RecetaALista.yaEsta(r, en: v.listaActual).count
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline) {
+                    Button { modal = .receta(r) } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(r.nombre.lowercased() + ".").font(Tipo.poppins(17, .semibold, estilo: .body)).foregroundStyle(Paleta.texto)
+                            Text("\(r.raciones) raciones, \(r.ingredientes.count) ingredientes" + (ya > 0 ? ", \(ya) ya en la lista." : "."))
+                                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                        }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+                    }.buttonStyle(.plain)
+                    Menu {
+                        Button("editar.") { modal = .receta(r) }
+                        Button("eliminar receta.", role: .destructive) { Task { try? await c.encolar(.borrarRecetaCompra(id: r.id)) } }
+                    } label: { Image(systemName: "ellipsis").font(.system(size: 17, weight: .semibold)).foregroundStyle(Paleta.textoSecundario).frame(width: 44, height: 44) }
+                    .accessibilityLabel("acciones para \(r.nombre)")
+                }
+                Text(r.ingredientes.map { [$0.cantidad, $0.texto].filter { !$0.isEmpty }.joined(separator: " ") }.joined(separator: ", "))
+                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(3)
+                Button { modal = .pasar(r) } label: {
+                    Text("pasar a la cesta.").font(Tipo.poppins(14, .semibold, estilo: .footnote)).foregroundStyle(Paleta.acento)
+                        .padding(.horizontal, 12).frame(minHeight: 40)
+                        .background(Paleta.tinteAcento, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }.buttonStyle(.plain).disabled(r.ingredientes.isEmpty || v.listaActual == nil)
+            }
+            .padding(14)
+            .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Paleta.borde, lineWidth: 1))
+            .padding(.vertical, 5)
+        }
     } }
 
     private func plan(_ v: VistaDespensa) -> some View { VStack(alignment: .leading, spacing: 0) {
@@ -212,10 +256,26 @@ struct DespensaView: View {
         Task { try? await c.encolar(.borrarItemCompra(listaId: lista.id, id: item.id)) }
     }
     private func guardarReceta(_ r: RecetaDespensa?, _ nombre: String, _ raciones: Int, _ ingredientes: [String], _ pasos: [String], _ notas: String) async { try? await c.encolar(.guardarRecetaCompra(id: r?.id ?? OperacionBitacora.nuevoIdProyecto("rec"), nombre: nombre, raciones: raciones, ingredientes: ingredientes, pasos: pasos, notas: notas)) }
-    private func anadirReceta(_ r: RecetaDespensa) async { guard let l = vista?.listaActual else { return }; let t = LecturaDespensa.ingredientesFaltantes(r, en: l); try? await c.encolar(.anadirCompra(listaId: l.id, textos: t, ids: t.map { _ in OperacionBitacora.nuevoIdProyecto("cmp") })) }
+    private func pasarReceta(_ r: RecetaDespensa, _ elegidos: [IngredienteReceta], a l: ListaDespensa) async {
+        let ya = RecetaALista.yaEsta(r, en: l)
+        let nuevos = elegidos.filter { !ya.contains($0.texto) }, anotados = elegidos.filter { ya.contains($0.texto) }
+        do {
+            try await c.encolar(RecetaALista.operacion(listaId: l.id, receta: r, elegidos: elegidos))
+            var t = nuevos.isEmpty ? "ya tenías todo en la lista." : "\(nuevos.count) \(nuevos.count == 1 ? "ingrediente" : "ingredientes") a «\(l.nombre.lowercased())»: \(nuevos.map { $0.texto.lowercased() }.joined(separator: ", "))."
+            if !anotados.isEmpty && !nuevos.isEmpty { t += " ya estaban: \(anotados.map { $0.texto.lowercased() }.joined(separator: ", "))." }
+            hecho = t
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            try? await Task.sleep(for: .seconds(5))
+            if hecho == t { hecho = nil }
+        } catch { hecho = "no se pudo guardar en este iPhone." }
+    }
+    static func fechaCorta(_ iso: String) -> String {
+        guard let d = LocalDay(iso: iso) else { return iso }
+        return "\(d.day) " + ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"][d.month - 1]
+    }
     private func guardarPlato(_ dia: String, _ momento: String, _ nombre: String, _ receta: RecetaDespensa?) async { try? await c.encolar(.guardarPlatoCompra(dia: dia, id: OperacionBitacora.nuevoIdProyecto("plato"), momento: momento, nombre: nombre, recetaId: receta?.id, ingredientes: receta?.ingredientes.map(\.texto) ?? [])) }
     private func terminar(_ tienda: String, _ total: String, _ finanzas: Bool) async { guard let l = vista?.listaActual else { return }; let id = OperacionBitacora.nuevoIdProyecto("compra"), tx = finanzas ? OperacionBitacora.nuevoIdMovimiento() : nil; let hoy = CalendarioBitacora.madrid.dia(de: Date()).iso; try? await c.encolar(.terminarCompra(listaId: l.id, compraId: id, fecha: hoy, tienda: tienda, total: total, txId: tx)); if let tx, let d = Dinero.decimal(texto: total), d > 0 { try? await c.encolar(.crearMovimiento(id: tx, tipo: "expense", importe: NSDecimalNumber(decimal: d).stringValue, cuenta: "bancos", categoria: nil, fecha: hoy, hora: "", concepto: tienda.isEmpty ? "compra" : tienda)) } }
-    private func planALista(_ v: VistaDespensa) async { guard let l = v.listaActual else { return }; let textos = semanaActual().flatMap { v.plan[$0.iso] ?? [] }.flatMap(\.ingredientes); let presentes = Set(l.items.map { LecturaDespensa.normalizar($0.texto) }); let faltan = Array(Set(textos.filter { !presentes.contains(LecturaDespensa.normalizar($0)) })); try? await c.encolar(.anadirCompra(listaId: l.id, textos: faltan, ids: faltan.map { _ in OperacionBitacora.nuevoIdProyecto("cmp") })) }
+    private func planALista(_ v: VistaDespensa) async { guard let l = v.listaActual else { return }; let textos = semanaActual().flatMap { v.plan[$0.iso] ?? [] }.flatMap(\.ingredientes); let presentes = Set(l.items.filter { !$0.hecho }.map { RecetaALista.clave($0.texto) }); var vistos = Set<String>(); let faltan = textos.filter { let k = RecetaALista.clave($0); return !presentes.contains(k) && vistos.insert(k).inserted }; try? await c.encolar(.anadirCompra(listaId: l.id, textos: faltan, ids: faltan.map { _ in OperacionBitacora.nuevoIdProyecto("cmp") })) }
     private func semanaActual() -> [LocalDay] { CalendarioBitacora.madrid.dia(de: Date()).semanaLunesDomingo }
     private func etiquetaDia(_ d: LocalDay) -> String { let n = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]; return n[d.indiceSemanaLunes] + " \(d.day)." }
 }
