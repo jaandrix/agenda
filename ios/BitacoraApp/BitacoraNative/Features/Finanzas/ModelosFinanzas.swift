@@ -101,7 +101,7 @@ struct ModeloResumen: Decodable, Equatable {
         let fecha: String
     }
     struct Activo: Decodable, Equatable { let nombre, ficha: String; let valor: Double; let pct, cambio: Double? }
-    struct Sub: Decodable, Equatable, Identifiable { let id, titulo: String; let importe: Double; let dia, faltan: Int }
+    struct Sub: Decodable, Equatable, Identifiable { let id, titulo, tipo: String; let importe: Double; let dia, faltan: Int }
     struct Prevision: Decodable, Equatable {
         let fin, fijos, variable, porEntrar: Double
         let ultimoDia: Int
