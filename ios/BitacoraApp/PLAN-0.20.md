@@ -15,6 +15,7 @@ Finanzas a la vez (su sección, debajo).
 | 6. «valorar …» | 108db41 | Ver la decisión debajo. |
 | 6. Ocio | 5e009f6 | Buscador con superficie, filo y lupa; portadas de la función `portadas` (TMDB, Open Library, Steam) al editar y solas al guardar sin portada (`portadaAuto`); «cuándo.» con fechas de verdad (una película nueva sale vista hoy); medias estrellas. |
 | 7. Despensa | bcd806d | «pasar a la cesta.» abre una hoja para elegir ingredientes: lo que ya está sale desmarcado y, si se marca, solo se anota la receta (la regla de `recetaALaLista`); aviso de lo añadido. Recetas en tarjetas, «lo de siempre» en chips de la casa, historial con fechas legibles, plan a la lista sin duplicar (`compraClave`). |
+| 7b. Temas | fad955a | Retoque, no rediseño. Tokens nuevos opcionales en `TemaTokens` (`titulo`, `barra`, `sobreBarra`, `sobreBarraSuave`, `acentoBarra`, `filo`, `bordeAlfa`, `aroAlfa`); la barra y las cabeceras leen `Paleta.titulo` / `Paleta.barra`… Asfalto grafito casi monocromo; papel crema con tinta casi negra y renglones; teja con títulos y barra granate y superficies más oscuras que el fondo; pizarra con barra #1A2D42 e iconos claros; fundador carbón con dorado #C99A4B y filo dorado; oliva marfil con acento oliva y la ciruela en progreso. Texto y secundario ≥ 4,9:1 en todos. Capturas `inicio-390-tema-*` en el artefacto `capturas-diseno`. |
 | 8. Rendimiento | 95f1304 | Ver debajo. |
 
 **Decisión: «valorar …» tras un evento de ocio.** La PWA (`convertirCinesEnPeliculas`) solo mira `eventType: "cine"`
@@ -60,6 +61,7 @@ y solo corre en la web; los eventos del editor del iPhone se guardaban como «ot
 - **QR:** abrir un evento con entrada: la «b.» va en su placa sin tapar medios cuadritos y los tres ojos son redondeados. A pantalla completa, «bitácora.» muy suave abajo. Leerlo con la cámara de otro móvil.
 - **Valorar:** crear un evento «cine Dune» hoy hace 6 horas (o con «de ocio.» película) y abrir la app: en Plan sale «valorar la película. Dune» y en Ocio la película vista. Valorarla con 3,5 estrellas: la tarea queda hecha. Con un concierto, «valorar el concierto. …».
 - **Ocio:** el buscador se ve; «+ añadir.» una película: «buscar portada.» trae carátulas de TMDB; «la he visto.» con fecha; nota con media estrella tocando la mitad izquierda. En la web la película sale con 3 estrellas (la parte entera).
+- **Temas:** en Ajustes, pasar por los seis: cada uno se distingue por Inicio y la barra (teja con barra granate, pizarra con barra azul marino y iconos claros, fundador con dorado).
 - **Despensa:** en una receta, «pasar a la cesta.»: lo que ya está sale desmarcado con «ya está en la lista.»; pasar y ver el aviso de lo añadido. Repetir: no se duplica.
 
 
