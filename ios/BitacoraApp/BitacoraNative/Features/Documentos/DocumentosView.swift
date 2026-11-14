@@ -3,7 +3,8 @@ import QuickLook
 
 // Documentos, en lectura (js/documentos.js): las fichas (`entries` type document, con caducidad en `date`) ordenadas como
 // renderFichasDocumentos, y los archivos de Storage (bucket `documents`, carpeta del usuario, sin backups ni viewer), que
-// se abren con Vista Rápida. Subir, renombrar, borrar y editar fichas sigue en la web («gestionar en la web.»).
+// se abren con Vista Rápida. Desde la 0.21 las fichas se crean, editan y borran aquí (`FichaDocumentoOp`); subir, renombrar
+// y borrar archivos sigue en la web («gestionar en la web.»).
 
 struct FichaDocumento: Sendable, Identifiable, Equatable { let id, titulo, tipo, caduca, url, notas: String }
 struct ArchivoDocumento: Sendable, Identifiable, Equatable { let nombre: String; let bytes: Int?; var id: String { nombre } }
@@ -40,6 +41,7 @@ struct DocumentosView: View {
     @State private var errorArchivos: String?
     @State private var bajando: String?
     @State private var vista: URL?
+    @State private var editando: FichaEditando?
 
     private var hoy: LocalDay { CalendarioBitacora.madrid.dia(de: Date()) }
 
@@ -51,9 +53,13 @@ struct DocumentosView: View {
                     Text("caducidades y archivos.").font(Tipo.pie).foregroundStyle(Paleta.sobreContextoSuave)
                 }
                 VStack(alignment: .leading, spacing: 0) {
-                    CabeceraSeccion(titulo: "fichas.", detalle: fichas.map { "\($0.count)" })
+                    HStack {
+                        CabeceraSeccion(titulo: "fichas.", detalle: fichas.map { "\($0.count)" })
+                        Spacer()
+                        AccionTexto(texto: "+ ficha.") { editando = FichaEditando(id: OperacionBitacora.nuevoIdEntrada(), ficha: nil) }
+                    }
                     if let fichas {
-                        if fichas.isEmpty { Text("garantías, contratos, seguros, el dni... con su caducidad. se crean en la web.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s) }
+                        if fichas.isEmpty { Text("garantías, contratos, seguros, el dni... con su caducidad.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s) }
                         ForEach(fichas) { fila($0) }
                     } else { ProgressView().frame(maxWidth: .infinity).padding(.vertical, Espacio.l) }
                     CabeceraSeccion(titulo: "archivos.", detalle: archivos.map { "\($0.count)" }).padding(.top, Espacio.l)
@@ -77,19 +83,24 @@ struct DocumentosView: View {
         }
         .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar(); await cargarArchivos() }
-        .task(id: c.informe.revision) { await cargar() }
+        .task(id: c.revision) { await cargar() }
         .task { await cargarArchivos() }
         .quickLookPreview($vista)
+        .sheet(item: $editando) { e in EditorFichaDocumento(editando: e) }
     }
 
     private func fila(_ f: FichaDocumento) -> some View {
         let (texto, aviso) = LecturaDocumentos.estado(f, hoy: hoy)
         return HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text((f.tipo.isEmpty ? "documento" : f.tipo).lowercased() + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                Text(f.titulo).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-                Text(texto).font(Tipo.pie).foregroundStyle(aviso ? Paleta.error : Paleta.textoSecundario)
-            }.frame(maxWidth: .infinity, alignment: .leading)
+            Button { editando = FichaEditando(id: f.id, ficha: f) } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text((f.tipo.isEmpty ? "documento" : f.tipo).lowercased() + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    Text(f.titulo).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
+                    Text(texto).font(Tipo.pie).foregroundStyle(aviso ? Paleta.error : Paleta.textoSecundario)
+                }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("editar la ficha")
             if let u = URL(string: f.url), !f.url.isEmpty { AccionTexto(texto: "abrir.") { abrir(u) } }
         }.padding(.vertical, 10).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
     }
@@ -133,5 +144,124 @@ struct DocumentosView: View {
         } catch {
             errorArchivos = "no se pudo abrir «\(a.nombre)»."
         }
+    }
+}
+
+struct FichaEditando: Identifiable, Equatable {
+    let id: String
+    let ficha: FichaDocumento?
+}
+
+// saveEntry type document (js/entradas.js): título, fecha (la caducidad) y notas; `docTipo` como la op del conector.
+// Lo demás de la ficha (url, etiquetas, lo que añada la web) se conserva.
+enum FichaDocumentoOp {
+    static let tipo = "fichaDocumento"
+
+    static func op(id: String, titulo: String, tipoDoc: String, caduca: String, notas: String) -> OperacionBitacora {
+        OperacionesExtra.op(tipo, ["id": .string(id), "titulo": .string(titulo), "docTipo": .string(tipoDoc), "caduca": .string(caduca), "notas": .string(notas)])
+    }
+
+    static func aplicar(_ d: [String: JSONValue], _ valores: [String: JSONValue?]) -> [String: JSONValue?] {
+        guard let id = d["id"]?.texto, let titulo = d["titulo"]?.texto?.trimmingCharacters(in: .whitespacesAndNewlines), !titulo.isEmpty else { return valores }
+        var lista = (valores["entries"] ?? nil)?.lista ?? []
+        let campos: [String: JSONValue] = ["title": .string(String(titulo.prefix(200))), "date": .string(d["caduca"]?.texto ?? ""),
+                                           "notes": .string(String((d["notas"]?.texto ?? "").prefix(2000))), "docTipo": .string(d["docTipo"]?.texto ?? "")]
+        if let n = lista.firstIndex(where: { $0["id"]?.comoId == id }) {
+            guard var e = lista[n].objeto, e["type"]?.texto == "document" else { return valores }
+            let antes = e
+            campos.forEach { e[$0.key] = $0.value }
+            if (d["docTipo"]?.texto ?? "").isEmpty, antes["docTipo"] == nil { e.removeValue(forKey: "docTipo") }
+            guard e != antes else { return valores }
+            lista[n] = .object(e)
+        } else {
+            var e = campos
+            e["id"] = .string(id); e["type"] = .string("document"); e["categoryId"] = .string("cat_general"); e["tags"] = .array([])
+            if (d["docTipo"]?.texto ?? "").isEmpty { e.removeValue(forKey: "docTipo") }
+            lista.append(.object(e))
+        }
+        var r = valores
+        r["entries"] = .some(.array(lista))
+        return r
+    }
+}
+
+struct EditorFichaDocumento: View {
+    @Environment(AppCoordinator.self) private var c
+    @Environment(\.dismiss) private var cerrar
+    let editando: FichaEditando
+    @State private var titulo: String
+    @State private var tipoDoc: String
+    @State private var conFecha: Bool
+    @State private var caduca: Date
+    @State private var notas: String
+    @State private var borrar = false
+    @State private var error: String?
+    static let tipos = ["DNI", "pasaporte", "carné de conducir", "seguro", "garantía", "contrato", "ITV", "tarjeta sanitaria"]
+
+    init(editando: FichaEditando) {
+        self.editando = editando
+        let f = editando.ficha
+        _titulo = State(initialValue: f?.titulo ?? "")
+        _tipoDoc = State(initialValue: f?.tipo ?? "")
+        _notas = State(initialValue: f?.notas ?? "")
+        let dia = f.flatMap { LocalDay(iso: $0.caduca) }
+        _conFecha = State(initialValue: dia != nil)
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = CalendarioBitacora.madrid.zona
+        _caduca = State(initialValue: dia.flatMap { cal.date(from: DateComponents(year: $0.year, month: $0.month, day: $0.day, hour: 12)) } ?? Date())
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("qué es (dni, seguro del coche…).", text: $titulo)
+                    TextField("tipo.", text: $tipoDoc)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: Espacio.xs) {
+                            ForEach(Self.tipos, id: \.self) { t in
+                                Button(t.lowercased() + ".") { tipoDoc = t }
+                                    .font(Tipo.pie).buttonStyle(.plain).padding(.horizontal, 10).frame(minHeight: 44)
+                                    .foregroundStyle(tipoDoc == t ? Paleta.sobreAcento : Paleta.texto)
+                                    .background(tipoDoc == t ? Paleta.acento : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            }
+                        }
+                    }
+                }.listRowBackground(Paleta.superficie)
+                Section {
+                    Toggle("caduca.", isOn: $conFecha.animation(.easeOut(duration: 0.15)))
+                    if conFecha { DatePicker("el día.", selection: $caduca, displayedComponents: .date).environment(\.locale, Locale(identifier: "es_ES")) }
+                    TextField("notas.", text: $notas, axis: .vertical).lineLimit(1...5)
+                } footer: {
+                    if let error { Text(error).foregroundStyle(Paleta.error) }
+                }.listRowBackground(Paleta.superficie)
+                if editando.ficha != nil {
+                    Section { Button("borrar la ficha.", role: .destructive) { borrar = true } }.listRowBackground(Paleta.superficie)
+                }
+            }
+            .font(Tipo.cuerpo).scrollContentBackground(.hidden).background(Paleta.fondo)
+            .navigationTitle(editando.ficha == nil ? "nueva ficha." : "ficha.").navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("guardar.") { Task { await enviar(FichaDocumentoOp.op(id: editando.id, titulo: titulo, tipoDoc: tipoDoc.trimmingCharacters(in: .whitespaces), caduca: fechaTexto, notas: notas)) } }
+                        .disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+            .confirmationDialog("¿borrar esta ficha?", isPresented: $borrar, titleVisibility: .visible) {
+                Button("borrar.", role: .destructive) { Task { await enviar(.borrarEntrada(id: editando.id)) } }
+                Button("cancelar.", role: .cancel) {}
+            }
+        }
+        .presentationDetents([.large])
+    }
+
+    private var fechaTexto: String {
+        guard conFecha else { return "" }
+        return CalendarioBitacora.madrid.dia(de: caduca).iso
+    }
+
+    private func enviar(_ op: OperacionBitacora) async {
+        do { try await c.encolar(op); cerrar() } catch { self.error = "no se pudo guardar en este iPhone." }
     }
 }

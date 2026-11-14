@@ -80,7 +80,7 @@ struct ObjetivosView: View {
             }
         }
         .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
-        .refreshable { await c.sincronizar() }.task(id: c.informe.revision) { await cargar() }
+        .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
         .sheet(item: $abierto) { a in FichaObjetivo(id: a.id).environment(c) }
         .sheet(item: $edicion) { e in EditorObjetivo(objetivo: e.objetivo).environment(c) }
     }
@@ -161,10 +161,13 @@ private struct FichaObjetivo: View {
                     }
                     Section("hitos.") {
                         ForEach(g.hitos) { h in
-                            Button { enviar(.hitoHecho(texto: h.texto, hecho: !h.hecho)) } label: {
-                                Label(h.texto, systemImage: h.hecho ? "checkmark.circle.fill" : "circle").foregroundStyle(h.hecho ? Paleta.textoSecundario : Paleta.texto)
-                            }
+                            let alternar = { enviar(.hitoHecho(texto: h.texto, hecho: !h.hecho)) }
+                            FilaCirculo(hecho: h.hecho, marcar: alternar, abrir: alternar) { EmptyView() } texto: {
+                                Text(h.texto).font(Tipo.cuerpo).foregroundStyle(h.hecho ? Paleta.textoSecundario : Paleta.texto).strikethrough(h.hecho)
+                            } cola: { EmptyView() }
+                            .accessibilityElement(children: .combine)
                             .accessibilityValue(h.hecho ? "hecho" : "pendiente")
+                            .accessibilityAction { alternar() }
                             .swipeActions { Button("borrar", role: .destructive) { enviar(.quitarHito(texto: h.texto)) } }
                         }
                         HStack {
@@ -181,7 +184,7 @@ private struct FichaObjetivo: View {
                 ToolbarItem(placement: .primaryAction) { Button("editar.") { editando = true }.disabled(objetivo == nil) }
             }
             .sheet(isPresented: $editando) { EditorObjetivo(objetivo: objetivo).environment(c) }
-            .task(id: c.informe.revision) { await cargar() }
+            .task(id: c.revision) { await cargar() }
         }
     }
 

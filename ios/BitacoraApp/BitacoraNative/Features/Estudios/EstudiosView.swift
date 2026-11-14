@@ -95,36 +95,26 @@ struct EstudiosView: View {
         .sensoryFeedback(.success, trigger: marcadas)
         .sheet(item: $creando) { n in EditorEntregaView(nueva: n) { aviso = $0 } }
         .sheet(item: $editando) { e in EditorEntregaView(nueva: e.nueva, existente: e.item) { aviso = $0 } }
-        .task(id: c.informe.revision) {
+        .task(id: c.revision) {
             let doc = await c.documentoVisible()
             asignaturas = await Task.detached(priority: .userInitiated) { doc.map { LecturaEstudios.vista($0) } }.value
         }
     }
 
     private func fila(_ i: ItemEstudio, asignatura: String) -> some View {
-        HStack(spacing: Espacio.m) {
-            if i.esTrabajo {
-                Button { marcar(i, asignatura: asignatura) } label: {
-                    Image(systemName: i.hecho ? "checkmark.circle.fill" : "circle").font(.title3)
-                        .foregroundStyle(i.hecho ? Paleta.textoSecundario : Paleta.texto)
-                        .frame(width: 44, height: 44)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(i.hecho ? "marcar sin entregar" : "marcar entregado")
-            } else {
-                Image(systemName: "doc.text").foregroundStyle(Paleta.textoSecundario).frame(width: 44, height: 44).accessibilityHidden(true)
-            }
-            Button { editando = ItemEditando(NuevaEntrega(asignaturaId: asignatura, lista: i.lista, idFijo: i.id), i) } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(i.titulo).foregroundStyle(i.hecho ? Paleta.textoSecundario : Paleta.texto).strikethrough(i.hecho)
-                let cuando = [i.fecha, i.hora].filter { !$0.isEmpty }.joined(separator: ", ")
-                Text("\(i.esTrabajo ? "trabajo" : "examen")\(cuando.isEmpty ? "" : ", " + cuando). \(i.estado)")
-                    .font(Tipo.pie).foregroundStyle(i.estado == "vencido." ? Paleta.acento : Paleta.textoSecundario)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+        let cuando = [i.fecha, i.hora].filter { !$0.isEmpty }.joined(separator: ", ")
+        let abrir = { editando = ItemEditando(NuevaEntrega(asignaturaId: asignatura, lista: i.lista, idFijo: i.id), i) }
+        // Los trabajos se marcan con el círculo de toda la app; los exámenes no se marcan y llevan su icono en el hueco.
+        return FilaCirculo(hecho: i.hecho, icono: i.esTrabajo ? nil : "doc.text", marcar: { if i.esTrabajo { marcar(i, asignatura: asignatura) } else { abrir() } }, abrir: abrir) {
+            EmptyView()
+        } texto: {
+            Text(i.titulo).font(Tipo.cuerpoFuerte).foregroundStyle(i.hecho ? Paleta.textoSecundario : Paleta.texto).strikethrough(i.hecho)
+            Text("\(i.esTrabajo ? "trabajo" : "examen")\(cuando.isEmpty ? "" : ", " + cuando). \(i.estado)")
+                .font(Tipo.pie).foregroundStyle(i.estado == "vencido." ? Paleta.acento : Paleta.textoSecundario)
+        } cola: { EmptyView() }
+        .accessibilityElement(children: .combine)
+        .accessibilityAction(named: i.esTrabajo ? (i.hecho ? "marcar sin entregar" : "marcar entregado") : "abrir") {
+            if i.esTrabajo { marcar(i, asignatura: asignatura) } else { abrir() }
         }
         .listRowBackground(Paleta.superficie)
     }

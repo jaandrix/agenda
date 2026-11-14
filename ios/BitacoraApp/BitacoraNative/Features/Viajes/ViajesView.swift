@@ -122,7 +122,7 @@ struct ViajesView: View {
             }
         }
         .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
-        .refreshable { await c.sincronizar() }.task(id: c.informe.revision) { await cargar() }
+        .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
         .sheet(item: $abierto) { a in FichaViaje(id: a.id).environment(c) }
         .sheet(item: $edicion) { e in
             if case .viaje(let v) = e { EditorViaje(viaje: v).environment(c) }
@@ -210,11 +210,13 @@ private struct FichaViaje: View {
                     }
                     Section("lugares.") {
                         ForEach(v.lugares) { l in
-                            Button { enviar(.lugarVisitado(id: l.id, visitado: !l.visitado)) } label: {
-                                Label(l.nombre, systemImage: l.visitado ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(l.visitado ? Paleta.textoSecundario : Paleta.texto)
-                            }
+                            let alternar = { enviar(.lugarVisitado(id: l.id, visitado: !l.visitado)) }
+                            FilaCirculo(hecho: l.visitado, marcar: alternar, abrir: alternar) { EmptyView() } texto: {
+                                Text(l.nombre).font(Tipo.cuerpo).foregroundStyle(l.visitado ? Paleta.textoSecundario : Paleta.texto)
+                            } cola: { EmptyView() }
+                            .accessibilityElement(children: .combine)
                             .accessibilityValue(l.visitado ? "visitado" : "por visitar")
+                            .accessibilityAction { alternar() }
                             .swipeActions { Button("borrar", role: .destructive) { enviar(.quitarLugar(id: l.id)) } }
                         }
                         HStack {
@@ -250,7 +252,7 @@ private struct FichaViaje: View {
             .sheet(isPresented: $editando) { EditorViaje(viaje: viaje).environment(c) }
             .sheet(isPresented: $nuevoItem) { EditorItinerario(viajeId: id, item: nil, diaInicial: viaje?.inicio ?? "").environment(c) }
             .sheet(item: $itemEditado) { it in EditorItinerario(viajeId: id, item: it, diaInicial: it.dia).environment(c) }
-            .task(id: c.informe.revision) { await cargar() }
+            .task(id: c.revision) { await cargar() }
         }
     }
 

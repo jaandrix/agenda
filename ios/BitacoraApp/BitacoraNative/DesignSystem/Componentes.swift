@@ -128,6 +128,8 @@ struct FilaCirculo<Delante: View, Texto: View, Cola: View>: View {
     var colorAro: Color = Paleta.aro
     var colorSobreAcento: Color = Paleta.sobreAcento
     var tamanoTitulo: CGFloat = 16
+    // En vez del círculo, un icono que no se marca (los exámenes de Estudios), en el mismo hueco.
+    var icono: String? = nil
     let marcar: () -> Void
     let abrir: () -> Void
     @ViewBuilder var delante: () -> Delante
@@ -137,7 +139,11 @@ struct FilaCirculo<Delante: View, Texto: View, Cola: View>: View {
     var body: some View {
         HStack(alignment: .primeraLinea, spacing: Espacio.s) {
             delante()
-            BitacoraCheck(hecho: hecho, acento: acento, colorActivo: colorAcento, colorBorde: colorAro, colorMarca: colorSobreAcento, accion: marcar)
+            if let icono {
+                Image(systemName: icono).foregroundStyle(Paleta.textoSecundario).frame(width: 44, height: 44).accessibilityHidden(true)
+            } else {
+                BitacoraCheck(hecho: hecho, acento: acento, colorActivo: colorAcento, colorBorde: colorAro, colorMarca: colorSobreAcento, accion: marcar)
+            }
             Button(action: abrir) {
                 VStack(alignment: .leading, spacing: 2) { texto() }
                     .padding(.vertical, 10)
