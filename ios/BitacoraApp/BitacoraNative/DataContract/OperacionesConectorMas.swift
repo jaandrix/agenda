@@ -84,7 +84,7 @@ extension OperacionesExtra {
                 if e["type"]?.texto == "movie", (Dinero.decimal(datos["rating"]) ?? 0) > 0 {
                     r = ValorarOcio.aplicarCompletar(["entradaId": .string(id)], r)
                 }
-                let que = [datos["endDate"] != nil ? "terminado" : "", Dinero.decimal(datos["rating"]).map { $0 > 0 ? "\(cifra(datos["rating"]))/5" : "" } ?? "",
+                let que: [String] = [datos["endDate"] != nil ? "terminado" : "", Dinero.decimal(datos["rating"]).map { $0 > 0 ? "\(cifra(datos["rating"]))/5" : "" } ?? "",
                            datos["status"] != nil && datos["endDate"] == nil ? (datos["status"]?.texto ?? "").lowercased() : ""].filter { !$0.isEmpty }.joined(separator: ", ")
                 let nombre = nombres[e["type"]?.texto ?? ""] ?? "ocio"
                 return LineaConector(r: r, tipo: "ocio", resumen: "\(nombre) «\(corto(e["title"]?.texto ?? ""))»" + (que.isEmpty ? " actualizado." : ": \(que)."),
@@ -318,7 +318,7 @@ extension OperacionesExtra {
         if lista == "assignments", let hecho = c["done"]?.booleano {
             r = AplicarOperaciones.aplicar(.marcarTrabajo(asignaturaId: aid, id: id, hecho: hecho, momentoMs: ahoraMs), a: r)
         }
-        let que = [c["grade"] != nil ? "nota \(cifra(c["grade"]))" : "", c["done"]?.booleano == true ? "entregado" : c["done"]?.booleano == false ? "pendiente" : "",
+        let que: [String] = [c["grade"] != nil ? "nota \(cifra(c["grade"]))" : "", c["done"]?.booleano == true ? "entregado" : c["done"]?.booleano == false ? "pendiente" : "",
                    c["date"] != nil ? "fecha \(fecha)" : "", c["time"] != nil ? "hora \(hora)" : "", c["weight"] != nil ? "peso \(cifra(c["weight"])) %" : "",
                    c["title"] != nil ? "nuevo título" : ""].filter { !$0.isEmpty }.joined(separator: ", ")
         let resumen = op["resumen"]?.texto ?? titulo
