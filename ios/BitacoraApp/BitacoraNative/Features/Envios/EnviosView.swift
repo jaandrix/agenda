@@ -113,7 +113,7 @@ struct EnviosView: View {
             }
         }
         .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
-        .refreshable { await c.sincronizar() }.task(id: c.informe.revision) { await cargar() }
+        .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
         .sheet(item: $edicion) { e in EditorPedido(pedido: e.pedido).environment(c) }
     }
 

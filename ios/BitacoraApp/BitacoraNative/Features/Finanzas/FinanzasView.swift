@@ -80,7 +80,7 @@ struct FinanzasView: View {
         .background(Paleta.fondo.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
-        .task(id: "\(c.informe.revision)|\(pestanaGuardada)|\(rango)|\(extras)|\(nMov)") { await cargar() }
+        .task(id: "\(c.revision)|\(pestanaGuardada)|\(rango)|\(extras)|\(nMov)") { await cargar() }
         .sheet(item: $hoja) { h in hojaVista(h) }
         .alert("finanzas.", isPresented: Binding(get: { aviso != nil }, set: { if !$0 { aviso = nil } })) {
             Button("aceptar.", role: .cancel) { aviso = nil }

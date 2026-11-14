@@ -54,7 +54,7 @@ struct TransporteView: View {
         .scrollIndicators(.hidden)
         .background(Paleta.fondo.ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
-        .task(id: c.informe.revision) {
+        .task(id: c.revision) {
             let antes = favoritas
             await leerDocumento()
             if favoritas != antes { await recargar(forzar: false) }

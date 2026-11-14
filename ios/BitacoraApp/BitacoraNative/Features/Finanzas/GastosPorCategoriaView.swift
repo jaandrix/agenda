@@ -53,7 +53,7 @@ struct GastosPorCategoriaView: View {
         .padding(16)
         .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .padding(.top, Espacio.m)
-        .task(id: "\(c.informe.revision)|\(mes)") { await cargar() }
+        .task(id: "\(c.revision)|\(mes)") { await cargar() }
     }
 
     private func flecha(_ icono: String, _ destino: String, _ etiqueta: String) -> some View {

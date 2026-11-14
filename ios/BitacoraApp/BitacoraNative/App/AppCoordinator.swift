@@ -78,7 +78,21 @@ final class AppCoordinator {
     private(set) var bloqueada = false
     private(set) var velo = false
     private(set) var intenciones: [IntencionEntrante]
-    private(set) var informe = InformeSync()
+    // 0.21: el informe de la nube en piezas observadas por separado. Antes era un solo valor: cualquier cambio
+    // (empezar a traer, una hora nueva, el resumen) avisaba a todas las pantallas que leían `revision`.
+    private(set) var revision = 0
+    private(set) var estadoSync: EstadoSync = .reposo
+    private(set) var pendientes = 0
+    // Solo para «estado.»: lo lee todo.
+    private(set) var detalleSync = InformeSync()
+    var informe: InformeSync { detalleSync }
+
+    private func recibir(_ i: InformeSync) {
+        if i.revision != revision { revision = i.revision }
+        if i.estado != estadoSync { estadoSync = i.estado }
+        if i.pendientes != pendientes { pendientes = i.pendientes }
+        if i != detalleSync { detalleSync = i }
+    }
     var avisoCola: String?
     // Una línea breve tras apuntar algo; se va sola.
     private(set) var aviso: String?
@@ -218,8 +232,8 @@ final class AppCoordinator {
         escuchaSync = Task { [weak self] in
             for await i in flujo {
                 guard let self else { return }
-                let revisionAntes = self.informe.revision
-                self.informe = i
+                let revisionAntes = self.revision
+                self.recibir(i)
                 if !i.sesionRevocada { Task { await BandejaConector.revisar(self) } }
                 if !i.sesionRevocada, i.estado == .reposo { Task { await ValorarOcio.revisar(self) } }
                 if i.revision != revisionAntes, AvisosLocales.activos { self.reconciliarAvisos() }

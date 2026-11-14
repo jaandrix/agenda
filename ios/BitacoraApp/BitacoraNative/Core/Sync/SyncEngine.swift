@@ -171,15 +171,36 @@ actor SyncEngine {
     // Lo que ve la interfaz: la base confirmada con la cola aplicada encima.
     // Se guarda por versión del almacén: mientras no se escriba nada, todas las pantallas comparten el mismo documento.
     private var visible: (uid: String, version: Int, doc: DocumentoBitacora)?
+    // 0.21: lo último calculado, con la versión de la base y las operaciones que ya lleva. Si la base no cambió y la
+    // cola solo creció, se aplican encima las nuevas: antes cada escritura volvía a analizar la base y a aplicar la cola
+    // entera (con treinta movimientos en cola, marcar algo en Despensa rehacía financePro treinta veces).
+    private var aplicado: (uid: String, versionBase: Int, ids: [UUID], doc: DocumentoBitacora)?
 
     func documentoVisible() async -> DocumentoBitacora? {
         guard let uid else { return nil }
         let v = await almacen.version
         if let c = visible, c.uid == uid, c.version == v { return c.doc }
-        guard let d = await almacen.leerBase(uid: uid), let base = try? DocumentoBitacora(datos: d) else { return nil }
-        let ops = ((try? await almacen.estado(uid: uid))?.pendientes ?? []).map(\.operacion)
-        let doc = AplicarOperaciones.sobre(base, ops).0
-        if await almacen.version == v { visible = (uid, v, doc) }
+        let senal = Registro.senales.beginInterval("documento visible")
+        let vb = await almacen.versionBase
+        let pendientes = (try? await almacen.estado(uid: uid))?.pendientes ?? []
+        let ids = pendientes.map(\.id)
+        let doc: DocumentoBitacora
+        if let a = aplicado, a.uid == uid, a.versionBase == vb, ids.count >= a.ids.count, Array(ids.prefix(a.ids.count)) == a.ids {
+            let nuevas = pendientes.dropFirst(a.ids.count).map(\.operacion)
+            doc = nuevas.isEmpty ? a.doc : AplicarOperaciones.sobre(a.doc, nuevas).0
+            Registro.senales.endInterval("documento visible", senal, "incremental \(nuevas.count)")
+        } else {
+            guard let d = await almacen.leerBase(uid: uid), let base = try? DocumentoBitacora(datos: d) else {
+                Registro.senales.endInterval("documento visible", senal, "sin base")
+                return nil
+            }
+            doc = AplicarOperaciones.sobre(base, pendientes.map(\.operacion)).0
+            Registro.senales.endInterval("documento visible", senal, "completo \(pendientes.count)")
+        }
+        if await almacen.version == v {
+            visible = (uid, v, doc)
+            aplicado = (uid, vb, ids, doc)
+        }
         return doc
     }
 

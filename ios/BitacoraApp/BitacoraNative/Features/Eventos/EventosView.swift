@@ -70,7 +70,7 @@ struct EventosView: View {
         .background(Paleta.fondo.ignoresSafeArea())
         .refreshable { await c.sincronizar() }
         .onChange(of: fase) { _, f in if f == .active { hoy = CalendarioBitacora.madrid.dia(de: Date()) } }
-        .task(id: "\(c.informe.revision)-\(hoy.iso)") {
+        .task(id: "\(c.revision)-\(hoy.iso)") {
             let doc = await c.documentoVisible()
             vista = await Task.detached(priority: .userInitiated) { doc.map { VistaEventos.desde($0) } }.value
             guard let doc else { return }

@@ -46,7 +46,7 @@ struct EstadoView: View {
             Section("en cola.") {
                 fila("enlaces recibidos sin atender.", valor: "\(c.intenciones.count)")
                 if let aviso = c.avisoCola { fila("aviso.", valor: aviso, alerta: true) }
-                fila("cambios por subir.", valor: "\(c.informe.pendientes)")
+                fila("cambios por subir.", valor: "\(c.pendientes)")
                 if let protegida = c.informe.escrituraProtegida {
                     fila("escritura protegida.", valor: protegida ? "sí" : "no, falta el sql del servidor", alerta: !protegida)
                 }
@@ -58,11 +58,11 @@ struct EstadoView: View {
         .navigationTitle("estado.")
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await c.sincronizar() }
-        .task(id: c.informe.revision) { conserva = await c.comprobarConservacion() }
+        .task(id: c.revision) { conserva = await c.comprobarConservacion() }
     }
 
     private var textoEstado: String {
-        switch c.informe.estado {
+        switch c.estadoSync {
         case .reposo: return "al día."
         case .trayendo: return "sincronizando."
         case .sinConexion: return "sin conexión, usando la copia."

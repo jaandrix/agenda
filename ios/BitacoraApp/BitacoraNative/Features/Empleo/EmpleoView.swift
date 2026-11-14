@@ -84,7 +84,7 @@ struct EmpleoView: View {
             }
         }
         .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
-        .refreshable { await c.sincronizar() }.task(id: c.informe.revision) { await cargar() }
+        .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
         .sheet(item: $modal) { m in
             switch m {
             case .cita(let cita): EditorCitaLaboral(cita: cita, hoy: hoy).environment(c)

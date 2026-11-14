@@ -78,8 +78,8 @@ struct PlanView: View {
     var body: some View {
         ScrollView {
             PlanCuerpo(
-                carga: modelo.carga, desplazamiento: $modelo.desplazamiento, estado: c.informe.estado,
-                pendientes: c.informe.pendientes, aviso: modelo.aviso,
+                carga: modelo.carga, desplazamiento: $modelo.desplazamiento, estado: c.estadoSync,
+                pendientes: c.pendientes, aviso: modelo.aviso,
                 acciones: PlanCuerpo.Acciones(
                     marcar: { t, sinDia in Task { await modelo.marcar(t, enSinDia: sinDia, c) } },
                     marcarRecurrente: { r in Task { await modelo.marcar(r, c) } },
@@ -102,7 +102,7 @@ struct PlanView: View {
         .background(Paleta.fondo.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
-        .task(id: "\(c.informe.revision)-\(modelo.desplazamiento)") { await modelo.cargar(c) }
+        .task(id: "\(c.revision)-\(modelo.desplazamiento)") { await modelo.cargar(c) }
     }
 }
 

@@ -194,7 +194,7 @@ struct BandejaView: View {
         .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar(); await BandejaConector.revisar(c, forzar: true) }
         .task { await BandejaConector.revisar(c, forzar: true) }
-        .task(id: c.informe.revision) { await cargarRegistro() }
+        .task(id: c.revision) { await cargarRegistro() }
         .disabled(trabajando)
     }
 

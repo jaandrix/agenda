@@ -464,7 +464,7 @@ struct RevisarMovimientosView: View {
             .navigationTitle("por ajustar.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } } }
-            .task(id: c.informe.revision) {
+            .task(id: c.revision) {
                 if let m = try? await motorListo(c), let r = try? await m.llamar("revisar", como: [FilaMov].self) { filas = r }
             }
         }
@@ -521,7 +521,7 @@ struct GestorSuscripcionesView: View {
             .navigationTitle("suscripciones.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } } }
-            .task(id: c.informe.revision) { await recargar() }
+            .task(id: c.revision) { await recargar() }
             .confirmationDialog(borrar.map { "¿Borrar \($0.titulo) de la lista? Los gastos ya apuntados se quedan." } ?? "", isPresented: Binding(get: { borrar != nil }, set: { if !$0 { borrar = nil } }), titleVisibility: .visible) {
                 Button("borrar.", role: .destructive) { if let s = borrar { Task { await accion(s.id, "borrar"); await recargar() } }; borrar = nil }
                 Button("cancelar.", role: .cancel) { borrar = nil }

@@ -105,7 +105,7 @@ struct ProyectosView: View {
         .scrollIndicators(.hidden)
         .background(Paleta.fondo.ignoresSafeArea())
         .refreshable { await c.sincronizar() }
-        .task(id: c.informe.revision) {
+        .task(id: c.revision) {
             let doc = await c.documentoVisible()
             proyectos = await Task.detached(priority: .userInitiated) { doc.map { LecturaProyectos.vista($0) } }.value
         }
@@ -259,7 +259,7 @@ struct ProyectoDetalleView: View {
             }
             Button("cancelar.", role: .cancel) {}
         }
-        .task(id: c.informe.revision) {
+        .task(id: c.revision) {
             let doc = await c.documentoVisible()
             let pid = id
             p = await Task.detached(priority: .userInitiated) { doc.flatMap { LecturaProyectos.vista($0).first { $0.id == pid } } }.value

@@ -96,7 +96,7 @@ struct CalendarioView: View {
         .background(Paleta.fondo.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
-        .task(id: "\(c.informe.revision)-\(modelo.mes.iso)-\(hoy.iso)") { await modelo.cargar(c) }
+        .task(id: "\(c.revision)-\(modelo.mes.iso)-\(hoy.iso)") { await modelo.cargar(c) }
         .onChange(of: fase) { _, f in if f == .active { hoy = CalendarioBitacora.madrid.dia(de: Date()) } }
         .confirmationDialog("¿borrar este evento?", isPresented: Binding(get: { borrando != nil }, set: { if !$0 { borrando = nil } }), titleVisibility: .visible) {
             Button("borrar.", role: .destructive) {

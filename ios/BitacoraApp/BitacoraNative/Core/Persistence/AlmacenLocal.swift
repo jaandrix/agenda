@@ -19,6 +19,8 @@ actor AlmacenLocal {
     private var memoriaBase: [String: Data] = [:]
     private var memoriaEstado: [String: EstadoAlmacen] = [:]
     private(set) var version = 0
+    // Solo cambia con base.json: documentoVisible reutiliza la base ya analizada mientras no cambie.
+    private(set) var versionBase = 0
 
     init(raiz: URL? = nil) {
         if let raiz {
@@ -50,6 +52,7 @@ actor AlmacenLocal {
 
     func guardarBase(_ datos: Data, uid: String) throws {
         version += 1
+        versionBase += 1
         memoriaBase[uid] = nil
         try escribir(datos, en: carpeta(uid).appendingPathComponent("base.json"))
         memoriaBase[uid] = datos
@@ -84,6 +87,7 @@ actor AlmacenLocal {
 
     func borrarUsuario(_ uid: String) {
         version += 1
+        versionBase += 1
         memoriaBase[uid] = nil
         memoriaEstado[uid] = nil
         guard let u = try? carpeta(uid) else { return }

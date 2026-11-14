@@ -117,7 +117,7 @@ struct InicioView: View {
 
     var body: some View {
         ScrollView {
-            InicioCuerpo(vista: vista, ahora: Date(), estado: c.informe.estado,
+            InicioCuerpo(vista: vista, ahora: Date(), estado: c.estadoSync,
                          marcar: { t in marcar(t) },
                          abrir: { t in c.modal = .tarea(EditorTarea(id: t.id, nueva: false, dia: vista?.dia, titulo: t.titulo, hora: t.hora, notas: t.notas, deTrabajo: t.deTrabajo, prioridad: t.prioridad)) },
                          irA: { c.pestana = $0 },
@@ -136,7 +136,7 @@ struct InicioView: View {
         .background(Paleta.contexto.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar(); await cargarServicios(forzar: true) }
-        .task(id: "\(c.informe.revision)-\(elegido?.iso ?? "")") { await cargar() }
+        .task(id: "\(c.revision)-\(elegido?.iso ?? "")") { await cargar() }
         .task(id: vista?.ciudad.clave) { await cargarServicios(forzar: false) }
         // Nada se repinta cada 30 s: solo el bloque «siguiente.» cada minuto (su TimelineView) y la portada al cambiar
         // de día lógico (4:00). El bus, cada 30 s y solo mientras se ve Inicio. Los servicios (foto, tiempo) no dependen

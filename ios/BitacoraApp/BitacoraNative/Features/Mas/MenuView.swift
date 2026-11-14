@@ -78,7 +78,7 @@ struct MasView: View {
         // «menú» de título, y el gesto de volver desde el borde. Ocultarla quitaba las dos cosas (Documentos, 0.17).
         .navigationTitle("menú")
         .navigationDestination(for: String.self) { destino($0).toolbar(.visible, for: .navigationBar).navigationBarTitleDisplayMode(.inline) }
-        .task(id: c.informe.revision) {
+        .task(id: c.revision) {
             let doc = await c.documentoVisible()
             menu = await Task.detached(priority: .userInitiated) { doc.map { MenuMas.desde($0) } }.value
         }
@@ -194,7 +194,7 @@ struct RutinasView: View {
         }
         .scrollIndicators(.hidden)
         .background(Paleta.fondo.ignoresSafeArea())
-        .task(id: c.informe.revision) {
+        .task(id: c.revision) {
             let doc = await c.documentoVisible()
             vista = await Task.detached(priority: .userInitiated) { doc.map { LecturaMas.vista($0) } }.value
         }
@@ -251,7 +251,7 @@ struct NotasView: View {
         }
         .scrollIndicators(.hidden)
         .background(Paleta.fondo.ignoresSafeArea())
-        .task(id: c.informe.revision) {
+        .task(id: c.revision) {
             let doc = await c.documentoVisible()
             vista = await Task.detached(priority: .userInitiated) { doc.map { LecturaMas.vista($0) } }.value
         }

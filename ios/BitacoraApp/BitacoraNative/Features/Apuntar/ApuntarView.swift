@@ -284,7 +284,7 @@ struct RecientesApuntarView: View {
             .padding(20)
         }
         .background(Paleta.fondo)
-        .task(id: c.informe.revision) { await leer() }
+        .task(id: c.revision) { await leer() }
     }
 
     private func leer() async {
