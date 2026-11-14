@@ -8,13 +8,13 @@ extension OperacionesExtra {
     static let descartarConector = "descartarConector"
     static let tiposConector: Set<String> = ["tarea", "editar_tarea", "evento", "correo", "pedido", "entrada", "nota", "movimiento", "borrar",
                                                    "tarea_recurrente", "habito", "enlace", "entrada_crear"]
-    static let clavesConector = ["registroConector", "entries", "dayPlanner", "pedidos", "notes", "financePro", "studies", "recurringTasks", "habits", "links"]
+    static let clavesConector = ["registroConector", "entries", "dayPlanner", "pedidos", "notes", "financePro", "studies", "recurringTasks", "habits", "links"] + clavesConectorMas
     // entrada_crear: solo lo que no es dinero (las suscripciones y gastos fijos son de Finanzas y esperan a la web).
     static let entradasCrear: [String: (categoria: String, nombre: String)] = ["travel": ("cat_viaje", "viaje"), "birthday": ("cat_general", "cumpleaños"), "document": ("cat_general", "documento")]
 
     // tiposConector deja pasar el tipo; esto mira además los datos (entrada_crear de dinero se queda para la web).
     static func sabeAplicar(_ op: [String: JSONValue]) -> Bool {
-        guard let t = op["tipo"]?.texto, tiposConector.contains(t) else { return false }
+        guard let t = op["tipo"]?.texto, tiposConector.contains(t) || tiposConectorMas.contains(t) else { return false }
         if t == "entrada_crear" { return entradasCrear[op["entryType"]?.texto ?? ""] != nil }
         return true
     }
@@ -341,7 +341,9 @@ extension OperacionesExtra {
             deshacer = .object(["accion": .string("reinsertar"), "coleccion": .string(col), "item": item,
                                 "dia": dia.map(JSONValue.string) ?? .null, "i": .number(String(i))])
         default:
-            return valores
+            let ms = Int64(EscritorJSON.texto(d["ahoraMs"] ?? .number("0"))) ?? 0
+            guard let mas = aplicarConectorMas(op, ref: ref, ahoraMs: ms, hoy: hoy, r) else { return valores }
+            r = mas.r; tipoLinea = mas.tipo; resumen = mas.resumen; deshacer = mas.deshacer
         }
         reg.insert(.object(["id": .string(ref), "cuando": .string(cuando), "tipo": .string(tipoLinea), "resumen": .string(resumen),
                             "deshacer": deshacer, "origen": .string(d["origen"]?.texto ?? "auto")]), at: 0)
