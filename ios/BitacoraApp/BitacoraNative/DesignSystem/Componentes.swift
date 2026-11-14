@@ -95,6 +95,62 @@ struct CabeceraSeccion: View {
     }
 }
 
+extension VerticalAlignment {
+    private enum PrimeraLinea: AlignmentID {
+        static func defaultValue(in d: ViewDimensions) -> CGFloat { d[VerticalAlignment.center] }
+    }
+    // El centro de la primera línea de texto de una fila: ahí cae el centro del círculo de marcar.
+    static let primeraLinea = VerticalAlignment(PrimeraLinea.self)
+}
+
+// Pone en `primeraLinea` el centro visual de la primera línea (la mitad de la altura de la x de Poppins por encima
+// de la línea base), con Dynamic Type y el tamaño de letra de la app.
+struct EnPrimeraLinea: ViewModifier {
+    let tamano: CGFloat
+    @ScaledMetric(relativeTo: .body) private var escala: CGFloat = 1
+    func body(content: Content) -> some View {
+        let mitad = Tipo.tamano(tamano) * 0.3 * escala
+        return content.alignmentGuide(.primeraLinea) { $0[.firstTextBaseline] - mitad }
+    }
+}
+
+extension View {
+    func enPrimeraLinea(_ tamano: CGFloat) -> some View { modifier(EnPrimeraLinea(tamano: tamano)) }
+}
+
+// La fila de todo lo que se marca (Inicio, Plan, rutinas, pendientes sin día, Despensa y la cesta). Hasta la 0.20 el
+// círculo se centraba en el bloque entero: con detalle debajo (o un detalle vacío, como en Despensa) quedaba más bajo
+// que el nombre. Ahora su centro va al de la primera línea del título, tenga las líneas que tenga.
+struct FilaCirculo<Delante: View, Texto: View, Cola: View>: View {
+    let hecho: Bool
+    var acento = false
+    var colorAcento: Color = Paleta.acento
+    var colorAro: Color = Paleta.aro
+    var colorSobreAcento: Color = Paleta.sobreAcento
+    var tamanoTitulo: CGFloat = 16
+    let marcar: () -> Void
+    let abrir: () -> Void
+    @ViewBuilder var delante: () -> Delante
+    @ViewBuilder var texto: () -> Texto
+    @ViewBuilder var cola: () -> Cola
+
+    var body: some View {
+        HStack(alignment: .primeraLinea, spacing: Espacio.s) {
+            delante()
+            BitacoraCheck(hecho: hecho, acento: acento, colorActivo: colorAcento, colorBorde: colorAro, colorMarca: colorSobreAcento, accion: marcar)
+            Button(action: abrir) {
+                VStack(alignment: .leading, spacing: 2) { texto() }
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .enPrimeraLinea(tamanoTitulo)
+            cola()
+        }
+    }
+}
+
 // Fila de la agenda: hora en columna fija, círculo, título y nota, filete continuo debajo. Lo arrastrado o en curso en
 // el acento. Tocar el texto abre; el círculo solo marca. Los colores se adaptan al fondo (Inicio sobre contexto).
 struct FilaAgenda: View {
@@ -129,28 +185,23 @@ struct FilaAgenda: View {
     var abrir: (() -> Void)?
 
     var body: some View {
-        HStack(alignment: .center, spacing: Espacio.s) {
+        FilaCirculo(hecho: hecho, acento: acento, colorAcento: colorAcento, colorAro: colorAro, colorSobreAcento: colorSobreAcento,
+                    tamanoTitulo: 16.5, marcar: marcar, abrir: abrir ?? marcar) {
             if mostrarHora {
                 Text(hora ?? "")
                     .font(Tipo.poppins(14, .semibold, estilo: .footnote)).monospacedDigit()
                     .foregroundStyle(acento && !hecho ? colorAcento : colorSuave)
                     .frame(width: Tipo.tamano(46), alignment: .leading)
+                    .enPrimeraLinea(14)
             }
-            BitacoraCheck(hecho: hecho, acento: acento, colorActivo: colorAcento, colorBorde: colorAro, colorMarca: colorSobreAcento, accion: marcar)
-            Button { (abrir ?? marcar)() } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    (prioridadTexto + Text(titulo))
-                        .font(Tipo.poppins(16.5, .semibold, estilo: .body))
-                        .foregroundStyle(hecho ? colorSuave : (acento ? colorAcento : colorTexto))
-                        .strikethrough(hecho, color: colorSuave)
-                        .multilineTextAlignment(.leading)
-                    if !notas.isEmpty { Text(notas).font(Tipo.poppins(13.5, .regular, estilo: .footnote)).foregroundStyle(colorSuave).lineLimit(2) }
-                }
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
+        } texto: {
+            (prioridadTexto + Text(titulo))
+                .font(Tipo.poppins(16.5, .semibold, estilo: .body))
+                .foregroundStyle(hecho ? colorSuave : (acento ? colorAcento : colorTexto))
+                .strikethrough(hecho, color: colorSuave)
+                .multilineTextAlignment(.leading)
+            if !notas.isEmpty { Text(notas).font(Tipo.poppins(13.5, .regular, estilo: .footnote)).foregroundStyle(colorSuave).lineLimit(2) }
+        } cola: { EmptyView() }
         .padding(.vertical, 4)
         .overlay(alignment: .bottom) { Rectangle().fill(colorFilo).frame(height: 1) }
         .accessibilityElement(children: .combine)

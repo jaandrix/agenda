@@ -22,7 +22,7 @@ enum OperacionesExtra {
         case quitarConector, conector, descartarConector: return clavesConector
         case CambioFinanzas.tipo: return CambioFinanzas.claves
         case ValorarOcio.tipo: return ValorarOcio.claves
-        case RecetaALista.tipo: return ["listaCompra"]
+        case RecetaALista.tipo, OperacionesDespensa.marcar, OperacionesDespensa.editar: return ["listaCompra"]
         default: return ["dayPlanner"]
         }
     }
@@ -93,6 +93,8 @@ enum OperacionesExtra {
             r = ValorarOcio.aplicarCompletar(d, r)
         case RecetaALista.tipo:
             r = RecetaALista.aplicar(d, r)
+        case OperacionesDespensa.marcar, OperacionesDespensa.editar:
+            r = OperacionesDespensa.aplicar(tipo, d, r)
         default:
             break
         }

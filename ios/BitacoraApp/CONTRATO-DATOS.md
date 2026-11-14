@@ -77,7 +77,7 @@ Tipo y valor por defecto según `loadData`. «id» = sus listas se fusionan elem
 | `perfilLaboral` | objeto o `null` | | | cv.js | | |
 | `profesorado` | objeto o `null` | `clases`, `sesiones` con `id` | civiles | profesorado*.js, conector | | |
 | `agendaLaboral` | objeto o `null` | `citas[].id` (`lab_`) | civiles | agenda-laboral.js | | |
-| `listaCompra` | objeto o `null` | listas, `recetas`, `plan["AAAA-MM-DD"][]` con `id` | civiles | compra.js, conector | | |
+| `listaCompra` | objeto o `null` | listas, `recetas`, `plan["AAAA-MM-DD"][]` con `id` | civiles | compra.js, conector | | Los productos no llevan sección: sale de `aprendido[compraClave]` y COMPRA_SECCIONES (`SeccionCompra`, 0.21). Marcar solo cambia `hecho` (op `marcarCompra`); editar escribe la sección en `aprendido` (op `editarCompra`). |
 | `estudiar` | objeto o `null` | `tests`, tarjetas con `id`; `repasos["id:cara"]` | instantes | estudiar.js, test.js | | |
 | `avisoDiarioVisto` | texto o `null` | | día civil | | | |
 | `apuntesRecientes` | lista, `[]` (40 como mucho) | `id` | instantes | apuntar.js | | |

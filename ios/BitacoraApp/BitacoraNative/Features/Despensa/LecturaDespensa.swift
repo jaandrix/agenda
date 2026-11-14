@@ -15,6 +15,7 @@ struct RecetaDespensa: Sendable, Identifiable, Equatable {
 struct PlatoPlan: Sendable, Identifiable, Equatable {
     let id: String; let dia: String; let momento: String; let nombre: String; let recetaId: String?; let ingredientes: [String]
 }
+struct GrupoDespensa: Sendable, Equatable { let seccion: String; let items: [ItemDespensa] }
 struct FrecuenteDespensa: Sendable, Identifiable, Equatable { var id: String { texto }; let texto: String; let veces: Int }
 struct VistaDespensa: Sendable, Equatable {
     let listas: [ListaDespensa]; let actual: String?; let historial: [CompraGuardada]; let recetas: [RecetaDespensa]
@@ -32,12 +33,17 @@ enum LecturaDespensa {
 
     static func vista(_ doc: DocumentoBitacora) -> VistaDespensa {
         let d = ((try? doc.valor(de: "listaCompra")) ?? nil)?.objeto ?? [:]
+        let aprendido = (d["aprendido"]?.objeto ?? [:]).compactMapValues(\.texto)
+        var vistasListas = Set<String>()
         let listas = (d["listas"]?.lista ?? []).compactMap { l -> ListaDespensa? in
-            guard let id = l["id"]?.comoId else { return nil }
+            guard let id = l["id"]?.comoId, vistasListas.insert(id).inserted else { return nil }
+            // Un id repetido haría que el ForEach pintara una fila con los datos de otra y que marcar tocara la que no es.
+            var vistos = Set<String>()
             let items = (l["items"]?.lista ?? []).compactMap { x -> ItemDespensa? in
-                guard let iid = x["id"]?.comoId else { return nil }
-                return ItemDespensa(id: iid, texto: x["texto"]?.texto ?? "", cantidad: x["cantidad"]?.texto ?? "",
-                                    seccion: x["seccion"]?.texto ?? "otros", precio: Dinero.decimal(x["precio"]),
+                guard let iid = x["id"]?.comoId, vistos.insert(iid).inserted else { return nil }
+                let texto = x["texto"]?.texto ?? ""
+                return ItemDespensa(id: iid, texto: texto, cantidad: x["cantidad"]?.texto ?? "",
+                                    seccion: SeccionCompra.de(texto: texto, guardada: x["seccion"]?.texto, aprendido: aprendido), precio: Dinero.decimal(x["precio"]),
                                     hecho: x["hecho"]?.booleano == true, recetas: (x["recetas"]?.lista ?? []).compactMap(\.texto))
             }
             return ListaDespensa(id: id, nombre: l["nombre"]?.texto ?? "Casa", items: items)
@@ -69,6 +75,17 @@ enum LecturaDespensa {
             .filter { $0.veces > 0 }.sorted { ($0.veces, $0.texto) > ($1.veces, $1.texto) }
         return VistaDespensa(listas: listas, actual: d["actual"]?.comoId, historial: historial, recetas: recetas, plan: plan,
                              frecuentes: Array(frecuentes.prefix(12)))
+    }
+
+    // Por secciones del súper en su orden (lo que no está en ninguna, al final) y lo marcado aparte: el carro.
+    static func agrupar(_ items: [ItemDespensa], hecho: (ItemDespensa) -> Bool) -> (secciones: [GrupoDespensa], carro: [ItemDespensa]) {
+        var porSeccion: [String: [ItemDespensa]] = [:]
+        var carro: [ItemDespensa] = []
+        for i in items {
+            if hecho(i) { carro.append(i) } else { porSeccion[i.seccion.isEmpty ? "otros" : i.seccion, default: []].append(i) }
+        }
+        let orden = secciones.filter { porSeccion[$0] != nil } + porSeccion.keys.filter { !secciones.contains($0) }.sorted()
+        return (orden.map { GrupoDespensa(seccion: $0, items: porSeccion[$0] ?? []) }, carro)
     }
 
     static func estimado(_ lista: ListaDespensa) -> Decimal { lista.items.filter { !$0.hecho }.reduce(Decimal(0)) { $0 + ($1.precio ?? 0) } }

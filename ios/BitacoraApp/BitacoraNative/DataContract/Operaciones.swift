@@ -838,12 +838,13 @@ enum AplicarOperaciones {
             guard let n = listas.firstIndex(where: { $0["id"]?.comoId == listaId }), var l = listas[n].objeto else { break }
             let todos = l["items"]?.lista ?? [], comprados = todos.filter { $0["hecho"]?.booleano == true }
             guard !comprados.isEmpty else { break }
+            let aprendido = (lc["aprendido"]?.objeto ?? [:]).compactMapValues(\.texto)
             let totalDecimal = Dinero.decimal(texto: total) ?? comprados.reduce(Decimal(0)) { $0 + (Dinero.decimal($1["precio"]) ?? 0) }
             let lineas = comprados.map { x -> JSONValue in
-                .object(["texto": .string(x["texto"]?.texto ?? ""), "clave": .string((x["texto"]?.texto ?? "").lowercased()),
+                .object(["texto": .string(x["texto"]?.texto ?? ""), "clave": .string(RecetaALista.clave(x["texto"]?.texto ?? "")),
                          "cantidad": .string(x["cantidad"]?.texto ?? ""), "precio": x["precio"] ?? .null,
                          "importe": x["precio"] ?? .null, "deLista": .bool(true), "planeado": .bool(true),
-                         "seccion": .string(x["seccion"]?.texto ?? "otros")])
+                         "seccion": .string(SeccionCompra.de(texto: x["texto"]?.texto ?? "", guardada: x["seccion"]?.texto, aprendido: aprendido))])
             }
             var compra: [String: JSONValue] = ["id": .string(compraId), "fecha": .string(fecha), "tienda": .string(String(tienda.prefix(100))),
                                                 "listaId": .string(listaId), "total": .number(NSDecimalNumber(decimal: totalDecimal).stringValue),

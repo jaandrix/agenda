@@ -183,6 +183,14 @@ actor SyncEngine {
         return doc
     }
 
+    // La revisión se lee antes que el documento: el documento devuelto incluye, como poco, todo lo de esa revisión.
+    func documentoVisibleConRevision() async -> (DocumentoBitacora?, Int) {
+        let r = informe.revision
+        return (await documentoVisible(), r)
+    }
+
+    func revisionActual() -> Int { informe.revision }
+
     // Diagnóstico de «estado.»: reescribir la copia no cambia ninguna clave. No va en cada sincronización.
     func comprobarConservacion() async -> Bool? {
         guard let uid, let d = await almacen.leerBase(uid: uid), let doc = try? DocumentoBitacora(datos: d) else { return nil }

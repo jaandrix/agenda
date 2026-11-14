@@ -1,6 +1,5 @@
 import SwiftUI
 
-private struct GrupoDespensa: Sendable { let seccion: String; let items: [ItemDespensa] }
 private enum PestanaDespensa: String, CaseIterable, Identifiable { case lista, historial, recetas, plan; var id: String { rawValue } }
 private enum ModalDespensa: Identifiable {
     case item(ItemDespensa?), receta(RecetaDespensa?), terminar, plato(String), pasar(RecetaDespensa)
@@ -16,9 +15,14 @@ struct DespensaView: View {
     @State private var mostrarNuevaLista = false
     @State private var nombreLista = ""
     @State private var listaEditando: ListaDespensa?
-    // Agrupado una vez por versión de los datos, no en cada pintado: cambiar de hoja no recalcula la lista.
+    // Agrupado al cargar y al marcar, no en cada pintado: cambiar de hoja no recalcula la lista.
     @State private var grupos: [GrupoDespensa] = []
     @State private var enCarro: [ItemDespensa] = []
+    // Lo marcado aquí que la lista recargada aún no trae (MarcasDespensa) y la cadena que manda las marcas en orden.
+    @State private var marcas = MarcasDespensa()
+    @State private var cadena: Task<Void, Never>?
+    @State private var cargas = 0
+    @State private var ultimaCarga = 0
     @FocusState private var escribiendo: Bool
     // Lo que se acaba de pasar a la cesta, unos segundos.
     @State private var hecho: String?
@@ -29,7 +33,7 @@ struct DespensaView: View {
                 CabeceraContexto(titulo: "despensa", detalle: detalleCabecera) {
                     if let l = vista?.listaActual {
                         Text(l.nombre.lowercased() + ".").font(Tipo.poppins(24, .bold, estilo: .title3)).foregroundStyle(Paleta.sobreContexto)
-                        Text("\(l.items.filter { !$0.hecho }.count) por comprar. aprox. \(Dinero.formato(LecturaDespensa.estimado(l)))")
+                        Text("\(grupos.reduce(0) { $0 + $1.items.count }) por comprar. aprox. \(Dinero.formato(LecturaDespensa.estimado(l)))")
                             .font(Tipo.pie).foregroundStyle(Paleta.sobreContextoSuave).padding(.top, 2)
                     }
                 }
@@ -144,7 +148,7 @@ struct DespensaView: View {
             }
             if let l = v.listaActual {
                 ForEach(grupos, id: \.seccion) { g in
-                    CabeceraSeccion(titulo: (LecturaDespensa.nombres[g.seccion] ?? g.seccion) + ".")
+                    CabeceraSeccion(titulo: (LecturaDespensa.nombres[g.seccion] ?? g.seccion) + ".", detalle: g.items.count > 1 ? "\(g.items.count)" : nil)
                     ForEach(g.items) { filaItem($0, lista: l) }
                 }
                 let hechos = enCarro
@@ -158,14 +162,16 @@ struct DespensaView: View {
     }
 
     private func filaItem(_ item: ItemDespensa, lista: ListaDespensa) -> some View {
-        HStack(spacing: Espacio.s) {
-            BitacoraCheck(hecho: item.hecho) { Task { try? await c.encolar(.guardarItemCompra(listaId: lista.id, id: item.id, texto: item.texto, cantidad: item.cantidad, seccion: item.seccion, precio: item.precio.map { NSDecimalNumber(decimal: $0).stringValue }, hecho: !item.hecho, recetas: item.recetas)) } }
-            Button { modal = .item(item) } label: { VStack(alignment: .leading, spacing: 2) {
-                Text(item.texto).font(Tipo.cuerpoFuerte).foregroundStyle(item.hecho ? Paleta.textoSecundario : Paleta.texto).strikethrough(item.hecho)
-                Text([item.cantidad, item.recetas.isEmpty ? nil : "para " + item.recetas.joined(separator: ", ")].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ". "))
-                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            }.frame(maxWidth: .infinity, alignment: .leading) }.buttonStyle(.plain)
-            if let p = item.precio { Text("≈ " + Dinero.formato(p)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+        let hecho = marcas.hecho(item)
+        let detalle = [item.cantidad, item.recetas.isEmpty ? "" : "para " + item.recetas.joined(separator: ", ")].filter { !$0.isEmpty }.joined(separator: ". ")
+        return FilaCirculo(hecho: hecho, marcar: { marcar(item, en: lista) }, abrir: { modal = .item(item) }) {
+            EmptyView()
+        } texto: {
+            Text(item.texto).font(Tipo.cuerpoFuerte).foregroundStyle(hecho ? Paleta.textoSecundario : Paleta.texto)
+                .strikethrough(hecho, color: Paleta.textoSecundario).multilineTextAlignment(.leading)
+            if !detalle.isEmpty { Text(detalle).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+        } cola: {
+            if let p = item.precio { Text("≈ " + Dinero.formato(p)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).monospacedDigit().enPrimeraLinea(13) }
             Menu {
                 Button("editar.") { modal = .item(item) }
                 Button("eliminar.", role: .destructive) { borrar(item, de: lista) }
@@ -177,12 +183,45 @@ struct DespensaView: View {
                     .contentShape(Rectangle())
             }
             .accessibilityLabel("acciones para \(item.texto)")
-        }.frame(minHeight: 52).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-            .contextMenu {
-                Button("editar.") { modal = .item(item) }
-                Button("eliminar.", role: .destructive) { borrar(item, de: lista) }
+        }
+        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+        .contextMenu {
+            Button("editar.") { modal = .item(item) }
+            Button("eliminar.", role: .destructive) { borrar(item, de: lista) }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel([item.texto, detalle, item.precio.map { "unos " + Dinero.formato($0) } ?? ""].filter { !$0.isEmpty }.joined(separator: ", "))
+        .accessibilityValue(hecho ? "en el carro" : "por comprar")
+        .accessibilityAction(named: hecho ? "sacar del carro" : "al carro") { marcar(item, en: lista) }
+        .accessibilityAction(named: "editar") { modal = .item(item) }
+        .accessibilityAction(named: "eliminar") { borrar(item, de: lista) }
+    }
+
+    // Marcar: se ve al momento (MarcasDespensa), las operaciones salen en el orden de los toques y solo cambian `hecho`.
+    private func marcar(_ item: ItemDespensa, en lista: ListaDespensa) {
+        let nuevo = marcas.tocar(item)
+        reagrupar()
+        let op = OperacionesDespensa.marcarOp(listaId: lista.id, id: item.id, hecho: nuevo)
+        let previa = cadena
+        cadena = Task {
+            await previa?.value
+            do {
+                try await c.encolar(op)
+                let r = await c.revisionSync()
+                marcas.confirmar(item.id, hecho: nuevo, revision: r)
+                marcas.cargado(revision: ultimaCarga)
+            } catch {
+                marcas.fallo(item.id, hecho: nuevo)
+                hecho = "no se pudo guardar en este iPhone."
             }
-            .accessibilityAction(named: "eliminar") { borrar(item, de: lista) }
+            reagrupar()
+        }
+    }
+
+    private func reagrupar() {
+        let g = LecturaDespensa.agrupar(vista?.listaActual?.items ?? [], hecho: { marcas.hecho($0) })
+        var t = Transaction(); t.disablesAnimations = true
+        withTransaction(t) { grupos = g.secciones; enCarro = g.carro }
     }
 
     private func historial(_ v: VistaDespensa) -> some View { LazyVStack(alignment: .leading, spacing: 0) {
@@ -230,28 +269,27 @@ struct DespensaView: View {
 
     private func plan(_ v: VistaDespensa) -> some View { VStack(alignment: .leading, spacing: 0) {
         CabeceraSeccion(titulo: "planificación.", detalle: "lunes a domingo")
-        ForEach(semanaActual(), id: \.self) { dia in VStack(alignment: .leading, spacing: 4) { HStack { Text(etiquetaDia(dia)).font(Tipo.cuerpoFuerte); Spacer(); Button("+ plato.") { modal = .plato(dia.iso) }.font(Tipo.pie).buttonStyle(.plain) }
-            ForEach(v.plan[dia.iso] ?? []) { p in HStack { VStack(alignment: .leading) { Text(p.nombre).font(Tipo.cuerpo); if !p.momento.isEmpty { Text(p.momento).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) } }; Spacer(); Button(role: .destructive) { Task { try? await c.encolar(.borrarPlatoCompra(dia: dia.iso, id: p.id)) } } label: { Image(systemName: "trash") }.buttonStyle(.plain) } }
+        ForEach(semanaActual(), id: \.self) { dia in VStack(alignment: .leading, spacing: 4) { HStack { Text(etiquetaDia(dia)).font(Tipo.cuerpoFuerte); Spacer(); Button("+ plato.") { modal = .plato(dia.iso) }.font(Tipo.pie).foregroundStyle(Paleta.acento).buttonStyle(.plain).frame(minHeight: 44) }
+            ForEach(v.plan[dia.iso] ?? []) { p in HStack { VStack(alignment: .leading) { Text(p.nombre).font(Tipo.cuerpo); if !p.momento.isEmpty { Text(p.momento).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) } }; Spacer(); Button(role: .destructive) { Task { try? await c.encolar(.borrarPlatoCompra(dia: dia.iso, id: p.id)) } } label: { Image(systemName: "trash").foregroundStyle(Paleta.textoSecundario).frame(width: 44, height: 44).contentShape(Rectangle()) }.buttonStyle(.plain).accessibilityLabel("quitar \(p.nombre)") } }
         }.padding(.vertical, 8).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) } }
         Button("pasar ingredientes que faltan a la lista.") { Task { await planALista(v) } }.buttonStyle(BotonPrincipal()).padding(.top, Espacio.m)
     } }
 
     private func cargar() async {
-        let d = await c.documentoVisible()
-        let (v, g, h) = await Task.detached { () -> (VistaDespensa?, [GrupoDespensa], [ItemDespensa]) in
-            guard let v = d.map({ LecturaDespensa.vista($0) }) else { return (nil, [], []) }
-            let items = v.listaActual?.items ?? []
-            var porSeccion: [String: [ItemDespensa]] = [:]
-            for i in items where !i.hecho { porSeccion[i.seccion.isEmpty ? "otros" : i.seccion, default: []].append(i) }
-            let g = LecturaDespensa.secciones.compactMap { s in porSeccion[s].map { GrupoDespensa(seccion: s, items: $0) } }
-                + porSeccion.keys.filter { !LecturaDespensa.secciones.contains($0) }.sorted().map { GrupoDespensa(seccion: $0, items: porSeccion[$0]!) }
-            return (v, g, items.filter(\.hecho))
-        }.value
-        vista = v; grupos = g; enCarro = h
+        cargas += 1
+        let n = cargas
+        let (d, rev) = await c.documentoVisibleConRevision()
+        let v = await Task.detached { d.map { LecturaDespensa.vista($0) } }.value
+        // Una carga más nueva ya salió: esta trae datos de antes y no debe pisarla.
+        guard n == cargas, !Task.isCancelled else { return }
+        vista = v
+        ultimaCarga = rev
+        marcas.cargado(revision: rev)
+        reagrupar()
     }
     private func guardarLista() async { let n = nombreLista, previa = listaEditando; nombreLista = ""; listaEditando = nil; try? await c.encolar(.guardarListaCompra(id: previa?.id ?? OperacionBitacora.nuevoIdProyecto("lista"), nombre: n)) }
     private func anadirRapido() async { guard let l = vista?.listaActual else { return }; let t = textoRapido; textoRapido = ""; try? await c.encolar(.anadirCompra(listaId: l.id, textos: [t], ids: [OperacionBitacora.nuevoIdProyecto("cmp")])) }
-    private func guardarItem(_ previo: ItemDespensa?, _ texto: String, _ cantidad: String, _ seccion: String, _ precio: String) async { guard let l = vista?.listaActual else { return }; try? await c.encolar(.guardarItemCompra(listaId: l.id, id: previo?.id ?? OperacionBitacora.nuevoIdProyecto("cmp"), texto: texto, cantidad: cantidad, seccion: seccion, precio: precio.isEmpty ? nil : precio, hecho: previo?.hecho ?? false, recetas: previo?.recetas ?? [])) }
+    private func guardarItem(_ previo: ItemDespensa?, _ texto: String, _ cantidad: String, _ seccion: String, _ precio: String) async { guard let l = vista?.listaActual else { return }; try? await c.encolar(OperacionesDespensa.editarOp(listaId: l.id, id: previo?.id ?? OperacionBitacora.nuevoIdProyecto("cmp"), texto: texto, cantidad: cantidad, seccion: seccion, precio: precio.isEmpty ? nil : precio)) }
     private func borrar(_ item: ItemDespensa, de lista: ListaDespensa) {
         Task { try? await c.encolar(.borrarItemCompra(listaId: lista.id, id: item.id)) }
     }
@@ -274,7 +312,7 @@ struct DespensaView: View {
         return "\(d.day) " + ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"][d.month - 1]
     }
     private func guardarPlato(_ dia: String, _ momento: String, _ nombre: String, _ receta: RecetaDespensa?) async { try? await c.encolar(.guardarPlatoCompra(dia: dia, id: OperacionBitacora.nuevoIdProyecto("plato"), momento: momento, nombre: nombre, recetaId: receta?.id, ingredientes: receta?.ingredientes.map(\.texto) ?? [])) }
-    private func terminar(_ tienda: String, _ total: String, _ finanzas: Bool) async { guard let l = vista?.listaActual else { return }; let id = OperacionBitacora.nuevoIdProyecto("compra"), tx = finanzas ? OperacionBitacora.nuevoIdMovimiento() : nil; let hoy = CalendarioBitacora.madrid.dia(de: Date()).iso; try? await c.encolar(.terminarCompra(listaId: l.id, compraId: id, fecha: hoy, tienda: tienda, total: total, txId: tx)); if let tx, let d = Dinero.decimal(texto: total), d > 0 { try? await c.encolar(.crearMovimiento(id: tx, tipo: "expense", importe: NSDecimalNumber(decimal: d).stringValue, cuenta: "bancos", categoria: nil, fecha: hoy, hora: "", concepto: tienda.isEmpty ? "compra" : tienda)) } }
+    private func terminar(_ tienda: String, _ total: String, _ finanzas: Bool) async { guard let l = vista?.listaActual else { return }; let id = OperacionBitacora.nuevoIdProyecto("compra"), tx = finanzas ? OperacionBitacora.nuevoIdMovimiento() : nil; let hoy = CalendarioBitacora.madrid.dia(de: Date()).iso; try? await c.encolar(.terminarCompra(listaId: l.id, compraId: id, fecha: hoy, tienda: tienda, total: total, txId: tx)); if let tx, let d = Dinero.decimal(texto: total), d > 0 { try? await c.encolar(.crearMovimiento(id: tx, tipo: "expense", importe: NSDecimalNumber(decimal: d).stringValue, cuenta: "bancos", categoria: nil, fecha: hoy, hora: "", concepto: tienda.isEmpty ? "Compra" : "Compra (\(tienda))")) } }
     private func planALista(_ v: VistaDespensa) async { guard let l = v.listaActual else { return }; let textos = semanaActual().flatMap { v.plan[$0.iso] ?? [] }.flatMap(\.ingredientes); let presentes = Set(l.items.filter { !$0.hecho }.map { RecetaALista.clave($0.texto) }); var vistos = Set<String>(); let faltan = textos.filter { let k = RecetaALista.clave($0); return !presentes.contains(k) && vistos.insert(k).inserted }; try? await c.encolar(.anadirCompra(listaId: l.id, textos: faltan, ids: faltan.map { _ in OperacionBitacora.nuevoIdProyecto("cmp") })) }
     private func semanaActual() -> [LocalDay] { CalendarioBitacora.madrid.dia(de: Date()).semanaLunesDomingo }
     private func etiquetaDia(_ d: LocalDay) -> String { let n = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]; return n[d.indiceSemanaLunes] + " \(d.day)." }

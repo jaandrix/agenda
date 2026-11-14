@@ -93,27 +93,19 @@ struct PasarRecetaView: View {
                     Text("a «\(lista.nombre.lowercased())».").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.bottom, Espacio.s)
                     ForEach(receta.ingredientes, id: \.texto) { i in
                         let marcado = elegidos.contains(i.texto), esta = ya.contains(i.texto)
-                        Button {
-                            if marcado { elegidos.remove(i.texto) } else { elegidos.insert(i.texto) }
-                        } label: {
-                            HStack(spacing: Espacio.s) {
-                                Image(systemName: marcado ? "checkmark.circle.fill" : "circle")
-                                    .font(.system(size: Tipo.tamano(20))).foregroundStyle(marcado ? Paleta.acento : Paleta.aro)
-                                    .frame(width: 44, height: 44)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(i.texto).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-                                    let meta = [i.cantidad, esta ? "ya está en la lista" : ""].filter { !$0.isEmpty }.joined(separator: ", ")
-                                    if !meta.isEmpty { Text(meta + ".").font(Tipo.pie).foregroundStyle(esta ? Paleta.acento : Paleta.textoSecundario) }
-                                }
-                                Spacer(minLength: 0)
-                            }
-                            .frame(minHeight: 52)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
+                        let meta = [i.cantidad, esta ? "ya está en la lista" : ""].filter { !$0.isEmpty }.joined(separator: ", ")
+                        let alternar = { () -> Void in if marcado { elegidos.remove(i.texto) } else { elegidos.insert(i.texto) }; return }
+                        FilaCirculo(hecho: marcado, marcar: alternar, abrir: alternar) {
+                            EmptyView()
+                        } texto: {
+                            Text(i.texto).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).multilineTextAlignment(.leading)
+                            if !meta.isEmpty { Text(meta + ".").font(Tipo.pie).foregroundStyle(esta ? Paleta.acento : Paleta.textoSecundario) }
+                        } cola: { EmptyView() }
                         .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(i.texto + (meta.isEmpty ? "" : ", " + meta))
                         .accessibilityAddTraits(marcado ? .isSelected : [])
-                        .accessibilityHint(esta ? "ya está en la lista" : "")
+                        .accessibilityAction { alternar() }
                     }
                     HStack {
                         Button("todos.") { elegidos = Set(receta.ingredientes.map(\.texto)) }

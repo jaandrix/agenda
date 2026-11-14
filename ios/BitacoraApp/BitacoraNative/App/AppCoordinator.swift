@@ -197,6 +197,8 @@ final class AppCoordinator {
     func encolar(_ ops: [OperacionBitacora]) async throws { try await entorno.sync.encolar(ops) }
 
     func documentoVisible() async -> DocumentoBitacora? { await entorno.sync.documentoVisible() }
+    func documentoVisibleConRevision() async -> (DocumentoBitacora?, Int) { await entorno.sync.documentoVisibleConRevision() }
+    func revisionSync() async -> Int { await entorno.sync.revisionActual() }
 
     func comprobarConservacion() async -> Bool? { await entorno.sync.comprobarConservacion() }
 
