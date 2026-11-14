@@ -20,7 +20,7 @@ struct FichaEventoView: View {
                     Text(evento.titulo).font(Tipo.poppins(26, .bold, estilo: .title)).kerning(-0.5).foregroundStyle(Paleta.texto)
                         .padding(.top, Espacio.s)
                     FilaLibro(etiqueta: "día.", valor: Self.fecha(dia))
-                    if let h = evento.hora { FilaLibro(etiqueta: "hora.", valor: h) }
+                    if let h = evento.hora { FilaLibro(etiqueta: "hora.", valor: evento.fin.map { "de \(h) a \($0)" } ?? h) }
                     if !evento.lugar.isEmpty { FilaLibro(etiqueta: "dónde.", valor: evento.lugar) }
                     if !evento.meta.isEmpty && evento.meta != evento.lugar { FilaLibro(etiqueta: "más.", valor: evento.meta) }
                     if !evento.notas.isEmpty {

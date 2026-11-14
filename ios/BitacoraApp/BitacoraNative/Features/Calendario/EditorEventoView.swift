@@ -21,6 +21,11 @@ struct EditorEventoView: View {
     @State private var fecha: Date
     @State private var conHora: Bool
     @State private var hora: Date
+    // Hora de fin en `endTime`, como los eventos que la web importa de un .ics o comparte (social.js). Sin ella vale
+    // «hasta las HH:MM» de las notas, lo que escribe Apuntar.
+    @State private var conFin = false
+    @State private var fin: Date
+    @State private var finInicial: String?
     @State private var guardando = false
     @State private var confirmarBorrado = false
     @State private var error: String?
@@ -47,7 +52,9 @@ struct EditorEventoView: View {
         _fecha = State(initialValue: f)
         let p = (inicial.hora ?? "").split(separator: ":").compactMap { Int($0) }
         _conHora = State(initialValue: p.count >= 2)
-        _hora = State(initialValue: p.count >= 2 ? (Self.cal.date(bySettingHour: p[0], minute: p[1], second: 0, of: f) ?? f) : (Self.cal.date(bySettingHour: 10, minute: 0, second: 0, of: f) ?? f))
+        let h = p.count >= 2 ? (Self.cal.date(bySettingHour: p[0], minute: p[1], second: 0, of: f) ?? f) : (Self.cal.date(bySettingHour: 10, minute: 0, second: 0, of: f) ?? f)
+        _hora = State(initialValue: h)
+        _fin = State(initialValue: h.addingTimeInterval(2 * 3600))
     }
 
     var body: some View {
@@ -70,7 +77,11 @@ struct EditorEventoView: View {
                 Section {
                     DatePicker("día.", selection: $fecha, displayedComponents: .date)
                     Toggle("a una hora.", isOn: $conHora.animation(.easeOut(duration: 0.15)))
-                    if conHora { DatePicker("hora.", selection: $hora, displayedComponents: .hourAndMinute) }
+                    if conHora {
+                        DatePicker("hora.", selection: $hora, displayedComponents: .hourAndMinute)
+                        Toggle("hasta una hora.", isOn: $conFin.animation(.easeOut(duration: 0.15)))
+                        if conFin { DatePicker("acaba.", selection: $fin, displayedComponents: .hourAndMinute) }
+                    }
                 } footer: {
                     if let error { Text(error).foregroundStyle(Paleta.error) }
                 }
@@ -106,6 +117,11 @@ struct EditorEventoView: View {
                 let v = ValorarOcio.clase(e) ?? ""
                 if !ocioTocado { ocio = v }
                 ocioInicial = v
+                if let f = ValorarOcio.horaFin(e), let m = ValorarOcio.minutos(f) {
+                    finInicial = e["endTime"]?.texto.flatMap { $0.isEmpty ? nil : $0 }
+                    fin = Self.cal.date(bySettingHour: m / 60, minute: m % 60, second: 0, of: fecha) ?? fin
+                    conFin = true
+                }
             }
         }
         .presentationDetents([.large])
@@ -129,7 +145,14 @@ struct EditorEventoView: View {
         if dia != inicial.fecha { campos["date"] = dia.iso }
         if horaTexto != inicial.hora { campos["time"] = horaTexto ?? "" }
         if ocio != ocioInicial { campos.merge(Self.camposOcio(ocio)) { _, b in b } }
+        if finTexto != finInicial { campos["endTime"] = finTexto ?? "" }
         return .parcharEvento(id: inicial.id, campos: campos)
+    }
+
+    private var finTexto: String? {
+        guard conHora, conFin else { return nil }
+        let h = Self.cal.dateComponents([.hour, .minute], from: fin)
+        return String(format: "%02d:%02d", h.hour ?? 0, h.minute ?? 0)
     }
 
     // Para la web, película, concierto y teatro también van en `eventType` (cine, concierto, teatro).
@@ -145,7 +168,12 @@ struct EditorEventoView: View {
         defer { guardando = false }
         do {
             var ops = [op]
-            if inicial.nuevo, !ocio.isEmpty { ops.append(.parcharEvento(id: inicial.id, campos: Self.camposOcio(ocio))) }
+            var extra: [String: String] = [:]
+            if inicial.nuevo, !ocio.isEmpty { extra = Self.camposOcio(ocio) }
+            if inicial.nuevo, let f = finTexto { extra["endTime"] = f }
+            if !extra.isEmpty { ops.append(.parcharEvento(id: inicial.id, campos: extra)) }
+            // «valorar …» suena con la app cerrada solo si hay permiso de avisos.
+            if !ocio.isEmpty { _ = await Recordatorios.pedirPermiso() }
             try await c.encolar(ops)
             cerrar()
         } catch {

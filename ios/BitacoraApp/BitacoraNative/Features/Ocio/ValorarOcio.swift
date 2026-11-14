@@ -74,18 +74,23 @@ enum ValorarOcio {
         return p[0] * 60 + p[1]
     }
 
-    // Cuándo salta: el final más tres horas, en hora de Madrid.
+    // La hora de fin: `endTime` (el editor del iPhone, los .ics y lo compartido) o «hasta las HH:MM» de las notas
+    // (Apuntar). Nil si no hay ninguna.
+    static func horaFin(_ e: [String: JSONValue]) -> String? {
+        if let f = e["endTime"]?.texto, minutos(f) != nil { return String(f.prefix(5)) }
+        guard let notas = e["notes"]?.texto, let re = try? NSRegularExpression(pattern: #"hasta las (\d{1,2}):(\d{2})"#),
+              let m = re.firstMatch(in: notas, range: NSRange(notas.startIndex..., in: notas)),
+              let rh = Range(m.range(at: 1), in: notas), let rm = Range(m.range(at: 2), in: notas),
+              let hh = Int(notas[rh]), let mm = Int(notas[rm]), hh < 24, mm < 60 else { return nil }
+        return String(format: "%02d:%02d", hh, mm)
+    }
+
+    // Cuándo salta: el final más tres horas, en hora de Madrid. Si acaba antes de empezar, es al día siguiente.
     static func momento(_ e: [String: JSONValue], clase: String) -> Date? {
         guard let dia = e["date"]?.texto.flatMap(LocalDay.init(iso:)) else { return nil }
         let inicio = minutos(e["time"]?.texto ?? "") ?? 21 * 60
         var fin = inicio + (clase == "concierto" ? 150 : 120)
-        if let notas = e["notes"]?.texto, let re = try? NSRegularExpression(pattern: #"hasta las (\d{1,2}):(\d{2})"#),
-           let m = re.firstMatch(in: notas, range: NSRange(notas.startIndex..., in: notas)),
-           let rh = Range(m.range(at: 1), in: notas), let rm = Range(m.range(at: 2), in: notas),
-           let hh = Int(notas[rh]), let mm = Int(notas[rm]), hh < 24, mm < 60 {
-            let h = hh * 60 + mm
-            fin = h < inicio ? h + 24 * 60 : h
-        }
+        if let h = horaFin(e).flatMap(minutos) { fin = h < inicio ? h + 24 * 60 : h }
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = CalendarioBitacora.madrid.zona
         guard let base = cal.date(from: DateComponents(year: dia.year, month: dia.month, day: dia.day, hour: 0, minute: 0)) else { return nil }
@@ -100,6 +105,17 @@ enum ValorarOcio {
                   let clase = clase(e), let m = momento(e, clase: clase),
                   ahora >= m, ahora.timeIntervalSince(m) <= ventana else { return nil }
             return Pendiente(eventoId: id, clase: clase, titulo: tituloLimpio(e["title"]?.texto ?? ""))
+        }
+    }
+
+    // 0.21: los que aún no han llegado (hasta una semana), para avisar a esa hora con la app cerrada.
+    static func futuros(_ doc: DocumentoBitacora, ahora: Date = Date()) -> [(Pendiente, Date)] {
+        let lista = ((try? doc.valor(de: "entries")) ?? nil)?.lista ?? []
+        return lista.compactMap { v -> (Pendiente, Date)? in
+            guard let e = v.objeto, e["type"]?.texto == "event", let id = e["id"]?.comoId,
+                  e["calendarLog"]?.booleano != true, e["peliculaId"] == nil, e["valorarTareaId"] == nil,
+                  let clase = clase(e), let m = momento(e, clase: clase), m > ahora, m.timeIntervalSince(ahora) <= 7 * 86400 else { return nil }
+            return (Pendiente(eventoId: id, clase: clase, titulo: tituloLimpio(e["title"]?.texto ?? "")), m)
         }
     }
 

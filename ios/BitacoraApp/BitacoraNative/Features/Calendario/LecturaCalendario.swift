@@ -14,6 +14,8 @@ struct EventoDia: Sendable, Identifiable, Equatable {
     var entradas = 0
     // Pagos recurrentes: fila suave, como .m-fila-suave.
     var suave = false
+    // `endTime` de la entrada (0.21).
+    var fin: String? = nil
 }
 
 struct VistaMes: Sendable, Equatable {
@@ -84,7 +86,7 @@ enum LecturaCalendario {
         return EventoDia(id: id, titulo: titulo, hora: hora, lugar: o["place"]?.texto ?? "", notas: o["notes"]?.texto ?? "",
                          tipo: tipo, editable: tipo == "event" && o["linkedItemId"] == nil, sinAviso: o["sinAviso"]?.booleano == true,
                          meta: [o["place"]?.texto ?? "", o["categoryId"]?.comoId.flatMap { categorias[$0] } ?? ""].filter { !$0.isEmpty }.joined(separator: ", "),
-                         entradas: o["entradas"]?.lista?.count ?? 0)
+                         entradas: o["entradas"]?.lista?.count ?? 0, fin: o["endTime"]?.texto.flatMap { $0.isEmpty ? nil : $0 })
     }
 
     static let tiposLaborales = ["reunion": "reunión", "turno": "turno", "formacion": "formación", "viaje": "viaje de trabajo", "otro": "trabajo"]

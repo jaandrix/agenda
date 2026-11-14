@@ -7,6 +7,7 @@ import UserNotifications
 // fijo `recordatorio-<id>` (mismo id = se sustituye, nunca se duplica). Las tareas hechas no avisan.
 enum Recordatorios {
     static let prefijo = "recordatorio-"
+    static let prefijoValorar = "valorar-"
 
     struct Aviso: Equatable {
         let id: String
@@ -48,7 +49,16 @@ enum Recordatorios {
         for (dia, lista) in planner?["days"]?.objeto ?? [:] { for x in lista.lista ?? [] { mirar(x, dia: dia) } }
         for x in planner?["backlog"]?.lista ?? [] { mirar(x, dia: nil) }
         // iOS guarda como mucho 64 avisos pendientes por app; los eventos usan hasta 50.
-        return Array(r.sorted { $0.cuando < $1.cuando }.prefix(14))
+        return Array(r.sorted { $0.cuando < $1.cuando }.prefix(14)) + valorar(doc, ahora: ahora)
+    }
+
+    // 0.21: «valorar …» a su hora aunque la app esté cerrada. Al abrirla, ValorarOcio crea la tarea y la tarjeta; el
+    // aviso deja de pedirse en cuanto el evento lleva `valorarTareaId`.
+    static func valorar(_ doc: DocumentoBitacora, ahora: Date = Date()) -> [Aviso] {
+        ValorarOcio.futuros(doc, ahora: ahora).sorted { $0.1 < $1.1 }.prefix(6).map { p, m in
+            Aviso(id: prefijoValorar + p.eventoId, titulo: "valorar \(ValorarOcio.nombre(p.clase)).",
+                  cuerpo: p.titulo.isEmpty ? "¿qué te ha parecido?" : "¿qué te ha parecido \(p.titulo)?", cuando: m)
+        }
     }
 
     static func pedirPermiso() async -> Bool {
@@ -65,7 +75,7 @@ enum Recordatorios {
         let quiero = deseados(doc)
         let ids = Set(quiero.map(\.id))
         let pendientes = await centro.pendingNotificationRequests()
-        let sobran = pendientes.map(\.identifier).filter { $0.hasPrefix(prefijo) && !ids.contains($0) }
+        let sobran = pendientes.map(\.identifier).filter { ($0.hasPrefix(prefijo) || $0.hasPrefix(prefijoValorar)) && !ids.contains($0) }
         centro.removePendingNotificationRequests(withIdentifiers: sobran)
         let s = await centro.notificationSettings().authorizationStatus
         guard s == .authorized || s == .provisional else { return }

@@ -55,8 +55,8 @@ enum AvisosLocales {
             }
             mes = mes.month == 12 ? YearMonth(year: mes.year + 1, month: 1)! : YearMonth(year: mes.year, month: mes.month + 1)!
         }
-        // iOS guarda como mucho 64 avisos pendientes por app.
-        return Array(r.sorted { $0.cuando < $1.cuando }.prefix(50))
+        // iOS guarda como mucho 64 avisos pendientes por app (recordatorios 14 y «valorar» 6).
+        return Array(r.sorted { $0.cuando < $1.cuando }.prefix(44))
     }
 
     static func reconciliar(_ doc: DocumentoBitacora) async {

@@ -1333,7 +1333,10 @@ enum AplicarOperaciones {
             }
         case let .parcharEvento(id, campos):
             guard let n = lista.firstIndex(where: { $0["id"]?.comoId == id }), var e = lista[n].objeto else { return valor }
-            for (k, v) in campos where ["title", "notes", "time", "date", "place", "eventType", "ocioTipo"].contains(k) { e[k] = .string(v) }
+            for (k, v) in campos where ["title", "notes", "time", "date", "place", "eventType", "ocioTipo", "endTime"].contains(k) {
+                // Sin hora de fin, el campo se quita (la web lo trata igual vacío que ausente).
+                if k == "endTime" && v.isEmpty { e.removeValue(forKey: k) } else { e[k] = .string(v) }
+            }
             lista[n] = .object(e)
         case let .borrarEntrada(id):
             guard lista.contains(where: { $0["id"]?.comoId == id }) else { return valor }
