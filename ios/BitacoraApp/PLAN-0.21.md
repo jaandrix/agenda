@@ -11,6 +11,11 @@ que consideres mejoras». Claude dirige y GPT audita.
 | 3 y 4. Valorar y hora de fin | d129792 | `endTime` en el editor de eventos; aviso local de «valorar» a su hora. |
 | 5. Bandeja | 05312c8 | Ocio, compra, proyecto, objetivo, estudios y deseo se aplican en el iPhone. |
 | 6. Mejoras | 48c03b7 | Fichas de Documentos en el iPhone; el mismo círculo en Estudios, Objetivos y Viajes. |
+| Arreglo | 202b9f6, 03bf146 | Tipos de las listas de resumen de la bandeja (el primer intento no compilaba). |
+
+Compilaciones: punto 1 en verde (43636898716). Los puntos 2 a 6 se subieron juntos: la primera (43638688818) falló por
+un tipo mal anotado en `OperacionesConectorMas.swift`; con el arreglo, **43638963633 en verde** (tests, análisis, Release y
+la definitiva).
 
 ## 1. Despensa: por qué no se marcaba bien
 
@@ -65,7 +70,8 @@ sincronización a medias, fallo al guardar, otra lista, borrado, secciones, edit
 **Medidas.** `RendimientoTests` (3.000 movimientos, 30 en cola y 10 marcas de Despensa) comprueba que el resultado
 incremental es igual que aplicar toda la cola sobre la base y deja la medida como aviso «medida» en la compilación:
 
-- Compilación _(pendiente de leer)_: cola entera — ms, solo lo nuevo — ms de media.
+- Compilación 43638963633 (simulador de CI): **cola entera 82,8 ms, solo lo nuevo 0,9 ms de media** por escritura. En el
+  iPhone la diferencia será parecida o mayor (más movimientos y CPU más lenta que el Mac del runner).
 
 Sin medir aún en el iPhone en Release (Instruments, plantilla Points of Interest): pendiente.
 
