@@ -84,8 +84,10 @@ extension OperacionesExtra {
                 if e["type"]?.texto == "movie", (Dinero.decimal(datos["rating"]) ?? 0) > 0 {
                     r = ValorarOcio.aplicarCompletar(["entradaId": .string(id)], r)
                 }
-                let que: [String] = [datos["endDate"] != nil ? "terminado" : "", Dinero.decimal(datos["rating"]).map { $0 > 0 ? "\(cifra(datos["rating"]))/5" : "" } ?? "",
-                           datos["status"] != nil && datos["endDate"] == nil ? (datos["status"]?.texto ?? "").lowercased() : ""].filter { !$0.isEmpty }.joined(separator: ", ")
+                let nota = Dinero.decimal(datos["rating"]) ?? 0
+                let partes: [String] = [datos["endDate"] != nil ? "terminado" : "", nota > 0 ? cifra(datos["rating"]) + "/5" : "",
+                                        datos["status"] != nil && datos["endDate"] == nil ? (datos["status"]?.texto ?? "").lowercased() : ""]
+                let que = partes.filter { !$0.isEmpty }.joined(separator: ", ")
                 let nombre = nombres[e["type"]?.texto ?? ""] ?? "ocio"
                 return LineaConector(r: r, tipo: "ocio", resumen: "\(nombre) «\(corto(e["title"]?.texto ?? ""))»" + (que.isEmpty ? " actualizado." : ": \(que)."),
                                      deshacer: .object(["accion": .string("restaurar"), "id": .string(id), "antes": .object(antes)]))
@@ -318,9 +320,11 @@ extension OperacionesExtra {
         if lista == "assignments", let hecho = c["done"]?.booleano {
             r = AplicarOperaciones.aplicar(.marcarTrabajo(asignaturaId: aid, id: id, hecho: hecho, momentoMs: ahoraMs), a: r)
         }
-        let que: [String] = [c["grade"] != nil ? "nota \(cifra(c["grade"]))" : "", c["done"]?.booleano == true ? "entregado" : c["done"]?.booleano == false ? "pendiente" : "",
-                   c["date"] != nil ? "fecha \(fecha)" : "", c["time"] != nil ? "hora \(hora)" : "", c["weight"] != nil ? "peso \(cifra(c["weight"])) %" : "",
-                   c["title"] != nil ? "nuevo título" : ""].filter { !$0.isEmpty }.joined(separator: ", ")
+        let hecho = c["done"]?.booleano
+        let partes: [String] = [c["grade"] != nil ? "nota " + cifra(c["grade"]) : "", hecho == true ? "entregado" : (hecho == false ? "pendiente" : ""),
+                                c["date"] != nil ? "fecha " + fecha : "", c["time"] != nil ? "hora " + hora : "",
+                                c["weight"] != nil ? "peso " + cifra(c["weight"]) + " %" : "", c["title"] != nil ? "nuevo título" : ""]
+        let que = partes.filter { !$0.isEmpty }.joined(separator: ", ")
         let resumen = op["resumen"]?.texto ?? titulo
         return LineaConector(r: r, tipo: "estudios", resumen: "«\(corto(resumen))»: \(que.isEmpty ? "cambiado" : que).",
                              deshacer: .object(["accion": .string("estudio_restaurar"), "subjectId": .string(aid), "lista": .string(lista), "id": .string(id), "antes": .object(antes)]))
