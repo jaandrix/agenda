@@ -230,7 +230,7 @@ private struct EditorObjetivo: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 TextField("qué quieres conseguir.", text: $titulo)
                 Picker("plazo.", selection: $plazo) { ForEach(LecturaObjetivos.plazos, id: \.0) { p in Text(p.1 + ".").tag(p.0) } }
                 Picker("estado.", selection: $estado) { ForEach(LecturaObjetivos.estados, id: \.self) { e in Text(e.lowercased() + ".").tag(e) } }

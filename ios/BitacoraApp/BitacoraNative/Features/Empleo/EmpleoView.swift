@@ -169,7 +169,7 @@ private struct EditorCitaLaboral: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 Picker("tipo.", selection: $tipo) { ForEach(LecturaEmpleo.tipos, id: \.0) { t in Text(t.1 + ".").tag(t.0) } }.pickerStyle(.segmented)
                 TextField(tipo == "turno" ? "qué (opcional)." : "qué.", text: $titulo)
                 DatePicker("cuándo.", selection: $fecha, displayedComponents: .date)
@@ -236,7 +236,7 @@ private struct EditorHorarioLaboral: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 Section {
                     ForEach([1, 2, 3, 4, 5, 6, 0], id: \.self) { d in
                         Toggle(LecturaEmpleo.dias[d] + ".", isOn: Binding(get: { activos.contains(d) }, set: { if $0 { activos.insert(d) } else { activos.remove(d) } }))

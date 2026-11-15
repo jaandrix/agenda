@@ -34,7 +34,7 @@ struct ObjetivoPatrimonioView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 Section {
                     fila("tus cuentas.", $cuentas)
                     fila("fondo de emergencia.", $emergencia)
@@ -199,7 +199,7 @@ struct FichaInversionView: View {
     }
 
     private func ficha(_ d: DatosInversion) -> some View {
-        Form {
+        FormCasa {
             Section {
                 FilaLibro(etiqueta: "vale hoy", valor: din(d.valor))
                 FilaLibro(etiqueta: "has aportado", valor: din(d.aportado))

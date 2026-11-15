@@ -89,7 +89,7 @@ struct EditorPresupuestoView: View {
     }
 
     private func formulario(_ v: VistaPresupuesto) -> some View {
-        Form {
+        FormCasa {
             Section {
                 HStack {
                     Button { Task { await cambiarMes(anterior) } } label: { Image(systemName: "chevron.left").frame(width: 44, height: 36) }

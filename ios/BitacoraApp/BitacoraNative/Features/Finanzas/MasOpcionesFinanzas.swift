@@ -97,7 +97,7 @@ struct MasOpcionesView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 if let m { contenido(m) } else { ProgressView() }
             }
             .font(Tipo.cuerpo)

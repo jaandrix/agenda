@@ -250,7 +250,7 @@ private struct EditorOcio: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 Section {
                     TextField("título.", text: $titulo)
                     if tipo == "book" { TextField("autor.", text: $autor) }
@@ -381,8 +381,8 @@ private struct EditorListaOcio: View {
             TextField("buscar en la biblioteca.", text: $busqueda)
             ForEach(entradas.filter { busqueda.isEmpty || LecturaOcio.normalizar($0.titulo).contains(LecturaOcio.normalizar(busqueda)) }) { e in
                 Button { if seleccion.contains(e.id) { seleccion.remove(e.id) } else { seleccion.insert(e.id) } } label: {
-                    HStack { Image(systemName: seleccion.contains(e.id) ? "checkmark.circle.fill" : "circle"); VStack(alignment: .leading) { Text(e.titulo); Text(LecturaOcio.nombre(e.tipo) + ".").font(.caption).foregroundStyle(.secondary) } }
-                }.foregroundStyle(.primary)
+                    HStack { Image(systemName: seleccion.contains(e.id) ? "checkmark.circle.fill" : "circle"); VStack(alignment: .leading) { Text(e.titulo); Text(LecturaOcio.nombre(e.tipo) + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) } }
+                }.foregroundStyle(Paleta.texto)
             }
         }.navigationTitle("lista.").toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }

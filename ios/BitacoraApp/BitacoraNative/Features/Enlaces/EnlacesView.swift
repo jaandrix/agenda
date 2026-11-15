@@ -189,7 +189,7 @@ private struct EditorEnlace: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 TextField("título.", text: $titulo)
                 TextField("dirección.", text: $url).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
                 TextField("descripción (opcional).", text: $descripcion)
@@ -232,7 +232,7 @@ private struct EditorCategoriaEnlace: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 TextField("nombre.", text: $nombre)
                 Picker("color.", selection: $color) {
                     ForEach(LecturaEnlaces.colores, id: \.self) { h in

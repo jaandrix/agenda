@@ -166,7 +166,7 @@ struct EditorEntregaView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 TextField(nueva.lista == "exams" ? "examen." : "trabajo.", text: $titulo)
                 Toggle("con fecha.", isOn: $conFecha)
                 if conFecha {

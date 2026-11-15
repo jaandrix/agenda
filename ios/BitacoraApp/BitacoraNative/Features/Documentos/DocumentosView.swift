@@ -213,7 +213,7 @@ struct EditorFichaDocumento: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 Section {
                     TextField("qué es (dni, seguro del coche…).", text: $titulo)
                     TextField("tipo.", text: $tipoDoc)

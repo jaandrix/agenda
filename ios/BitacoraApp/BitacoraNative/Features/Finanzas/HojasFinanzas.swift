@@ -136,7 +136,7 @@ struct ImportarExtractoView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 if let r = resultado {
                     Section {
                         Text(r.texto + (r.quitados > 0 ? ", \(r.quitados) \(r.quitados == 1 ? "duplicado quitado" : "duplicados quitados")" : "") + ".")
@@ -576,7 +576,7 @@ struct EditorSuscripcionView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 Section {
                     if id == nil {
                         Picker("tipo.", selection: $d.tipo) { Text("suscripción.").tag("subscription"); Text("gasto fijo.").tag("fixed_expense") }.pickerStyle(.segmented)

@@ -39,7 +39,7 @@ struct EditorTareaView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 Group {
                 Section {
                     TextField("qué hay que hacer.", text: $titulo, axis: .vertical)

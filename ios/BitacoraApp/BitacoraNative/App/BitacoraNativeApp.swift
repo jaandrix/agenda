@@ -13,12 +13,20 @@ struct BitacoraNativeApp: App {
         func poppins(_ nombre: String, _ tamano: CGFloat, _ estilo: UIFont.TextStyle) -> UIFont {
             UIFontMetrics(forTextStyle: estilo).scaledFont(for: UIFont(name: nombre, size: tamano) ?? .systemFont(ofSize: tamano))
         }
+        // Colores del tema resueltos al pintar (0.22): la barra con fondo era el material translúcido del sistema
+        // (desenfoque y gris iOS en todos los temas); ahora es opaca, del fondo del tema, con un filete del tema.
+        func delTema(_ f: @escaping (TemaTokens) -> UIColor) -> UIColor {
+            UIColor { t in f(TemaTokens.de(TemaActivo.elegido, sistemaOscuro: t.userInterfaceStyle == .dark)) }
+        }
+        let tinta = delTema { UIColor(rgb: $0.texto) }
         let barra = UINavigationBarAppearance()
         barra.configureWithTransparentBackground()
-        barra.largeTitleTextAttributes = [.font: poppins("Poppins-Bold", 34, .largeTitle)]
-        barra.titleTextAttributes = [.font: poppins("Poppins-SemiBold", 17, .headline)]
+        barra.largeTitleTextAttributes = [.font: poppins("Poppins-Bold", 34, .largeTitle), .foregroundColor: delTema { UIColor(rgb: $0.titulo ?? $0.texto) }]
+        barra.titleTextAttributes = [.font: poppins("Poppins-SemiBold", 17, .headline), .foregroundColor: tinta]
         let conFondo = UINavigationBarAppearance()
-        conFondo.configureWithDefaultBackground()
+        conFondo.configureWithOpaqueBackground()
+        conFondo.backgroundColor = delTema { UIColor(rgb: $0.fondo) }
+        conFondo.shadowColor = delTema { UIColor(rgb: $0.filo ?? $0.texto, alfa: ($0.bordeAlfa ?? 0.08) + 0.03) }
         conFondo.largeTitleTextAttributes = barra.largeTitleTextAttributes
         conFondo.titleTextAttributes = barra.titleTextAttributes
         let boton = UIBarButtonItemAppearance()
@@ -29,7 +37,8 @@ struct BitacoraNativeApp: App {
         UINavigationBar.appearance().standardAppearance = conFondo
         UINavigationBar.appearance().compactAppearance = conFondo
         let pestanas = UITabBarAppearance()
-        pestanas.configureWithDefaultBackground()
+        pestanas.configureWithOpaqueBackground()
+        pestanas.backgroundColor = delTema { UIColor(rgb: $0.barra ?? $0.superficie) }
         let pie = [NSAttributedString.Key.font: poppins("Poppins-Medium", 10, .caption2)]
         for estilo in [pestanas.stackedLayoutAppearance, pestanas.inlineLayoutAppearance, pestanas.compactInlineLayoutAppearance] {
             estilo.normal.titleTextAttributes = pie
@@ -37,6 +46,12 @@ struct BitacoraNativeApp: App {
         }
         UITabBar.appearance().standardAppearance = pestanas
         UITabBar.appearance().scrollEdgeAppearance = pestanas
+        // Los segmentos (tipo de movimiento, de categoría...) eran grises de iOS: superficie elegida y tinta del tema.
+        let segmento = UISegmentedControl.appearance()
+        segmento.selectedSegmentTintColor = delTema { UIColor(rgb: $0.superficie) }
+        segmento.backgroundColor = delTema { UIColor(rgb: $0.texto, alfa: $0.oscuro ? 0.1 : 0.07) }
+        segmento.setTitleTextAttributes([.font: poppins("Poppins-Medium", 13, .footnote), .foregroundColor: delTema { UIColor(rgb: $0.secundario) }], for: .normal)
+        segmento.setTitleTextAttributes([.font: poppins("Poppins-SemiBold", 13, .footnote), .foregroundColor: tinta], for: .selected)
     }
 
     var body: some Scene {

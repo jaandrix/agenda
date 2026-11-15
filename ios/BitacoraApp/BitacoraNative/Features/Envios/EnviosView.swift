@@ -239,7 +239,7 @@ private struct EditorPedido: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 TextField("qué has pedido.", text: $titulo)
                 Picker("tienda.", selection: $tienda) {
                     Text("sin decir.").tag("")

@@ -28,5 +28,25 @@ extension View {
         scrollContentBackground(.hidden)
             .background(Paleta.fondo)
             .tint(Paleta.acento)
+            .textCase(nil)
+            .font(Tipo.cuerpo)
+            .foregroundStyle(Paleta.texto)
+    }
+}
+
+// El Form de Bitácora (0.22): sin él, las filas eran celdas del sistema (blancas en los temas claros, gris iOS en los
+// oscuros) y los encabezados salían en mayúsculas. El fondo de fila y el separador son rasgos de cada fila, así que se
+// ponen en un Group que envuelve el contenido (Group los reparte a cada fila y sección); lo que una fila ponga por su
+// cuenta manda.
+struct FormCasa<Contenido: View>: View {
+    @ViewBuilder var contenido: () -> Contenido
+
+    var body: some View {
+        Form {
+            Group { contenido() }
+                .listRowBackground(Paleta.superficie)
+                .listRowSeparatorTint(Paleta.separador)
+        }
+        .formularioCasa()
     }
 }

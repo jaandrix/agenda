@@ -61,29 +61,31 @@ struct TemaTokens {
         case .sistema: return de(sistemaOscuro ? .asfalto : .papel, sistemaOscuro: sistemaOscuro)
         // Retoque de la 0.20 (pedido de Alejandro: «que tengan un poco más de personalidad, que se diferencien más»).
         // Texto y secundario cumplen AA (4,5:1) sobre fondo y superficie en todos.
+        // 0.22: el aro de marcar llega a 3:1 en todos (en los claros no llegaba), las superficies se separan del fondo
+        // (contraste ≥ 1,12) y los filetes suben para que los separadores se vean. Teja con tarjetas de piedra clara.
         // asfalto: grafito casi monocromo, superficies apenas elevadas con filo fino; la arcilla solo en lo activo.
-        case .asfalto: return TemaTokens(fondo: 0x111213, superficie: 0x1A1B1D, texto: 0xEDEDEA, secundario: 0x9C9D9A, acento: 0xC96A5A, sobreAcento: 0x161514, punto: 0x26272A, oscuro: true)
-            .con(0x111213, 0xEDEDEA, 0xC96A5A, 0x161514, 0xE08FA6)
-            .estilo(barra: 0x161719, bordeAlfa: 0.10, aroAlfa: 0.44)
+        case .asfalto: return TemaTokens(fondo: 0x101112, superficie: 0x1C1D20, texto: 0xEDEDEA, secundario: 0xA2A3A0, acento: 0xCF7262, sobreAcento: 0x141312, punto: 0x2B2C30, oscuro: true)
+            .con(0x101112, 0xEDEDEA, 0xCF7262, 0x141312, 0xE08FA6)
+            .estilo(barra: 0x17181A, sobreBarraSuave: 0x8E8F8C, bordeAlfa: 0.11, aroAlfa: 0.46)
         // papel: crema cálido y tinta casi negra; separadores como renglones; títulos en tinta.
-        case .papel: return TemaTokens(fondo: 0xF3EFE6, superficie: 0xFBF8F2, texto: 0x1F1D1A, secundario: 0x6A655B, acento: 0xA64235, sobreAcento: 0xFFFFFF, punto: 0xE4DED2, oscuro: false)
-            .con(0xF3EFE6, 0x1F1D1A, 0xA64235, 0xFFFFFF, 0xA34C65)
-            .estilo(titulo: 0x1F1D1A, barra: 0xFBF8F2, filo: 0x3A2E1E, bordeAlfa: 0.11, aroAlfa: 0.38)
+        case .papel: return TemaTokens(fondo: 0xF1ECE1, superficie: 0xFCFAF5, texto: 0x1F1D1A, secundario: 0x625C52, acento: 0xA64235, sobreAcento: 0xFFFFFF, punto: 0xE0D8C9, oscuro: false)
+            .con(0xF1ECE1, 0x1F1D1A, 0xA64235, 0xFFFFFF, 0xA34C65)
+            .estilo(titulo: 0x1F1D1A, barra: 0xFCFAF5, filo: 0x3A2E1E, bordeAlfa: 0.14, aroAlfa: 0.52)
         // teja: piedra cálida; el granate en los títulos grandes y en la barra; superficies un punto más oscuras.
-        case .acuarela: return TemaTokens(fondo: 0xE8E2D8, superficie: 0xDDD5C8, texto: 0x161514, secundario: 0x58524A, acento: 0x8A2233, sobreAcento: 0xFFFFFF, punto: 0xCDC4B6, oscuro: false)
-            .con(0xE8E2D8, 0x161514, 0x8A2233, 0xFFFFFF, 0x8A2233)
-            .estilo(titulo: 0x8A2233, barra: 0x8A2233, sobreBarra: 0xFBF4EC, sobreBarraSuave: 0xE2C3C6, acentoBarra: 0xF2C9A8, filo: 0x5A3A2E, bordeAlfa: 0.12)
+        case .acuarela: return TemaTokens(fondo: 0xE9E3D9, superficie: 0xF4EFE7, texto: 0x161514, secundario: 0x564F47, acento: 0x8A2233, sobreAcento: 0xFFFFFF, punto: 0xD3C9BA, oscuro: false)
+            .con(0xE9E3D9, 0x161514, 0x8A2233, 0xFFFFFF, 0x8A2233)
+            .estilo(titulo: 0x8A2233, barra: 0x8A2233, sobreBarra: 0xFBF4EC, sobreBarraSuave: 0xE2C3C6, acentoBarra: 0xF2C9A8, filo: 0x5A3A2E, bordeAlfa: 0.15, aroAlfa: 0.52)
         // pizarra: gris azulado, tinta azul marino; barra #1A2D42 con iconos claros; superficies frías.
-        case .pizarra: return TemaTokens(fondo: 0xC0C8CB, superficie: 0xD2D9DF, texto: 0x1A2D42, secundario: 0x33465A, acento: 0x2E4156, sobreAcento: 0xE6ECF0, punto: 0xAAB6BA, oscuro: false)
-            .con(0xC0C8CB, 0x1A2D42, 0x2E4156, 0xE6ECF0, 0x8A3A52)
-            .estilo(titulo: 0x1A2D42, barra: 0x1A2D42, sobreBarra: 0xEEF2F5, sobreBarraSuave: 0xA9B9C8, acentoBarra: 0xBFD6E6, filo: 0x1A2D42, bordeAlfa: 0.13)
+        case .pizarra: return TemaTokens(fondo: 0xC3CBCF, superficie: 0xDDE3E8, texto: 0x1A2D42, secundario: 0x33465A, acento: 0x2E4156, sobreAcento: 0xE6ECF0, punto: 0xA9B5BB, oscuro: false)
+            .con(0xC3CBCF, 0x1A2D42, 0x2E4156, 0xE6ECF0, 0x7A2E47)
+            .estilo(titulo: 0x1A2D42, barra: 0x1A2D42, sobreBarra: 0xEEF2F5, sobreBarraSuave: 0xA9B9C8, acentoBarra: 0xBFD6E6, filo: 0x1A2D42, bordeAlfa: 0.15, aroAlfa: 0.6)
         // oliva: marfil, verde oliva y la ciruela como acento secundario (progreso y avisos).
-        case .oliva: return TemaTokens(fondo: 0xF6F4EA, superficie: 0xECEFE1, texto: 0x232821, secundario: 0x5D6659, acento: 0x5C6B34, sobreAcento: 0xFFFEF8, punto: 0xDCE3CB, oscuro: false)
+        case .oliva: return TemaTokens(fondo: 0xF6F4EA, superficie: 0xE3E8D1, texto: 0x232821, secundario: 0x555E51, acento: 0x5C6B34, sobreAcento: 0xFFFEF8, punto: 0xD8E0C4, oscuro: false)
             .con(0xF6F4EA, 0x232821, 0x8B4F70, 0xFFFEF8, 0x8B4F70)
-            .estilo(titulo: 0x3D4824, barra: 0xECEFE1, acentoBarra: 0x5C6B34, filo: 0x3D4824, bordeAlfa: 0.10)
+            .estilo(titulo: 0x3D4824, barra: 0xE3E8D1, acentoBarra: 0x5C6B34, filo: 0x3D4824, bordeAlfa: 0.14, aroAlfa: 0.52)
         // fundador: negro carbón y dorado cálido de verdad; filo dorado tenue en las superficies.
-        case .fundador: return TemaTokens(fondo: 0x141311, superficie: 0x1D1B17, texto: 0xF2EBDA, secundario: 0xB4A98F, acento: 0xC99A4B, sobreAcento: 0x141311, punto: 0x37322A, oscuro: true)
-            .con(0x141311, 0xF2EBDA, 0xC99A4B, 0x141311, 0xE0907E)
+        case .fundador: return TemaTokens(fondo: 0x121110, superficie: 0x201E19, texto: 0xF2EBDA, secundario: 0xB4A98F, acento: 0xC99A4B, sobreAcento: 0x141311, punto: 0x3A342A, oscuro: true)
+            .con(0x121110, 0xF2EBDA, 0xC99A4B, 0x141311, 0xE0907E)
             .estilo(titulo: 0xE3C281, barra: 0x1A1814, acentoBarra: 0xC99A4B, filo: 0xC99A4B, bordeAlfa: 0.20, aroAlfa: 0.5)
         }
     }
@@ -136,6 +138,11 @@ enum Paleta {
     static let filoAcento = Color.delTema { UIColor(rgb: $0.acento, alfa: 0.16) }
     // color-mix(--text-primary 6 %): el círculo de cada icono de la barra.
     static let tinteTexto = Color.delTema { UIColor(rgb: $0.texto, alfa: 0.06) }
+    // Estados: pulsado (tinta suave), seleccionado (tinte del acento) y desactivado (secundario a media opacidad).
+    static let pulsado = Color.delTema { UIColor(rgb: $0.texto, alfa: $0.oscuro ? 0.1 : 0.07) }
+    static let seleccion = Color.delTema { UIColor(rgb: $0.acento, alfa: $0.oscuro ? 0.16 : 0.11) }
+    static let desactivado = Color.delTema { UIColor(rgb: $0.secundario, alfa: 0.5) }
+    static let separador = Color.delTema { UIColor(rgb: $0.filo ?? $0.texto, alfa: ($0.bordeAlfa ?? 0.08) + 0.03) }
     static let contexto = Color.delTema { UIColor(rgb: $0.contexto) }
     static let sobreContexto = Color.delTema { UIColor(rgb: $0.sobreContexto) }
     static let sobreContextoSuave = Color.delTema { UIColor(rgb: $0.sobreContexto, alfa: 0.74) }

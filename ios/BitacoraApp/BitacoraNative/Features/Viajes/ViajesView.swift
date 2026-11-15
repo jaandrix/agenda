@@ -305,7 +305,7 @@ private struct EditorViaje: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 TextField("título.", text: $titulo)
                 TextField("destino.", text: $destino)
                 Toggle("con fechas.", isOn: $conFechas)
@@ -372,7 +372,7 @@ private struct EditorItinerario: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            FormCasa {
                 TextField("qué vas a hacer.", text: $titulo)
                 TextField("lugar.", text: $lugar)
                 Toggle("un día concreto.", isOn: $conDia)

@@ -72,7 +72,7 @@ struct EditorMovimientoView: View {
 
     private var formulario: some View {
         let x = d!
-        return Form {
+        return FormCasa {
             Section {
                 Picker("tipo.", selection: b.tipo) {
                     Text("gasto.").tag("expense"); Text("ingreso.").tag("income"); Text("transferencia.").tag("transfer")
