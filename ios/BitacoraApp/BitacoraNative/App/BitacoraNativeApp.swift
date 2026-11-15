@@ -52,6 +52,7 @@ struct BitacoraNativeApp: App {
         segmento.backgroundColor = delTema { UIColor(rgb: $0.texto, alfa: $0.oscuro ? 0.1 : 0.07) }
         segmento.setTitleTextAttributes([.font: poppins("Poppins-Medium", 13, .footnote), .foregroundColor: delTema { UIColor(rgb: $0.secundario) }], for: .normal)
         segmento.setTitleTextAttributes([.font: poppins("Poppins-SemiBold", 13, .footnote), .foregroundColor: tinta], for: .selected)
+        TecladoGlobal.instalar()
     }
 
     var body: some Scene {
