@@ -77,6 +77,8 @@ jobs:
       # (6af63d3, el «antes») y sobre este commit, y el resumen de la ejecución enseña las dos columnas. Si este paso
       # falla, la compilación sigue (las pruebas de Debug ya comprobaron que funcionan).
       - name: Rendimiento (Release, simulador; antes y ahora)
+        # También si falla alguna prueba unitaria de otro apartado: las medidas no dependen de ellas.
+        if: ${{ !cancelled() }}
         continue-on-error: true
         run: |
           set -o pipefail
