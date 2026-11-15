@@ -41,8 +41,8 @@ enum OperacionesAjustes {
         OperacionesExtra.op(feed, ["version": .number(String(version))])
     }
 
-    static func tokenOp(clave: String, token: String) -> OperacionBitacora {
-        OperacionesExtra.op(token, ["clave": .string(clave), "token": .string(token)])
+    static func tokenOp(clave: String, token valor: String) -> OperacionBitacora {
+        OperacionesExtra.op(Self.token, ["clave": .string(clave), "token": .string(valor)])
     }
 
     static func aplicar(_ tipo: String, _ d: [String: JSONValue], _ valores: [String: JSONValue?]) -> [String: JSONValue?] {
