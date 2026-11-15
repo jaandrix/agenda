@@ -89,3 +89,53 @@ resto de `servicios`, perfil y apartados en el menú, hash como la web y contras
 - **Cuenta:** suscripción enseña tu estado; invitar enseña tu código y comparte el enlace. Eliminar cuenta: solo mirar
   que el botón no se activa hasta escribir «eliminar» (no pulsarlo).
 - **Datos:** «descargar mis datos.»: la hoja de compartir con `bitacora_AAAA-MM-DD.json`; guardarlo en Archivos.
+
+## Usabilidad
+
+Pedido de Alejandro tras probar la 0.21: «No se puede desmarcar un alimento marcado. Darle al tick azul del teclado no
+cierra el teclado. Mejora todo lo que veas de este estilo».
+
+| Punto | Commit | Qué |
+|---|---|---|
+| 1. Despensa | c5a9dfe | Desmarcar, el tick cierra el teclado, deshacer al quitar, confirmar listas y recetas. |
+| 2. Teclado | 491e1f8 | `TecladoGlobal`: «listo.» en los campos de varias líneas, tocar fuera y arrastrar cierran. |
+| 3. Confirmaciones | d3bbf7d | Borrar tarea, enlace, pedido, cita y entrada con QR pregunta antes. |
+| (Ocio) | d74198c | Tocar la misma nota la quita (entró en un commit de la sesión de rendimiento). |
+
+**Desmarcar.** La operación y las marcas estaban bien (un test con el motor real lo comprueba: marcar, desmarcar,
+marcar, desmarcar, con una carga vieja en medio de cada toque). Lo que fallaba era la vista: la lista era una
+`LazyVStack` dentro de otra perezosa y el toque usaba el producto capturado al pintar la fila. Una fila que pasa de su
+sección al carro podía quedarse con los datos de antes, y el toque volvía a mandar «marcar». Ahora la lista no es
+perezosa y el toque busca el producto y su lista frescos por id. Además: «sacar del carro.» en «···» y en la pulsación
+larga, y respuesta háptica también al sacar.
+
+**Teclado.** Despensa volvía a enfocar el campo en `onSubmit` a propósito (para apuntar varias cosas seguidas); ahora
+añade y cierra. Para el resto de la app (~85 campos), `TecladoGlobal` (Features/Comun), instalado al arrancar:
+- los campos de varias líneas (notas, TextEditor), donde retorno es salto de línea, llevan «listo.» encima del teclado;
+- tocar fuera de un campo cierra el teclado sin quitarle el toque a lo tocado (tocar otro campo pasa a él);
+- arrastrar cualquier lista lo cierra (`keyboardDismissMode` interactivo).
+Los de una línea ya se cerraban con retorno.
+
+**Barrido.**
+- Sin vuelta atrás y sin preguntar: borrar una tarea del plan, un enlace (a un toque desde «···»), un pedido, una cita
+  y una entrada con QR. Ahora piden confirmación (`confirmarBorrado`). Quitar un producto de Despensa enseña «deshacer.».
+  Eliminar una lista o una receta pregunta.
+- Estados que no se podían quitar: la nota de Ocio (el mínimo era media estrella). Tocar la misma nota la quita.
+- 44 pt: el «···» de Enlaces (era de 32), la papelera y «+ plato.» del plan de Despensa (0.21).
+- Hojas: solo Presupuesto bloquea el gesto, y solo con cambios sin guardar (a propósito).
+
+**Pendiente (anotado, no hecho):**
+- Botones `.plain` sin estado pulsado: necesitan un estilo de botón común (DesignSystem, de la sesión de temas).
+- Campos de título en los editores: retorno cierra el teclado, pero no pasa al siguiente campo.
+- Plan: borrar desde la tarea abierta tampoco se puede deshacer (pregunta en el editor desde antes).
+
+## Probar en el iPhone (usabilidad)
+
+- **Despensa:** marcar un producto y tocar su círculo en «en el carro.»: vuelve a su sección. Marcar, desmarcar y volver a
+  marcar rápido. Mantener pulsado un producto: «sacar del carro.».
+- **Tick del teclado:** en Despensa, escribir «leche» y tocar el tick: se añade y el teclado baja.
+- **Teclado en toda la app:** en las notas de una tarea o un evento, «listo.» encima del teclado lo cierra. Tocar fuera
+  de un campo, o arrastrar la lista, también.
+- **Deshacer y confirmar:** quitar un producto de Despensa y tocar «deshacer.». Borrar una tarea del plan, un enlace o un
+  pedido pregunta antes.
+- **Ocio:** en una película con nota, tocar la misma estrella la deja sin valorar.
