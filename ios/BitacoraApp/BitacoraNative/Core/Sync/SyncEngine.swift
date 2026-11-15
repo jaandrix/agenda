@@ -104,8 +104,10 @@ actor SyncEngine {
         informe.ultimaSincronizacion = e?.ultimaSincronizacion
         informe.actualizadoNube = e?.actualizadoNube
         informe.pendientes = e?.pendientes.count ?? 0
+        // 0.22: la copia se parte en claves una vez y documentoVisible empieza desde ahí. El resumen de «estado.» (que
+        // recorre todos los bytes) se deja para el primer ciclo: no retrasa el primer pintado de Inicio.
         if let d = await almacen.leerBase(uid: uid), let doc = try? DocumentoBitacora(datos: d) {
-            informe.resumen = ResumenDocumento(doc)
+            aplicado = (uid, await almacen.versionBase, [], doc)
             informe.revision += 1
         }
         publicar()
@@ -222,6 +224,11 @@ actor SyncEngine {
 
     private func ciclo(generacion gen: Int) async {
         guard let uid, vigente(gen) else { return }
+        // Fuera del actor: mientras se recorre, las pantallas siguen pidiendo su documento sin esperar.
+        if informe.resumen == nil, let d = await almacen.leerBase(uid: uid) {
+            let r = await Task.detached(priority: .utility) { (try? DocumentoBitacora(datos: d)).map(ResumenDocumento.init) }.value
+            if vigente(gen), informe.resumen == nil { informe.resumen = r }
+        }
         informe.estado = .trayendo
         publicar()
         do {
@@ -281,6 +288,8 @@ actor SyncEngine {
             guard vigente(gen) else { throw CancellationError() }
             fila = leida
             let nube = try DocumentoBitacora(datos: fila.datos)
+            // 0.22: lo que no cambió en la nube ya estaba analizado en el documento visible; se aprovecha.
+            nube.heredarAnalizados(de: visible?.doc ?? aplicado?.doc)
             lote = try await almacen.estado(uid: uid).pendientes
             base = nube
             guard !lote.isEmpty else { break }
@@ -306,10 +315,26 @@ actor SyncEngine {
             }
             break
         }
+        let ahora = Date()
+        // 0.22: si la nube trae lo mismo que ya había y no se subió nada, no se reescribe la copia ni cambia la revisión:
+        // antes cada vuelta a la app reescribía base.json y todas las pantallas volvían a calcularse enteras.
+        if lote.isEmpty, await almacen.leerBase(uid: uid) == fila.datos {
+            try await almacen.actualizarEstado(uid: uid) {
+                $0.actualizadoNube = fila.actualizado
+                $0.ultimaSincronizacion = ahora
+                $0.ultimoError = nil
+            }
+            guard vigente(gen) else { return }
+            informe.ultimaSincronizacion = ahora
+            informe.actualizadoNube = fila.actualizado
+            return
+        }
         // A partir de aquí el servidor ya tiene el cambio: aunque la vista ya no sea vigente, se guarda la base y se
         // quita el lote de la cola para no dejarlo a medias. Lo que se encoló mientras tanto se queda.
         try await almacen.guardarBase(lote.isEmpty ? fila.datos : base.serializado(), uid: uid)
-        let ahora = Date()
+        // La base nueva ya está analizada (y con lo heredado): documentoVisible parte de ella y aplica solo lo que se
+        // encoló durante el ciclo, en vez de volver a leer y analizar base.json.
+        aplicado = (uid, await almacen.versionBase, [], base)
         let hechas = Set(lote.map(\.id))
         var quedan = 0
         try await almacen.actualizarEstado(uid: uid) {
@@ -323,9 +348,12 @@ actor SyncEngine {
         guard vigente(gen) else { return }
         informe.ultimaSincronizacion = ahora
         informe.actualizadoNube = fila.actualizado
-        informe.resumen = ResumenDocumento(base)
         informe.pendientes = quedan
         informe.revision += 1
+        // El resumen de «estado.», fuera del actor (recorre todos los bytes); sale con el informe que publica el ciclo.
+        let guardada = base
+        let resumen = await Task.detached(priority: .utility) { ResumenDocumento(guardada) }.value
+        if vigente(gen) { informe.resumen = resumen }
     }
 
     private func programarReintento(_ gen: Int) {
