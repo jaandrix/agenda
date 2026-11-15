@@ -73,38 +73,26 @@ jobs:
             2>&1 | tee tests.log | grep -E "(Test Case|error:|warning: .*BitacoraNative|Executed|TEST (SUCCEEDED|FAILED))" || true
           grep -q "TEST SUCCEEDED" tests.log
 
-      # 0.22: las medidas valen en Release (en Debug Swift va varias veces más lento). Se publican en el resumen de la
-      # ejecución; si este paso falla, la compilación sigue (las pruebas de Debug ya comprobaron que funcionan).
-      - name: Rendimiento (Release, simulador)
+      # 0.22: las medidas valen en Release (en Debug Swift va varias veces más lento). La misma prueba corre sobre la 0.21
+      # (6af63d3, el «antes») y sobre este commit, y el resumen de la ejecución enseña las dos columnas. Si este paso
+      # falla, la compilación sigue (las pruebas de Debug ya comprobaron que funcionan).
+      - name: Rendimiento (Release, simulador; antes y ahora)
         continue-on-error: true
         run: |
           set -o pipefail
           UDID=$(xcrun simctl list devices available -j | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))][0].udid')
-          xcodebuild test \
-            -project BitacoraApp.xcodeproj \
-            -scheme BitacoraNative \
-            -configuration Release \
-            -destination "id=$UDID" \
-            -derivedDataPath build-perf \
-            -only-testing:BitacoraNativeTests/RendimientoAppTests \
-            -only-testing:BitacoraNativeTests/RendimientoTests \
-            CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES \
-            2>&1 | tee perf.log | grep -E "(MEDIDA\||measured \[|error:|TEST (SUCCEEDED|FAILED))" || true
-          {
-            echo "## Rendimiento (Release, simulador del runner)"
-            echo
-            echo "Documento de prueba: 6.000 movimientos, 745 entradas, 520 tareas y la despensa llena. Mediana de 7 vueltas."
-            echo
-            echo "| medida | mediana (ms) | mín | máx |"
-            echo "|---|---:|---:|---:|"
-            grep -oE 'MEDIDA\|[^|]+\|[0-9.]+\|[0-9.]+\|[0-9.]+' perf.log | sort -u | awk -F'|' '{print "| "$2" | "$3" | "$4" | "$5" |"}'
-            echo
-            echo "Métricas de XCTest (arranque hasta Inicio):"
-            echo
-            echo '```'
-            grep -oE "measured \[[^]]+\].*average: [0-9.]+" perf.log | sed -E 's/, values:.*//' | sort -u
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          medir() {
+            xcodebuild test -project BitacoraApp.xcodeproj -scheme BitacoraNative -configuration Release \
+              -destination "id=$UDID" -derivedDataPath "$2" -only-testing:BitacoraNativeTests/RendimientoAppTests \
+              CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES \
+              2>&1 | tee "$1" | grep -E "(MEDIDA\||measured \[|error:|TEST (SUCCEEDED|FAILED))" || true
+          }
+          medir "$PWD/perf.log" build-perf
+          git fetch -q --depth 1 origin 6af63d3fabf289cd916f210bbe95b5e4109e260f
+          git worktree add -q "$RUNNER_TEMP/antes" FETCH_HEAD
+          cp BitacoraNativeTests/RendimientoAppTests.swift "$RUNNER_TEMP/antes/ios/BitacoraApp/BitacoraNativeTests/"
+          ( cd "$RUNNER_TEMP/antes/ios/BitacoraApp" && xcodegen generate -q && medir "$GITHUB_WORKSPACE/ios/BitacoraApp/perf-antes.log" "$RUNNER_TEMP/build-antes" )
+          python3 ../../pruebas/tabla-rendimiento.py perf-antes.log perf.log >> "$GITHUB_STEP_SUMMARY"
           grep -q "TEST SUCCEEDED" perf.log
 
       - name: Subir las capturas de diseño
