@@ -74,6 +74,7 @@ final class PlanModel {
 struct PlanView: View {
     @Environment(AppCoordinator.self) private var c
     @State private var modelo = PlanModel()
+    @State private var tareaABorrar: TareaPlan?
 
     var body: some View {
         ScrollView {
@@ -87,7 +88,7 @@ struct PlanView: View {
                         c.modal = .tarea(EditorTarea(id: t.id, nueva: false, dia: dia, titulo: t.titulo, hora: t.hora, notas: t.notas, deTrabajo: t.deTrabajo, prioridad: t.prioridad))
                     },
                     mover: { t, dia in Task { await modelo.guardar(.moverTarea(id: t.id, dia: dia?.iso), c) } },
-                    borrar: { t in Task { await modelo.guardar(.borrarTarea(id: t.id), c) } },
+                    borrar: { t in tareaABorrar = t },
                     prioridad: { t, p in Task { await modelo.guardar(.parcharTarea(id: t.id, campos: ["prioridad": p ?? ""]), c) } },
                     nueva: { dia in
                         c.modal = .tarea(EditorTarea(id: OperacionBitacora.nuevoIdTarea(sinDia: dia == nil), nueva: true, dia: dia))
@@ -103,6 +104,7 @@ struct PlanView: View {
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
         .task(id: "\(c.revision)-\(modelo.desplazamiento)") { await modelo.cargar(c) }
+        .confirmarBorrado($tareaABorrar, titulo: { "¿borrar «\($0.titulo)»?" }) { t in Task { await modelo.guardar(.borrarTarea(id: t.id), c) } }
     }
 }
 

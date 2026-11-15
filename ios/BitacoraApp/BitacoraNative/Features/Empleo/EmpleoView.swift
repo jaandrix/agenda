@@ -68,6 +68,7 @@ struct EmpleoView: View {
     @State private var vista: VistaEmpleo?
     @State private var modal: ModalEmpleo?
     @State private var verPasadas = false
+    @State private var citaABorrar: CitaLaboral?
 
     private var hoy: String { CalendarioBitacora.madrid.dia(de: Date()).iso }
 
@@ -85,6 +86,7 @@ struct EmpleoView: View {
         }
         .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
+        .confirmarBorrado($citaABorrar, titulo: { "¿eliminar la cita «\($0.titulo)»?" }, boton: "eliminar.") { x in Task { try? await c.encolar(.borrarCitaLaboral(id: x.id)) } }
         .sheet(item: $modal) { m in
             switch m {
             case .cita(let cita): EditorCitaLaboral(cita: cita, hoy: hoy).environment(c)
@@ -132,7 +134,7 @@ struct EmpleoView: View {
                 Text(cita.ini.isEmpty ? "" : cita.ini + (cita.fin.isEmpty ? "" : "–" + cita.fin)).font(Tipo.pie).monospacedDigit().foregroundStyle(Paleta.textoSecundario)
             }.padding(.vertical, 10).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
         }.buttonStyle(.plain)
-        .contextMenu { Button("eliminar cita.", role: .destructive) { Task { try? await c.encolar(.borrarCitaLaboral(id: cita.id)) } } }
+        .contextMenu { Button("eliminar cita.", role: .destructive) { citaABorrar = cita } }
     }
 
     private func cargar() async {

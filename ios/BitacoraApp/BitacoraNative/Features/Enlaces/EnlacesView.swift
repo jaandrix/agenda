@@ -57,6 +57,7 @@ struct EnlacesView: View {
     @State private var busqueda = ""
     @State private var modal: ModalEnlace?
     @State private var aviso: String?
+    @State private var enlaceABorrar: Enlace?
 
     var body: some View {
         ScrollView {
@@ -78,6 +79,7 @@ struct EnlacesView: View {
         }
         .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
+        .confirmarBorrado($enlaceABorrar, titulo: { "¿eliminar «\($0.titulo)»?" }, boton: "eliminar.") { e in Task { try? await c.encolar(.borrarEnlace(id: e.id)) } }
         .sheet(item: $modal) { m in
             switch m {
             case .enlace(let e, let url): EditorEnlace(enlace: e, urlInicial: url, categorias: datos?.1 ?? []).environment(c)
@@ -140,8 +142,8 @@ struct EnlacesView: View {
                                                                 descripcion: e.descripcion, creado: ISO8601DateFormatter().string(from: Date()))) }
                 }
                 Button("copiar la dirección.") { UIPasteboard.general.string = e.url; aviso = "dirección copiada." }
-                Button("eliminar.", role: .destructive) { Task { try? await c.encolar(.borrarEnlace(id: e.id)) } }
-            } label: { Image(systemName: "ellipsis").foregroundStyle(Paleta.textoSecundario).frame(width: 32, height: 44) }
+                Button("eliminar.", role: .destructive) { enlaceABorrar = e }
+            } label: { Image(systemName: "ellipsis").foregroundStyle(Paleta.textoSecundario).frame(width: 44, height: 44).contentShape(Rectangle()) }
                 .accessibilityLabel("opciones de " + e.titulo)
         }.overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
     }

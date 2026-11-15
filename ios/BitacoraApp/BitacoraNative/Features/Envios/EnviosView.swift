@@ -85,6 +85,7 @@ struct EnviosView: View {
     @State private var verEntregados = false
     @State private var edicion: EdicionPedido?
     @State private var consultando: String?
+    @State private var pedidoABorrar: Pedido?
     @State private var aviso: String?
 
     private var hoy: LocalDay { CalendarioBitacora.madrid.dia(de: Date()) }
@@ -115,6 +116,7 @@ struct EnviosView: View {
         .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
         .sheet(item: $edicion) { e in EditorPedido(pedido: e.pedido).environment(c) }
+        .confirmarBorrado($pedidoABorrar, titulo: { "¿borrar el pedido «\($0.titulo)»?" }) { p in Task { try? await c.encolar(.borrarPedido(id: p.id)) } }
     }
 
     private func tarjeta(_ p: Pedido) -> some View {
@@ -170,7 +172,7 @@ struct EnviosView: View {
             }
         }
         .padding(.vertical, Espacio.m).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-        .contextMenu { Button("borrar pedido.", role: .destructive) { Task { try? await c.encolar(.borrarPedido(id: p.id)) } } }
+        .contextMenu { Button("borrar pedido.", role: .destructive) { pedidoABorrar = p } }
     }
 
     // actualizarPedido: la función consulta el transportista y guarda el resultado en la nube; luego se trae.

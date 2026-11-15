@@ -12,6 +12,7 @@ struct FichaEventoView: View {
     @State private var entradas: [EntradaQR] = []
     @State private var indice = 0
     @State private var pantallaCompleta = false
+    @State private var entradaABorrar: EntradaQR?
 
     var body: some View {
         NavigationStack {
@@ -74,8 +75,9 @@ struct FichaEventoView: View {
                 .accessibilityHint("abre la entrada a pantalla completa con el brillo al máximo")
                 .contextMenu {
                     Button("abrir a pantalla completa.") { pantallaCompleta = true }
-                    Button("quitar esta entrada.", role: .destructive) { quitar(e) }
+                    Button("quitar esta entrada.", role: .destructive) { entradaABorrar = e }
                 }
+                .confirmarBorrado($entradaABorrar, titulo: { _ in "¿quitar esta entrada? el qr no se puede recuperar." }, boton: "quitar.") { quitar($0) }
             if !e.etiqueta.isEmpty { Text(e.etiqueta).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto) }
             if entradas.count > 1 {
                 HStack {
