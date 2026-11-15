@@ -11,6 +11,8 @@ dirige y GPT audita.
 |---|---|---|
 | 1. Temas | ec989b9 | Contraste y superficies de los seis temas, formularios y barras del tema. |
 | 2. Ajustes | c085f16 | Ajustes rehecha con la piel de Bitácora y las funciones de la PWA. |
+| 3. Capturas y textos | 021aef1 | Láminas por tema, textos informativos en `textoSecundario`, este plan. |
+| Arreglo | ef9b2e5 | La op de Siri y correo salía con el token como tipo (lo cazó `AjustesTests` en 43727712880). |
 
 ### 1. Temas: qué estaba mal y qué se cambió
 
@@ -69,6 +71,7 @@ resto de `servicios`, perfil y apartados en el menú, hash como la web y contras
 
 ### Pendiente
 
+- Revisar las láminas `tema-*.png` de la compilación final (desde el 15-11 se sube una sola vez: no las he podido ver).
 - Los formularios con `Form` se ven con la piel nueva pero no se han revisado uno a uno en el iPhone.
 - Guía y novedades nativas (hoy, la web).
 - Planes de pago y canjear códigos regalo dentro de la app (hoy, la web).
