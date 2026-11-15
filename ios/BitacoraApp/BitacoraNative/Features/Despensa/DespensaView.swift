@@ -26,6 +26,10 @@ struct DespensaView: View {
     @FocusState private var escribiendo: Bool
     // Lo que se acaba de pasar a la cesta, unos segundos.
     @State private var hecho: String?
+    // Lo último quitado, unos segundos, para deshacerlo (0.22).
+    @State private var quitado: (item: ItemDespensa, listaId: String)?
+    @State private var listaABorrar: ListaDespensa?
+    @State private var recetaABorrar: RecetaDespensa?
 
     var body: some View {
         ScrollView {
@@ -47,6 +51,17 @@ struct DespensaView: View {
                             .padding(.bottom, Espacio.s)
                             .accessibilityAddTraits(.updatesFrequently)
                     }
+                    if let q = quitado {
+                        HStack {
+                            Text("quitado «\(q.item.texto.lowercased())».").font(Tipo.pie).foregroundStyle(Paleta.texto)
+                            Spacer()
+                            Button("deshacer.") { reponer() }.font(Tipo.poppins(14, .semibold, estilo: .footnote))
+                                .foregroundStyle(Paleta.acento).buttonStyle(.plain).frame(minHeight: 44)
+                        }
+                        .padding(.horizontal, 14)
+                        .background(Paleta.tinteAcento, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .padding(.bottom, Espacio.s)
+                    }
                     if let v = vista {
                         switch pestana {
                         case .lista: lista(v)
@@ -64,6 +79,16 @@ struct DespensaView: View {
             TextField("nombre.", text: $nombreLista)
             Button(listaEditando == nil ? "crear." : "guardar.") { Task { await guardarLista() } }.disabled(nombreLista.trimmingCharacters(in: .whitespaces).isEmpty)
             Button("cancelar.", role: .cancel) { listaEditando = nil }
+        }
+        .confirmationDialog("¿eliminar la lista «\(listaABorrar?.nombre.lowercased() ?? "")» con lo que tiene?",
+                            isPresented: Binding(get: { listaABorrar != nil }, set: { if !$0 { listaABorrar = nil } }), titleVisibility: .visible) {
+            Button("eliminar lista.", role: .destructive) { if let l = listaABorrar { Task { try? await c.encolar(.borrarListaCompra(id: l.id)) } } }
+            Button("cancelar.", role: .cancel) {}
+        }
+        .confirmationDialog("¿eliminar la receta «\(recetaABorrar?.nombre.lowercased() ?? "")»?",
+                            isPresented: Binding(get: { recetaABorrar != nil }, set: { if !$0 { recetaABorrar = nil } }), titleVisibility: .visible) {
+            Button("eliminar receta.", role: .destructive) { if let r = recetaABorrar { Task { try? await c.encolar(.borrarRecetaCompra(id: r.id)) } } }
+            Button("cancelar.", role: .cancel) {}
         }
         .sheet(item: $modal) { m in
             switch m {
@@ -105,8 +130,10 @@ struct DespensaView: View {
         .padding(.vertical, Espacio.s)
     }
 
+    // VStack y no LazyVStack: va dentro de otra pila perezosa, y anidadas pueden dejar una fila con los datos de antes al
+    // pasar un producto de su sección al carro y vuelta.
     private func lista(_ v: VistaDespensa) -> some View {
-        LazyVStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
             ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: Espacio.xs) {
                 ForEach(v.listas) { l in Button { Task { try? await c.encolar(.elegirListaCompra(id: l.id)) } } label: {
                     Text(l.nombre.lowercased() + ".").font(Tipo.pie).padding(.horizontal, 12).frame(minHeight: 44)
@@ -117,14 +144,15 @@ struct DespensaView: View {
                 if let actual = v.listaActual {
                     Menu("acciones.") {
                         Button("renombrar.") { listaEditando = actual; nombreLista = actual.nombre; mostrarNuevaLista = true }
-                        if v.listas.count > 1 { Button("eliminar lista.", role: .destructive) { Task { try? await c.encolar(.borrarListaCompra(id: actual.id)) } } }
+                        if v.listas.count > 1 { Button("eliminar lista.", role: .destructive) { listaABorrar = actual } }
                     }.font(Tipo.pie)
                 }
             } }
             HStack(spacing: Espacio.s) {
                 TextField("añadir a la lista.", text: $textoRapido, prompt: Text("añadir a la lista: leche, 2 tomates…").foregroundColor(Paleta.textoSecundario))
                     .font(Tipo.cuerpo).foregroundStyle(Paleta.texto).submitLabel(.done).focused($escribiendo)
-                    .onSubmit { Task { await anadirRapido(); escribiendo = true } }
+                    // El tick del teclado añade y cierra el teclado (0.22: antes volvía a enfocar el campo y no se cerraba).
+                    .onSubmit { Task { await anadirRapido() } }
                     .campoCasa(activo: escribiendo)
                 Button { Task { await anadirRapido() } } label: {
                     Text("añadir.").font(Tipo.poppins(14, .semibold, estilo: .footnote)).foregroundStyle(Paleta.sobreAcento)
@@ -173,6 +201,7 @@ struct DespensaView: View {
         } cola: {
             if let p = item.precio { Text("≈ " + Dinero.formato(p)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).monospacedDigit().enPrimeraLinea(13) }
             Menu {
+                Button(hecho ? "sacar del carro." : "al carro.") { marcar(item, en: lista) }
                 Button("editar.") { modal = .item(item) }
                 Button("eliminar.", role: .destructive) { borrar(item, de: lista) }
             } label: {
@@ -186,6 +215,7 @@ struct DespensaView: View {
         }
         .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
         .contextMenu {
+            Button(hecho ? "sacar del carro." : "al carro.") { marcar(item, en: lista) }
             Button("editar.") { modal = .item(item) }
             Button("eliminar.", role: .destructive) { borrar(item, de: lista) }
         }
@@ -198,7 +228,12 @@ struct DespensaView: View {
     }
 
     // Marcar: se ve al momento (MarcasDespensa), las operaciones salen en el orden de los toques y solo cambian `hecho`.
-    private func marcar(_ item: ItemDespensa, en lista: ListaDespensa) {
+    private func marcar(_ visto: ItemDespensa, en listaVista: ListaDespensa) {
+        // El producto y su lista, frescos por id: la fila pudo pintarse con una foto anterior.
+        let lista = vista?.listas.first { $0.items.contains { $0.id == visto.id } } ?? listaVista
+        let item = lista.items.first { $0.id == visto.id } ?? visto
+        // Al sacar del carro también hay respuesta (marcar ya la tiene en BitacoraCheck).
+        if marcas.hecho(item) { UISelectionFeedbackGenerator().selectionChanged() }
         let nuevo = marcas.tocar(item)
         reagrupar()
         let op = OperacionesDespensa.marcarOp(listaId: lista.id, id: item.id, hecho: nuevo)
@@ -248,7 +283,7 @@ struct DespensaView: View {
                     }.buttonStyle(.plain)
                     Menu {
                         Button("editar.") { modal = .receta(r) }
-                        Button("eliminar receta.", role: .destructive) { Task { try? await c.encolar(.borrarRecetaCompra(id: r.id)) } }
+                        Button("eliminar receta.", role: .destructive) { recetaABorrar = r }
                     } label: { Image(systemName: "ellipsis").font(.system(size: 17, weight: .semibold)).foregroundStyle(Paleta.textoSecundario).frame(width: 44, height: 44) }
                     .accessibilityLabel("acciones para \(r.nombre)")
                 }
@@ -291,7 +326,20 @@ struct DespensaView: View {
     private func anadirRapido() async { guard let l = vista?.listaActual else { return }; let t = textoRapido; textoRapido = ""; try? await c.encolar(.anadirCompra(listaId: l.id, textos: [t], ids: [OperacionBitacora.nuevoIdProyecto("cmp")])) }
     private func guardarItem(_ previo: ItemDespensa?, _ texto: String, _ cantidad: String, _ seccion: String, _ precio: String) async { guard let l = vista?.listaActual else { return }; try? await c.encolar(OperacionesDespensa.editarOp(listaId: l.id, id: previo?.id ?? OperacionBitacora.nuevoIdProyecto("cmp"), texto: texto, cantidad: cantidad, seccion: seccion, precio: precio.isEmpty ? nil : precio)) }
     private func borrar(_ item: ItemDespensa, de lista: ListaDespensa) {
-        Task { try? await c.encolar(.borrarItemCompra(listaId: lista.id, id: item.id)) }
+        quitado = (item, lista.id)
+        Task {
+            try? await c.encolar(.borrarItemCompra(listaId: lista.id, id: item.id))
+            try? await Task.sleep(for: .seconds(6))
+            if quitado?.item.id == item.id { quitado = nil }
+        }
+    }
+    // Vuelve con su id, cantidad, precio, recetas y marca.
+    private func reponer() {
+        guard let q = quitado else { return }
+        quitado = nil
+        let i = q.item
+        Task { try? await c.encolar(.guardarItemCompra(listaId: q.listaId, id: i.id, texto: i.texto, cantidad: i.cantidad, seccion: i.seccion,
+                                                       precio: i.precio.map { NSDecimalNumber(decimal: $0).stringValue }, hecho: i.hecho, recetas: i.recetas)) }
     }
     private func guardarReceta(_ r: RecetaDespensa?, _ nombre: String, _ raciones: Int, _ ingredientes: [String], _ pasos: [String], _ notas: String) async { try? await c.encolar(.guardarRecetaCompra(id: r?.id ?? OperacionBitacora.nuevoIdProyecto("rec"), nombre: nombre, raciones: raciones, ingredientes: ingredientes, pasos: pasos, notas: notas)) }
     private func pasarReceta(_ r: RecetaDespensa, _ elegidos: [IngredienteReceta], a l: ListaDespensa) async {

@@ -119,4 +119,38 @@ final class DespensaMarcarTests: XCTestCase {
         let d = try DocumentoBitacora(datos: Data(#"{"listaCompra":{"listas":[{"id":"l1","items":[{"id":"a","texto":"uno"},{"id":"a","texto":"otro"}]}]}}"#.utf8))
         XCTAssertEqual(LecturaDespensa.vista(d).listaActual?.items.map(\.texto), ["uno"])
     }
+
+    // 0.22: marcar, desmarcar y volver a marcar con el motor de verdad (cola, documento visible y revisiones), con
+    // una carga vieja en medio de cada toque, como hace la vista.
+    func testMarcarDesmarcarYVolverAMarcarConElMotor() async throws {
+        let almacen = almacenTemporal()
+        try await almacen.guardarBase(Data(base.utf8), uid: "A")
+        let sync = SyncEngine(auth: AuthFalsa(nil), remoto: RemotoFalso("{}"), almacen: almacen)
+        await sync.iniciar(uid: "A")
+        var m = MarcasDespensa()
+        func cargar() async throws -> ItemDespensa {
+            let (d, rev) = await sync.documentoVisibleConRevision()
+            m.cargado(revision: rev)
+            return try XCTUnwrap(LecturaDespensa.vista(XCTUnwrap(d)).listaActual?.items.first { $0.id == "a" })
+        }
+        var leche = try await cargar()
+        for esperado in [true, false, true, false] {
+            let nuevo = m.tocar(leche)
+            XCTAssertEqual(nuevo, esperado)
+            leche = try await cargar()
+            XCTAssertEqual(m.hecho(leche), esperado, "una carga de antes de guardar lo devolvió atrás")
+            try await sync.encolar(OperacionesDespensa.marcarOp(listaId: "l1", id: "a", hecho: nuevo))
+            let r = await sync.revisionActual()
+            m.confirmar("a", hecho: nuevo, revision: r)
+            leche = try await cargar()
+            XCTAssertEqual(leche.hecho, esperado)
+            XCTAssertEqual(m.hecho(leche), esperado)
+            XCTAssertTrue(m.vacio)
+            let visible = await sync.documentoVisible()
+            let marcas = m
+            let g = LecturaDespensa.agrupar(LecturaDespensa.vista(try XCTUnwrap(visible)).listaActual?.items ?? [], hecho: { marcas.hecho($0) })
+            XCTAssertEqual(g.carro.contains { $0.id == "a" }, esperado)
+        }
+    }
 }
+
