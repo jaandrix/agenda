@@ -12,7 +12,7 @@ dirige y GPT audita.
 | 1. Temas | ec989b9 | Contraste y superficies de los seis temas, formularios y barras del tema. |
 | 2. Ajustes | c085f16 | Ajustes rehecha con la piel de Bitácora y las funciones de la PWA. |
 | 3. Capturas y textos | 021aef1 | Láminas por tema, textos informativos en `textoSecundario`, este plan. |
-| Arreglo | ef9b2e5 | La op de Siri y correo salía con el token como tipo (lo cazó `AjustesTests` en 43727712880). |
+| Arreglo | 840fe37 | La op de Siri y correo salía con el token como tipo (lo cazó `AjustesTests` en 43727712880). |
 
 ### 1. Temas: qué estaba mal y qué se cambió
 
