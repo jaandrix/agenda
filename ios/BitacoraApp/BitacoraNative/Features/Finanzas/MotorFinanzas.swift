@@ -91,6 +91,14 @@ actor MotorFinanzas {
 
     func olvidar() { huellas = nil; olvidarCalculado() }
 
+    // 0.22: el contexto de JavaScript (diez archivos de la web) y el documento, cargados con la app ya pintada, para
+    // que la primera vez que se abre Finanzas no espere a nada. Si falla, Finanzas lo intentará al abrirse.
+    func precalentar(_ doc: DocumentoBitacora) {
+        let t0 = Date()
+        try? cargar(doc)
+        anotar("precalentar", desde: t0)
+    }
+
     private func olvidarCalculado() { cache = [:]; generacion += 1 }
 
     // prepararFinanzas, como la web antes de pintar Finanzas: una vez por estado (y por día). nil si no cambió nada.

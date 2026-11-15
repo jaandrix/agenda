@@ -177,10 +177,21 @@ final class AppCoordinator {
             fase = .lista
             if bloqueada { await desbloquear() }
             Task { await entorno.sync.sincronizar() }
+            precalentarFinanzas()
         } else {
             fase = .sinSesion(aviso: nil)
         }
         atenderIntenciones()
+    }
+
+    // 0.22: el motor de Finanzas (JavaScriptCore) se carga cuando Inicio ya está pintado, a baja prioridad, y solo si
+    // Finanzas está a la vista. Antes se cargaba al abrir la pestaña por primera vez.
+    private func precalentarFinanzas() {
+        Task(priority: .utility) { [weak self] in
+            try? await Task.sleep(for: .seconds(2.5))
+            guard let self, self.sesion != nil, let doc = await self.documentoVisible(), Apartados.visible("finances", doc) else { return }
+            await MotorFinanzas.compartido.precalentar(doc)
+        }
     }
 
     func entrar(email: String, contrasena: String) async throws {
@@ -226,6 +237,18 @@ final class AppCoordinator {
         }
     }
 
+    // 0.22: como los avisos, con una espera: marcar cinco cosas seguidas reprogramaba los recordatorios cinco veces,
+    // compitiendo por la CPU con el repintado de lo que se acaba de tocar.
+    @ObservationIgnored private var tareaRecordatorios: Task<Void, Never>?
+    private func reconciliarRecordatorios() {
+        tareaRecordatorios?.cancel()
+        tareaRecordatorios = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1.5))
+            guard let self, !Task.isCancelled, let doc = await self.documentoVisible() else { return }
+            await Recordatorios.reconciliar(doc)
+        }
+    }
+
     private func escucharSync() {
         guard escuchaSync == nil else { return }
         let flujo = entorno.sync.informes
@@ -237,7 +260,7 @@ final class AppCoordinator {
                 if !i.sesionRevocada { Task { await BandejaConector.revisar(self) } }
                 if !i.sesionRevocada, i.estado == .reposo { Task { await ValorarOcio.revisar(self) } }
                 if i.revision != revisionAntes, AvisosLocales.activos { self.reconciliarAvisos() }
-                if i.revision != revisionAntes { Task { if let doc = await self.documentoVisible() { await Recordatorios.reconciliar(doc) } } }
+                if i.revision != revisionAntes { self.reconciliarRecordatorios() }
                 if i.sesionRevocada, self.sesion != nil {
                     let uid = self.sesion?.userId
                     self.sesion = nil
