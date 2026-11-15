@@ -5,6 +5,13 @@ import Foundation
 struct DocumentoBitacora: Sendable, Equatable {
     private(set) var claves: [String]
     private(set) var fragmentos: [String: Data]
+    // 0.22: lo ya analizado de cada clave. Cada pantalla y cada operación pedía `valor(de:)` y volvía a analizar los
+    // bytes (financePro con miles de movimientos, varias veces por pintado). Va en una caja compartida entre las copias
+    // del documento: mientras los bytes de una clave no cambian, su valor tampoco. Al cambiar una clave, la copia lleva
+    // una caja nueva sin ella.
+    private var analizados = Analizados()
+
+    static func == (a: DocumentoBitacora, b: DocumentoBitacora) -> Bool { a.claves == b.claves && a.fragmentos == b.fragmentos }
 
     init(datos original: Data) throws {
         // Copia con índices desde 0: los rangos del lector cuentan desde el principio.
@@ -29,7 +36,19 @@ struct DocumentoBitacora: Sendable, Equatable {
 
     func valor(de clave: String) throws -> JSONValue? {
         guard let d = fragmentos[clave] else { return nil }
-        return try LectorJSON.valor(d)
+        if let v = analizados.valor(clave) { return v }
+        let v = try LectorJSON.valor(d)
+        analizados.poner(clave, v)
+        return v
+    }
+
+    // Copia lo ya analizado de otro documento para las claves con los mismos bytes (su valor es el mismo).
+    func heredarAnalizados(de otro: DocumentoBitacora?) {
+        guard let otro else { return }
+        for k in claves {
+            guard let v = otro.analizados.valor(k), let d = fragmentos[k], otro.fragmentos[k] == d else { continue }
+            analizados.poner(k, v)
+        }
     }
 
     var clavesDesconocidas: [String] { claves.filter { !ContratoDatos.conocida($0) } }
@@ -51,9 +70,11 @@ struct DocumentoBitacora: Sendable, Equatable {
     // `merge_bitacora_data` en el servidor, que también mezcla por claves de primer nivel.
     func aplicandoParche(_ parche: [String: JSONValue]) -> DocumentoBitacora {
         var r = self
+        r.analizados = analizados.copia(sin: Set(parche.keys))
         for k in parche.keys.sorted() {
             if r.fragmentos[k] == nil { r.claves.append(k) }
             r.fragmentos[k] = EscritorJSON.datos(parche[k]!)
+            r.analizados.poner(k, parche[k]!)
         }
         return r
     }
@@ -64,5 +85,30 @@ struct DocumentoBitacora: Sendable, Equatable {
         guard otra.claves == claves, otra.fragmentos == fragmentos else { return false }
         guard let a = try? LectorJSON.valor(serializado()) else { return false }
         return claves.allSatisfy { k in (try? valor(de: k)) == a[k] }
+    }
+}
+
+// Caja de valores analizados, compartida entre copias de un mismo documento (por eso es una clase con cerrojo: las
+// pantallas leen desde tareas fuera del hilo principal a la vez). Dos lecturas a la vez de la misma clave pueden
+// analizarla las dos; da lo mismo, el resultado es igual.
+final class Analizados: @unchecked Sendable {
+    private let cerrojo = NSLock()
+    private var valores: [String: JSONValue]
+
+    init(_ valores: [String: JSONValue] = [:]) { self.valores = valores }
+
+    func valor(_ clave: String) -> JSONValue? {
+        cerrojo.lock(); defer { cerrojo.unlock() }
+        return valores[clave]
+    }
+
+    func poner(_ clave: String, _ v: JSONValue) {
+        cerrojo.lock(); defer { cerrojo.unlock() }
+        valores[clave] = v
+    }
+
+    func copia(sin claves: Set<String>) -> Analizados {
+        cerrojo.lock(); defer { cerrojo.unlock() }
+        return Analizados(valores.filter { !claves.contains($0.key) })
     }
 }
