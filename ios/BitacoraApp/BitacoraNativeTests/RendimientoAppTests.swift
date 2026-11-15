@@ -32,7 +32,7 @@ final class RendimientoAppTests: XCTestCase {
         for n in 0..<600 {
             let d = hoy.sumando(dias: n % 240 - 120)
             let hora = String(format: "%02d:%02d", 8 + n % 13, (n % 4) * 15)
-            entries.append(#"{"id":"e\#(n)","type":"\#(["event", "social", "futbol", "cita"][n % 4])","title":"evento \#(n) con gente","date":"\#(d.iso)","time":"\#(hora)","location":"sitio \#(n % 30)","notes":"notas del evento \#(n)","color":"#C96A5A"}"#)
+            entries.append(#"{"id":"e\#(n)","type":"\#(["event", "social", "futbol", "cita"][n % 4])","title":"evento \#(n) con gente","date":"\#(d.iso)","time":"\#(hora)","location":"sitio \#(n % 30)","notes":"notas del evento \#(n)"}"#)
         }
         for n in 0..<120 { entries.append(#"{"id":"b\#(n)","type":"birthday","title":"cumple \#(n)","birthDate":"19\#(70 + n % 30)-\#(String(format: "%02d", n % 12 + 1))-\#(String(format: "%02d", n % 28 + 1))"}"#) }
         for n in 0..<25 { entries.append(#"{"id":"sub_\#(n)","type":"subscription","title":"suscripción \#(n)","amount":\#(5 + n).99,"renewalDay":\#(n % 28 + 1),"active":true}"#) }
@@ -46,11 +46,16 @@ final class RendimientoAppTests: XCTestCase {
         let recurrentes = (0..<20).map { #"{"id":"r\#($0)","texto":"recurrente \#($0)","activo":true,"frecuencia":"diaria","completadas":{}}"# }
         let items = { (l: Int) in (0..<90).map { #"{"id":"i\#(l)_\#($0)","texto":"producto \#($0) \#(["leche", "tomates", "pan", "arroz", "detergente", "pollo"][$0 % 6])","cantidad":"\#($0 % 3 + 1)","hecho":\#($0 % 5 == 0)}"# }.joined(separator: ",") }
         let listas = (0..<3).map { #"{"id":"l\#($0)","nombre":"lista \#($0)","items":[\#(items($0))]}"# }
-        let historial = (0..<150).map { n in #"{"id":"h\#(n)","fecha":"\#(hoy.sumando(dias: -n * 2).iso)","tienda":"tienda \#(n % 5)","total":\#(20 + n % 60).5,"items":[\#((0..<15).map { #"{"texto":"producto \#($0)","precio":\#($0 + 1).2,"clave":"producto \#($0)"}"# }.joined(separator: ","))]}"# }
-        let recetas = (0..<30).map { n in #"{"id":"rc\#(n)","nombre":"receta \#(n)","raciones":2,"ingredientes":[\#((0..<8).map { #"{"texto":"ingrediente \#($0)","cantidad":"1"}"# }.joined(separator: ","))],"pasos":["uno","dos"],"notas":""}"# }
+        let lineasTicket = (0..<15).map { #"{"texto":"producto \#($0)","precio":\#($0 + 1).2,"clave":"producto \#($0)"}"# }.joined(separator: ",")
+        let historial = (0..<150).map { n in #"{"id":"h\#(n)","fecha":"\#(hoy.sumando(dias: -n * 2).iso)","tienda":"tienda \#(n % 5)","total":\#(20 + n % 60).5,"items":[\#(lineasTicket)]}"# }
+        let ingredientes = (0..<8).map { #"{"texto":"ingrediente \#($0)","cantidad":"1"}"# }.joined(separator: ",")
+        let recetas = (0..<30).map { n in #"{"id":"rc\#(n)","nombre":"receta \#(n)","raciones":2,"ingredientes":[\#(ingredientes)],"pasos":["uno","dos"],"notas":""}"# }
         let listaCompra = #"{"actual":"l0","listas":[\#(listas.joined(separator: ","))],"historial":[\#(historial.joined(separator: ","))],"recetas":[\#(recetas.joined(separator: ","))],"aprendido":{},"frecuentes":{}}"#
-        let subjects = (0..<8).map { s in #"{"id":"s\#(s)","name":"asignatura \#(s)","exams":[\#((0..<4).map { #"{"id":"ex\#(s)_\#($0)","title":"parcial \#($0)","date":"\#(hoy.sumando(dias: $0 * 20 - 30).iso)"}"# }.joined(separator: ","))],"assignments":[\#((0..<8).map { #"{"id":"as\#(s)_\#($0)","title":"práctica \#($0)","date":"\#(hoy.sumando(dias: $0 * 9 - 40).iso)","done":\#($0 < 4)}"# }.joined(separator: ","))]}"# }
-        let habits = (0..<15).map { #"{"id":"hab\#($0)","name":"rutina \#($0)","completedDates":[\#((0..<60).map { "\"\(hoy.sumando(dias: -$0).iso)\"" }.joined(separator: ","))]}"# }
+        let examenes = { (s: Int) in (0..<4).map { #"{"id":"ex\#(s)_\#($0)","title":"parcial \#($0)","date":"\#(hoy.sumando(dias: $0 * 20 - 30).iso)"}"# }.joined(separator: ",") }
+        let practicas = { (s: Int) in (0..<8).map { #"{"id":"as\#(s)_\#($0)","title":"práctica \#($0)","date":"\#(hoy.sumando(dias: $0 * 9 - 40).iso)","done":\#($0 < 4)}"# }.joined(separator: ",") }
+        let subjects = (0..<8).map { s in #"{"id":"s\#(s)","name":"asignatura \#(s)","exams":[\#(examenes(s))],"assignments":[\#(practicas(s))]}"# }
+        let fechasRutina = (0..<60).map { "\"" + hoy.sumando(dias: -$0).iso + "\"" }.joined(separator: ",")
+        let habits = (0..<15).map { #"{"id":"hab\#($0)","name":"rutina \#($0)","completedDates":[\#(fechasRutina)]}"# }
         let notas = (0..<200).map { #"{"id":"n\#($0)","title":"nota \#($0)","content":"\#(String(repeating: "texto de la nota ", count: 20))","updatedAt":"2026-10-01T10:00:00Z"}"# }
         let texto = #"{"financePro":\#(financePro),"financeProfile":{},"investmentData":{},"entries":[\#(entries.joined(separator: ","))],"categories":[],"dayPlanner":{"days":{\#(dias.joined(separator: ","))},"backlog":[\#(backlog.joined(separator: ","))]},"recurringTasks":[\#(recurrentes.joined(separator: ","))],"listaCompra":\#(listaCompra),"studies":{"subjects":[\#(subjects.joined(separator: ","))]},"habits":[\#(habits.joined(separator: ","))],"notes":[\#(notas.joined(separator: ","))],"apartadosConfig":{"perfil":"ambos"},"claveDelFuturo":{"x":[1,2,3]}}"#
         return Data(texto.utf8)
