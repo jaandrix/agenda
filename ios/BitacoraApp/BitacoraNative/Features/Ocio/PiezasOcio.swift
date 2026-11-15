@@ -7,6 +7,8 @@ struct EstrellasOcio: View {
     var tamano: CGFloat = 26
     var color: Color = Paleta.acento
     var cambiar: ((Double) -> Void)?
+    // La nota que había al apoyar el dedo: tocar otra vez la misma la quita (0.22; antes no había forma de volver a «sin valorar»).
+    @State private var alApoyar: Double? = nil
 
     var body: some View {
         let lado = Tipo.tamano(tamano)
@@ -22,19 +24,27 @@ struct EstrellasOcio: View {
         .frame(minHeight: cambiar == nil ? nil : 44)
         .contentShape(Rectangle())
         .gesture(cambiar == nil ? nil : DragGesture(minimumDistance: 0).onChanged { g in
-            let paso = lado * 1.18
-            let v = min(5, max(0.5, (Double(g.location.x / paso) * 2).rounded(.up) / 2))
+            if alApoyar == nil { alApoyar = valor }
+            let v = Self.nota(g.location.x, lado: lado)
             if v != valor { cambiar?(v) }
+        }.onEnded { g in
+            if let antes = alApoyar, abs(g.translation.width) < 6, Self.nota(g.location.x, lado: lado) == antes { cambiar?(0) }
+            alApoyar = nil
         })
         .sensoryFeedback(.selection, trigger: valor)
         .accessibilityElement()
         .accessibilityLabel("nota")
         .accessibilityValue(valor == 0 ? "sin valorar" : LecturaOcio.textoNota(valor))
+        .accessibilityHint(cambiar == nil ? "" : "toca la misma nota para quitarla")
         .accessibilityAdjustableAction { d in
             guard let cambiar else { return }
             cambiar(d == .increment ? min(5, valor + 0.5) : max(0, valor - 0.5))
         }
     }
+}
+
+extension EstrellasOcio {
+    static func nota(_ x: CGFloat, lado: CGFloat) -> Double { min(5, max(0.5, (Double(x / (lado * 1.18)) * 2).rounded(.up) / 2)) }
 }
 
 // Buscador de Ocio: superficie, filo del tema y lupa, como los campos de la casa (antes era un TextField sin fondo).
@@ -110,9 +120,8 @@ struct PortadaOcio: View {
         let alto = ancho * 1.45
         Group {
             if let u = URL(string: url), !url.isEmpty {
-                AsyncImage(url: u, transaction: Transaction(animation: nil)) { fase in
-                    if let img = fase.image { img.resizable().scaledToFill() } else { inicial }
-                }
+                // Con caché en memoria y reducida al tamaño de la portada (AsyncImage la bajaba y decodificaba entera cada vez).
+                ImagenRemota(url: u, lado: alto) { inicial }
             } else { inicial }
         }
         .frame(width: ancho, height: alto)

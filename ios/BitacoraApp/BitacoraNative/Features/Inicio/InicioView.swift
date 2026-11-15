@@ -695,7 +695,8 @@ struct Avatar: View {
 
     var body: some View {
         Group {
-            if let foto, let img = UIImage(data: foto) {
+            // Decodificada una vez y al tamaño del círculo (antes, en cada pintado de Inicio).
+            if let foto, let img = Imagenes.desde(foto, lado: tamano) {
                 Image(uiImage: img).resizable().scaledToFill()
             } else {
                 Image(systemName: "person.fill").font(.system(size: tamano * 0.45)).foregroundStyle(icono)
