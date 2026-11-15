@@ -24,3 +24,8 @@ print('|---|---:|---:|')
 for k in sorted(set(antes) | set(ahora)):
     celda = lambda v: f'{v[0]} ({v[1]}–{v[2]})' if v else ''
     print(f'| {k} | {celda(antes.get(k))} | {celda(ahora.get(k))} |')
+
+# La misma tabla en una anotación «notice» (se lee con la API pública sin sesión; el resumen no).
+if '--anotacion' in sys.argv:
+    filas = [f'{k}: {(antes.get(k) or ("-",))[0]} -> {(ahora.get(k) or ("-",))[0]}' for k in sorted(set(antes) | set(ahora))]
+    print('::notice title=Rendimiento (ms, 0.21 -> este commit)::' + '%0A'.join(filas), file=sys.stderr)

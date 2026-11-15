@@ -94,7 +94,7 @@ jobs:
           git worktree add -q "$RUNNER_TEMP/antes" FETCH_HEAD
           cp BitacoraNativeTests/RendimientoAppTests.swift "$RUNNER_TEMP/antes/ios/BitacoraApp/BitacoraNativeTests/"
           ( cd "$RUNNER_TEMP/antes/ios/BitacoraApp" && xcodegen generate -q && medir "$GITHUB_WORKSPACE/ios/BitacoraApp/perf-antes.log" "$RUNNER_TEMP/build-antes" )
-          python3 ../../pruebas/tabla-rendimiento.py perf-antes.log perf.log >> "$GITHUB_STEP_SUMMARY"
+          python3 ../../pruebas/tabla-rendimiento.py perf-antes.log perf.log --anotacion >> "$GITHUB_STEP_SUMMARY"
           grep -q "TEST SUCCEEDED" perf.log
 
       - name: Subir las capturas de diseño
