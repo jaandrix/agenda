@@ -362,6 +362,52 @@ struct Icono: View {
             aro(12, 12, 17)
             Ellipse().stroke(style: trazo).frame(width: 7.5, height: 17).position(x: 12, y: 12)
             t { p in p.move(to: .init(x: 3.8, y: 12)); p.addLine(to: .init(x: 20.2, y: 12)) }
+        // Ajustes (0.22): mismo trazo y mismo punto de acento que el resto del catálogo.
+        case "tema":
+            aro(12, 12, 16)
+            lleno { p in p.addArc(center: .init(x: 12, y: 12), radius: 8, startAngle: .degrees(-90), endAngle: .degrees(90), clockwise: false) }
+        case "letra":
+            t { p in p.move(to: .init(x: 4, y: 19)); p.addLine(to: .init(x: 9.5, y: 5)); p.addLine(to: .init(x: 15, y: 19)) }
+            t { p in p.move(to: .init(x: 6.3, y: 14)); p.addLine(to: .init(x: 12.7, y: 14)) }
+            punto(18.5, 17.5, 4)
+        case "avisos":
+            t { p in p.move(to: .init(x: 5.5, y: 16.5)); p.addLine(to: .init(x: 18.5, y: 16.5)); p.addLine(to: .init(x: 17, y: 14)); p.addLine(to: .init(x: 17, y: 10)); p.addCurve(to: .init(x: 7, y: 10), control1: .init(x: 17, y: 3.5), control2: .init(x: 7, y: 3.5)); p.addLine(to: .init(x: 7, y: 14)); p.closeSubpath() }
+            punto(12, 19.8, 3.6)
+        case "candado":
+            caja(CGRect(x: 5, y: 10.5, width: 14, height: 10), 3)
+            t { p in p.move(to: .init(x: 8.5, y: 10.5)); p.addLine(to: .init(x: 8.5, y: 8)); p.addCurve(to: .init(x: 15.5, y: 8), control1: .init(x: 8.5, y: 3.4), control2: .init(x: 15.5, y: 3.4)); p.addLine(to: .init(x: 15.5, y: 10.5)) }
+            punto(12, 15.5, 3.4)
+        case "datos":
+            t { p in p.move(to: .init(x: 12, y: 4)); p.addLine(to: .init(x: 12, y: 14)); p.move(to: .init(x: 8, y: 10.5)); p.addLine(to: .init(x: 12, y: 14.5)); p.addLine(to: .init(x: 16, y: 10.5)) }
+            t { p in p.move(to: .init(x: 4.5, y: 15)); p.addLine(to: .init(x: 4.5, y: 19.5)); p.addLine(to: .init(x: 19.5, y: 19.5)); p.addLine(to: .init(x: 19.5, y: 15)) }
+        case "ayuda":
+            aro(12, 12, 17)
+            t { p in p.move(to: .init(x: 9.3, y: 9.6)); p.addCurve(to: .init(x: 12, y: 13.6), control1: .init(x: 9.3, y: 5.8), control2: .init(x: 15.6, y: 7.2)) }
+            punto(12, 16.8, 3.2)
+        case "salir":
+            t { p in p.move(to: .init(x: 13, y: 4.5)); p.addLine(to: .init(x: 5.5, y: 4.5)); p.addLine(to: .init(x: 5.5, y: 19.5)); p.addLine(to: .init(x: 13, y: 19.5)) }
+            t { p in p.move(to: .init(x: 10, y: 12)); p.addLine(to: .init(x: 19.5, y: 12)); p.move(to: .init(x: 16.5, y: 9)); p.addLine(to: .init(x: 19.5, y: 12)); p.addLine(to: .init(x: 16.5, y: 15)) }
+        case "correo":
+            caja(CGRect(x: 3.8, y: 6, width: 16.4, height: 12), 3)
+            t { p in p.move(to: .init(x: 4.5, y: 7)); p.addLine(to: .init(x: 12, y: 12.5)); p.addLine(to: .init(x: 19.5, y: 7)) }
+        case "voz":
+            t { p in for (x, h) in [(5.0, 4.0), (8.5, 9.0), (12.0, 14.0), (15.5, 9.0), (19.0, 4.0)] { p.move(to: .init(x: x, y: 12 - h / 2)); p.addLine(to: .init(x: x, y: 12 + h / 2)) } }
+        case "invitar":
+            punto(9, 8, 6.5)
+            t { p in p.move(to: .init(x: 3.5, y: 19.5)); p.addQuadCurve(to: .init(x: 14.5, y: 19.5), control: .init(x: 9, y: 10.5)) }
+            t { p in p.move(to: .init(x: 18, y: 6.5)); p.addLine(to: .init(x: 18, y: 13.5)); p.move(to: .init(x: 14.5, y: 10)); p.addLine(to: .init(x: 21.5, y: 10)) }
+        case "suscripcion":
+            caja(CGRect(x: 3.5, y: 6, width: 17, height: 12), 3)
+            t { p in p.move(to: .init(x: 3.5, y: 10)); p.addLine(to: .init(x: 20.5, y: 10)) }
+            punto(16.5, 14.5, 3.4)
+        case "borrar":
+            t { p in p.move(to: .init(x: 4.5, y: 7)); p.addLine(to: .init(x: 19.5, y: 7)); p.move(to: .init(x: 9.5, y: 7)); p.addLine(to: .init(x: 10, y: 4.5)); p.addLine(to: .init(x: 14, y: 4.5)); p.addLine(to: .init(x: 14.5, y: 7)) }
+            t { p in p.move(to: .init(x: 6.5, y: 7)); p.addLine(to: .init(x: 7.5, y: 19.5)); p.addLine(to: .init(x: 16.5, y: 19.5)); p.addLine(to: .init(x: 17.5, y: 7)) }
+        case "apartados":
+            caja(CGRect(x: 4, y: 4, width: 7, height: 7), 2.5)
+            caja(CGRect(x: 13, y: 4, width: 7, height: 7), 2.5)
+            caja(CGRect(x: 4, y: 13, width: 7, height: 7), 2.5)
+            punto(16.5, 16.5, 5)
         default:
             caja(CGRect(x: 4, y: 4, width: 16, height: 16), 5)
             punto(12, 12)

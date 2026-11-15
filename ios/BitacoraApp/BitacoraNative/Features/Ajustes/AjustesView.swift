@@ -1,101 +1,317 @@
 import SwiftUI
 
+// Ajustes (0.22): parte de Bitácora y no un Form gris. Cabecera con tu perfil, apariencia con muestras de verdad y los
+// grupos de la PWA (js/ajustes.js, AJUSTES_GRUPOS): apartados, avisos, conexiones, cuenta, datos y ayuda. Lo que vive
+// en la fila de `bitacora` se escribe por operaciones; lo del servidor, con las mismas RPC y funciones que la web.
 struct AjustesView: View {
     @Environment(AppCoordinator.self) private var c
-    @Environment(\.openURL) private var abrir
+    @State private var lectura = OperacionesAjustes.Lectura()
+    @State private var suscripcion: Suscripcion?
+    @State private var foto: UIImage?
+    @State private var avisosIphone = AvisosLocales.activos
     @State private var confirmarSalida = false
-    @State private var avisos = AvisosLocales.activos
+    @State private var exportado: URL?
+    @State private var exportando = false
 
     var body: some View {
-        List {
-            Section("cuenta.") {
-                LabeledContent("correo.", value: c.sesion?.email ?? "")
-                    .listRowBackground(Paleta.superficie)
-                Button("cerrar sesión.", role: .destructive) { confirmarSalida = true }
-                    .frame(minHeight: 44)
-                    .listRowBackground(Paleta.superficie)
-            }
-            Section {
-                SelectorTema()
-                    .listRowBackground(Paleta.superficie)
-                Picker("tamaño de letra.", selection: Binding(get: { c.letra }, set: { c.ponerLetra($0) })) {
-                    ForEach(EscalaLetra.allCases) { Text($0.nombre).tag($0) }
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                CabeceraApartado(titulo: "ajustes", contexto: nil) { EmptyView() }
+                CabeceraPerfil(nombre: lectura.nombre, correo: c.sesion?.email ?? "", foto: foto, resumen: resumenCuenta)
+                    .padding(.top, Espacio.m)
+                apariencia
+                GrupoMenu(titulo: "apartados.") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("eres.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                        OpcionesAjuste(opciones: [("estudiante", "estudiante."), ("trabajador", "trabajo."), ("ambos", "las dos.")],
+                                 elegida: lectura.perfil) { p in ponerPerfil(p) }
+                    }
+                    .padding(16)
+                    SeparadorMenu()
+                    NavigationLink { AjustesApartadosView() } label: {
+                        FilaAjuste(icono: "apartados", titulo: "apartados opcionales.", detalle: "qué sale en el menú.")
+                    }.buttonStyle(EstiloFila())
                 }
-                .frame(minHeight: 44)
-                .listRowBackground(Paleta.superficie)
-                Button("restablecer apariencia.") { c.ponerLetra(.normal); c.ponerTema(.sistema) }
-                    .frame(minHeight: 44)
-                    .disabled(c.letra == .normal && c.tema == .sistema)
-                    .listRowBackground(Paleta.superficie)
-                Toggle("pedir \(Biometria.nombre) al abrir.", isOn: Binding(get: { c.bloqueoActivo }, set: { v in Task { await c.activarBloqueo(v) } }))
-                    .disabled(!Biometria.disponible)
-                    .listRowBackground(Paleta.superficie)
-                Toggle("avisos de eventos.", isOn: Binding(get: { avisos }, set: { v in Task { avisos = await AvisosLocales.activar(v); if avisos { c.reconciliarAvisos() } } }))
-                    .listRowBackground(Paleta.superficie)
-            } header: {
-                Text("en este iPhone.")
-            } footer: {
-                Text("el tamaño de letra se suma al de iOS (Dynamic Type). el bloqueo solo protege la app en este iPhone; tu cuenta sigue con su contraseña. los avisos llegan una hora antes de cada evento con hora; si ya te llegan los de la web, no los actives.")
+                GrupoMenu(titulo: "avisos.") {
+                    NavigationLink { AjustesAvisosView() } label: {
+                        FilaAjuste(icono: "avisos", titulo: "avisos automáticos.", detalle: detalleAvisos)
+                    }.buttonStyle(EstiloFila())
+                    SeparadorMenu()
+                    FilaInterruptor(icono: "eventos", titulo: "avisos de eventos en este iphone.", detalle: "una hora antes de cada evento con hora.",
+                                    activo: Binding(get: { avisosIphone }, set: { v in cambiarAvisosIphone(v) }))
+                }
+                GrupoMenu(titulo: "seguridad.") {
+                    FilaInterruptor(icono: "candado", titulo: "pedir \(Biometria.nombre) al abrir.", detalle: "solo en este iphone; tu cuenta sigue con su contraseña.",
+                                    activo: Binding(get: { c.bloqueoActivo }, set: { v in Task { await c.activarBloqueo(v) } }),
+                                    deshabilitado: !Biometria.disponible)
+                }
+                conexiones
+                cuenta
+                datos
+                ayuda
             }
-            Section {
-                Button("abrir la web.") { abrir(Config.webURL) }
-                    .frame(minHeight: 44)
-                    .listRowBackground(Paleta.superficie)
-            } footer: {
-                Text("lo que aún no está en la app nativa sigue en appbitacora.es.")
-            }
-            Section {
-                LabeledContent("versión.", value: Config.version)
-                LabeledContent("contrato de datos.", value: "v\(ContratoDatos.version)")
-            }
-            .listRowBackground(Paleta.superficie)
+            .padding(.horizontal, 20)
+            .padding(.bottom, Espacio.xl)
         }
-        .font(Tipo.cuerpo)
-        .scrollContentBackground(.hidden)
-        .background(Paleta.fondo)
-        .navigationTitle("ajustes.")
-        .navigationBarTitleDisplayMode(.inline)
+        .scrollIndicators(.hidden)
+        .background(Paleta.fondo.ignoresSafeArea())
+        // El título va en la cabecera grande; la barra solo lo lleva para el botón de volver de las páginas.
+        .navigationTitle("ajustes")
+        .toolbar { ToolbarItem(placement: .principal) { EmptyView() } }
+        .task(id: c.revision) { await cargarDocumento() }
+        .task { await cargarRemoto() }
         .confirmationDialog("¿cerrar sesión?", isPresented: $confirmarSalida, titleVisibility: .visible) {
             Button("cerrar sesión.", role: .destructive) { Task { await c.salir() } }
             Button("cancelar.", role: .cancel) {}
         } message: {
-            Text("se borra la copia de tus datos de este iPhone. en la nube no cambia nada.")
+            Text("se borra la copia de tus datos de este iphone. en la nube no cambia nada.")
+        }
+        .sheet(item: Binding(get: { exportado.map(ArchivoExportado.init) }, set: { exportado = $0?.url })) { a in
+            HojaCompartir(elementos: [a.url]).presentationDetents([.medium, .large])
+        }
+    }
+
+    // MARK: grupos
+
+    private var apariencia: some View {
+        GrupoMenu(titulo: "apariencia.") {
+            SelectorTema().padding(16)
+            SeparadorMenu()
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 14) {
+                    IconoFila(id: "letra")
+                    Text("tamaño de letra.").font(Tipo.poppins(16, .medium)).foregroundStyle(Paleta.texto)
+                }
+                OpcionesAjuste(opciones: EscalaLetra.allCases.map { ($0, $0.nombre) }, elegida: c.letra) { c.ponerLetra($0) }
+                Text("se suma al tamaño de ios (dynamic type).").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+            }
+            .padding(16)
+            if c.letra != .normal || c.tema != .sistema {
+                SeparadorMenu()
+                Button { c.ponerLetra(.normal); c.ponerTema(.sistema) } label: {
+                    FilaAjuste(icono: "tema", titulo: "restablecer apariencia.", detalle: "tema del sistema y letra normal.") { EmptyView() }
+                }.buttonStyle(EstiloFila())
+            }
+        }
+    }
+
+    private var conexiones: some View {
+        GrupoMenu(titulo: "conexiones.") {
+            NavigationLink { AjustesConectorView() } label: {
+                FilaAjuste(icono: "conexiones", titulo: "claude y chatgpt.", detalle: "tu bitácora en tu ia.")
+            }.buttonStyle(EstiloFila())
+            SeparadorMenu()
+            NavigationLink { AjustesAtajoView(tipo: .siri, token: lectura.siriToken) } label: {
+                FilaAjuste(icono: "voz", titulo: "siri.", detalle: lectura.siriToken == nil ? "apunta sin abrir la app." : "conectado.")
+            }.buttonStyle(EstiloFila())
+            SeparadorMenu()
+            NavigationLink { AjustesAtajoView(tipo: .correo, token: lectura.correoToken) } label: {
+                FilaAjuste(icono: "correo", titulo: "tu correo.", detalle: lectura.correoToken == nil ? "reenvía reservas y pedidos." : "dirección creada.")
+            }.buttonStyle(EstiloFila())
+            SeparadorMenu()
+            NavigationLink { AjustesCalendarioView(version: lectura.feedVersion) } label: {
+                FilaAjuste(icono: "calendario", titulo: "calendario en otras apps.", detalle: "google, iphone u outlook (.ics).")
+            }.buttonStyle(EstiloFila())
+            SeparadorMenu()
+            CorreoSemanalFila()
+        }
+    }
+
+    private var cuenta: some View {
+        GrupoMenu(titulo: "cuenta.") {
+            NavigationLink { AjustesCuentaView(suscripcion: suscripcion) } label: {
+                FilaAjuste(icono: "suscripcion", titulo: "suscripción.", detalle: resumenCuenta)
+            }.buttonStyle(EstiloFila())
+            SeparadorMenu()
+            NavigationLink { AjustesInvitarView() } label: {
+                FilaAjuste(icono: "invitar", titulo: "invitar a un amigo.", detalle: "tu código y tu enlace.")
+            }.buttonStyle(EstiloFila())
+            SeparadorMenu()
+            Button { confirmarSalida = true } label: {
+                FilaAjuste(icono: "salir", titulo: "cerrar sesión.", detalle: c.sesion?.email) { EmptyView() }
+            }.buttonStyle(EstiloFila())
+            SeparadorMenu()
+            NavigationLink { AjustesEliminarView(exportar: exportar) } label: {
+                FilaAjuste(icono: "borrar", titulo: "eliminar mi cuenta.", peligro: true)
+            }.buttonStyle(EstiloFila())
+        }
+    }
+
+    private var datos: some View {
+        GrupoMenu(titulo: "datos.") {
+            Button { exportar() } label: {
+                FilaAjuste(icono: "datos", titulo: "descargar mis datos.", detalle: "una copia completa en json; la web la importa.") {
+                    if exportando { ProgressView().tint(Paleta.textoSecundario) }
+                }
+            }.buttonStyle(EstiloFila()).disabled(exportando)
+            SeparadorMenu()
+            NavigationLink(value: "estado") {
+                FilaAjuste(icono: "estado", titulo: "estado de la sincronización.", detalle: c.pendientes > 0 ? "\(c.pendientes) cambios por subir." : "todo subido.")
+            }.buttonStyle(EstiloFila())
+        }
+    }
+
+    private var ayuda: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            GrupoMenu(titulo: "ayuda.") {
+                Button { c.web = URL(string: "https://appbitacora.es/#settings")! } label: {
+                    FilaAjuste(icono: "ayuda", titulo: "guía de bitácora.", detalle: "para qué sirve cada apartado.", web: true)
+                }.buttonStyle(EstiloFila())
+                SeparadorMenu()
+                Button { c.web = URL(string: "https://appbitacora.es/#settings")! } label: {
+                    FilaAjuste(icono: "conexiones", titulo: "guía para tu ia.", detalle: "un markdown para que tu ia sepa usarla.", web: true)
+                }.buttonStyle(EstiloFila())
+                SeparadorMenu()
+                Button { c.web = Config.webURL } label: {
+                    FilaAjuste(icono: "web", titulo: "novedades y la web.", detalle: "lo nuevo está en la portada, «actualizaciones.».", web: true)
+                }.buttonStyle(EstiloFila())
+            }
+            PieGrupo(texto: "versión \(Config.version), contrato de datos v\(ContratoDatos.version). la guía y la guía para tu ia están en ajustes de la web.")
+        }
+    }
+
+    // MARK: lógica
+
+    private var resumenCuenta: String? {
+        guard let s = suscripcion else { return nil }
+        return AjustesCuentaView.resumen(s)
+    }
+
+    private var detalleAvisos: String {
+        let n = OperacionesAjustes.avisos.count
+        let on = n - OperacionesAjustes.avisos.filter { lectura.avisosApagados.contains($0.tipo) }.count
+        return on == n ? "todos los tipos encendidos." : "\(on) de \(n) tipos encendidos."
+    }
+
+    private func cargarDocumento() async {
+        guard let doc = await c.documentoVisible() else { return }
+        lectura = await Task.detached(priority: .userInitiated) { OperacionesAjustes.leer(doc) }.value
+    }
+
+    private func cargarRemoto() async {
+        guard let uid = c.sesion?.userId else { return }
+        let perfil = c.entorno.servicios.perfil
+        if let d = perfil.guardada(uid) { foto = UIImage(data: d) }
+        let servidor = ServidorAjustes(cliente: c.entorno.cliente, auth: c.entorno.auth)
+        async let s = servidor.suscripcion(uid)
+        async let f = perfil.foto(uid)
+        suscripcion = await s
+        if let d = await f { foto = UIImage(data: d) }
+    }
+
+    private func ponerPerfil(_ p: String) {
+        let antes = lectura.perfil
+        lectura.perfil = p
+        Task {
+            do { try await c.encolar(.ponerPerfil(perfil: p)) } catch {
+                lectura.perfil = antes
+                c.avisar("no se pudo guardar en este iphone.")
+            }
+        }
+    }
+
+    private func cambiarAvisosIphone(_ v: Bool) {
+        Task {
+            avisosIphone = await AvisosLocales.activar(v)
+            if avisosIphone { c.reconciliarAvisos() }
+        }
+    }
+
+    private func exportar() {
+        guard !exportando else { return }
+        exportando = true
+        Task {
+            defer { exportando = false }
+            guard let doc = await c.documentoVisible() else { c.avisar("aún no hay datos en este iphone."); return }
+            let ahora = Date()
+            let url = await Task.detached(priority: .userInitiated) { () -> URL? in
+                let f = DateFormatter()
+                f.locale = Locale(identifier: "en_US_POSIX")
+                f.dateFormat = "yyyy-MM-dd"
+                let datos = doc.aplicandoParche(["exportedAt": .string(ISO8601DateFormatter().string(from: ahora))]).serializado()
+                let u = FileManager.default.temporaryDirectory.appendingPathComponent("bitacora_\(f.string(from: ahora)).json")
+                do { try datos.write(to: u, options: .atomic) } catch { return nil }
+                return u
+            }.value
+            if let url { exportado = url } else { c.avisar("no se pudo preparar la copia.") }
         }
     }
 }
 
-// renderSelectorTema: una muestra por tema (fondo, acento y tinta) con su nombre. Solo los que esta cuenta puede usar.
+struct ArchivoExportado: Identifiable {
+    let url: URL
+    var id: String { url.path }
+}
+
+// Tu perfil arriba: la foto de `perfiles_fotos` (en blanco y negro, como la web), el nombre y el correo.
+struct CabeceraPerfil: View {
+    let nombre: String
+    let correo: String
+    let foto: UIImage?
+    let resumen: String?
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Group {
+                if let foto {
+                    Image(uiImage: foto).resizable().scaledToFill()
+                } else {
+                    Text(String((nombre.isEmpty ? correo : nombre).prefix(1)).lowercased())
+                        .font(Tipo.poppins(26, .bold, estilo: .title2)).foregroundStyle(Paleta.sobreAcento)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Paleta.acento)
+                }
+            }
+            .frame(width: 64, height: 64)
+            .clipShape(Circle())
+            .overlay(Circle().stroke(Paleta.borde, lineWidth: 1))
+            .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(nombre.isEmpty ? "tú." : nombre.lowercased() + ".")
+                    .font(Tipo.poppins(20, .semibold, estilo: .title3)).foregroundStyle(Paleta.texto).lineLimit(1)
+                Text(correo).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(1).truncationMode(.middle)
+                if let resumen { Text(resumen).font(Tipo.pie).foregroundStyle(Paleta.acento).lineLimit(1) }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .accessibilityElement(children: .combine)
+    }
+}
+
+// renderSelectorTema: una miniatura por tema que esta cuenta puede usar.
 struct SelectorTema: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.colorScheme) private var esquema
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Espacio.s) {
-            Text("tema.").font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 10)], spacing: 10) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 14) {
+                IconoFila(id: "tema")
+                Text("tema.").font(Tipo.poppins(16, .medium)).foregroundStyle(Paleta.texto)
+            }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 10)], spacing: 14) {
                 ForEach(TemaElegido.allCases.filter { $0.permitido(c.permisosTemas) }) { t in
-                    let k = TemaTokens.de(t, sistemaOscuro: esquema == .dark)
-                    let on = t == c.tema
                     Button { c.ponerTema(t) } label: {
-                        VStack(spacing: 6) {
-                            HStack(spacing: -6) {
-                                ForEach([k.fondo, k.acento, k.texto], id: \.self) { v in
-                                    Circle().fill(Color(uiColor: UIColor(rgb: v))).frame(width: 22, height: 22)
-                                        .overlay(Circle().stroke(Paleta.bordeFuerte, lineWidth: 1))
-                                }
-                            }
-                            Text(t.nombre).font(Tipo.poppins(13, on ? .bold : .medium, estilo: .footnote)).foregroundStyle(Paleta.texto)
-                        }
-                        .frame(maxWidth: .infinity, minHeight: 64)
-                        .background(on ? Paleta.tinteAcento : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: Radio.control, style: .continuous).stroke(on ? Paleta.acento : .clear, lineWidth: 1.5))
+                        MuestraTema(tema: t, elegido: t == c.tema, oscuroSistema: esquema == .dark)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("tema \(t.nombre.dropLast())")
-                    .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
                 }
             }
+            Text(textoTema).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.vertical, 6)
+    }
+
+    private var textoTema: String {
+        switch c.tema {
+        case .sistema: return "sistema: papel de día y asfalto de noche, como tu iphone."
+        case .asfalto: return "asfalto: grafito nocturno, la arcilla solo en lo activo."
+        case .papel: return "papel: editorial crema, tinta casi negra."
+        case .acuarela: return "teja: piedra cálida y granate."
+        case .pizarra: return "pizarra: azul marino frío sobre gris azulado."
+        case .oliva: return "oliva: marfil, verde oliva y ciruela."
+        case .fundador: return "fundador: carbón y dorado, para los socios."
+        }
     }
 }

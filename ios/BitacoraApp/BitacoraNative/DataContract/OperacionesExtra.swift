@@ -23,6 +23,7 @@ enum OperacionesExtra {
         case CambioFinanzas.tipo: return CambioFinanzas.claves
         case ValorarOcio.tipo: return ValorarOcio.claves
         case RecetaALista.tipo, OperacionesDespensa.marcar, OperacionesDespensa.editar: return ["listaCompra"]
+        case OperacionesAjustes.aviso, OperacionesAjustes.feed, OperacionesAjustes.token: return OperacionesAjustes.claves(tipo)
         default: return ["dayPlanner"]
         }
     }
@@ -97,6 +98,8 @@ enum OperacionesExtra {
             r = OperacionesDespensa.aplicar(tipo, d, r)
         case FichaDocumentoOp.tipo:
             r = FichaDocumentoOp.aplicar(d, r)
+        case OperacionesAjustes.aviso, OperacionesAjustes.feed, OperacionesAjustes.token:
+            r = OperacionesAjustes.aplicar(tipo, d, r)
         default:
             break
         }
