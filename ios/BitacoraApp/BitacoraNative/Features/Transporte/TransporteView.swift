@@ -47,7 +47,7 @@ struct TransporteView: View {
                     ForEach(r) { resultado($0) }
                 }
                 Text("tiempos de avanza y paradas del ayuntamiento de zaragoza. son estimaciones y pueden cambiar con el tráfico.")
-                    .font(Tipo.pie).foregroundStyle(Paleta.textoApagado).padding(.top, Espacio.l)
+                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.top, Espacio.l)
             }
             .padding(.horizontal, 20).padding(.bottom, Espacio.xl)
         }
@@ -116,7 +116,7 @@ struct TransporteView: View {
             cabecera(p, estrella: false)
             llegadas(p, compacto: true)
             HStack(spacing: Espacio.m) {
-                Text(pie(p)).font(Tipo.pie).foregroundStyle(Paleta.textoApagado)
+                Text(pie(p)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
                 Spacer()
                 if p.tipo == "bus" { marcaInicio(p) }
                 Button("quitar.") { favorita(p.clave, false) }.font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(minHeight: 44)
@@ -159,7 +159,7 @@ struct TransporteView: View {
             .buttonStyle(.plain)
             if abierta == p.clave {
                 llegadas(p, compacto: false)
-                Text(pie(p)).font(Tipo.pie).foregroundStyle(Paleta.textoApagado).padding(.bottom, Espacio.s)
+                Text(pie(p)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.bottom, Espacio.s)
             }
         }
         .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
@@ -233,7 +233,7 @@ struct TransporteView: View {
             } else if compacto && !mias.isEmpty && verTodas.contains(p.clave) {
                 Button("solo las tuyas.") { verTodas.remove(p.clave) }.font(Tipo.pie).foregroundStyle(Paleta.acento).frame(minHeight: 36)
             } else if compacto && mias.isEmpty && grupos.count > 1 {
-                Text("toca una línea para ver solo esa.").font(Tipo.pie).foregroundStyle(Paleta.textoApagado).padding(.top, 4)
+                Text("toca una línea para ver solo esa.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.top, 4)
             }
         } else {
             Text("mirando los tiempos…").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)

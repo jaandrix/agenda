@@ -158,7 +158,7 @@ struct FilaMenu: View {
                 .frame(width: 32, height: 32).background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             Text(nombre).font(Tipo.poppins(17, .semibold, estilo: .body)).kerning(-0.17).foregroundStyle(Paleta.texto)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            if web { Text("web.").font(Tipo.pie).foregroundStyle(Paleta.textoApagado) }
+            if web { Text("web.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
             if cuenta > 0 {
                 Text("\(cuenta)").font(Tipo.poppins(12, .bold, estilo: .caption)).foregroundStyle(Paleta.sobreAcento)
                     .padding(.horizontal, 7).frame(minWidth: 24, minHeight: 24).background(Paleta.acento, in: Capsule())

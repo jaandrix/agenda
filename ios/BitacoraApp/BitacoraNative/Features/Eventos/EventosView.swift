@@ -110,7 +110,7 @@ struct EventosView: View {
                     Label("qr.", systemImage: "qrcode").font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(Paleta.texto)
                         .padding(.horizontal, 10).frame(minHeight: 32).background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control))
                 } else if f.evento.tipo == "partido" {
-                    Text("auto.").font(Tipo.pie).foregroundStyle(Paleta.textoApagado)
+                    Text("auto.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
                 }
             }
             .padding(.vertical, 14)
