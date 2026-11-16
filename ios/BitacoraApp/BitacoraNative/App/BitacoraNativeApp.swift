@@ -57,13 +57,17 @@ struct BitacoraNativeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RaizView()
-                .id("\(coordinador.tema.rawValue)-\(coordinador.letra.rawValue)")
-                .environment(coordinador)
-                .preferredColorScheme(coordinador.tema.esquema)
-                .tint(Paleta.acento)
-                .onOpenURL { coordinador.recibirURL($0) }
-                .task { await coordinador.arrancar() }
+            if PruebaCarruselView.activa {
+                PruebaCarruselView()
+            } else {
+                RaizView()
+                    .id("\(coordinador.tema.rawValue)-\(coordinador.letra.rawValue)")
+                    .environment(coordinador)
+                    .preferredColorScheme(coordinador.tema.esquema)
+                    .tint(Paleta.acento)
+                    .onOpenURL { coordinador.recibirURL($0) }
+                    .task { await coordinador.arrancar() }
+            }
         }
         .onChange(of: fase) { _, nueva in coordinador.cambioDeFase(nueva) }
     }

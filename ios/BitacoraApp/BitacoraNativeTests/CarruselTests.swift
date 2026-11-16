@@ -52,4 +52,29 @@ final class CarruselTests: XCTestCase {
         XCTAssertEqual(e.diaMarcado(dia: d("2026-11-12")), d("2026-11-14"))
         XCTAssertEqual(e.lunesVisible(semanaInicio: d("2026-11-09")), d("2026-11-09"))
     }
+
+    // 0.23: el scroll paginado avisa de la semana en la que se asienta; pide el mismo día de la semana.
+    func testIrALaSemanaQueSeVePideElMismoDiaDeLaSemana() {
+        var e = EstadoCarrusel()
+        let inicio = d("2026-11-09"), dia = d("2026-11-12")
+        XCTAssertNil(e.irA(lunes: inicio, semanaInicio: inicio, dia: dia))
+        XCTAssertEqual(e.irA(lunes: d("2026-11-16"), semanaInicio: inicio, dia: dia), d("2026-11-19"))
+        XCTAssertEqual(e.irA(lunes: d("2026-11-23"), semanaInicio: inicio, dia: dia), d("2026-11-26"))
+        e.llega(d("2026-11-19"))
+        XCTAssertEqual(e.lunesVisible(semanaInicio: d("2026-11-16")), d("2026-11-23"))
+        XCTAssertNil(e.irA(lunes: d("2026-11-23"), semanaInicio: d("2026-11-16"), dia: d("2026-11-19")))
+        XCTAssertEqual(e.irA(lunes: d("2026-11-16"), semanaInicio: d("2026-11-16"), dia: d("2026-11-19")), d("2026-11-19"))
+    }
+
+    // Las páginas no cambian al moverse cerca de hoy (ids estables): solo se rehacen cerca del borde.
+    func testLasSemanasSonEstablesAlrededorDeHoy() {
+        let hoy = d("2026-11-12")
+        let a = EstadoCarrusel.semanas(hoy: hoy, visible: hoy)
+        XCTAssertEqual(a, EstadoCarrusel.semanas(hoy: hoy, visible: d("2027-06-01")))
+        XCTAssertEqual(a.count, 2 * EstadoCarrusel.alcance + 1)
+        XCTAssertTrue(a.contains(d("2026-11-09")))
+        XCTAssertTrue(a.allSatisfy { $0.indiceSemanaLunes == 0 })
+        let lejos = d("2032-01-07")
+        XCTAssertTrue(EstadoCarrusel.semanas(hoy: hoy, visible: lejos).contains(lejos.inicioSemanaLunes))
+    }
 }

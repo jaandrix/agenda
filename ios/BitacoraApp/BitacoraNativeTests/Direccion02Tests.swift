@@ -172,19 +172,6 @@ final class Direccion02Tests: XCTestCase {
         }
     }
 
-    func testCarruselPasoUmbrales() {
-        // 44 pt o predicted 70 pt cambian exactamente una semana; si no, vuelve al centro. Dirección por la señal que supera.
-        XCTAssertEqual(CarruselDias.paso(dx: 0, px: 0), 0)
-        XCTAssertEqual(CarruselDias.paso(dx: -44, px: 0), 0)
-        XCTAssertEqual(CarruselDias.paso(dx: -44.1, px: 0), 7)
-        XCTAssertEqual(CarruselDias.paso(dx: 44.1, px: 0), -7)
-        XCTAssertEqual(CarruselDias.paso(dx: 0, px: -70), 0)
-        XCTAssertEqual(CarruselDias.paso(dx: 0, px: -70.1), 7)
-        XCTAssertEqual(CarruselDias.paso(dx: 0, px: 70.1), -7)
-        XCTAssertEqual(CarruselDias.paso(dx: 10, px: -80), 7)
-        XCTAssertEqual(CarruselDias.paso(dx: -50, px: 10), 7)
-    }
-
     func testVistaInicioPrecargaTresSemanasDesdeCopiaLocal() throws {
         // conCosas cubre semana anterior, actual y siguiente (copia local), sin tocar semana (7 días, lunes-domingo).
         let json = #"{"dayPlanner":{"days":{"2026-11-03":[{"id":"a","title":"previa"}],"2026-11-11":[{"id":"b","title":"hoy"}],"2026-11-18":[{"id":"c","title":"siguiente"}]},"backlog":[]},"entries":[]}"#

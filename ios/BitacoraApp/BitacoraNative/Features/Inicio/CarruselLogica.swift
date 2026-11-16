@@ -26,6 +26,30 @@ struct EstadoCarrusel: Equatable {
         return nuevo
     }
 
+    // 0.23: el carrusel es un ScrollView paginado; al asentarse en otra semana pide el mismo día de la semana en ella.
+    // nil si la semana ya es la que se ve (el scroll avisa también cuando lo recoloca Inicio).
+    mutating func irA(lunes: LocalDay, semanaInicio: LocalDay, dia: LocalDay) -> LocalDay? {
+        guard lunes != lunesVisible(semanaInicio: semanaInicio) else { return nil }
+        let nuevo = lunes.sumando(dias: diaMarcado(dia: dia).indiceSemanaLunes)
+        centro = lunes
+        if let p = pedido { anteriores.insert(p) }
+        pedido = nuevo
+        return nuevo
+    }
+
+    // Las páginas del carrusel: cinco años antes y después de hoy, siempre las mismas (el id de cada página es su
+    // lunes y nada se recentra). Solo si la semana que se ve se acerca al borde, la lista se rehace alrededor de ella.
+    static let alcance = 260
+    static func semanas(hoy: LocalDay, visible: LocalDay) -> [LocalDay] {
+        let h = hoy.inicioSemanaLunes, v = visible.inicioSemanaLunes
+        let centro = abs(h.dias(hasta: v)) > 7 * (alcance - 10) ? v : h
+        let desde = centro.sumando(dias: -7 * alcance)
+        let hasta = centro.sumando(dias: 7 * alcance)
+        var r: [LocalDay] = [], l = desde
+        while l <= hasta { r.append(l); l = l.sumando(dias: 7) }
+        return r
+    }
+
     // Tocar un día de la semana que se ve.
     mutating func tocar(_ d: LocalDay) {
         if let p = pedido { anteriores.insert(p) }

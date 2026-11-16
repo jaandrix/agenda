@@ -452,44 +452,58 @@ struct BloqueSiguiente: View {
     }
 }
 
-// Carrusel real de días (lunes-domingo, Madrid): recibe la semana visible y deriva las adyacentes con LocalDay;
-// conCosas cubre las tres semanas desde la copia local (sin red). Durante el arrastre horizontal las semanas
-// anterior/actual/siguiente siguen el dedo; al soltar hace snap a una semana completa centrada. Umbral: 44 pt o
-// predicted 70 pt (una semana exacta, ±7 días); si no, vuelve al centro. No compite con el scroll vertical.
-// Reduce Motion: cambio inmediato, sin animación extensa. Los tamaños usan Tipo/LetraActiva (escala de Ajustes).
+// Carrusel de semanas (lunes-domingo, Madrid), 0.23: un ScrollView horizontal paginado del sistema, una página por
+// semana con id = su lunes, sin recentrar. El fallo de la 0.19 a la 0.22: el arrastre era un DragGesture simultáneo
+// dentro del ScrollView vertical de Inicio; el scroll vertical se quedaba el toque y cancelaba el gesto sin llamar a
+// onEnded, así que la semana no cambiaba en el iPhone aunque la lógica (EstadoCarrusel) estuviera bien. El paginado
+// nativo convive con el scroll vertical. conCosas cubre las tres semanas alrededor del día que se ve (copia local).
 struct CarruselDias: View {
     let dias: [LocalDay]
     let dia: LocalDay
     let hoy: LocalDay
     let conCosas: Set<LocalDay>
     let elegir: (LocalDay) -> Void
-    @State private var arrastre: CGFloat = 0
-    @State private var eje: Bool?
-    @State private var pendiente: Int = 0
+    @State private var visible: LocalDay?
     @State private var estado = EstadoCarrusel()
     @State private var semanasPasadas = 0
-    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
+    // Hasta que el scroll se coloca en la semana del día, sus avisos de posición no son del dedo.
+    @State private var listo = false
     static let letras = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
-    static let umbral: CGFloat = 44
-    static let umbralPredicho: CGFloat = 70
 
-    private var base: LocalDay { estado.lunesVisible(semanaInicio: dias.first ?? dia) }
+    init(dias: [LocalDay], dia: LocalDay, hoy: LocalDay, conCosas: Set<LocalDay>, elegir: @escaping (LocalDay) -> Void) {
+        self.dias = dias; self.dia = dia; self.hoy = hoy; self.conCosas = conCosas; self.elegir = elegir
+        _visible = State(initialValue: dias.first ?? dia.inicioSemanaLunes)
+    }
+
+    private var semanaInicio: LocalDay { dias.first ?? dia.inicioSemanaLunes }
+    private var base: LocalDay { estado.lunesVisible(semanaInicio: semanaInicio) }
     private var marcado: LocalDay { estado.diaMarcado(dia: dia) }
 
     var body: some View {
-        GeometryReader { geo in
-            let ancho = max(geo.size.width, 1)
-            PaginasSemanas(base: base, marcado: marcado, hoy: hoy, conCosas: conCosas, ancho: ancho, tocar: { tocar($0) })
-                .equatable()
-                .offset(x: -ancho + arrastre)
-            .contentShape(Rectangle())
-            .simultaneousGesture(pendiente == 0 ? gesto(ancho: ancho) : nil)
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal) {
+                LazyHStack(spacing: 0) {
+                    ForEach(EstadoCarrusel.semanas(hoy: hoy, visible: base), id: \.self) { lunes in
+                        SemanaCarrusel(lunes: lunes, marcado: marcado, hoy: hoy, conCosas: conCosas, tocar: { tocar($0) })
+                            .equatable()
+                            .containerRelativeFrame(.horizontal)
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: $visible, anchor: .center)
+            .scrollIndicators(.hidden)
+            .onAppear {
+                proxy.scrollTo(base, anchor: .center)
+                DispatchQueue.main.async { listo = true }
+            }
         }
         .frame(height: Tipo.tamano(64))
-        .clipped()
         .sensoryFeedback(.selection, trigger: semanasPasadas)
         .padding(.top, Espacio.s)
         .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("carrusel-semanas")
         .accessibilityLabel(FichaEventoView.fecha(marcado) + (marcado == hoy ? ", hoy" : ""))
         .accessibilityValue("día elegido")
         .accessibilityAdjustableAction { d in
@@ -498,105 +512,46 @@ struct CarruselDias: View {
         .accessibilityAction(named: "semana anterior") { tocar(marcado.sumando(dias: -7)) }
         .accessibilityAction(named: "semana siguiente") { tocar(marcado.sumando(dias: 7)) }
         .accessibilityAction(named: "ir a hoy.") { tocar(hoy) }
-        .onChange(of: dia) {
-            if pendiente != 0 { pendiente = 0; arrastre = 0 }
-            var tx = Transaction(); tx.disablesAnimations = true
-            withTransaction(tx) { estado.llega(dia) }
+        .onChange(of: visible) { _, nuevo in
+            guard listo, let nuevo, let d = estado.irA(lunes: nuevo, semanaInicio: semanaInicio, dia: dia) else { return }
+            semanasPasadas += 1
+            elegir(d)
         }
+        .onChange(of: dia) {
+            estado.llega(dia)
+            colocar(estado.lunesVisible(semanaInicio: semanaInicio))
+        }
+    }
+
+    // Lleva el scroll a una semana sin animación (hoy a las 4:00, «ir a hoy.», un día tocado de otra semana).
+    private func colocar(_ lunes: LocalDay) {
+        guard visible != lunes else { return }
+        var tx = Transaction(); tx.disablesAnimations = true
+        withTransaction(tx) { visible = lunes }
     }
 
     private func tocar(_ d: LocalDay) {
         guard d != marcado else { return }
-        var tx = Transaction(); tx.disablesAnimations = true
-        withTransaction(tx) { estado.tocar(d) }
+        estado.tocar(d)
+        colocar(d.inicioSemanaLunes)
         elegir(d)
     }
-
-    private func gesto(ancho: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 14)
-            .onChanged { v in
-                guard pendiente == 0 else { return }
-                if eje == nil { eje = abs(v.translation.width) > abs(v.translation.height) * 1.35 }
-                if eje == true { arrastre = v.translation.width }
-            }
-            .onEnded { v in
-                defer { eje = nil }
-                guard eje == true, pendiente == 0 else { arrastre = 0; return }
-                let dx = v.translation.width, px = v.predictedEndTranslation.width
-                let paso = Self.paso(dx: dx, px: px)
-                // Encaje físico: el muelle arranca con la velocidad del dedo (relativa a lo que falta), así la semana
-                // sigue el lanzamiento en vez de reiniciarse; el cambio de semana se confirma al asentarse, no con un reloj.
-                let vx = v.velocity.width
-                if paso == 0 {
-                    if sinMovimiento { arrastre = 0 } else {
-                        withAnimation(Self.muelle(velocidad: vx, desde: arrastre, hasta: 0)) { arrastre = 0 }
-                    }
-                } else {
-                    if sinMovimiento {
-                        var tx = Transaction(); tx.disablesAnimations = true
-                        var nuevoDia = dia
-                        withTransaction(tx) { nuevoDia = estado.paso(paso, semanaInicio: dias.first ?? dia, dia: dia); arrastre = 0 }
-                        elegir(nuevoDia)
-                    } else {
-                        pendiente = paso
-                        let destino: CGFloat = paso > 0 ? -ancho : ancho
-                        let esperado = paso
-                        withAnimation(Self.muelle(velocidad: vx, desde: arrastre, hasta: destino), completionCriteria: .logicallyComplete) {
-                            arrastre = destino
-                        } completion: {
-                            guard pendiente == esperado else { return }
-                            var tx = Transaction(); tx.disablesAnimations = true
-                            var nuevoDia = dia
-                            withTransaction(tx) {
-                                nuevoDia = estado.paso(paso, semanaInicio: dias.first ?? dia, dia: dia)
-                                arrastre = 0; pendiente = 0
-                            }
-                            semanasPasadas += 1
-                            elegir(nuevoDia)
-                        }
-                    }
-                }
-            }
-    }
-
-    // Velocidad inicial relativa (fracción de la distancia por segundo), acotada para que un lanzamiento fuerte no rebote.
-    static func muelle(velocidad: CGFloat, desde: CGFloat, hasta: CGFloat) -> Animation {
-        let falta = hasta - desde
-        let relativa = abs(falta) < 1 ? 0 : min(max(velocidad / falta, 0), 8)
-        return .interpolatingSpring(duration: 0.34, bounce: 0.06, initialVelocity: relativa)
-    }
-
-    static func paso(dx: CGFloat, px: CGFloat) -> Int {
-        let porTramo = abs(dx) > umbral
-        let porFuerza = abs(px) > umbralPredicho
-        guard porTramo || porFuerza else { return 0 }
-        let dir = porFuerza ? px : dx
-        return dir < 0 ? 7 : -7
-    }
-
 }
 
-// Las tres semanas del carrusel (anterior, la que se ve y la siguiente). Equatable: mientras el dedo arrastra solo
-// cambia el desplazamiento de fuera y estas celdas no se vuelven a calcular.
-struct PaginasSemanas: View, Equatable {
-    let base: LocalDay
+// Una semana del carrusel. Equatable: al desplazarse solo se pintan las semanas que entran.
+struct SemanaCarrusel: View, Equatable {
+    let lunes: LocalDay
     let marcado: LocalDay
     let hoy: LocalDay
     let conCosas: Set<LocalDay>
-    let ancho: CGFloat
     let tocar: (LocalDay) -> Void
 
-    static func == (a: PaginasSemanas, b: PaginasSemanas) -> Bool {
-        a.base == b.base && a.marcado == b.marcado && a.hoy == b.hoy && a.conCosas == b.conCosas && a.ancho == b.ancho
+    static func == (a: SemanaCarrusel, b: SemanaCarrusel) -> Bool {
+        a.lunes == b.lunes && a.marcado == b.marcado && a.hoy == b.hoy && a.conCosas == b.conCosas
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach([-7, 0, 7], id: \.self) { delta in
-                HStack(spacing: 0) { ForEach(0..<7, id: \.self) { celda(base.sumando(dias: delta + $0)) } }
-                    .frame(width: ancho)
-            }
-        }
+        HStack(spacing: 0) { ForEach(0..<7, id: \.self) { celda(lunes.sumando(dias: $0)) } }
     }
 
     private func celda(_ d: LocalDay) -> some View {
