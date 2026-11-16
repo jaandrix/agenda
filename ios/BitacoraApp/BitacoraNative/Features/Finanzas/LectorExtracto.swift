@@ -7,9 +7,11 @@ import Compression
 // El resultado es lo que recibe el motor: el texto, o las filas en JSON.
 enum LectorExtracto {
     enum Fallo: LocalizedError {
-        case xlsAntiguo, excel, texto
+        case xlsAntiguo, excel, texto, grande, demasiado
         var errorDescription: String? {
             switch self {
+            case .grande: return "el archivo es demasiado grande (máximo 15 MB en texto y 25 MB en Excel): exporta solo unos meses."
+            case .demasiado: return "el extracto tiene demasiadas filas o columnas (máximo 100.000 filas y 200 columnas)."
             case .xlsAntiguo: return "ese Excel es del formato antiguo (.xls): ábrelo y guárdalo como .xlsx o CSV."
             case .excel: return "no se pudo leer el Excel."
             case .texto: return "no se pudo leer el archivo."
@@ -17,14 +19,34 @@ enum LectorExtracto {
         }
     }
 
+    // 0.23 (auditoría P0): límites antes de leer y al descomprimir. Un ZIP que declara tamaños falsos o una bomba de
+    // descompresión ya no reservan memoria sin techo, y cada paso mira si se ha cancelado.
+    static let maxTexto = 15 << 20, maxExcel = 25 << 20, maxXML = 20 << 20, maxTotal = 60 << 20
+    static let maxRatio = 100, maxFilas = 100_000, maxColumnas = 200
+
+    // Lee el archivo comprobando su tamaño antes de cargarlo (sin copiarlo entero si se puede mapear).
+    static func leer(url: URL) throws -> String {
+        let n = url.lastPathComponent.lowercased()
+        if n.hasSuffix(".xls") { throw Fallo.xlsAntiguo }
+        let tam = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        if tam > (n.hasSuffix(".xlsx") ? maxExcel : max(maxTexto, maxExcel)) { throw Fallo.grande }
+        let datos = try Data(contentsOf: url, options: .mappedIfSafe)
+        try Task.checkCancellation()
+        return try leer(datos, nombre: url.lastPathComponent)
+    }
+
     static func leer(_ datos: Data, nombre: String) throws -> String {
         let n = nombre.lowercased()
         if n.hasSuffix(".xls") { throw Fallo.xlsAntiguo }
         if n.hasSuffix(".xlsx") || datos.starts(with: [0x50, 0x4B, 0x03, 0x04]) {
-            guard let filas = try? excel(datos),
-                  let j = try? JSONSerialization.data(withJSONObject: filas), let s = String(data: j, encoding: .utf8) else { throw Fallo.excel }
+            if datos.count > maxExcel { throw Fallo.grande }
+            let filas: [[String]]
+            do { filas = try excel(datos) } catch let f as Fallo where f == .grande || f == .demasiado { throw f } catch is CancellationError { throw CancellationError() } catch { throw Fallo.excel }
+            try Task.checkCancellation()
+            guard let j = try? JSONSerialization.data(withJSONObject: filas), let s = String(data: j, encoding: .utf8) else { throw Fallo.excel }
             return s
         }
+        if datos.count > maxTexto { throw Fallo.grande }
         return try texto(datos)
     }
 
@@ -56,7 +78,11 @@ enum LectorExtracto {
         let hojas = partes.keys.filter { $0.range(of: #"^xl/worksheets/[^/]+\.xml$"#, options: .regularExpression) != nil }
             .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
         guard let primera = hojas.first, let hoja = leer(primera) else { throw Fallo.excel }
-        let filas = XMLExcel.filas(hoja, compartidas: compartidas, estilos: estilos)
+        try Task.checkCancellation()
+        guard let filas = XMLExcel.filas(hoja, compartidas: compartidas, estilos: estilos) else {
+            try Task.checkCancellation()
+            throw Fallo.demasiado
+        }
         let ancho = filas.map(\.count).max() ?? 0
         return filas.map { $0 + Array(repeating: "", count: ancho - $0.count) }
     }
@@ -69,6 +95,7 @@ enum LectorExtracto {
         while fin >= 0 && u32(fin) != 0x06054b50 { fin -= 1 }
         guard fin >= 0 else { throw Fallo.excel }
         var partes: [String: Data] = [:]
+        var total = 0
         var p = u32(fin + 16)
         for _ in 0..<u16(fin + 10) {
             let nLen = u16(p + 28), eLen = u16(p + 30), cLen = u16(p + 32)
@@ -80,7 +107,13 @@ enum LectorExtracto {
             guard ini >= 0, ini + comprimido <= buf.count else { throw Fallo.excel }
             let trozo = Data(buf[ini..<(ini + comprimido)])
             if nombre.hasPrefix("xl/") && nombre.hasSuffix(".xml") {
-                partes[nombre] = metodo == 0 ? trozo : try inflar(trozo, tamano: tamano)
+                try Task.checkCancellation()
+                // Lo declarado no es de fiar: se limita lo declarado y también lo que sale de verdad.
+                guard tamano <= maxXML, tamano <= max(comprimido, 1) * maxRatio else { throw Fallo.grande }
+                let d = metodo == 0 ? trozo : try inflar(trozo, tamano: tamano)
+                total += d.count
+                guard d.count <= maxXML, total <= maxTotal else { throw Fallo.grande }
+                partes[nombre] = d
             }
             p += 46 + nLen + eLen + cLen
         }
@@ -89,8 +122,9 @@ enum LectorExtracto {
 
     // DEFLATE sin cabecera (deflate-raw, como DecompressionStream en la web): COMPRESSION_ZLIB de Apple es eso.
     private static func inflar(_ datos: Data, tamano: Int) throws -> Data {
-        var capacidad = max(tamano, datos.count * 4, 1024)
-        for _ in 0..<4 {
+        let techo = min(maxXML, max(datos.count, 1) * maxRatio) + 1
+        var capacidad = min(max(tamano + 1, datos.count * 4, 1024), techo)
+        while true {
             let destino = UnsafeMutablePointer<UInt8>.allocate(capacity: capacidad)
             defer { destino.deallocate() }
             let n = datos.withUnsafeBytes { (o: UnsafeRawBufferPointer) -> Int in
@@ -98,9 +132,10 @@ enum LectorExtracto {
             }
             if n > 0 && n < capacidad { return Data(bytes: destino, count: n) }
             if n > 0 && tamano > 0 && n == tamano { return Data(bytes: destino, count: n) }
-            capacidad *= 4
+            // n == 0 es un error o un destino pequeño; n == capacidad, que no cabía.
+            if capacidad >= techo { throw n == 0 ? Fallo.excel : Fallo.grande }
+            capacidad = min(capacidad * 4, techo)
         }
-        throw Fallo.excel
     }
 }
 
@@ -112,11 +147,13 @@ private enum XMLExcel {
         var alAbrir: (String, [String: String]) -> Void = { _, _ in }
         var alCerrar: (String) -> Void = { _ in }
         var alTexto: (String) -> Void = { _ in }
+        private var x: XMLParser?
+        func parar() { x?.abortParsing() }
         func parser(_ p: XMLParser, didStartElement e: String, namespaceURI: String?, qualifiedName: String?, attributes a: [String: String] = [:]) { alAbrir(local(e), a) }
         func parser(_ p: XMLParser, didEndElement e: String, namespaceURI: String?, qualifiedName: String?) { alCerrar(local(e)) }
         func parser(_ p: XMLParser, foundCharacters s: String) { alTexto(s) }
         private func local(_ n: String) -> String { n.split(separator: ":").last.map(String.init) ?? n }
-        func leer(_ d: Data) { let x = XMLParser(data: d); x.delegate = self; x.shouldProcessNamespaces = false; x.parse() }
+        func leer(_ d: Data) { let x = XMLParser(data: d); self.x = x; x.delegate = self; x.shouldProcessNamespaces = false; x.parse(); self.x = nil }
     }
 
     // `si` con sus `t`, sin los de `rPh` (la lectura fonética).
@@ -144,7 +181,8 @@ private enum XMLExcel {
         return Estilos(formatos: formatos, xfs: xfs)
     }
 
-    static func filas(_ d: Data, compartidas: [String], estilos: Estilos) -> [[String]] {
+    // nil si pasa de los límites de filas o columnas, o si se cancela.
+    static func filas(_ d: Data, compartidas: [String], estilos: Estilos) -> [[String]]? {
         func esFecha(_ id: String) -> Bool {
             if let n = Int(id), (14...22).contains(n) || (45...47).contains(n) { return true }
             let f = (estilos.formatos[id] ?? "").replacingOccurrences(of: #""[^"]*"|\[[^\]]*\]"#, with: "", options: .regularExpression)
@@ -156,6 +194,7 @@ private enum XMLExcel {
         var filas: [[String]] = [], celdas: [String] = []
         var tipo: String?, ref: String?, estilo = "0", pos = 0
         var v = "", enV = false, vVisto = false, inline = "", enT = false, enRPh = false
+        var fuera = false
         let l = Lector()
         l.alAbrir = { n, a in
             switch n {
@@ -192,16 +231,18 @@ private enum XMLExcel {
                     }
                 } else { valor = v }
                 let idx = ref.map(columna) ?? pos
+                if idx >= LectorExtracto.maxColumnas { fuera = true; l.parar(); return }
                 while celdas.count < idx { celdas.append("") }
                 let limpio = valor.trimmingCharacters(in: .whitespacesAndNewlines)
                 if idx < celdas.count { celdas[idx] = limpio } else { celdas.append(limpio) }
                 pos += 1
             case "row":
                 if celdas.contains(where: { !$0.isEmpty }) { filas.append(celdas) }
+                if filas.count > LectorExtracto.maxFilas || (filas.count % 2000 == 0 && Task.isCancelled) { fuera = true; l.parar() }
             default: break
             }
         }
         l.leer(d)
-        return filas
+        return fuera ? nil : filas
     }
 }

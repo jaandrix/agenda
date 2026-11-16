@@ -133,11 +133,19 @@ struct ImportarExtractoView: View {
     @State private var trabajando = false
     @State private var sobranMarcados = Set<String>()
     @State private var arreglado: String?
+    // 0.23: la lectura del archivo va fuera del hilo principal y se puede cancelar; lo pegado, la última petición gana.
+    @State private var lectura: Task<Void, Never>?
+    @State private var generacion = 0
 
     var body: some View {
         NavigationStack {
             FormCasa {
-                if let r = resultado {
+                if lectura != nil {
+                    Section {
+                        HStack { ProgressView(); Text("leyendo el archivo…").foregroundStyle(Paleta.textoSecundario) }
+                        Button("cancelar la lectura.") { lectura?.cancel(); lectura = nil }
+                    }
+                } else if let r = resultado {
                     Section {
                         Text(r.texto + (r.quitados > 0 ? ", \(r.quitados) \(r.quitados == 1 ? "duplicado quitado" : "duplicados quitados")" : "") + ".")
                         if let q = r.cuadre {
@@ -159,7 +167,12 @@ struct ImportarExtractoView: View {
                     }
                     Section("o pega aquí el extracto.") {
                         TextEditor(text: $pegado).frame(minHeight: 120).font(.system(.footnote, design: .monospaced))
-                            .onChange(of: pegado) { _, t in if !t.isEmpty { Task { await preparar(t, silencioso: true) } } }
+                            .task(id: pegado) {
+                                guard !pegado.isEmpty else { return }
+                                try? await Task.sleep(for: .milliseconds(300))
+                                guard !Task.isCancelled else { return }
+                                await preparar(pegado, silencioso: true)
+                            }
                     }
                 }
                 if let error { Section { Text(error).foregroundStyle(Paleta.error) } }
@@ -188,12 +201,18 @@ struct ImportarExtractoView: View {
                     .overlay(alignment: .top) { Rectangle().fill(Paleta.borde).frame(height: 1) }
                 }
             }
-            .fileImporter(isPresented: $elegir, allowedContentTypes: [.commaSeparatedText, .tabSeparatedText, .plainText, .spreadsheet, .data]) { r in
-                Task { await leerArchivo(r) }
+            .fileImporter(isPresented: $elegir, allowedContentTypes: Self.tiposArchivo) { r in
+                lectura?.cancel()
+                lectura = Task { await leerArchivo(r) }
             }
+            .onDisappear { lectura?.cancel() }
             .disabled(trabajando)
         }
     }
+
+    // Sin `.data` (auditoría P0): solo texto y hojas de cálculo que se puedan identificar.
+    static let tiposArchivo: [UTType] = [.commaSeparatedText, .tabSeparatedText, .plainText, .spreadsheet]
+        + [UTType(filenameExtension: "xlsx"), UTType(filenameExtension: "csv")].compactMap { $0 }
 
     private func textoImportar(_ v: VistaImportacion) -> String {
         guard v.confirmada else { return "elige la cuenta primero." }
@@ -305,10 +324,15 @@ struct ImportarExtractoView: View {
         do {
             let url = try r.get()
             let acceso = url.startAccessingSecurityScopedResource(); defer { if acceso { url.stopAccessingSecurityScopedResource() } }
-            let datos = try Data(contentsOf: url)
-            let texto = try await Task.detached { try LectorExtracto.leer(datos, nombre: url.lastPathComponent) }.value
+            let trabajo = Task.detached(priority: .userInitiated) { try LectorExtracto.leer(url: url) }
+            let texto = try await withTaskCancellationHandler { try await trabajo.value } onCancel: { trabajo.cancel() }
+            try Task.checkCancellation()
+            lectura = nil
             await preparar(texto)
+        } catch is CancellationError {
+            self.error = nil
         } catch {
+            lectura = nil
             self.error = (error as? LocalizedError)?.errorDescription ?? "no se pudo leer el archivo."
         }
     }
@@ -318,13 +342,16 @@ struct ImportarExtractoView: View {
             if !silencioso { error = "el portapapeles está vacío: copia el extracto o elige el archivo." }
             return
         }
-        trabajando = true; defer { trabajando = false }
+        generacion += 1
+        let gen = generacion
+        trabajando = true; defer { if gen == generacion { trabajando = false } }
         do {
             let m = try await motorListo(c)
             let d = try await m.crudo("importarPreparar", [texto, ""])
+            guard gen == generacion else { return }
             if let v = try? JSONDecoder().decode(VistaImportacion.self, from: d) { vista = v; error = nil }
             else if !silencioso { error = "El archivo no tiene filas suficientes." }
-        } catch { if !silencioso { self.error = (error as? LocalizedError)?.errorDescription ?? "no se pudo leer el extracto." } }
+        } catch { if !silencioso && gen == generacion { self.error = (error as? LocalizedError)?.errorDescription ?? "no se pudo leer el extracto." } }
     }
 
     private func paso(_ f: String, _ args: [String]) async {
