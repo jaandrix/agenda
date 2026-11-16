@@ -57,7 +57,8 @@ struct PanoramaView: View {
         .background(Paleta.fondo.ignoresSafeArea())
         .task(id: c.revision) {
             let doc = await c.documentoVisible()
-            p = await Task.detached(priority: .userInitiated) { doc.map { Puntualidad.desde($0) } }.value
+            guard let nuevo = await ultimaGana({ doc.map { Puntualidad.desde($0) } }) else { return }
+            p = nuevo
         }
     }
 

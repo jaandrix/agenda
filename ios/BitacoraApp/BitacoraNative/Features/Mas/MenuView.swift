@@ -80,7 +80,8 @@ struct MasView: View {
         .navigationDestination(for: String.self) { destino($0).toolbar(.visible, for: .navigationBar).navigationBarTitleDisplayMode(.inline) }
         .task(id: c.revision) {
             let doc = await c.documentoVisible()
-            menu = await Task.detached(priority: .userInitiated) { doc.map { MenuMas.desde($0) } }.value
+            guard let nuevo = await ultimaGana({ doc.map { MenuMas.desde($0) } }) else { return }
+            menu = nuevo
         }
     }
 
@@ -196,7 +197,8 @@ struct RutinasView: View {
         .background(Paleta.fondo.ignoresSafeArea())
         .task(id: c.revision) {
             let doc = await c.documentoVisible()
-            vista = await Task.detached(priority: .userInitiated) { doc.map { LecturaMas.vista($0) } }.value
+            guard let nuevo = await ultimaGana({ doc.map { LecturaMas.vista($0) } }) else { return }
+            vista = nuevo
         }
     }
 
@@ -253,7 +255,8 @@ struct NotasView: View {
         .background(Paleta.fondo.ignoresSafeArea())
         .task(id: c.revision) {
             let doc = await c.documentoVisible()
-            vista = await Task.detached(priority: .userInitiated) { doc.map { LecturaMas.vista($0) } }.value
+            guard let nuevo = await ultimaGana({ doc.map { LecturaMas.vista($0) } }) else { return }
+            vista = nuevo
         }
     }
 

@@ -107,7 +107,8 @@ struct ProyectosView: View {
         .refreshable { await c.sincronizar() }
         .task(id: c.revision) {
             let doc = await c.documentoVisible()
-            proyectos = await Task.detached(priority: .userInitiated) { doc.map { LecturaProyectos.vista($0) } }.value
+            guard let nuevo = await ultimaGana({ doc.map { LecturaProyectos.vista($0) } }) else { return }
+            proyectos = nuevo
         }
     }
 
@@ -262,7 +263,8 @@ struct ProyectoDetalleView: View {
         .task(id: c.revision) {
             let doc = await c.documentoVisible()
             let pid = id
-            p = await Task.detached(priority: .userInitiated) { doc.flatMap { LecturaProyectos.vista($0).first { $0.id == pid } } }.value
+            guard let nuevo = await ultimaGana({ doc.flatMap { LecturaProyectos.vista($0).first { $0.id == pid } } }) else { return }
+            p = nuevo
         }
     }
 

@@ -14,16 +14,20 @@ final class PlanModel {
     private(set) var marcadas = 0
     var desplazamiento = 0
     @ObservationIgnored private var enVuelo = Set<String>()
+    // 0.23 (auditoría): la última carga gana (una lectura vieja ya no desmarca lo que se acaba de marcar).
+    @ObservationIgnored private var turno = 0
 
     // Solo decodifica `dayPlanner` y `recurringTasks`, fuera del hilo principal.
     func cargar(_ c: AppCoordinator) async {
+        turno += 1
+        let mio = turno
         let doc = await c.documentoVisible()
         let d = desplazamiento
         let vista: VistaPlan? = await Task.detached(priority: .userInitiated) {
             guard let doc else { return nil }
             return LecturaPlanificador.vista(doc, desplazamiento: d)
         }.value
-        guard d == desplazamiento else { return }
+        guard d == desplazamiento, mio == turno else { return }
         if var vista {
             // Lo que se está guardando ahora mismo conserva el estado que ya se ve.
             if case .lista(let antes) = carga {

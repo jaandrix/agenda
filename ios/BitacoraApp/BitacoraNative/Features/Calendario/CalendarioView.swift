@@ -6,6 +6,8 @@ final class CalendarioModel {
     var mes: YearMonth
     var elegido: LocalDay
     private(set) var vista: VistaMes?
+    // 0.23 (auditoría): la última carga gana aunque el mes sea el mismo (una lectura vieja ya no pisa a la nueva).
+    @ObservationIgnored private var turno = 0
 
     init() {
         let hoy = CalendarioBitacora.madrid.dia(de: Date())
@@ -14,16 +16,19 @@ final class CalendarioModel {
     }
 
     func cargar(_ c: AppCoordinator) async {
+        turno += 1
+        let mio = turno
         let doc = await c.documentoVisible()
         let m = mes
         let v: VistaMes? = await Task.detached(priority: .userInitiated) {
             doc.map { LecturaCalendario.mes($0, m) }
         }.value
+        guard mio == turno else { return }
         if m == mes { vista = v }
         // Los partidos de tus equipos, cuando llegan de la red.
         guard let doc, let v, let primero = LocalDay(year: m.year, month: m.month, day: 1) else { return }
         let partidos = await c.entorno.servicios.deportes.eventos(doc, desde: primero, dias: 31)
-        guard !partidos.isEmpty, m == mes else { return }
+        guard !partidos.isEmpty, m == mes, mio == turno else { return }
         var porDia = v.porDia
         for (d, l) in partidos where d.yearMonth == m { porDia[d, default: []].append(contentsOf: l); porDia[d]?.sort { ($0.hora ?? "") < ($1.hora ?? "") } }
         vista = VistaMes(mes: m, porDia: porDia)

@@ -97,7 +97,8 @@ struct BuscarView: View {
             try? await Task.sleep(for: .milliseconds(150))
             guard !Task.isCancelled else { return }
             let doc = await c.documentoVisible(), q = texto
-            resultados = await Task.detached(priority: .userInitiated) { doc.map { LecturaBusqueda.resultados($0, q) } ?? [] }.value
+            guard let nuevo = await ultimaGana({ doc.map { LecturaBusqueda.resultados($0, q) } ?? [] }) else { return }
+            resultados = nuevo
         }
     }
 }

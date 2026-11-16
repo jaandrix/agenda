@@ -185,7 +185,8 @@ struct AjustesView: View {
 
     private func cargarDocumento() async {
         guard let doc = await c.documentoVisible() else { return }
-        lectura = await Task.detached(priority: .userInitiated) { OperacionesAjustes.leer(doc) }.value
+        guard let nuevo = await ultimaGana({ OperacionesAjustes.leer(doc) }) else { return }
+        lectura = nuevo
     }
 
     private func cargarRemoto() async {
@@ -203,10 +204,7 @@ struct AjustesView: View {
         let antes = lectura.perfil
         lectura.perfil = p
         Task {
-            do { try await c.encolar(.ponerPerfil(perfil: p)) } catch {
-                lectura.perfil = antes
-                c.avisar("no se pudo guardar en este iphone.")
-            }
+            if !(await c.ponerAjuste("perfil", [.ponerPerfil(perfil: p)])) { lectura.perfil = antes }
         }
     }
 

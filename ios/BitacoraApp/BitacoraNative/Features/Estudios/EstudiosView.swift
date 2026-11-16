@@ -97,7 +97,8 @@ struct EstudiosView: View {
         .hoja(item: $editando) { e in EditorEntregaView(nueva: e.nueva, existente: e.item) { aviso = $0 } }
         .task(id: c.revision) {
             let doc = await c.documentoVisible()
-            asignaturas = await Task.detached(priority: .userInitiated) { doc.map { LecturaEstudios.vista($0) } }.value
+            guard let nuevo = await ultimaGana({ doc.map { LecturaEstudios.vista($0) } }) else { return }
+            asignaturas = nuevo
         }
     }
 

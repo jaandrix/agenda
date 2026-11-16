@@ -108,7 +108,8 @@ struct DocumentosView: View {
 
     private func cargar() async {
         let doc = await c.documentoVisible()
-        fichas = await Task.detached(priority: .userInitiated) { doc.map { LecturaDocumentos.fichas($0) } ?? [] }.value
+        guard let nuevo = await ultimaGana({ doc.map { LecturaDocumentos.fichas($0) } ?? [] }) else { return }
+        fichas = nuevo
     }
 
     // loadDocuments: la carpeta del usuario, lo más nuevo primero, sin las carpetas backups y viewer.

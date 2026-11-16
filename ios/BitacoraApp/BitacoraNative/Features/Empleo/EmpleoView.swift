@@ -140,7 +140,8 @@ struct EmpleoView: View {
     private func cargar() async {
         let doc = await c.documentoVisible()
         let h = hoy
-        vista = await Task.detached(priority: .userInitiated) { doc.map { LecturaEmpleo.vista($0, hoy: h) } }.value
+        guard let nuevo = await ultimaGana({ doc.map { LecturaEmpleo.vista($0, hoy: h) } }) else { return }
+        vista = nuevo
     }
 }
 

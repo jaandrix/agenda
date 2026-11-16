@@ -72,7 +72,8 @@ struct EventosView: View {
         .onChange(of: fase) { _, f in if f == .active { hoy = CalendarioBitacora.madrid.dia(de: Date()) } }
         .task(id: "\(c.revision)-\(hoy.iso)") {
             let doc = await c.documentoVisible()
-            vista = await Task.detached(priority: .userInitiated) { doc.map { VistaEventos.desde($0) } }.value
+            guard let nuevo = await ultimaGana({ doc.map { VistaEventos.desde($0) } }) else { return }
+            vista = nuevo
             guard let doc else { return }
             hayEquipos = !((((try? doc.valor(de: "servicios")) ?? nil)?["equipos"]?.lista ?? []).isEmpty)
             if hayEquipos {

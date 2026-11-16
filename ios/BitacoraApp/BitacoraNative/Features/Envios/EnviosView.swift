@@ -199,7 +199,8 @@ struct EnviosView: View {
 
     private func cargar() async {
         let doc = await c.documentoVisible()
-        pedidos = await Task.detached(priority: .userInitiated) { doc.map { LecturaEnvios.pedidos($0) } }.value
+        guard let nuevo = await ultimaGana({ doc.map { LecturaEnvios.pedidos($0) } }) else { return }
+        pedidos = nuevo
     }
 }
 

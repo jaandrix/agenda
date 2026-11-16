@@ -102,11 +102,11 @@ struct AjustesApartadosView: View {
         }
         .task(id: c.revision) {
             guard let doc = await c.documentoVisible() else { return }
-            let r = await Task.detached(priority: .userInitiated) { () -> ([String: Bool], String) in
+            guard let r = await ultimaGana({ () -> ([String: Bool], String) in
                 var v: [String: Bool] = [:]
                 for o in AjustesApartadosView.opcionales { v[o.vista] = Apartados.visible(o.vista, doc) }
                 return (v, OperacionesAjustes.leer(doc).perfil)
-            }.value
+            }) else { return }
             visibles = r.0
             perfil = r.1
         }
@@ -116,10 +116,7 @@ struct AjustesApartadosView: View {
         let antes = visibles[vista]
         visibles[vista] = v
         Task {
-            do { try await c.encolar(.ponerApartado(vista: vista, visible: v)) } catch {
-                visibles[vista] = antes
-                c.avisar("no se pudo guardar en este iphone.")
-            }
+            if !(await c.ponerAjuste("apartado:" + vista, [.ponerApartado(vista: vista, visible: v)])) { visibles[vista] = antes }
         }
     }
 }
@@ -143,20 +140,18 @@ struct AjustesAvisosView: View {
         }
         .task(id: c.revision) {
             guard let doc = await c.documentoVisible() else { return }
-            apagados = await Task.detached(priority: .userInitiated) { OperacionesAjustes.leer(doc).avisosApagados }.value
+            guard let nuevo = await ultimaGana({ OperacionesAjustes.leer(doc).avisosApagados }) else { return }
+            apagados = nuevo
         }
     }
 
     private func poner(_ tipo: String, _ v: Bool) {
-        let antes = apagados
         if v { apagados.remove(tipo) } else { apagados.insert(tipo) }
         Task {
-            do {
-                try await c.encolar(OperacionesAjustes.avisoOp(tipo: tipo, activo: v))
+            if await c.ponerAjuste("aviso:" + tipo, [OperacionesAjustes.avisoOp(tipo: tipo, activo: v)]) {
                 if tipo == "eventos" { c.reconciliarAvisos() }
-            } catch {
-                apagados = antes
-                c.avisar("no se pudo guardar en este iphone.")
+            } else {
+                if v { apagados.insert(tipo) } else { apagados.remove(tipo) }
             }
         }
     }

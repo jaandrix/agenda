@@ -166,7 +166,8 @@ struct ViajesView: View {
 
     private func cargar() async {
         let doc = await c.documentoVisible()
-        viajes = await Task.detached(priority: .userInitiated) { doc.map { LecturaViajes.viajes($0) } }.value
+        guard let nuevo = await ultimaGana({ doc.map { LecturaViajes.viajes($0) } }) else { return }
+        viajes = nuevo
     }
 }
 
@@ -275,7 +276,8 @@ private struct FichaViaje: View {
     private func cargar() async {
         let doc = await c.documentoVisible()
         let vid = id
-        viaje = await Task.detached(priority: .userInitiated) { doc.flatMap { LecturaViajes.viajes($0).first { $0.id == vid } } }.value
+        guard let nuevo = await ultimaGana({ doc.flatMap { LecturaViajes.viajes($0).first { $0.id == vid } } }) else { return }
+        viaje = nuevo
     }
 }
 

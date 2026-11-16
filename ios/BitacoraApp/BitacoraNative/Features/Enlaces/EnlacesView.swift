@@ -162,7 +162,7 @@ struct EnlacesView: View {
 
     private func cargar() async {
         let doc = await c.documentoVisible()
-        let r = await Task.detached(priority: .userInitiated) { doc.map { LecturaEnlaces.leer($0) } }.value
+        guard let r = await ultimaGana({ doc.map { LecturaEnlaces.leer($0) } }) else { return }
         datos = r
     }
 }

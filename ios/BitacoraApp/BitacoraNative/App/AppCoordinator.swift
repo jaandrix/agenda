@@ -242,6 +242,25 @@ final class AppCoordinator {
     }
     func encolar(_ ops: [OperacionBitacora]) async throws { try await entorno.sync.encolar(ops) }
 
+    // 0.23 (auditoría): los toques seguidos de un ajuste se guardan en el orden en que se hicieron (una cadena) y, si uno
+    // falla, solo se vuelve atrás si fue el último toque de esa clave: un fallo viejo ya no deshace uno nuevo bueno.
+    // true si la vista se queda como está.
+    @ObservationIgnored private var cadenaAjustes: Task<Void, Never>?
+    @ObservationIgnored private var turnosAjustes: [String: Int] = [:]
+    func ponerAjuste(_ clave: String, _ ops: [OperacionBitacora]) async -> Bool {
+        let n = (turnosAjustes[clave] ?? 0) + 1
+        turnosAjustes[clave] = n
+        let anterior = cadenaAjustes
+        let t = Task<Bool, Never> {
+            await anterior?.value
+            do { try await self.encolar(ops); return true } catch { return false }
+        }
+        cadenaAjustes = Task { _ = await t.value }
+        let ok = await t.value
+        if !ok { avisar("no se pudo guardar en este iphone.") }
+        return ok || turnosAjustes[clave] != n
+    }
+
     func documentoVisible() async -> DocumentoBitacora? { await entorno.sync.documentoVisible() }
     func documentoVisibleConRevision() async -> (DocumentoBitacora?, Int) { await entorno.sync.documentoVisibleConRevision() }
     func revisionSync() async -> Int { await entorno.sync.revisionActual() }

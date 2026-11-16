@@ -110,7 +110,8 @@ struct ObjetivosView: View {
 
     private func cargar() async {
         let doc = await c.documentoVisible()
-        objetivos = await Task.detached(priority: .userInitiated) { doc.map { LecturaObjetivos.objetivos($0) } }.value
+        guard let nuevo = await ultimaGana({ doc.map { LecturaObjetivos.objetivos($0) } }) else { return }
+        objetivos = nuevo
     }
 }
 
@@ -199,7 +200,8 @@ private struct FichaObjetivo: View {
     private func cargar() async {
         let doc = await c.documentoVisible()
         let gid = id
-        objetivo = await Task.detached(priority: .userInitiated) { doc.flatMap { LecturaObjetivos.objetivos($0).first { $0.id == gid } } }.value
+        guard let nuevo = await ultimaGana({ doc.flatMap { LecturaObjetivos.objetivos($0).first { $0.id == gid } } }) else { return }
+        objetivo = nuevo
     }
 }
 

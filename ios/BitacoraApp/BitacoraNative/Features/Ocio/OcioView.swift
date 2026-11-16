@@ -151,7 +151,8 @@ struct OcioView: View {
 
     private func cargar() async {
         let doc = await c.documentoVisible()
-        vista = await Task.detached(priority: .userInitiated) { doc.map { LecturaOcio.vista($0) } }.value
+        guard let nuevo = await ultimaGana({ doc.map { LecturaOcio.vista($0) } }) else { return }
+        vista = nuevo
     }
 
     private func guardar(_ d: DatosEditorOcio, previo: EntradaOcio?) async {
