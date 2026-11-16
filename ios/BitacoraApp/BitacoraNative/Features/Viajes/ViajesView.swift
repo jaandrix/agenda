@@ -123,8 +123,8 @@ struct ViajesView: View {
         }
         .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
-        .sheet(item: $abierto) { a in FichaViaje(id: a.id).environment(c) }
-        .sheet(item: $edicion) { e in
+        .hoja(item: $abierto) { a in FichaViaje(id: a.id).environment(c) }
+        .hoja(item: $edicion) { e in
             if case .viaje(let v) = e { EditorViaje(viaje: v).environment(c) }
         }
     }
@@ -155,7 +155,7 @@ struct ViajesView: View {
         }.buttonStyle(.plain)
         .contextMenu {
             Button("editar.") { edicion = .viaje(v) }
-            Button("eliminar.", role: .destructive) { Task { try? await c.encolar(.borrarEntrada(id: v.id)) } }
+            Button("eliminar.", role: .destructive) { Task { await c.guardar(.borrarEntrada(id: v.id)) } }
         }
     }
 
@@ -246,12 +246,12 @@ private struct FichaViaje: View {
                 ToolbarItem(placement: .primaryAction) { Button("editar.") { editando = true }.disabled(viaje == nil) }
             }
             .confirmationDialog("¿eliminar este viaje?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
-                Button("eliminar.", role: .destructive) { Task { try? await c.encolar(.borrarEntrada(id: id)); cerrar() } }
+                Button("eliminar.", role: .destructive) { Task { if await c.guardar(.borrarEntrada(id: id)) { cerrar() } } }
                 Button("cancelar.", role: .cancel) {}
             }
-            .sheet(isPresented: $editando) { EditorViaje(viaje: viaje).environment(c) }
-            .sheet(isPresented: $nuevoItem) { EditorItinerario(viajeId: id, item: nil, diaInicial: viaje?.inicio ?? "").environment(c) }
-            .sheet(item: $itemEditado) { it in EditorItinerario(viajeId: id, item: it, diaInicial: it.dia).environment(c) }
+            .hoja(isPresented: $editando) { EditorViaje(viaje: viaje).environment(c) }
+            .hoja(isPresented: $nuevoItem) { EditorItinerario(viajeId: id, item: nil, diaInicial: viaje?.inicio ?? "").environment(c) }
+            .hoja(item: $itemEditado) { it in EditorItinerario(viajeId: id, item: it, diaInicial: it.dia).environment(c) }
             .task(id: c.revision) { await cargar() }
         }
     }
@@ -270,7 +270,7 @@ private struct FichaViaje: View {
         nuevoLugar = ""
     }
 
-    private func enviar(_ cambio: CambioViaje) { Task { try? await c.encolar(.cambiarViaje(viajeId: id, cambio: cambio)) } }
+    private func enviar(_ cambio: CambioViaje) { Task { await c.guardar(.cambiarViaje(viajeId: id, cambio: cambio)) } }
 
     private func cargar() async {
         let doc = await c.documentoVisible()
@@ -326,10 +326,9 @@ private struct EditorViaje: View {
                         let vuelta = conFechas ? CalendarioBitacora.madrid.dia(de: max(fin, inicio)).iso : ""
                         let t = titulo.trimmingCharacters(in: .whitespacesAndNewlines)
                         let d = destino.trimmingCharacters(in: .whitespacesAndNewlines)
-                        Task { try? await c.encolar(.guardarViaje(id: id, titulo: t.isEmpty ? "Viaje a " + d : t, destino: d, inicio: ida, fin: vuelta,
+                        Task { if await c.guardar(.guardarViaje(id: id, titulo: t.isEmpty ? "Viaje a " + d : t, destino: d, inicio: ida, fin: vuelta,
                                                                     companeros: companeros.trimmingCharacters(in: .whitespacesAndNewlines),
-                                                                    notas: notas.trimmingCharacters(in: .whitespacesAndNewlines))) }
-                        cerrar()
+                                                                    notas: notas.trimmingCharacters(in: .whitespacesAndNewlines))) { cerrar() } }
                     }.disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty && destino.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
@@ -382,8 +381,7 @@ private struct EditorItinerario: View {
                 TextField("notas.", text: $notas, axis: .vertical).lineLimit(1...4)
                 if item != nil {
                     Section { Button("quitar del itinerario.", role: .destructive) {
-                        Task { try? await c.encolar(.cambiarViaje(viajeId: viajeId, cambio: .quitarItinerario(id: id))) }
-                        cerrar()
+                        Task { if await c.guardar(.cambiarViaje(viajeId: viajeId, cambio: .quitarItinerario(id: id))) { cerrar() } }
                     } }
                 }
             }
@@ -400,8 +398,7 @@ private struct EditorItinerario: View {
                                                            titulo: titulo.trimmingCharacters(in: .whitespacesAndNewlines),
                                                            lugar: lugar.trimmingCharacters(in: .whitespacesAndNewlines),
                                                            notas: notas.trimmingCharacters(in: .whitespacesAndNewlines))
-                        Task { try? await c.encolar(.cambiarViaje(viajeId: viajeId, cambio: cambio)) }
-                        cerrar()
+                        Task { if await c.guardar(.cambiarViaje(viajeId: viajeId, cambio: cambio)) { cerrar() } }
                     }.disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }

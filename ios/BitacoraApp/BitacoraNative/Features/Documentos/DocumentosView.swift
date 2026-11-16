@@ -86,7 +86,7 @@ struct DocumentosView: View {
         .task(id: c.revision) { await cargar() }
         .task { await cargarArchivos() }
         .quickLookPreview($vista)
-        .sheet(item: $editando) { e in EditorFichaDocumento(editando: e) }
+        .hoja(item: $editando) { e in EditorFichaDocumento(editando: e) }
     }
 
     private func fila(_ f: FichaDocumento) -> some View {

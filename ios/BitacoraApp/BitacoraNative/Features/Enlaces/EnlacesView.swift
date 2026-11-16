@@ -79,8 +79,8 @@ struct EnlacesView: View {
         }
         .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
-        .confirmarBorrado($enlaceABorrar, titulo: { "¿eliminar «\($0.titulo)»?" }, boton: "eliminar.") { e in Task { try? await c.encolar(.borrarEnlace(id: e.id)) } }
-        .sheet(item: $modal) { m in
+        .confirmarBorrado($enlaceABorrar, titulo: { "¿eliminar «\($0.titulo)»?" }, boton: "eliminar.") { e in Task { await c.guardar(.borrarEnlace(id: e.id)) } }
+        .hoja(item: $modal) { m in
             switch m {
             case .enlace(let e, let url): EditorEnlace(enlace: e, urlInicial: url, categorias: datos?.1 ?? []).environment(c)
             case .categoria(let cat): EditorCategoriaEnlace(categoria: cat, categorias: datos?.1 ?? []).environment(c)
@@ -138,7 +138,7 @@ struct EnlacesView: View {
                 Button("editar.") { modal = .enlace(e, nil) }
                 Button("abrir en safari.") { if let u = URL(string: e.url) { abrir(u) } }
                 Button("duplicar.") {
-                    Task { try? await c.encolar(.guardarEnlace(id: LecturaEnlaces.nuevoId("link"), titulo: e.titulo + " (copia)", url: e.url, categoriaId: e.categoriaId,
+                    Task { await c.guardar(.guardarEnlace(id: LecturaEnlaces.nuevoId("link"), titulo: e.titulo + " (copia)", url: e.url, categoriaId: e.categoriaId,
                                                                 descripcion: e.descripcion, creado: ISO8601DateFormatter().string(from: Date()))) }
                 }
                 Button("copiar la dirección.") { UIPasteboard.general.string = e.url; aviso = "dirección copiada." }
@@ -151,7 +151,7 @@ struct EnlacesView: View {
     private func favorito(_ e: Enlace) {
         if !e.favorito, (datos?.0.filter(\.favorito).count ?? 0) >= 5 { aviso = "como mucho 5 favoritos: quita uno antes."; return }
         aviso = nil
-        Task { try? await c.encolar(.favoritoEnlace(id: e.id, favorito: !e.favorito)) }
+        Task { await c.guardar(.favoritoEnlace(id: e.id, favorito: !e.favorito)) }
     }
 
     private func pegar() {
@@ -205,9 +205,8 @@ private struct EditorEnlace: View {
                 ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("guardar.") {
-                        Task { try? await c.encolar(.guardarEnlace(id: id, titulo: titulo, url: url, categoriaId: categoria.isEmpty ? nil : categoria,
-                                                                    descripcion: descripcion, creado: creado)) }
-                        cerrar()
+                        Task { if await c.guardar(.guardarEnlace(id: id, titulo: titulo, url: url, categoriaId: categoria.isEmpty ? nil : categoria,
+                                                                    descripcion: descripcion, creado: creado)) { cerrar() } }
                     }.disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty || url.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
@@ -255,12 +254,12 @@ private struct EditorCategoriaEnlace: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("guardar.") { Task { try? await c.encolar(.guardarCategoriaEnlace(id: id, nombre: nombre, color: color)) }; cerrar() }
+                    Button("guardar.") { Task { if await c.guardar(.guardarCategoriaEnlace(id: id, nombre: nombre, color: color)) { cerrar() } } }
                         .disabled(nombre.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .confirmationDialog("¿eliminar esta categoría?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
-                Button("eliminar.", role: .destructive) { Task { try? await c.encolar(.borrarCategoriaEnlace(id: id, destino: destino.isEmpty ? nil : destino)) }; cerrar() }
+                Button("eliminar.", role: .destructive) { Task { if await c.guardar(.borrarCategoriaEnlace(id: id, destino: destino.isEmpty ? nil : destino)) { cerrar() } } }
                 Button("cancelar.", role: .cancel) {}
             }
         }

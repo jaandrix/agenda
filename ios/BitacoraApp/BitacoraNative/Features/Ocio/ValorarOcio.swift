@@ -216,6 +216,6 @@ enum ValorarOcio {
         let ahora = Date()
         let lista = await Task.detached(priority: .utility) { ValorarOcio.pendientes(doc, ahora: ahora) }.value
         guard !lista.isEmpty else { return }
-        try? await c.encolar(lista.map { ValorarOcio.operacion($0, ahora: ahora) })
+        await c.guardar(lista.map { ValorarOcio.operacion($0, ahora: ahora) })
     }
 }

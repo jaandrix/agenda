@@ -86,7 +86,7 @@ struct AjustesApartadosView: View {
             GrupoMenu(titulo: "eres.") {
                 OpcionesAjuste(opciones: [("estudiante", "estudiante."), ("trabajador", "trabajo."), ("ambos", "las dos.")], elegida: perfil) { p in
                     perfil = p
-                    Task { try? await c.encolar(.ponerPerfil(perfil: p)) }
+                    Task { await c.guardar(.ponerPerfil(perfil: p)) }
                 }
                 .padding(16)
             }

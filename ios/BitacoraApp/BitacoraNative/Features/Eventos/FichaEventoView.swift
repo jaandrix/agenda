@@ -98,7 +98,7 @@ struct FichaEventoView: View {
 
     private func quitar(_ e: EntradaQR) {
         Task {
-            try? await c.encolar(OperacionesExtra.op(OperacionesExtra.quitarEntradaQR, ["eventoId": .string(evento.id), "id": .string(e.id)]))
+            await c.guardar(OperacionesExtra.op(OperacionesExtra.quitarEntradaQR, ["eventoId": .string(evento.id), "id": .string(e.id)]))
             await cargarEntradas(forzar: true)
         }
     }

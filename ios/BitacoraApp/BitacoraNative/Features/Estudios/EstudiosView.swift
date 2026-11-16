@@ -93,8 +93,8 @@ struct EstudiosView: View {
         .background(Paleta.fondo.ignoresSafeArea())
         .refreshable { await c.sincronizar() }
         .sensoryFeedback(.success, trigger: marcadas)
-        .sheet(item: $creando) { n in EditorEntregaView(nueva: n) { aviso = $0 } }
-        .sheet(item: $editando) { e in EditorEntregaView(nueva: e.nueva, existente: e.item) { aviso = $0 } }
+        .hoja(item: $creando) { n in EditorEntregaView(nueva: n) { aviso = $0 } }
+        .hoja(item: $editando) { e in EditorEntregaView(nueva: e.nueva, existente: e.item) { aviso = $0 } }
         .task(id: c.revision) {
             let doc = await c.documentoVisible()
             asignaturas = await Task.detached(priority: .userInitiated) { doc.map { LecturaEstudios.vista($0) } }.value

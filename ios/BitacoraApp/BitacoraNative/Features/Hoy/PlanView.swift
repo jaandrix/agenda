@@ -161,7 +161,7 @@ struct PlanCuerpo: View {
                 sinDia(v)
             }
         }
-        .sheet(item: $moviendo) { t in MoverAFecha(tarea: t) { d in acciones.mover(t, d) } }
+        .hoja(item: $moviendo) { t in MoverAFecha(tarea: t) { d in acciones.mover(t, d) } }
     }
 
     // hoy. / mañana. / pasado.: texto, la activa en tinta con la raya del acento debajo; nada de control segmentado.

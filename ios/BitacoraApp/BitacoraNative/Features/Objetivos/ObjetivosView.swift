@@ -81,8 +81,8 @@ struct ObjetivosView: View {
         }
         .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
-        .sheet(item: $abierto) { a in FichaObjetivo(id: a.id).environment(c) }
-        .sheet(item: $edicion) { e in EditorObjetivo(objetivo: e.objetivo).environment(c) }
+        .hoja(item: $abierto) { a in FichaObjetivo(id: a.id).environment(c) }
+        .hoja(item: $edicion) { e in EditorObjetivo(objetivo: e.objetivo).environment(c) }
     }
 
     private func fila(_ g: Objetivo) -> some View {
@@ -97,7 +97,7 @@ struct ObjetivosView: View {
         }.buttonStyle(.plain)
         .contextMenu {
             Button("editar.") { edicion = EdicionObjetivo(objetivo: g) }
-            Button("eliminar.", role: .destructive) { Task { try? await c.encolar(.borrarEntrada(id: g.id)) } }
+            Button("eliminar.", role: .destructive) { Task { await c.guardar(.borrarEntrada(id: g.id)) } }
         }
     }
 
@@ -183,7 +183,7 @@ private struct FichaObjetivo: View {
                 ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } }
                 ToolbarItem(placement: .primaryAction) { Button("editar.") { editando = true }.disabled(objetivo == nil) }
             }
-            .sheet(isPresented: $editando) { EditorObjetivo(objetivo: objetivo).environment(c) }
+            .hoja(isPresented: $editando) { EditorObjetivo(objetivo: objetivo).environment(c) }
             .task(id: c.revision) { await cargar() }
         }
     }
@@ -194,7 +194,7 @@ private struct FichaObjetivo: View {
         enviar(.hito(texto: t)); nuevoHito = ""
     }
 
-    private func enviar(_ cambio: CambioObjetivo) { Task { try? await c.encolar(.cambiarObjetivo(objetivoId: id, cambio: cambio)) } }
+    private func enviar(_ cambio: CambioObjetivo) { Task { await c.guardar(.cambiarObjetivo(objetivoId: id, cambio: cambio)) } }
 
     private func cargar() async {
         let doc = await c.documentoVisible()
@@ -250,14 +250,13 @@ private struct EditorObjetivo: View {
                     Button("guardar.") {
                         // «1.234,5» (como lo enseña cifra) o «12.5»: con coma, el punto es de miles.
                         let num = { (t: String) in t.contains(",") ? t.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: ",", with: ".") : t }
-                        Task { try? await c.encolar(.guardarObjetivo(id: id, titulo: titulo, plazo: plazo, numerico: numerico, actual: num(actual), meta: num(meta),
-                                                                       unidad: unidad, estado: estado, notas: notas.trimmingCharacters(in: .whitespacesAndNewlines))) }
-                        cerrar()
+                        Task { if await c.guardar(.guardarObjetivo(id: id, titulo: titulo, plazo: plazo, numerico: numerico, actual: num(actual), meta: num(meta),
+                                                                       unidad: unidad, estado: estado, notas: notas.trimmingCharacters(in: .whitespacesAndNewlines))) { cerrar() } }
                     }.disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .confirmationDialog("¿eliminar este objetivo?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
-                Button("eliminar.", role: .destructive) { Task { try? await c.encolar(.borrarEntrada(id: id)) }; cerrar() }
+                Button("eliminar.", role: .destructive) { Task { if await c.guardar(.borrarEntrada(id: id)) { cerrar() } } }
                 Button("cancelar.", role: .cancel) {}
             }
         }

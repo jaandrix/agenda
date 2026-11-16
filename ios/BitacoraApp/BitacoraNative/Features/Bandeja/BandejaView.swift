@@ -79,7 +79,7 @@ enum BandejaConector {
             if f.tipo == "evento" { nuevos.insert("ia_" + f.id) }
             aplicar.append(f)
         }
-        if !aplicar.isEmpty, (try? await c.encolar(aplicar.map { opConector($0, origen: "auto") })) != nil {
+        if !aplicar.isEmpty, await c.guardar(aplicar.map { opConector($0, origen: "auto") }) {
             await borrar(aplicar.map(\.id), c)
             c.avisar(resumen(aplicar))
         }
@@ -277,7 +277,7 @@ struct BandejaView: View {
 
     private func deshacer(_ ref: String) {
         Task {
-            try? await c.encolar(OperacionesExtra.op(OperacionesExtra.quitarConector, ["ref": .string(ref)]))
+            await c.guardar(OperacionesExtra.op(OperacionesExtra.quitarConector, ["ref": .string(ref)]))
             c.avisar("deshecho.")
             await cargarRegistro()
         }

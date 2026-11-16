@@ -164,23 +164,12 @@ struct PrincipalView: View {
         .onChange(of: c.rutaMas) { masUsados = nil }
         .background(Paleta.fondo.ignoresSafeArea())
         .overlay(alignment: .top) {
-            if let aviso = c.aviso {
-                Text(aviso)
-                    .font(Tipo.poppins(14, .medium, estilo: .footnote))
-                    .foregroundStyle(Paleta.texto)
-                    .padding(.horizontal, 14).padding(.vertical, 10)
-                    .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: Radio.control, style: .continuous).stroke(Paleta.borde))
-                    .padding(.horizontal, 20).padding(.top, 8)
-                    .transition(.opacity)
-                    .accessibilityAddTraits(.updatesFrequently)
-                    .onAppear { UIAccessibility.post(notification: .announcement, argument: aviso) }
-            }
+            if let aviso = c.aviso { AvisoFlotante(texto: aviso) }
         }
-        .animation(.easeOut(duration: 0.18), value: c.aviso)
+        .animation(sinMovimiento ? nil : .easeOut(duration: 0.18), value: c.aviso)
         .onChange(of: c.pestana) { _, p in if p == .calendario || p == .finanzas { c.secundaria = p } }
         .fullScreenCover(item: Binding(get: { c.web.map(PaginaWeb.init) }, set: { c.web = $0?.url })) { NavegadorWeb(url: $0.url).ignoresSafeArea() }
-        .sheet(item: $c.modal) { m in
+        .hoja(item: $c.modal) { m in
             // Las hojas son las del sistema (detents, arrastrar para cerrar) con el fondo, la tinta y la letra de Bitácora.
             Group {
                 switch m {
@@ -193,9 +182,6 @@ struct PrincipalView: View {
                 case .tiempo: TiempoView()
                 }
             }
-            .presentationBackground(Paleta.fondo)
-            .presentationCornerRadius(Radio.barra)
-            .tint(Paleta.acento)
         }
     }
 

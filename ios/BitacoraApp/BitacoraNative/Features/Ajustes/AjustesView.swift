@@ -66,7 +66,7 @@ struct AjustesView: View {
         } message: {
             Text("se borra la copia de tus datos de este iphone. en la nube no cambia nada.")
         }
-        .sheet(item: Binding(get: { exportado.map(ArchivoExportado.init) }, set: { exportado = $0?.url })) { a in
+        .hoja(item: Binding(get: { exportado.map(ArchivoExportado.init) }, set: { exportado = $0?.url })) { a in
             HojaCompartir(elementos: [a.url]).presentationDetents([.medium, .large])
         }
     }

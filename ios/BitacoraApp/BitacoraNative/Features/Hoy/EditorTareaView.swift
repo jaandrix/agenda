@@ -241,17 +241,17 @@ struct EditorTareaView: View {
         let id = "sub_\(Int64(Date().timeIntervalSince1970 * 1000))_\(String(UUID().uuidString.prefix(4)).lowercased())"
         subtareas.append(Subtarea(id: id, texto: texto, hecha: false))
         nuevaSubtarea = ""
-        Task { try? await c.encolar(OperacionesExtra.op(OperacionesExtra.subtarea, ["id": .string(inicial.id), "subId": .string(id), "texto": .string(texto)])) }
+        Task { await c.guardar(OperacionesExtra.op(OperacionesExtra.subtarea, ["id": .string(inicial.id), "subId": .string(id), "texto": .string(texto)])) }
     }
 
     private func marcarSubtarea(_ sid: String, _ hecha: Bool) {
         if let n = subtareas.firstIndex(where: { $0.id == sid }) { subtareas[n].hecha = hecha }
-        Task { try? await c.encolar(OperacionesExtra.op(OperacionesExtra.marcarSubtarea, ["id": .string(inicial.id), "subId": .string(sid), "hecha": .bool(hecha)])) }
+        Task { await c.guardar(OperacionesExtra.op(OperacionesExtra.marcarSubtarea, ["id": .string(inicial.id), "subId": .string(sid), "hecha": .bool(hecha)])) }
     }
 
     private func quitarSubtarea(_ sid: String) {
         subtareas.removeAll { $0.id == sid }
-        Task { try? await c.encolar(OperacionesExtra.op(OperacionesExtra.quitarSubtarea, ["id": .string(inicial.id), "subId": .string(sid)])) }
+        Task { await c.guardar(OperacionesExtra.op(OperacionesExtra.quitarSubtarea, ["id": .string(inicial.id), "subId": .string(sid)])) }
     }
 
     private func enviar(_ ops: [OperacionBitacora]) async {

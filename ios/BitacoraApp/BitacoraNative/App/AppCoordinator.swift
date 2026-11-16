@@ -219,6 +219,14 @@ final class AppCoordinator {
     func sincronizar() async { await entorno.sync.sincronizar() }
 
     func encolar(_ op: OperacionBitacora) async throws { try await entorno.sync.encolar([op]) }
+    // 0.23 (auditoría): guardar sin callar el error. Avisa (también encima de las hojas, ver hojaBitacora) y dice si
+    // quedó en la cola: los editores solo se cierran y los campos solo se vacían con true.
+    @discardableResult
+    func guardar(_ op: OperacionBitacora, fallo: String = "no se pudo guardar en este iPhone.") async -> Bool { await guardar([op], fallo: fallo) }
+    @discardableResult
+    func guardar(_ ops: [OperacionBitacora], fallo: String = "no se pudo guardar en este iPhone.") async -> Bool {
+        do { try await encolar(ops); return true } catch { avisar(fallo); return false }
+    }
     func encolar(_ ops: [OperacionBitacora]) async throws { try await entorno.sync.encolar(ops) }
 
     func documentoVisible() async -> DocumentoBitacora? { await entorno.sync.documentoVisible() }

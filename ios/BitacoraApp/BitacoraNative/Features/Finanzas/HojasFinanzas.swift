@@ -88,7 +88,7 @@ final class LogosFinanzas {
         }
         guard !cambios.isEmpty else { return }
         let todo: JSONValue = .object(["entradas": .object(["anadir": .array([]), "cambiar": .array(cambios), "quitar": .array([])])])
-        if let op = CambioFinanzas.operacion(todo, sobre: nil) { try? await c.encolar(op) }
+        if let op = CambioFinanzas.operacion(todo, sobre: nil) { await c.guardar(op) }
     }
 }
 

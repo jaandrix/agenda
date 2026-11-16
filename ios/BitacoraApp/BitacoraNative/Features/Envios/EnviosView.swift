@@ -115,8 +115,8 @@ struct EnviosView: View {
         }
         .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
-        .sheet(item: $edicion) { e in EditorPedido(pedido: e.pedido).environment(c) }
-        .confirmarBorrado($pedidoABorrar, titulo: { "¿borrar el pedido «\($0.titulo)»?" }) { p in Task { try? await c.encolar(.borrarPedido(id: p.id)) } }
+        .hoja(item: $edicion) { e in EditorPedido(pedido: e.pedido).environment(c) }
+        .confirmarBorrado($pedidoABorrar, titulo: { "¿borrar el pedido «\($0.titulo)»?" }) { p in Task { await c.guardar(.borrarPedido(id: p.id)) } }
     }
 
     private func tarjeta(_ p: Pedido) -> some View {
@@ -160,7 +160,7 @@ struct EnviosView: View {
                 HStack(spacing: Espacio.m) {
                     if p.estado != "entregado" {
                         let siguiente = LecturaEnvios.estados[min(p.paso + 1, LecturaEnvios.estados.count - 1)]
-                        AccionTexto(texto: "→ " + siguiente.1) { Task { try? await c.encolar(.estadoPedido(id: p.id, estado: siguiente.0, hoy: hoy.iso)) } }
+                        AccionTexto(texto: "→ " + siguiente.1) { Task { await c.guardar(.estadoPedido(id: p.id, estado: siguiente.0, hoy: hoy.iso)) } }
                     }
                     if !p.seguimiento.isEmpty && p.estado != "entregado" {
                         AccionTexto(texto: consultando == p.id ? "consultando..." : "actualizar.") { Task { await actualizar(p) } }
@@ -270,13 +270,12 @@ private struct EditorPedido: View {
                                                                   fechaPedido: conFechaPedido ? dia(fechaPedido) : "", fechaEstimada: conEstimada ? dia(estimada) : "",
                                                                   precio: precio.replacingOccurrences(of: ",", with: "."), estado: estado, nota: nota,
                                                                   hoy: CalendarioBitacora.madrid.dia(de: Date()).iso)
-                        Task { try? await c.encolar(op) }
-                        cerrar()
+                        Task { if await c.guardar(op) { cerrar() } }
                     }.disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .confirmationDialog("¿borrar este pedido?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
-                Button("borrar.", role: .destructive) { Task { try? await c.encolar(.borrarPedido(id: id)) }; cerrar() }
+                Button("borrar.", role: .destructive) { Task { if await c.guardar(.borrarPedido(id: id)) { cerrar() } } }
                 Button("cancelar.", role: .cancel) {}
             }
         }

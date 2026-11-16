@@ -95,10 +95,17 @@ enum OperacionesDespensa {
                                       "precio": precio, "hecho": .bool(false)]))
                 l["items"] = .array(items); listas[n] = .object(l)
             }
-            if let s = d["seccion"]?.texto, LecturaDespensa.secciones.contains(s), s != SeccionCompra.deducir(limpio) {
+            // Elegir la sección que se deduce sola quita lo aprendido (si no, la personalizada de antes seguía mandando).
+            if let s = d["seccion"]?.texto, LecturaDespensa.secciones.contains(s) {
                 var aprendido = lc["aprendido"]?.objeto ?? [:]
-                aprendido[RecetaALista.clave(limpio)] = .string(s)
-                lc["aprendido"] = .object(aprendido)
+                let clave = RecetaALista.clave(limpio)
+                if s != SeccionCompra.deducir(limpio) {
+                    aprendido[clave] = .string(s)
+                    lc["aprendido"] = .object(aprendido)
+                } else if aprendido[clave] != nil {
+                    aprendido[clave] = nil
+                    lc["aprendido"] = .object(aprendido)
+                }
             }
         default:
             return valores

@@ -45,7 +45,7 @@ struct OcioView: View {
         }
         .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
-        .sheet(item: $modal) { m in
+        .hoja(item: $modal) { m in
             switch m {
             case .entrada(let entrada, let tipo):
                 EditorOcio(entrada: entrada, tipo: tipo) { datos in Task { await guardar(datos, previo: entrada) } }
@@ -121,10 +121,10 @@ struct OcioView: View {
             }
             Menu {
                 Button("editar.") { modal = .entrada(entrada, entrada.tipo) }
-                Button("eliminar.", role: .destructive) { Task { try? await c.encolar(.borrarEntrada(id: entrada.id)) } }
+                Button("eliminar.", role: .destructive) { Task { await c.guardar(.borrarEntrada(id: entrada.id)) } }
             } label: { Image(systemName: "ellipsis").foregroundStyle(Paleta.textoSecundario).frame(width: 32, height: 40) }
         }.padding(.vertical, 10).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-            .swipeActions { Button("borrar", role: .destructive) { Task { try? await c.encolar(.borrarEntrada(id: entrada.id)) } } }
+            .swipeActions { Button("borrar", role: .destructive) { Task { await c.guardar(.borrarEntrada(id: entrada.id)) } } }
     }
 
     // «visto el 12 nov.» / «terminado el …»: cuándo, de un vistazo.
@@ -144,7 +144,7 @@ struct OcioView: View {
                 Button { modal = .lista(lista) } label: {
                     HStack { VStack(alignment: .leading, spacing: 2) { Text(lista.nombre.lowercased() + ".").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto); Text("\(lista.entryIds.count) elementos.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }; Spacer(); Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(Paleta.textoApagado) }
                         .frame(minHeight: 56).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                }.buttonStyle(.plain).contextMenu { Button("eliminar lista.", role: .destructive) { Task { try? await c.encolar(.borrarListaOcio(id: lista.id)) } } }
+                }.buttonStyle(.plain).contextMenu { Button("eliminar lista.", role: .destructive) { Task { await c.guardar(.borrarListaOcio(id: lista.id)) } } }
             }
         }
     }
@@ -167,11 +167,11 @@ struct OcioView: View {
         guard d.portada.isEmpty else { return }
         let r = await BuscarPortadas.buscar(c, tipo: d.tipo, q: d.tipo == "book" && !d.autor.isEmpty ? d.titulo + " " + d.autor : d.titulo,
                                             anio: d.tipo == "movie" || d.tipo == "series" ? d.anio : "")
-        if let buena = BuscarPortadas.mejor(r, titulo: d.titulo) { try? await c.encolar(op(buena.imagen)) }
+        if let buena = BuscarPortadas.mejor(r, titulo: d.titulo) { await c.guardar(op(buena.imagen)) }
     }
 
     private func guardarLista(_ previa: ListaOcio?, _ nombre: String, _ ids: [String]) async {
-        try? await c.encolar(.guardarListaOcio(id: previa?.id ?? OperacionBitacora.nuevoIdProyecto("clist"), nombre: nombre, entryIds: ids))
+        await c.guardar(.guardarListaOcio(id: previa?.id ?? OperacionBitacora.nuevoIdProyecto("clist"), nombre: nombre, entryIds: ids))
     }
 
     private func abrirImportador(_ fuente: FuenteImportacionOcio) {

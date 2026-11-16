@@ -115,6 +115,18 @@ final class DespensaMarcarTests: XCTestCase {
         XCTAssertEqual(LecturaDespensa.vista(r).listaActual?.items.first { $0.id == "a" }?.seccion, "bebida")
     }
 
+    // 0.23 (auditoría): personalizada → automática → recarga. Volver a la sección que se deduce quita lo aprendido.
+    func testVolverALaSeccionAutomaticaQuitaLoAprendido() throws {
+        let (r, _) = AplicarOperaciones.sobre(try doc(), [
+            OperacionesDespensa.editarOp(listaId: "l1", id: "a", texto: "Leche", cantidad: "2", seccion: "bebida", precio: ""),
+            OperacionesDespensa.editarOp(listaId: "l1", id: "a", texto: "Leche", cantidad: "2", seccion: SeccionCompra.deducir("Leche"), precio: "")
+        ])
+        let lc = try XCTUnwrap(try r.valor(de: "listaCompra"))
+        XCTAssertNil(lc["aprendido"]?["leche"])
+        XCTAssertEqual(lc["aprendido"]?["cerveza sin"], .string("bebida"))
+        XCTAssertEqual(LecturaDespensa.vista(r).listaActual?.items.first { $0.id == "a" }?.seccion, SeccionCompra.deducir("Leche"))
+    }
+
     func testIdsRepetidosNoSePintanDosVeces() throws {
         let d = try DocumentoBitacora(datos: Data(#"{"listaCompra":{"listas":[{"id":"l1","items":[{"id":"a","texto":"uno"},{"id":"a","texto":"otro"}]}]}}"#.utf8))
         XCTAssertEqual(LecturaDespensa.vista(d).listaActual?.items.map(\.texto), ["uno"])

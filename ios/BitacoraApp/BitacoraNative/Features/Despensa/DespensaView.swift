@@ -82,15 +82,15 @@ struct DespensaView: View {
         }
         .confirmationDialog("¿eliminar la lista «\(listaABorrar?.nombre.lowercased() ?? "")» con lo que tiene?",
                             isPresented: Binding(get: { listaABorrar != nil }, set: { if !$0 { listaABorrar = nil } }), titleVisibility: .visible) {
-            Button("eliminar lista.", role: .destructive) { if let l = listaABorrar { Task { try? await c.encolar(.borrarListaCompra(id: l.id)) } } }
+            Button("eliminar lista.", role: .destructive) { if let l = listaABorrar { Task { await c.guardar(.borrarListaCompra(id: l.id)) } } }
             Button("cancelar.", role: .cancel) {}
         }
         .confirmationDialog("¿eliminar la receta «\(recetaABorrar?.nombre.lowercased() ?? "")»?",
                             isPresented: Binding(get: { recetaABorrar != nil }, set: { if !$0 { recetaABorrar = nil } }), titleVisibility: .visible) {
-            Button("eliminar receta.", role: .destructive) { if let r = recetaABorrar { Task { try? await c.encolar(.borrarRecetaCompra(id: r.id)) } } }
+            Button("eliminar receta.", role: .destructive) { if let r = recetaABorrar { Task { await c.guardar(.borrarRecetaCompra(id: r.id)) } } }
             Button("cancelar.", role: .cancel) {}
         }
-        .sheet(item: $modal) { m in
+        .hoja(item: $modal) { m in
             switch m {
             case .item(let item): EditorItemDespensa(item: item, seccionInicial: item?.seccion ?? "otros") { texto, cantidad, seccion, precio in
                 Task { await guardarItem(item, texto, cantidad, seccion, precio) }
@@ -135,7 +135,7 @@ struct DespensaView: View {
     private func lista(_ v: VistaDespensa) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: Espacio.xs) {
-                ForEach(v.listas) { l in Button { Task { try? await c.encolar(.elegirListaCompra(id: l.id)) } } label: {
+                ForEach(v.listas) { l in Button { Task { await c.guardar(.elegirListaCompra(id: l.id)) } } label: {
                     Text(l.nombre.lowercased() + ".").font(Tipo.pie).padding(.horizontal, 12).frame(minHeight: 44)
                         .foregroundStyle(v.listaActual?.id == l.id ? Paleta.texto : Paleta.textoSecundario)
                         .background(v.listaActual?.id == l.id ? Paleta.tinteTexto : Color.clear, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -305,7 +305,7 @@ struct DespensaView: View {
     private func plan(_ v: VistaDespensa) -> some View { VStack(alignment: .leading, spacing: 0) {
         CabeceraSeccion(titulo: "planificación.", detalle: "lunes a domingo")
         ForEach(semanaActual(), id: \.self) { dia in VStack(alignment: .leading, spacing: 4) { HStack { Text(etiquetaDia(dia)).font(Tipo.cuerpoFuerte); Spacer(); Button("+ plato.") { modal = .plato(dia.iso) }.font(Tipo.pie).foregroundStyle(Paleta.acento).buttonStyle(.plain).frame(minHeight: 44) }
-            ForEach(v.plan[dia.iso] ?? []) { p in HStack { VStack(alignment: .leading) { Text(p.nombre).font(Tipo.cuerpo); if !p.momento.isEmpty { Text(p.momento).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) } }; Spacer(); Button(role: .destructive) { Task { try? await c.encolar(.borrarPlatoCompra(dia: dia.iso, id: p.id)) } } label: { Image(systemName: "trash").foregroundStyle(Paleta.textoSecundario).frame(width: 44, height: 44).contentShape(Rectangle()) }.buttonStyle(.plain).accessibilityLabel("quitar \(p.nombre)") } }
+            ForEach(v.plan[dia.iso] ?? []) { p in HStack { VStack(alignment: .leading) { Text(p.nombre).font(Tipo.cuerpo); if !p.momento.isEmpty { Text(p.momento).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) } }; Spacer(); Button(role: .destructive) { Task { await c.guardar(.borrarPlatoCompra(dia: dia.iso, id: p.id)) } } label: { Image(systemName: "trash").foregroundStyle(Paleta.textoSecundario).frame(width: 44, height: 44).contentShape(Rectangle()) }.buttonStyle(.plain).accessibilityLabel("quitar \(p.nombre)") } }
         }.padding(.vertical, 8).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) } }
         Button("pasar ingredientes que faltan a la lista.") { Task { await planALista(v) } }.buttonStyle(BotonPrincipal()).padding(.top, Espacio.m)
     } }
@@ -322,13 +322,13 @@ struct DespensaView: View {
         marcas.cargado(revision: rev)
         reagrupar()
     }
-    private func guardarLista() async { let n = nombreLista, previa = listaEditando; nombreLista = ""; listaEditando = nil; try? await c.encolar(.guardarListaCompra(id: previa?.id ?? OperacionBitacora.nuevoIdProyecto("lista"), nombre: n)) }
-    private func anadirRapido() async { guard let l = vista?.listaActual else { return }; let t = textoRapido; textoRapido = ""; try? await c.encolar(.anadirCompra(listaId: l.id, textos: [t], ids: [OperacionBitacora.nuevoIdProyecto("cmp")])) }
-    private func guardarItem(_ previo: ItemDespensa?, _ texto: String, _ cantidad: String, _ seccion: String, _ precio: String) async { guard let l = vista?.listaActual else { return }; try? await c.encolar(OperacionesDespensa.editarOp(listaId: l.id, id: previo?.id ?? OperacionBitacora.nuevoIdProyecto("cmp"), texto: texto, cantidad: cantidad, seccion: seccion, precio: precio.isEmpty ? nil : precio)) }
+    private func guardarLista() async { let n = nombreLista, previa = listaEditando; nombreLista = ""; listaEditando = nil; if !(await c.guardar(.guardarListaCompra(id: previa?.id ?? OperacionBitacora.nuevoIdProyecto("lista"), nombre: n))) { nombreLista = n; listaEditando = previa } }
+    private func anadirRapido() async { guard let l = vista?.listaActual else { return }; let t = textoRapido; textoRapido = ""; if !(await c.guardar(.anadirCompra(listaId: l.id, textos: [t], ids: [OperacionBitacora.nuevoIdProyecto("cmp")]))), textoRapido.isEmpty { textoRapido = t } }
+    private func guardarItem(_ previo: ItemDespensa?, _ texto: String, _ cantidad: String, _ seccion: String, _ precio: String) async { guard let l = vista?.listaActual else { return }; await c.guardar(OperacionesDespensa.editarOp(listaId: l.id, id: previo?.id ?? OperacionBitacora.nuevoIdProyecto("cmp"), texto: texto, cantidad: cantidad, seccion: seccion, precio: precio.isEmpty ? nil : precio)) }
     private func borrar(_ item: ItemDespensa, de lista: ListaDespensa) {
         quitado = (item, lista.id)
         Task {
-            try? await c.encolar(.borrarItemCompra(listaId: lista.id, id: item.id))
+            guard await c.guardar(.borrarItemCompra(listaId: lista.id, id: item.id)) else { if quitado?.item.id == item.id { quitado = nil }; return }
             try? await Task.sleep(for: .seconds(6))
             if quitado?.item.id == item.id { quitado = nil }
         }
@@ -338,10 +338,10 @@ struct DespensaView: View {
         guard let q = quitado else { return }
         quitado = nil
         let i = q.item
-        Task { try? await c.encolar(.guardarItemCompra(listaId: q.listaId, id: i.id, texto: i.texto, cantidad: i.cantidad, seccion: i.seccion,
+        Task { await c.guardar(.guardarItemCompra(listaId: q.listaId, id: i.id, texto: i.texto, cantidad: i.cantidad, seccion: i.seccion,
                                                        precio: i.precio.map { NSDecimalNumber(decimal: $0).stringValue }, hecho: i.hecho, recetas: i.recetas)) }
     }
-    private func guardarReceta(_ r: RecetaDespensa?, _ nombre: String, _ raciones: Int, _ ingredientes: [String], _ pasos: [String], _ notas: String) async { try? await c.encolar(.guardarRecetaCompra(id: r?.id ?? OperacionBitacora.nuevoIdProyecto("rec"), nombre: nombre, raciones: raciones, ingredientes: ingredientes, pasos: pasos, notas: notas)) }
+    private func guardarReceta(_ r: RecetaDespensa?, _ nombre: String, _ raciones: Int, _ ingredientes: [String], _ pasos: [String], _ notas: String) async { await c.guardar(.guardarRecetaCompra(id: r?.id ?? OperacionBitacora.nuevoIdProyecto("rec"), nombre: nombre, raciones: raciones, ingredientes: ingredientes, pasos: pasos, notas: notas)) }
     private func pasarReceta(_ r: RecetaDespensa, _ elegidos: [IngredienteReceta], a l: ListaDespensa) async {
         let ya = RecetaALista.yaEsta(r, en: l)
         let nuevos = elegidos.filter { !ya.contains($0.texto) }, anotados = elegidos.filter { ya.contains($0.texto) }
@@ -359,9 +359,9 @@ struct DespensaView: View {
         guard let d = LocalDay(iso: iso) else { return iso }
         return "\(d.day) " + ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"][d.month - 1]
     }
-    private func guardarPlato(_ dia: String, _ momento: String, _ nombre: String, _ receta: RecetaDespensa?) async { try? await c.encolar(.guardarPlatoCompra(dia: dia, id: OperacionBitacora.nuevoIdProyecto("plato"), momento: momento, nombre: nombre, recetaId: receta?.id, ingredientes: receta?.ingredientes.map(\.texto) ?? [])) }
-    private func terminar(_ tienda: String, _ total: String, _ finanzas: Bool) async { guard let l = vista?.listaActual else { return }; let id = OperacionBitacora.nuevoIdProyecto("compra"), tx = finanzas ? OperacionBitacora.nuevoIdMovimiento() : nil; let hoy = CalendarioBitacora.madrid.dia(de: Date()).iso; try? await c.encolar(.terminarCompra(listaId: l.id, compraId: id, fecha: hoy, tienda: tienda, total: total, txId: tx)); if let tx, let d = Dinero.decimal(texto: total), d > 0 { try? await c.encolar(.crearMovimiento(id: tx, tipo: "expense", importe: NSDecimalNumber(decimal: d).stringValue, cuenta: "bancos", categoria: nil, fecha: hoy, hora: "", concepto: tienda.isEmpty ? "Compra" : "Compra (\(tienda))")) } }
-    private func planALista(_ v: VistaDespensa) async { guard let l = v.listaActual else { return }; let textos = semanaActual().flatMap { v.plan[$0.iso] ?? [] }.flatMap(\.ingredientes); let presentes = Set(l.items.filter { !$0.hecho }.map { RecetaALista.clave($0.texto) }); var vistos = Set<String>(); let faltan = textos.filter { let k = RecetaALista.clave($0); return !presentes.contains(k) && vistos.insert(k).inserted }; try? await c.encolar(.anadirCompra(listaId: l.id, textos: faltan, ids: faltan.map { _ in OperacionBitacora.nuevoIdProyecto("cmp") })) }
+    private func guardarPlato(_ dia: String, _ momento: String, _ nombre: String, _ receta: RecetaDespensa?) async { await c.guardar(.guardarPlatoCompra(dia: dia, id: OperacionBitacora.nuevoIdProyecto("plato"), momento: momento, nombre: nombre, recetaId: receta?.id, ingredientes: receta?.ingredientes.map(\.texto) ?? [])) }
+    private func terminar(_ tienda: String, _ total: String, _ finanzas: Bool) async { guard let l = vista?.listaActual else { return }; let id = OperacionBitacora.nuevoIdProyecto("compra"), tx = finanzas ? OperacionBitacora.nuevoIdMovimiento() : nil; let hoy = CalendarioBitacora.madrid.dia(de: Date()).iso; await c.guardar(.terminarCompra(listaId: l.id, compraId: id, fecha: hoy, tienda: tienda, total: total, txId: tx)); if let tx, let d = Dinero.decimal(texto: total), d > 0 { await c.guardar(.crearMovimiento(id: tx, tipo: "expense", importe: NSDecimalNumber(decimal: d).stringValue, cuenta: "bancos", categoria: nil, fecha: hoy, hora: "", concepto: tienda.isEmpty ? "Compra" : "Compra (\(tienda))")) } }
+    private func planALista(_ v: VistaDespensa) async { guard let l = v.listaActual else { return }; let textos = semanaActual().flatMap { v.plan[$0.iso] ?? [] }.flatMap(\.ingredientes); let presentes = Set(l.items.filter { !$0.hecho }.map { RecetaALista.clave($0.texto) }); var vistos = Set<String>(); let faltan = textos.filter { let k = RecetaALista.clave($0); return !presentes.contains(k) && vistos.insert(k).inserted }; await c.guardar(.anadirCompra(listaId: l.id, textos: faltan, ids: faltan.map { _ in OperacionBitacora.nuevoIdProyecto("cmp") })) }
     private func semanaActual() -> [LocalDay] { CalendarioBitacora.madrid.dia(de: Date()).semanaLunesDomingo }
     private func etiquetaDia(_ d: LocalDay) -> String { let n = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]; return n[d.indiceSemanaLunes] + " \(d.day)." }
 }

@@ -86,8 +86,8 @@ struct EmpleoView: View {
         }
         .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
         .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
-        .confirmarBorrado($citaABorrar, titulo: { "¿eliminar la cita «\($0.titulo)»?" }, boton: "eliminar.") { x in Task { try? await c.encolar(.borrarCitaLaboral(id: x.id)) } }
-        .sheet(item: $modal) { m in
+        .confirmarBorrado($citaABorrar, titulo: { "¿eliminar la cita «\($0.titulo)»?" }, boton: "eliminar.") { x in Task { await c.guardar(.borrarCitaLaboral(id: x.id)) } }
+        .hoja(item: $modal) { m in
             switch m {
             case .cita(let cita): EditorCitaLaboral(cita: cita, hoy: hoy).environment(c)
             case .horario: EditorHorarioLaboral(horario: vista?.horario ?? [:]).environment(c)
@@ -107,7 +107,7 @@ struct EmpleoView: View {
                 Text("\(v.horario[d]!.0) – \(v.horario[d]!.1)").font(Tipo.cuerpo).monospacedDigit().foregroundStyle(Paleta.textoSecundario)
             }.frame(minHeight: 40).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
         }
-        Toggle(isOn: Binding(get: { v.enPrincipal }, set: { si in Task { try? await c.encolar(.laboralEnPrincipal(si)) } })) {
+        Toggle(isOn: Binding(get: { v.enPrincipal }, set: { si in Task { await c.guardar(.laboralEnPrincipal(si)) } })) {
             Text("en el calendario principal.").font(Tipo.cuerpo)
         }.tint(Paleta.acento).padding(.vertical, Espacio.s)
 
@@ -195,13 +195,12 @@ private struct EditorCitaLaboral: View {
                                                                        titulo: titulo.trimmingCharacters(in: .whitespacesAndNewlines), tipo: tipo,
                                                                        lugar: lugar.trimmingCharacters(in: .whitespacesAndNewlines),
                                                                        notas: notas.trimmingCharacters(in: .whitespacesAndNewlines))
-                        Task { try? await c.encolar(op) }
-                        cerrar()
+                        Task { if await c.guardar(op) { cerrar() } }
                     }.disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty && tipo != "turno")
                 }
             }
             .confirmationDialog("¿eliminar esta cita?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
-                Button("eliminar.", role: .destructive) { Task { try? await c.encolar(.borrarCitaLaboral(id: id)) }; cerrar() }
+                Button("eliminar.", role: .destructive) { Task { if await c.guardar(.borrarCitaLaboral(id: id)) { cerrar() } } }
                 Button("cancelar.", role: .cancel) {}
             }
         }
@@ -261,8 +260,7 @@ private struct EditorHorarioLaboral: View {
                         var cal = Calendar(identifier: .gregorian); cal.timeZone = CalendarioBitacora.madrid.zona
                         let t = { (d: Date?) -> String in let h = cal.dateComponents([.hour, .minute], from: d ?? Date()); return String(format: "%02d:%02d", h.hour ?? 0, h.minute ?? 0) }
                         let dias = Dictionary(uniqueKeysWithValues: activos.map { (String($0), t(ini[$0]) + "|" + t(fin[$0])) })
-                        Task { try? await c.encolar(.horarioLaboral(dias: dias)) }
-                        cerrar()
+                        Task { if await c.guardar(.horarioLaboral(dias: dias)) { cerrar() } }
                     }
                 }
             }
