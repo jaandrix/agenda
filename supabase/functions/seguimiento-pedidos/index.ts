@@ -183,7 +183,7 @@ async function procesarUsuario(userId: string, opciones: any) {
         const actuales = Array.isArray(ultima?.data?.pedidos) ? ultima.data.pedidos : [];
         const fusion = actuales.map((p: any) => cambios[p.id] ? { ...p, ...cambios[p.id] } : p);
         const { error } = await sb.rpc('bitacora_actualizar_pedidos', { p_user: userId, p_pedidos: fusion });
-        if (error) informe.push({ error: 'no se pudo guardar: ' + error.message });
+        if (error) { console.error('seguimiento-pedidos: no se pudo guardar', error); informe.push({ error: 'no se pudo guardar el seguimiento.' }); }
     }
     return informe;
 }

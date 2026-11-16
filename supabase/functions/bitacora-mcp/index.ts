@@ -260,7 +260,7 @@ function sinPuntoMedio(v: any): any {
 async function encolar(userId: string, op: any) {
     op = sinPuntoMedio(op);
     const { error } = await sbAdmin.from('conector_bandeja').insert({ user_id: userId, op });
-    if (error) throw new Error('No se pudo guardar: ' + error.message);
+    if (error) { console.error('bitacora-mcp: no se pudo encolar', error); throw new Error('No se pudo guardar en Bitácora ahora mismo. Prueba otra vez en un momento.'); }
 }
 
 // ---------------------------------------------------------------- lecturas

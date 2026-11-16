@@ -42,6 +42,13 @@ async function firma(userId: string) {
     return [...new Uint8Array(f)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 32);
 }
 
+// Comparación en tiempo constante, para no dejar adivinar la firma por lo que tarda.
+function igualSeguro(a: string, b: string) {
+    let dif = a.length ^ b.length;
+    for (let i = 0; i < Math.max(a.length, b.length); i++) dif |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+    return dif === 0;
+}
+
 function contenido(data: any, hoy: string) {
     const entries = (data.entries || []).filter((e: any) => e && propio(e));
     const desde = sumarDias(hoy, 1), hasta = sumarDias(hoy, 7), antes = sumarDias(hoy, -6);
@@ -99,7 +106,8 @@ Deno.serve(async (req) => {
     // Baja desde el enlace del correo (GET) o desde el botón de baja del propio programa de correo (POST, List-Unsubscribe).
     if (url.searchParams.get('baja')) {
         const uid = url.searchParams.get('baja')!;
-        const ok = /^[0-9a-f-]{36}$/.test(uid) && url.searchParams.get('f') === await firma(uid);
+        // Sin CORREO_SECRET la firma no protege nada: entonces no se acepta ninguna baja por enlace.
+        const ok = !!Deno.env.get('CORREO_SECRET') && /^[0-9a-f-]{36}$/.test(uid) && igualSeguro(url.searchParams.get('f') || '', await firma(uid));
         if (ok) await sb.from('correo_semanal').upsert({ user_id: uid, activo: false, cambiado: new Date().toISOString() });
         const msg = ok ? 'Listo: no te llegará más el correo de los domingos. Puedes volver a encenderlo en Ajustes.' : 'Este enlace no es válido.';
         return new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><body style="font-family:Helvetica,Arial,sans-serif;background:#E7E2D9;padding:40px"><p style="max-width:420px;margin:auto;font-size:17px">${msg}</p></body>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
