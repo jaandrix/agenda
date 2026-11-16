@@ -45,14 +45,21 @@ enum Imagenes {
         return img
     }
 
+    // 0.23 (auditoría): solo respuestas 2xx de tipo imagen y de 8 MB como mucho; lo demás no se decodifica.
+    static let maxBytes = 8 << 20
+    static func aceptable(_ datos: Data, _ r: URLResponse) -> Data? {
+        guard let h = r as? HTTPURLResponse, (200..<300).contains(h.statusCode), (h.mimeType ?? "image/").hasPrefix("image/"),
+              h.expectedContentLength <= Int64(maxBytes), datos.count <= maxBytes else { return nil }
+        return datos
+    }
+
     static func clave(_ url: URL, lado: CGFloat) -> String { "\(url.absoluteString)@\(Int(lado))" }
 
     // Baja (con la caché de URLSession) y reduce fuera del hilo principal.
     static func cargar(_ url: URL, lado: CGFloat) async -> UIImage? {
         let k = clave(url, lado: lado)
         if let img = guardada(k) { return img }
-        guard let respuesta = try? await URLSession.shared.data(from: url) else { return nil }
-        let datos = respuesta.0
+        guard let respuesta = try? await URLSession.shared.data(from: url), let datos = aceptable(respuesta.0, respuesta.1) else { return nil }
         let img = await Task.detached(priority: .utility) { Imagenes.reducida(datos, lado: lado) }.value
         if let img { guardar(img, k) }
         return img

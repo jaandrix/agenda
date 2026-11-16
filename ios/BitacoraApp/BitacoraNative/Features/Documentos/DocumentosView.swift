@@ -86,6 +86,7 @@ struct DocumentosView: View {
         .task(id: c.revision) { await cargar() }
         .task { await cargarArchivos() }
         .quickLookPreview($vista)
+        .onChange(of: vista) { antes, ahora in if ahora == nil { ArchivosTemporales.borrar(antes) } }
         .hoja(item: $editando) { e in EditorFichaDocumento(editando: e) }
     }
 
@@ -129,18 +130,21 @@ struct DocumentosView: View {
         }
     }
 
+    // 0.23 (auditoría): un documento enorme no se baja entero a memoria.
+    static let maxBytes = 50 << 20
+
     private func ver(_ a: ArchivoDocumento) async {
         guard bajando == nil else { return }
+        if let b = a.bytes, b > Self.maxBytes { errorArchivos = "«\(a.nombre)» pesa demasiado para abrirlo aquí (máximo 50 MB)."; return }
         bajando = a.nombre
         defer { bajando = nil }
         do {
             let s = try await c.entorno.auth.sesionValida()
             let cliente = c.entorno.cliente
             let (d, codigo) = try await cliente.enviar(cliente.peticion(LecturaDocumentos.ruta(s.userId, a.nombre), token: s.accessToken, tiempo: 60))
-            guard codigo == 200 else { errorArchivos = "no se pudo abrir «\(a.nombre)»."; return }
-            let destino = FileManager.default.temporaryDirectory.appendingPathComponent(a.nombre)
-            try d.write(to: destino, options: .atomic)
-            vista = destino
+            guard codigo == 200, d.count <= Self.maxBytes else { errorArchivos = "no se pudo abrir «\(a.nombre)»."; return }
+            ArchivosTemporales.borrar(vista)
+            vista = try ArchivosTemporales.escribir(d, como: a.nombre)
         } catch {
             errorArchivos = "no se pudo abrir «\(a.nombre)»."
         }

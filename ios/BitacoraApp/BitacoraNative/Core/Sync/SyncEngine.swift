@@ -98,6 +98,8 @@ actor SyncEngine {
         await detenerCiclos()
         guard gen == generacion else { return }
         self.uid = uid
+        visible = nil
+        aplicado = nil
         intentos = 0
         informe = InformeSync()
         let e = try? await almacen.estado(uid: uid)
@@ -113,13 +115,20 @@ actor SyncEngine {
         publicar()
     }
 
-    func detener(borrandoUsuario borrar: String?) async {
+    // false si la copia local no se pudo borrar del todo.
+    @discardableResult
+    func detener(borrandoUsuario borrar: String?) async -> Bool {
         generacion += 1
         uid = nil
         await detenerCiclos()
-        if let borrar { await almacen.borrarUsuario(borrar) }
+        // 0.23 (auditoría): la cuenta que sale no deja su documento en memoria.
+        visible = nil
+        aplicado = nil
+        var ok = true
+        if let borrar { ok = await almacen.borrarUsuario(borrar) }
         informe = InformeSync()
         publicar()
+        return ok
     }
 
     private func detenerCiclos() async {
@@ -289,7 +298,8 @@ actor SyncEngine {
             fila = leida
             let nube = try DocumentoBitacora(datos: fila.datos)
             // 0.22: lo que no cambió en la nube ya estaba analizado en el documento visible; se aprovecha.
-            nube.heredarAnalizados(de: visible?.doc ?? aplicado?.doc)
+            // Solo de la misma cuenta.
+            nube.heredarAnalizados(de: visible?.uid == uid ? visible?.doc : aplicado?.uid == uid ? aplicado?.doc : nil)
             lote = try await almacen.estado(uid: uid).pendientes
             base = nube
             guard !lote.isEmpty else { break }

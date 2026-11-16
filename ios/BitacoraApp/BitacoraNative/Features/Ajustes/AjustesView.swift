@@ -66,7 +66,7 @@ struct AjustesView: View {
         } message: {
             Text("se borra la copia de tus datos de este iphone. en la nube no cambia nada.")
         }
-        .hoja(item: Binding(get: { exportado.map(ArchivoExportado.init) }, set: { exportado = $0?.url })) { a in
+        .hoja(item: Binding(get: { exportado.map(ArchivoExportado.init) }, set: { if $0 == nil { ArchivosTemporales.borrar(exportado) }; exportado = $0?.url })) { a in
             HojaCompartir(elementos: [a.url]).presentationDetents([.medium, .large])
         }
     }
@@ -229,9 +229,7 @@ struct AjustesView: View {
                 f.locale = Locale(identifier: "en_US_POSIX")
                 f.dateFormat = "yyyy-MM-dd"
                 let datos = doc.aplicandoParche(["exportedAt": .string(ISO8601DateFormatter().string(from: ahora))]).serializado()
-                let u = FileManager.default.temporaryDirectory.appendingPathComponent("bitacora_\(f.string(from: ahora)).json")
-                do { try datos.write(to: u, options: .atomic) } catch { return nil }
-                return u
+                return try? ArchivosTemporales.escribir(datos, como: "bitacora_\(f.string(from: ahora)).json")
             }.value
             if let url { exportado = url } else { c.avisar("no se pudo preparar la copia.") }
         }

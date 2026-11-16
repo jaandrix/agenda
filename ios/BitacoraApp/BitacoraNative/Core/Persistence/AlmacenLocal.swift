@@ -85,13 +85,18 @@ actor AlmacenLocal {
         memoriaEstado[uid] = e
     }
 
-    func borrarUsuario(_ uid: String) {
+    // 0.23 (auditoría): no se calla el fallo. Dos intentos y se comprueba que la carpeta ya no está; false si queda.
+    @discardableResult
+    func borrarUsuario(_ uid: String) -> Bool {
         version += 1
         versionBase += 1
         memoriaBase[uid] = nil
         memoriaEstado[uid] = nil
-        guard let u = try? carpeta(uid) else { return }
-        try? fm.removeItem(at: u)
+        guard let u = try? carpeta(uid) else { return true }
+        for _ in 0..<2 where fm.fileExists(atPath: u.path) {
+            try? fm.removeItem(at: u)
+        }
+        return !fm.fileExists(atPath: u.path)
     }
 
     private static let codificador: JSONEncoder = { let e = JSONEncoder(); e.dateEncodingStrategy = .iso8601; return e }()

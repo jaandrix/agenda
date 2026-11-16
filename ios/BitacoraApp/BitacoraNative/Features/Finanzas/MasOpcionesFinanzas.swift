@@ -42,6 +42,8 @@ enum FotosImportacion {
         return dir.appendingPathComponent("finanzas-importaciones-\(uid).json")
     }
 
+    static func borrar(_ uid: String) { try? FileManager.default.removeItem(at: archivo(uid)) }
+
     static func leer(_ uid: String) -> [Foto] {
         guard let d = try? Data(contentsOf: archivo(uid)) else { return [] }
         return (try? JSONDecoder().decode([Foto].self, from: d)) ?? []
@@ -50,7 +52,13 @@ enum FotosImportacion {
     static func guardar(_ uid: String, texto: String, movimientos: Int, foto: String) {
         let nueva = Foto(id: "imp_\(Int64(Date().timeIntervalSince1970 * 1000))", cuando: Date(), texto: texto, movimientos: movimientos, foto: foto)
         let lista = Array(([nueva] + leer(uid)).prefix(8))
-        if let d = try? JSONEncoder().encode(lista) { try? d.write(to: archivo(uid), options: .atomic) }
+        // 0.23 (auditoría): con protección de archivo, fuera de las copias de seguridad y borradas al cerrar sesión.
+        guard let d = try? JSONEncoder().encode(lista) else { return }
+        var u = archivo(uid)
+        guard (try? d.write(to: u, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])) != nil else { return }
+        var v = URLResourceValues()
+        v.isExcludedFromBackup = true
+        try? u.setResourceValues(v)
     }
 }
 

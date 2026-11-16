@@ -31,16 +31,25 @@ enum ErrorAuth: Error, Equatable {
 protocol AlmacenSesion: Sendable {
     func leer() -> Sesion?
     func guardar(_ s: Sesion)
+    // 0.23 (auditoría): al entrar, saber si la sesión quedó guardada (si no, al siguiente arranque se perdía).
+    func guardarComprobando(_ s: Sesion) -> Bool
     func borrar()
+}
+
+extension AlmacenSesion {
+    func guardarComprobando(_ s: Sesion) -> Bool { guardar(s); return true }
 }
 
 struct SesionEnLlavero: AlmacenSesion {
     private let cuenta = "sesion"
     func leer() -> Sesion? { Llavero.leer(cuenta: cuenta).flatMap { try? JSONDecoder().decode(Sesion.self, from: $0) } }
-    func guardar(_ s: Sesion) {
-        if let d = try? JSONEncoder().encode(s), !Llavero.guardar(d, cuenta: cuenta) {
+    func guardar(_ s: Sesion) { _ = guardarComprobando(s) }
+    func guardarComprobando(_ s: Sesion) -> Bool {
+        guard let d = try? JSONEncoder().encode(s), Llavero.guardar(d, cuenta: cuenta) else {
             Registro.auth.error("No se pudo guardar la sesión en el llavero.")
+            return false
         }
+        return true
     }
     func borrar() { Llavero.borrar(cuenta: cuenta) }
 }
@@ -92,7 +101,11 @@ actor AuthSupabase: AuthRepository {
         guard codigo == 200 else { throw AuthSupabase.error(d, codigo: codigo) }
         let s = try AuthSupabase.sesion(de: d)
         guard gen == generacion else { throw ErrorAuth.sinSesion }
-        guardar(s)
+        guard almacen.guardarComprobando(s) else {
+            throw ErrorAuth.otro("no se pudo guardar la sesión en el llavero de este iphone: vuelve a intentarlo.")
+        }
+        actual = s
+        cargada = true
         return s
     }
 

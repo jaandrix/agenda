@@ -166,6 +166,7 @@ final class AppCoordinator {
     }
 
     func arrancar() async {
+        ArchivosTemporales.limpiarTodo()
         escucharSync()
         vigilarRed()
         if let s = await entorno.auth.sesionGuardada() {
@@ -202,18 +203,30 @@ final class AppCoordinator {
         fase = .lista
         pestana = .inicio
         Task { await entorno.sync.sincronizar() }
+        precalentarFinanzas()
         atenderIntenciones()
     }
 
     func salir() async {
         let uid = sesion?.userId
-        await entorno.sync.detener(borrandoUsuario: uid)
+        let limpio = await entorno.sync.detener(borrandoUsuario: uid)
         await entorno.auth.salir()
         await AvisosLocales.quitarTodos()
+        Self.borrarRestosLocales(uid)
         sesion = nil
         bloqueada = false
         modal = nil
-        fase = .sinSesion(aviso: nil)
+        fase = .sinSesion(aviso: limpio ? nil : "no se pudo borrar del todo la copia de este iphone: entra y vuelve a salir.")
+    }
+
+    // 0.23 (auditoría): lo que no está en el almacén principal también se va al salir: el borrador de apuntar, las fotos
+    // para deshacer importaciones y las exportaciones o documentos temporales.
+    static func borrarRestosLocales(_ uid: String?) {
+        if let uid {
+            BorradorApuntar.quitar(uid)
+            FotosImportacion.borrar(uid)
+        }
+        ArchivosTemporales.limpiarTodo()
     }
 
     func sincronizar() async { await entorno.sync.sincronizar() }
@@ -273,6 +286,7 @@ final class AppCoordinator {
                     let uid = self.sesion?.userId
                     self.sesion = nil
                     await self.entorno.sync.detener(borrandoUsuario: uid)
+                    Self.borrarRestosLocales(uid)
                     self.fase = .sinSesion(aviso: ErrorAuth.sesionRevocada.mensaje)
                 }
             }
