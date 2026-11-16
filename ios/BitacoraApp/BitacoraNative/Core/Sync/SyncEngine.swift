@@ -350,14 +350,16 @@ actor SyncEngine {
         try await almacen.actualizarEstado(uid: uid) {
             $0.pendientes.removeAll { hechas.contains($0.id) }
             $0.confirmadasRecientes = Array(($0.confirmadasRecientes + hechas).suffix(200))
-            $0.actualizadoNube = fila.actualizado
+            // 0.23 (auditoría): tras subir, la hora de la fila leída es la de antes de la escritura; se espera a la
+            // siguiente lectura en vez de enseñar una hora atrasada.
+            if lote.isEmpty { $0.actualizadoNube = fila.actualizado }
             $0.ultimaSincronizacion = ahora
             $0.ultimoError = nil
             quedan = $0.pendientes.count
         }
         guard vigente(gen) else { return }
         informe.ultimaSincronizacion = ahora
-        informe.actualizadoNube = fila.actualizado
+        if lote.isEmpty { informe.actualizadoNube = fila.actualizado }
         informe.pendientes = quedan
         informe.revision += 1
         // El resumen de «estado.», fuera del actor (recorre todos los bytes); sale con el informe que publica el ciclo.

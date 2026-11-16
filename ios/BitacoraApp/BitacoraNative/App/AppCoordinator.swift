@@ -188,6 +188,7 @@ final class AppCoordinator {
     // 0.22: el motor de Finanzas (JavaScriptCore) se carga cuando Inicio ya está pintado, a baja prioridad, y solo si
     // Finanzas está a la vista. Antes se cargaba al abrir la pestaña por primera vez.
     private func precalentarFinanzas() {
+        Task(priority: .utility) { await InterpreteApuntar.compartido.precalentar() }
         Task(priority: .utility) { [weak self] in
             try? await Task.sleep(for: .seconds(2.5))
             guard let self, self.sesion != nil, let doc = await self.documentoVisible(), Apartados.visible("finances", doc) else { return }

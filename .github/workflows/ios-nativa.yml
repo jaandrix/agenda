@@ -72,14 +72,21 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee tests.log | grep -E "(Test Case|error:|warning: .*BitacoraNative|Executed|TEST (SUCCEEDED|FAILED))" || true
           grep -q "TEST SUCCEEDED" tests.log
+          # 0.23: la prueba de interfaz del carrusel de Inicio tiene que haberse ejecutado y pasado.
+          grep -qE "CarruselUITests.*testDeslizarPasaDeSemanaYVuelve.*passed" tests.log || { echo "La prueba de interfaz del carrusel no pasó"; exit 1; }
 
-      # 0.22: las medidas valen en Release (en Debug Swift va varias veces más lento). La misma prueba corre sobre la 0.21
-      # (6af63d3, el «antes») y sobre este commit, y el resumen de la ejecución enseña las dos columnas. Si este paso
-      # falla, la compilación sigue (las pruebas de Debug ya comprobaron que funcionan).
+      # 0.23 (auditoría): ni guardados que callan el error ni hojas sin la piel de Bitácora.
+      - name: Reglas del código nativo
+        run: |
+          if grep -rn "try? await c.encolar" BitacoraNative; then echo "Usa c.guardar en vez de try? await c.encolar"; exit 1; fi
+          if grep -rnF ".sheet(" BitacoraNative --include=*.swift | grep -v "DesignSystem/Hojas.swift"; then echo "Usa .hoja en vez de .sheet"; exit 1; fi
+
+      # 0.23: el «antes» es el final de la 0.22 y la medida bloquea la compilación si algo empeora más de un 20 % (y 5 ms).
+      # Las medidas valen en Release (en Debug Swift va varias veces más lento); la misma prueba corre sobre el «antes» y
+      # sobre este commit, y el resumen enseña las dos columnas.
       - name: Rendimiento (Release, simulador; antes y ahora)
         # También si falla alguna prueba unitaria de otro apartado: las medidas no dependen de ellas.
         if: ${{ !cancelled() }}
-        continue-on-error: true
         run: |
           set -o pipefail
           UDID=$(xcrun simctl list devices available -j | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))][0].udid')
@@ -90,11 +97,11 @@ jobs:
               2>&1 | tee "$1" | grep -E "(MEDIDA\||measured \[|error:|TEST (SUCCEEDED|FAILED))" || true
           }
           medir "$PWD/perf.log" build-perf
-          git fetch -q --depth 1 origin 6af63d3fabf289cd916f210bbe95b5e4109e260f
+          git fetch -q --depth 1 origin 591b53df85a6741c582dafe1f9d64fa777b3a3b6
           git worktree add -q "$RUNNER_TEMP/antes" FETCH_HEAD
           cp BitacoraNativeTests/RendimientoAppTests.swift "$RUNNER_TEMP/antes/ios/BitacoraApp/BitacoraNativeTests/"
           ( cd "$RUNNER_TEMP/antes/ios/BitacoraApp" && xcodegen generate -q && medir "$GITHUB_WORKSPACE/ios/BitacoraApp/perf-antes.log" "$RUNNER_TEMP/build-antes" )
-          python3 ../../pruebas/tabla-rendimiento.py perf-antes.log perf.log --anotacion >> "$GITHUB_STEP_SUMMARY"
+          python3 ../../pruebas/tabla-rendimiento.py perf-antes.log perf.log --anotacion --umbral 20 >> "$GITHUB_STEP_SUMMARY"
           grep -q "TEST SUCCEEDED" perf.log
 
       - name: Subir las capturas de diseño

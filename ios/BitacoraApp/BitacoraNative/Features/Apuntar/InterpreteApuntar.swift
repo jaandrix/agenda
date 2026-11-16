@@ -117,6 +117,9 @@ actor InterpreteApuntar {
         return c
     }
 
+    // 0.23 (auditoría): carga JavaScriptCore y los scripts antes de que se abra apuntar (la primera letra iba en frío).
+    func precalentar() { _ = try? preparado() }
+
     // Solo para las pruebas: «ahora» fijo, como pruebas/apuntar-casos.mjs.
     func fijarAhora(_ a: Int, _ m: Int, _ d: Int, _ h: Int) throws {
         _ = try preparado().objectForKeyedSubscript("__fijarAhora").call(withArguments: [a, m, d, h])

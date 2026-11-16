@@ -81,7 +81,7 @@ struct InterruptorCasa: ToggleStyle {
                     Circle().fill(configuration.isOn ? Paleta.sobreAcento : Paleta.textoSecundario)
                         .frame(width: 22, height: 22).padding(4)
                 }
-                .animation(.easeOut(duration: 0.16), value: configuration.isOn)
+                .animation(UIAccessibility.isReduceMotionEnabled ? nil : .easeOut(duration: 0.16), value: configuration.isOn)
             }
         }
         .buttonStyle(.plain)

@@ -24,7 +24,7 @@ final class CarruselUITests: XCTestCase {
     }
 
     func testDeslizarPasaDeSemanaYVuelve() {
-        let carrusel = app.otherElements["carrusel-semanas"].firstMatch
+        let carrusel = app.descendants(matching: .any)["carrusel-semanas"].firstMatch
         XCTAssertTrue(carrusel.waitForExistence(timeout: 10))
         esperar("2026-11-09")
         XCTAssertTrue(carrusel.label.contains("12"), carrusel.label)

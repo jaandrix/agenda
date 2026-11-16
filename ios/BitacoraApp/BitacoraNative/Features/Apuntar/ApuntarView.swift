@@ -38,7 +38,8 @@ struct ApuntarView: View {
     @State private var contexto = ContextoApuntar()
     @State private var guardando = false
     @State private var error: String?
-    @State private var detente: PresentationDetent = .fraction(0.56)
+    // 0.23 (auditoría): se abre ya grande. Al 56 % el teclado obligaba a recolocar la hoja mientras subía (tirón).
+    @State private var detente: PresentationDetent = .large
     @State private var ruta: [String] = []
     @State private var cargado = false
     @State private var hechos = 0
@@ -91,6 +92,8 @@ struct ApuntarView: View {
                 if !b.isEmpty { texto = b; deBorrador = true }
             }
             cargado = true
+            // El teclado, cuando la hoja ya ha subido: así no compiten la presentación y el teclado en el mismo fotograma.
+            try? await Task.sleep(for: .milliseconds(160))
             escribiendo = true
             if let doc = await c.documentoVisible() {
                 contexto = ContextoApuntar.desde(doc, uid: uid)
@@ -100,6 +103,9 @@ struct ApuntarView: View {
         .task(id: "\(texto)|\(contexto.ocultos.count)|\(contexto.asignaturas.count)") {
             guard cargado else { return }
             elegidos = [:]
+            // Espera breve: al escribir rápido no se interpreta ni se guarda el borrador en cada letra.
+            try? await Task.sleep(for: .milliseconds(150))
+            guard !Task.isCancelled else { return }
             BorradorApuntar.guardar(texto, uid)
             let t = texto
             guard !t.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { items = []; return }

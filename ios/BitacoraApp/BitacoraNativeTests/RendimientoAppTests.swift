@@ -84,6 +84,12 @@ final class RendimientoAppTests: XCTestCase {
         return (r, Double(DispatchTime.now().uptimeNanoseconds - t0) / 1_000_000)
     }
 
+    private func reloj0(_ f: () -> Void) -> Double {
+        let t0 = DispatchTime.now().uptimeNanoseconds
+        f()
+        return Double(DispatchTime.now().uptimeNanoseconds - t0) / 1_000_000
+    }
+
     private func publicar(_ nombre: String) {
         guard let v = Self.resultados[nombre]?.sorted(), !v.isEmpty else { return }
         print(String(format: "MEDIDA|%@|%.1f|%.1f|%.1f", nombre, v[v.count / 2], v.first!, v.last!))
@@ -92,13 +98,23 @@ final class RendimientoAppTests: XCTestCase {
     // MARK: pintar
 
     private var ventana: UIWindow?
+    private var pantallas: [String: UIHostingController<AnyView>] = [:]
 
-    // Pinta una vista en una ventana de 390 × 844 y fuerza el diseño y el dibujo, como el primer fotograma.
-    private func pintar<V: View>(_ v: V) {
+    // Pinta una vista en una ventana de 390 × 844 y fuerza el diseño y el dibujo. Con `en`, la pantalla ya existe y solo
+    // se cambia su contenido (como en la app al marcar o deslizar); sin él, se crea entera (como al arrancar).
+    private func pintar<V: View>(_ v: V, en clave: String? = nil) {
         let w = ventana ?? UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
         ventana = w
-        let h = UIHostingController(rootView: AnyView(v.environment(\.colorScheme, .light)))
-        w.rootViewController = h
+        let raiz = AnyView(v.environment(\.colorScheme, .light))
+        let h: UIHostingController<AnyView>
+        if let clave, let existente = pantallas[clave] {
+            existente.rootView = raiz
+            h = existente
+        } else {
+            h = UIHostingController(rootView: raiz)
+            if let clave { pantallas[clave] = h }
+        }
+        if w.rootViewController !== h { w.rootViewController = h }
         w.isHidden = false
         h.view.setNeedsLayout()
         h.view.layoutIfNeeded()
@@ -152,7 +168,7 @@ final class RendimientoAppTests: XCTestCase {
             let d = doc
             anotar("pestaña plan", try await reloj {
                 let v = await Task.detached { LecturaPlanificador.vista(d) }.value
-                pintar(PlanCuerpo(carga: .lista(v), desplazamiento: .constant(0), estado: .reposo, pendientes: 0, aviso: nil))
+                pintar(PlanCuerpo(carga: .lista(v), desplazamiento: .constant(0), estado: .reposo, pendientes: 0, aviso: nil), en: "plan")
             }.1)
             anotar("pestaña calendario (cálculo)", await reloj {
                 await Task.detached { LecturaCalendario.mes(d, CalendarioBitacora.madrid.diaLogico(Date()).yearMonth) }.value
@@ -176,10 +192,9 @@ final class RendimientoAppTests: XCTestCase {
             let hoy = CalendarioBitacora.madrid.diaLogico(Date())
             for (k, paso) in [1, 7].enumerated() {
                 let elegido = hoy.sumando(dias: paso + vuelta)
-                anotar(k == 0 ? "carrusel: otro día" : "carrusel: otra semana", await reloj {
-                    let v = await Task.detached { VistaInicio.desde(d, elegido: elegido) }.value
-                    pintar(inicio(v))
-                }.1)
+                let (v, calculo) = await reloj { await Task.detached { VistaInicio.desde(d, elegido: elegido) }.value }
+                anotar(k == 0 ? "carrusel: otro día (cálculo)" : "carrusel: otra semana (cálculo)", calculo)
+                anotar(k == 0 ? "carrusel: otro día (pintar)" : "carrusel: otra semana (pintar)", reloj0 { pintar(inicio(v), en: "inicio") })
             }
 
             // Marcar una tarea: la cola, el documento visible y la portada otra vez.
@@ -189,8 +204,9 @@ final class RendimientoAppTests: XCTestCase {
                 let quiza = await sync.documentoVisible()
                 let nuevo = try XCTUnwrap(quiza)
                 let v = await Task.detached { VistaInicio.desde(nuevo) }.value
-                pintar(inicio(v))
+                pintar(inicio(v), en: "inicio")
             }.1)
+            anotar("Inicio (cálculo)", await reloj { await Task.detached { VistaInicio.desde(d) }.value }.1)
             anotar("marcar despensa hasta la lista", try await reloj {
                 try await sync.encolar(OperacionesDespensa.marcarOp(listaId: "l0", id: "i0_\(vuelta + 1)", hecho: true))
                 let quiza = await sync.documentoVisible()
@@ -242,14 +258,14 @@ final class RendimientoAppTests: XCTestCase {
                 let quiza = await syncS.documentoVisible()
                 let nuevo = try XCTUnwrap(quiza)
                 let v = await Task.detached { VistaInicio.desde(nuevo) }.value
-                pintar(inicio(v))
+                pintar(inicio(v), en: "inicio")
             }.1)
             anotar("sincronización sin cambios hasta Inicio", try await reloj {
                 await syncS.sincronizar()
                 let quiza = await syncS.documentoVisible()
                 let nuevo = try XCTUnwrap(quiza)
                 let v = await Task.detached { VistaInicio.desde(nuevo) }.value
-                pintar(inicio(v))
+                pintar(inicio(v), en: "inicio")
             }.1)
             try? FileManager.default.removeItem(at: raizS)
         }

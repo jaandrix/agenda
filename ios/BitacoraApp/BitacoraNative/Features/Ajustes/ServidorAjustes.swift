@@ -22,7 +22,12 @@ struct TokenConector: Sendable, Equatable, Identifiable {
 struct CodigoInvitacion: Sendable, Equatable {
     let codigo: String
     let amigos: Int
-    var enlace: URL { URL(string: "https://appbitacora.es/?amigo=\(codigo.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? codigo)")! }
+    // 0.23 (auditoría): con URLComponents, el código va escapado como valor (un «&» o «=» no rompe la consulta).
+    var enlace: URL {
+        var u = URLComponents(string: "https://appbitacora.es/")!
+        u.queryItems = [URLQueryItem(name: "amigo", value: codigo)]
+        return u.url ?? URL(string: "https://appbitacora.es/")!
+    }
 }
 
 enum ErrorAjustes: Error, Equatable {
@@ -118,7 +123,8 @@ actor ServidorAjustes {
 
     func enlaceCalendario() async throws -> URL {
         let (j, codigo) = try await pedir("functions/v1/calendario-feed", metodo: "POST")
-        guard codigo == 200, let u = (j as? [String: Any])?["url"] as? String, let url = URL(string: u) else {
+        guard codigo == 200, let u = (j as? [String: Any])?["url"] as? String, let url = URL(string: u),
+              Self.seguro(url, hosts: [Config.supabaseURL.host ?? ""]) else {
             throw ErrorAjustes.servidor(mensaje(j, "no se pudo preparar el enlace."))
         }
         return url
@@ -126,10 +132,17 @@ actor ServidorAjustes {
 
     func portalPago() async throws -> URL {
         let (j, codigo) = try await pedir("functions/v1/portal-pago", metodo: "POST")
-        guard codigo == 200, let u = (j as? [String: Any])?["url"] as? String, let url = URL(string: u) else {
+        guard codigo == 200, let u = (j as? [String: Any])?["url"] as? String, let url = URL(string: u),
+              Self.seguro(url, hosts: ["billing.stripe.com"]) else {
             throw ErrorAjustes.servidor(mensaje(j, "no se pudo abrir el portal de pagos."))
         }
         return url
+    }
+
+    // 0.23 (auditoría): lo que devuelve el servidor solo se abre si es HTTPS y del sitio esperado.
+    static func seguro(_ url: URL, hosts: [String]) -> Bool {
+        guard url.scheme?.lowercased() == "https", let h = url.host?.lowercased() else { return false }
+        return hosts.contains { !$0.isEmpty && (h == $0.lowercased() || h.hasSuffix("." + $0.lowercased())) }
     }
 
     func eliminarCuenta() async throws {

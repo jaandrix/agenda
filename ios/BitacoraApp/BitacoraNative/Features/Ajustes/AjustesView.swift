@@ -154,12 +154,9 @@ struct AjustesView: View {
     private var ayuda: some View {
         VStack(alignment: .leading, spacing: 0) {
             GrupoMenu(titulo: "ayuda.") {
+                // 0.23 (auditoría): eran dos filas que abrían lo mismo; la web aún no tiene un enlace a cada guía.
                 Button { c.web = URL(string: "https://appbitacora.es/#settings")! } label: {
-                    FilaAjuste(icono: "ayuda", titulo: "guía de bitácora.", detalle: "para qué sirve cada apartado.", web: true)
-                }.buttonStyle(EstiloFila())
-                SeparadorMenu()
-                Button { c.web = URL(string: "https://appbitacora.es/#settings")! } label: {
-                    FilaAjuste(icono: "conexiones", titulo: "guía para tu ia.", detalle: "un markdown para que tu ia sepa usarla.", web: true)
+                    FilaAjuste(icono: "ayuda", titulo: "guías.", detalle: "la de bitácora y la de tu ia, en ajustes de la web.", web: true)
                 }.buttonStyle(EstiloFila())
                 SeparadorMenu()
                 Button { c.web = Config.webURL } label: {
