@@ -199,6 +199,18 @@ enum CambioViaje: Codable, Sendable, Equatable {
     case lugar(id: String, nombre: String)
     case lugarVisitado(id: String, visitado: Bool)
     case quitarLugar(id: String)
+    // 0.24, saveTripReserva / deleteTripReserva: `transportes` ({ tipo, compania, numero, origen, destino, salida,
+    // llegada, reserva, asiento, notas }) y `alojamientos` ({ nombre, direccion, entrada, salida, reserva, notas }).
+    // Al editar se cambian solo los campos que llegan; lo demás de la reserva se queda.
+    case reserva(lista: String, id: String, campos: [String: String])
+    case quitarReserva(lista: String, id: String)
+    // saveTripList / deleteTripList / addTripListItem / toggleTripListItem / deleteTripListItem: `listas` con
+    // { id, nombre, items: [{ id, texto, hecho }] }.
+    case lista(id: String, nombre: String)
+    case quitarLista(id: String)
+    case itemLista(listaId: String, id: String, texto: String)
+    case itemListaHecho(listaId: String, id: String, hecho: Bool)
+    case quitarItemLista(listaId: String, id: String)
 }
 
 enum CambioProyecto: Codable, Sendable, Equatable {
@@ -625,6 +637,38 @@ enum AplicarOperaciones {
                 if let m = lugares.firstIndex(where: { $0["id"]?.comoId == id }), var o = lugares[m].objeto { o["visitado"] = .bool(visitado); lugares[m] = .object(o) }
             case let .quitarLugar(id):
                 lugares.removeAll { $0["id"]?.comoId == id }
+            case let .reserva(nombreLista, id, campos):
+                guard nombreLista == "transportes" || nombreLista == "alojamientos" else { break }
+                var reservas = v[nombreLista]?.lista ?? []
+                let validos = nombreLista == "transportes" ? AplicarOperaciones.camposTransporte : AplicarOperaciones.camposAlojamiento
+                var o = reservas.first(where: { $0["id"]?.comoId == id })?.objeto ?? ["id": .string(id)]
+                for (k, valor) in campos where validos.contains(k) { o[k] = .string(String(valor.trimmingCharacters(in: .whitespacesAndNewlines).prefix(k == "notas" ? 2000 : 300))) }
+                if let m = reservas.firstIndex(where: { $0["id"]?.comoId == id }) { reservas[m] = .object(o) } else { reservas.append(.object(o)) }
+                v[nombreLista] = .array(reservas)
+            case let .quitarReserva(nombreLista, id):
+                guard nombreLista == "transportes" || nombreLista == "alojamientos", let reservas = v[nombreLista]?.lista else { break }
+                v[nombreLista] = .array(reservas.filter { $0["id"]?.comoId != id })
+            case let .lista(id, nombre):
+                let limpio = String(nombre.trimmingCharacters(in: .whitespacesAndNewlines).prefix(120))
+                var listas = v["listas"]?.lista ?? []
+                guard !limpio.isEmpty, !listas.contains(where: { $0["id"]?.comoId == id }) else { break }
+                listas.append(.object(["id": .string(id), "nombre": .string(limpio), "items": .array([])]))
+                v["listas"] = .array(listas)
+            case let .quitarLista(id):
+                guard let listas = v["listas"]?.lista else { break }
+                v["listas"] = .array(listas.filter { $0["id"]?.comoId != id })
+            case let .itemLista(lid, id, texto):
+                let limpio = String(texto.trimmingCharacters(in: .whitespacesAndNewlines).prefix(300))
+                guard !limpio.isEmpty else { break }
+                AplicarOperaciones.cambiarListaViaje(&v, lid) { items in
+                    if !items.contains(where: { $0["id"]?.comoId == id }) { items.append(.object(["id": .string(id), "texto": .string(limpio), "hecho": .bool(false)])) }
+                }
+            case let .itemListaHecho(lid, id, hecho):
+                AplicarOperaciones.cambiarListaViaje(&v, lid) { items in
+                    if let m = items.firstIndex(where: { $0["id"]?.comoId == id }), var o = items[m].objeto { o["hecho"] = .bool(hecho); items[m] = .object(o) }
+                }
+            case let .quitarItemLista(lid, id):
+                AplicarOperaciones.cambiarListaViaje(&v, lid) { items in items.removeAll { $0["id"]?.comoId == id } }
             }
             if v["itinerario"] != nil || !itinerario.isEmpty { v["itinerario"] = .array(itinerario) }
             if v["places"] != nil || !lugares.isEmpty { v["places"] = .array(lugares) }

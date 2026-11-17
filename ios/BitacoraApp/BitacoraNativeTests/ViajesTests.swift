@@ -66,4 +66,44 @@ final class ViajesTests: XCTestCase {
         XCTAssertEqual(v3.estado(hoy: "2026-11-01"), "próximo")
         XCTAssertEqual(v3.estado(hoy: "2027-01-01"), "completado")
     }
+
+    // 0.24: reservas y listas como saveTripReserva y las listas de js/viajes.js; editar no borra lo que no llega.
+    func testReservasYListas() throws {
+        let doc = try DocumentoBitacora(datos: Data(base.utf8))
+        let ops: [OperacionBitacora] = [
+            .cambiarViaje(viajeId: "v1", cambio: .reserva(lista: "transportes", id: "tr1", campos: ["origen": " Madrid ", "destino": "Roma", "salida": "2026-12-01T09:30", "raro": "no"])),
+            .cambiarViaje(viajeId: "v1", cambio: .reserva(lista: "alojamientos", id: "al1", campos: ["nombre": "Hotel Sol", "entrada": "2026-12-01T15:00"])),
+            .cambiarViaje(viajeId: "v1", cambio: .reserva(lista: "otra", id: "x", campos: ["nombre": "no"])),
+            .cambiarViaje(viajeId: "v1", cambio: .lista(id: "l1", nombre: "qué llevar")),
+            .cambiarViaje(viajeId: "v1", cambio: .lista(id: "l1", nombre: "repetida")),
+            .cambiarViaje(viajeId: "v1", cambio: .itemLista(listaId: "l1", id: "i1", texto: "pasaporte")),
+            .cambiarViaje(viajeId: "v1", cambio: .itemLista(listaId: "l1", id: "i2", texto: "cargador")),
+            .cambiarViaje(viajeId: "v1", cambio: .itemListaHecho(listaId: "l1", id: "i1", hecho: true)),
+            .cambiarViaje(viajeId: "v1", cambio: .itemLista(listaId: "nada", id: "i9", texto: "no")),
+        ]
+        let (r, _) = AplicarOperaciones.sobre(doc, ops)
+        let (dos, _) = AplicarOperaciones.sobre(r, ops)
+        let v = try XCTUnwrap(LecturaViajes.viajes(dos).first { $0.id == "v1" })
+        XCTAssertEqual(v.transportes.map(\.id), ["tr1"])
+        XCTAssertEqual(v.transportes.first?["origen"], "Madrid")
+        XCTAssertEqual(v.transportes.first?["raro"], "")
+        XCTAssertEqual(v.alojamientos.first?["nombre"], "Hotel Sol")
+        XCTAssertEqual(v.listas.count, 1)
+        XCTAssertEqual(v.listas.first?.nombre, "qué llevar")
+        XCTAssertEqual(v.listas.first?.items.map(\.id), ["i1", "i2"])
+        XCTAssertEqual(v.listas.first?.hechos, 1)
+        let crudo = try XCTUnwrap(dos.valor(de: "entries")?.lista?.first { $0["id"]?.comoId == "v1" })
+        XCTAssertNil(crudo["otra"])
+
+        let (sin, _) = AplicarOperaciones.sobre(dos, [.cambiarViaje(viajeId: "v1", cambio: .reserva(lista: "transportes", id: "tr1", campos: ["asiento": "12A"])),
+                                                     .cambiarViaje(viajeId: "v1", cambio: .quitarReserva(lista: "alojamientos", id: "al1")),
+                                                     .cambiarViaje(viajeId: "v1", cambio: .quitarItemLista(listaId: "l1", id: "i2")),
+                                                     .cambiarViaje(viajeId: "v1", cambio: .quitarLista(id: "nada"))])
+        let v2 = try XCTUnwrap(LecturaViajes.viajes(sin).first { $0.id == "v1" })
+        XCTAssertEqual(v2.transportes.first?["asiento"], "12A")
+        XCTAssertEqual(v2.transportes.first?["destino"], "Roma")
+        XCTAssertTrue(v2.alojamientos.isEmpty)
+        XCTAssertEqual(v2.listas.first?.items.map(\.id), ["i1"])
+        XCTAssertEqual(LecturaViajes.fechaHora("2026-12-01T09:30"), "mar 1 dic, 09:30")
+    }
 }

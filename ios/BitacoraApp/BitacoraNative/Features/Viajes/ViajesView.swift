@@ -2,11 +2,23 @@ import SwiftUI
 
 // Viajes (js/viajes.js): entradas `type: travel` en `entries`, con `itinerario` (por día) y `places`. Los gastos son los
 // movimientos de Finanzas marcados `viaje` (financeProGastosDelViaje) más los apuntados a mano en el viaje (`expenses`).
-// Reservas, listas, documentos, mapa y la pestaña Destino (tiempo y moneda) siguen en la web: PLAN-0.17.md.
+// 0.24: también reservas (`transportes`, `alojamientos`), `listas` y la pestaña Destino (DestinoViaje.swift). Los
+// documentos del viaje y el mapa siguen en la web: PLAN-0.24.md.
 
 struct ItemItinerario: Sendable, Identifiable, Equatable { let id, dia, hora, titulo, lugar, notas: String }
 struct LugarViaje: Sendable, Identifiable, Equatable { let id, nombre: String; let visitado: Bool }
 struct GastoViaje: Sendable, Identifiable, Equatable { let id, fecha, nota: String; let importe: Decimal }
+struct ReservaViaje: Sendable, Identifiable, Equatable {
+    let id: String
+    let campos: [String: String]
+    subscript(_ k: String) -> String { campos[k] ?? "" }
+}
+struct ItemListaViaje: Sendable, Identifiable, Equatable { let id, texto: String; let hecho: Bool }
+struct ListaViaje: Sendable, Identifiable, Equatable {
+    let id, nombre: String
+    let items: [ItemListaViaje]
+    var hechos: Int { items.filter(\.hecho).count }
+}
 
 struct Viaje: Sendable, Identifiable, Equatable {
     let id, titulo, destino, inicio, fin, companeros, notas: String
@@ -14,6 +26,11 @@ struct Viaje: Sendable, Identifiable, Equatable {
     let lugares: [LugarViaje]
     let gastos: [GastoViaje]
     let aMano: Decimal
+    let transportes: [ReservaViaje]
+    let alojamientos: [ReservaViaje]
+    let listas: [ListaViaje]
+    // `destinoGeo`, el destino ya localizado por la web (servicios.js); si falta, la pestaña Destino lo busca.
+    let geo: GeoDestino?
 
     // tripStatus (js/viajes.js).
     func estado(hoy: String) -> String {
@@ -53,9 +70,42 @@ enum LecturaViajes {
                 return GastoViaje(id: tid, fecha: t["date"]?.texto ?? "", nota: t["note"]?.texto ?? "", importe: imp)
             }.sorted { $0.fecha < $1.fecha }
             let aMano = (o["expenses"]?.lista ?? []).reduce(Decimal(0)) { $0 + (Dinero.decimal($1["amount"]) ?? 0) }
+            let listas = (o["listas"]?.lista ?? []).compactMap { l -> ListaViaje? in
+                guard let lo = l.objeto, let lid = lo["id"]?.comoId else { return nil }
+                let items = (lo["items"]?.lista ?? []).compactMap { i -> ItemListaViaje? in
+                    guard let io = i.objeto, let iid = io["id"]?.comoId else { return nil }
+                    return ItemListaViaje(id: iid, texto: io["texto"]?.texto ?? "", hecho: io["hecho"]?.booleano == true)
+                }
+                return ListaViaje(id: lid, nombre: lo["nombre"]?.texto ?? "", items: items)
+            }
             return Viaje(id: id, titulo: s("title"), destino: s("destination"), inicio: inicio, fin: fin, companeros: s("companions"),
-                         notas: s("notes"), itinerario: itinerario, lugares: lugares, gastos: gastos, aMano: aMano)
+                         notas: s("notes"), itinerario: itinerario, lugares: lugares, gastos: gastos, aMano: aMano,
+                         transportes: reservas(o["transportes"], orden: "salida"), alojamientos: reservas(o["alojamientos"], orden: "entrada"),
+                         listas: listas, geo: GeoDestino.desde(o["destinoGeo"]))
         }
+    }
+
+    // renderTripReservasTab: cada reserva con sus campos de texto, por fecha de salida o de entrada.
+    static func reservas(_ v: JSONValue?, orden: String) -> [ReservaViaje] {
+        (v?.lista ?? []).compactMap { r -> ReservaViaje? in
+            guard let o = r.objeto, let id = o["id"]?.comoId else { return nil }
+            var campos: [String: String] = [:]
+            for (k, x) in o where k != "id" { if let t = x.texto { campos[k] = t } }
+            return ReservaViaje(id: id, campos: campos)
+        }.sorted { $0[orden] < $1[orden] }
+    }
+
+    // fechaHoraViaje: «2026-12-01T09:30» → «mar 1 dic, 09:30».
+    static func fechaHora(_ v: String) -> String {
+        guard !v.isEmpty else { return "" }
+        let partes = v.split(separator: "T", maxSplits: 1).map(String.init)
+        var r = partes[0]
+        if let d = LocalDay(iso: partes[0]) {
+            let dias = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"], meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+            r = "\(dias[d.indiceSemanaLunes]) \(d.day) \(meses[d.month - 1])"
+        }
+        if partes.count > 1 { r += ", " + String(partes[1].prefix(5)) }
+        return r
     }
 
     // Itinerario agrupado por día (los que no tienen día, al final), y dentro por hora.
@@ -181,13 +231,21 @@ private struct FichaViaje: View {
     @State private var nuevoItem = false
     @State private var nuevoLugar = ""
     @State private var confirmarBorrado = false
+    @State private var reserva: ReservaEditando?
+    @State private var nuevaLista = ""
+    @State private var nuevosItems: [String: String] = [:]
+    @State private var listaABorrar: ListaViaje?
 
     var body: some View {
         NavigationStack {
             List {
                 if let v = viaje {
                     Section {
-                        if !v.destino.isEmpty { LabeledContent("destino.", value: v.destino) }
+                        if !v.destino.isEmpty {
+                            NavigationLink { DestinoViajeView(viaje: v) } label: {
+                                LabeledContent("destino.", value: v.destino)
+                            }
+                        }
                         LabeledContent("fechas.", value: v.inicio.isEmpty ? "sin fecha" : (v.fin.isEmpty || v.fin == v.inicio ? v.inicio : "\(v.inicio) → \(v.fin)"))
                         if !v.companeros.isEmpty { LabeledContent("con.", value: v.companeros) }
                         if !v.notas.isEmpty { Text(v.notas).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
@@ -225,6 +283,8 @@ private struct FichaViaje: View {
                             Button("añadir.", action: anadirLugar).disabled(nuevoLugar.trimmingCharacters(in: .whitespaces).isEmpty)
                         }
                     }
+                    reservasSeccion(v)
+                    listasSecciones(v)
                     Section {
                         if v.gastos.isEmpty && v.aMano == 0 {
                             Text("en finanzas, marca los gastos de estos días como «gasto de viaje.» y aparecerán aquí.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
@@ -253,8 +313,113 @@ private struct FichaViaje: View {
             .hoja(isPresented: $editando) { EditorViaje(viaje: viaje).environment(c) }
             .hoja(isPresented: $nuevoItem) { EditorItinerario(viajeId: id, item: nil, diaInicial: viaje?.inicio ?? "").environment(c) }
             .hoja(item: $itemEditado) { it in EditorItinerario(viajeId: id, item: it, diaInicial: it.dia).environment(c) }
+            .hoja(item: $reserva) { r in EditorReservaViaje(viajeId: id, editando: r).environment(c) }
+            .confirmationDialog("¿eliminar la lista «\(listaABorrar?.nombre.lowercased() ?? "")»?",
+                                isPresented: Binding(get: { listaABorrar != nil }, set: { if !$0 { listaABorrar = nil } }), titleVisibility: .visible) {
+                Button("eliminar.", role: .destructive) { if let l = listaABorrar { enviar(.quitarLista(id: l.id)) }; listaABorrar = nil }
+                Button("cancelar.", role: .cancel) { listaABorrar = nil }
+            }
             .task(id: c.revision) { await cargar() }
         }
+    }
+
+    // renderTripReservasTab: transportes y alojamiento; tocar uno lo abre para editarlo.
+    @ViewBuilder private func reservasSeccion(_ v: Viaje) -> some View {
+        Section("reservas.") {
+            ForEach(v.transportes) { r in
+                Button { reserva = ReservaEditando(lista: "transportes", reserva: r) } label: { filaReserva(transporte(r), detalle: detalleTransporte(r), notas: r["notas"]) }
+                    .swipeActions { Button("borrar", role: .destructive) { enviar(.quitarReserva(lista: "transportes", id: r.id)) } }
+            }
+            ForEach(v.alojamientos) { r in
+                Button { reserva = ReservaEditando(lista: "alojamientos", reserva: r) } label: { filaReserva(r["nombre"].isEmpty ? "alojamiento" : r["nombre"], detalle: detalleAlojamiento(r), notas: r["notas"]) }
+                    .swipeActions { Button("borrar", role: .destructive) { enviar(.quitarReserva(lista: "alojamientos", id: r.id)) } }
+            }
+            HStack(spacing: Espacio.l) {
+                Button("+ transporte.") { reserva = ReservaEditando(lista: "transportes", reserva: nil) }.buttonStyle(.borderless)
+                Button("+ alojamiento.") { reserva = ReservaEditando(lista: "alojamientos", reserva: nil) }.buttonStyle(.borderless)
+            }
+            .foregroundStyle(Paleta.acento)
+        }
+    }
+
+    private func filaReserva(_ titulo: String, detalle: String, notas: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(titulo).foregroundStyle(Paleta.texto)
+            if !detalle.isEmpty { Text(detalle).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+            if !notas.isEmpty { Text(notas).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(3) }
+        }
+    }
+
+    private func transporte(_ r: ReservaViaje) -> String {
+        let nombre = EditorReservaViaje.tipos.first { $0.0 == r["tipo"] }.map { String($0.1.dropLast()) } ?? "transporte"
+        let origen = r["origen"].isEmpty ? "?" : r["origen"]
+        let destino = r["destino"].isEmpty ? "?" : r["destino"]
+        return nombre + ", " + origen + " → " + destino
+    }
+
+    private func detalleTransporte(_ r: ReservaViaje) -> String {
+        var p: [String] = [r["compania"], r["numero"], LecturaViajes.fechaHora(r["salida"])]
+        if !r["llegada"].isEmpty { p.append("llega " + LecturaViajes.fechaHora(r["llegada"])) }
+        if !r["reserva"].isEmpty { p.append("reserva " + r["reserva"]) }
+        if !r["asiento"].isEmpty { p.append("asiento " + r["asiento"]) }
+        return p.filter { !$0.isEmpty }.joined(separator: ", ")
+    }
+
+    private func detalleAlojamiento(_ r: ReservaViaje) -> String {
+        var p: [String] = [r["direccion"]]
+        if !r["entrada"].isEmpty { p.append("entrada " + LecturaViajes.fechaHora(r["entrada"])) }
+        if !r["salida"].isEmpty { p.append("salida " + LecturaViajes.fechaHora(r["salida"])) }
+        if !r["reserva"].isEmpty { p.append("reserva " + r["reserva"]) }
+        return p.filter { !$0.isEmpty }.joined(separator: ", ")
+    }
+
+    // renderTripListsTab: cada lista con sus cosas, «x de y» y un campo para añadir.
+    @ViewBuilder private func listasSecciones(_ v: Viaje) -> some View {
+        ForEach(v.listas) { l in
+            Section {
+                ForEach(l.items) { i in
+                    let alternar = { enviar(.itemListaHecho(listaId: l.id, id: i.id, hecho: !i.hecho)) }
+                    FilaCirculo(hecho: i.hecho, marcar: alternar, abrir: alternar) { EmptyView() } texto: {
+                        Text(i.texto).font(Tipo.cuerpo).foregroundStyle(i.hecho ? Paleta.textoSecundario : Paleta.texto).strikethrough(i.hecho)
+                    } cola: { EmptyView() }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityValue(i.hecho ? "hecho" : "pendiente")
+                    .accessibilityAction { alternar() }
+                    .swipeActions { Button("borrar", role: .destructive) { enviar(.quitarItemLista(listaId: l.id, id: i.id)) } }
+                }
+                HStack {
+                    TextField("añadir.", text: Binding(get: { nuevosItems[l.id] ?? "" }, set: { nuevosItems[l.id] = $0 }))
+                        .submitLabel(.done).onSubmit { anadirItem(l.id) }
+                    Button("añadir.") { anadirItem(l.id) }.disabled((nuevosItems[l.id] ?? "").trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            } header: {
+                HStack {
+                    Text("\(l.nombre.lowercased()). \(l.hechos) de \(l.items.count).")
+                    Spacer()
+                    Button("eliminar.") { listaABorrar = l }.font(Tipo.pie).buttonStyle(.borderless)
+                }
+            }
+        }
+        Section("listas.") {
+            HStack {
+                TextField("nueva lista (qué llevar…).", text: $nuevaLista).submitLabel(.done).onSubmit(anadirLista)
+                Button("crear.", action: anadirLista).disabled(nuevaLista.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+    }
+
+    private func anadirLista() {
+        let nombre = nuevaLista.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !nombre.isEmpty else { return }
+        enviar(.lista(id: LecturaViajes.nuevoId("lista"), nombre: nombre))
+        nuevaLista = ""
+    }
+
+    private func anadirItem(_ lid: String) {
+        let texto = (nuevosItems[lid] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !texto.isEmpty else { return }
+        enviar(.itemLista(listaId: lid, id: LecturaViajes.nuevoId("item"), texto: texto))
+        nuevosItems[lid] = ""
     }
 
     private func dias(_ v: Viaje) -> Int? {
