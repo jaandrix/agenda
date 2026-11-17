@@ -44,4 +44,45 @@ final class ObjetivosTests: XCTestCase {
         XCTAssertEqual(g.hitos.map(\.texto), ["Primer trimestre"])
         XCTAssertEqual(g.estado, "Completado")
     }
+
+    // 0.24: mandala, paso kaizen y tablero como js/bajo-demanda/metodo.js; lo demás del objetivo se queda.
+    func testMandalaKaizenYTablero() throws {
+        let doc = try DocumentoBitacora(datos: Data(#"""
+        {"entries": [{"id": "g1", "type": "goal", "title": "Correr", "status": "Pendiente", "proposito": {"yo": "salud"}},
+                     {"id": "e1", "type": "event", "title": "cine"}],
+         "habits": [{"id": "h0", "texto": "otra", "completadas": {}}]}
+        """#.utf8))
+        let hoy = LocalDay(iso: "2026-11-17")!
+        let ops: [OperacionBitacora] = [
+            MetodoOp.opPilar(objetivo: "g1", indice: 2, texto: " Constancia ", acciones: ["salir", "", "estirar"]),
+            MetodoOp.opPilar(objetivo: "g1", indice: 9, texto: "no", acciones: []),
+            MetodoOp.opKaizen(objetivo: "g1", habito: "habit_1", texto: "ponerme las zapatillas"),
+            MetodoOp.opEstado(objetivo: "g1", estado: "En progreso"),
+            MetodoOp.opEstado(objetivo: "g1", estado: "raro"),
+            MetodoOp.opKaizen(objetivo: "e1", habito: "habit_9", texto: "no"),
+            .marcarRutina(id: "habit_1", dia: "2026-11-16", hecha: true),
+            .marcarRutina(id: "habit_1", dia: "2026-11-17", hecha: true),
+        ]
+        let (r, _) = AplicarOperaciones.sobre(doc, ops)
+        let (dos, _) = AplicarOperaciones.sobre(r, ops)
+        let g = try XCTUnwrap(LecturaObjetivos.objetivos(dos).first { $0.id == "g1" })
+        XCTAssertEqual(g.estado, "En progreso")
+        XCTAssertEqual(g.pilares.count, 8)
+        XCTAssertEqual(g.pilares[2].texto, "Constancia")
+        XCTAssertEqual(g.pilares[2].acciones.count, 8)
+        XCTAssertEqual(g.pilares[2].hechas, 2)
+        XCTAssertEqual(g.pilares[0].texto, "")
+        XCTAssertEqual(g.kaizen?.texto, "ponerme las zapatillas")
+        XCTAssertEqual(g.kaizen?.racha(hoy: hoy), 2)
+        XCTAssertEqual(try dos.valor(de: "habits")?.lista?.count, 2)
+        let crudo = try XCTUnwrap(dos.valor(de: "entries")?.lista)
+        XCTAssertNotNil(crudo.first { $0["id"]?.comoId == "g1" }?["proposito"])
+        XCTAssertNil(crudo.first { $0["id"]?.comoId == "e1" }?["kaizenHabitId"])
+
+        let (sin, _) = AplicarOperaciones.sobre(dos, [MetodoOp.opQuitarKaizen(objetivo: "g1")])
+        XCTAssertNil(LecturaObjetivos.objetivos(sin).first { $0.id == "g1" }?.kaizen)
+        let h = try XCTUnwrap(sin.valor(de: "habits")?.lista?.first { $0["id"]?.comoId == "habit_1" })
+        XCTAssertEqual(h["activo"], .bool(false))
+        XCTAssertEqual(h["completadas"]?.objeto?.count, 2)
+    }
 }

@@ -21,6 +21,7 @@ enum OperacionesExtra {
         case entradaQR, quitarEntradaQR, FichaDocumentoOp.tipo, FichaEmpleoOp.tipo: return ["entries"]
         case quitarConector, conector, descartarConector: return clavesConector
         case CambioFinanzas.tipo: return CambioFinanzas.claves
+        case MetodoOp.kaizen, MetodoOp.quitarKaizen, MetodoOp.pilar, MetodoOp.estado: return MetodoOp.claves(tipo)
         case ValorarOcio.tipo: return ValorarOcio.claves
         case RecetaALista.tipo, OperacionesDespensa.marcar, OperacionesDespensa.editar: return ["listaCompra"]
         case OperacionesAjustes.aviso, OperacionesAjustes.feed, OperacionesAjustes.token: return OperacionesAjustes.claves(tipo)
@@ -100,6 +101,8 @@ enum OperacionesExtra {
             r = FichaDocumentoOp.aplicar(d, r)
         case FichaEmpleoOp.tipo:
             r = FichaEmpleoOp.aplicar(d, r)
+        case MetodoOp.kaizen, MetodoOp.quitarKaizen, MetodoOp.pilar, MetodoOp.estado:
+            r = MetodoOp.aplicar(tipo, d, r)
         case OperacionesAjustes.aviso, OperacionesAjustes.feed, OperacionesAjustes.token:
             r = OperacionesAjustes.aplicar(tipo, d, r)
         default:

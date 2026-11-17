@@ -1,8 +1,8 @@
 import SwiftUI
 
 // Objetivos (renderGoals en js/notas-objetivos.js, saveEntry type goal en js/entradas.js): entradas `type: goal` con plazo,
-// estado, hitos y, si son numéricos, valor actual, meta y unidad. El método Harada, el kaizen y el kanban arrastrable
-// siguen en la web: PLAN-0.17.md.
+// estado, hitos y, si son numéricos, valor actual, meta y unidad. Desde la 0.24, el mandala Harada, el paso kaizen y el
+// tablero por estado (MetodoObjetivos.swift); «para qué» y hansei siguen en la web.
 
 struct HitoObjetivo: Sendable, Identifiable, Equatable { let texto: String; let hecho: Bool; var id: String { texto } }
 
@@ -11,6 +11,8 @@ struct Objetivo: Sendable, Identifiable, Equatable {
     let numerico: Bool
     let actual, meta: Decimal
     let hitos: [HitoObjetivo]
+    var pilares: [PilarMandala] = []
+    var kaizen: KaizenObjetivo?
 
     // goalProgressPct: solo los numéricos con meta.
     var porcentaje: Int? {
@@ -29,7 +31,8 @@ enum LecturaObjetivos {
     }
 
     static func objetivos(_ doc: DocumentoBitacora) -> [Objetivo] {
-        (((try? doc.valor(de: "entries")) ?? nil)?.lista ?? []).compactMap { x -> Objetivo? in
+        let habits = ((try? doc.valor(de: "habits")) ?? nil)?.lista ?? []
+        return (((try? doc.valor(de: "entries")) ?? nil)?.lista ?? []).compactMap { x -> Objetivo? in
             guard let o = x.objeto, o["type"]?.texto == "goal", let id = o["id"]?.comoId else { return nil }
             let hitos = (o["milestones"]?.lista ?? []).compactMap { h -> HitoObjetivo? in
                 guard let t = h["text"]?.texto, !t.isEmpty else { return nil }
@@ -37,7 +40,8 @@ enum LecturaObjetivos {
             }
             return Objetivo(id: id, titulo: o["title"]?.texto ?? "", plazo: o["term"]?.texto ?? "short", estado: o["status"]?.texto ?? "Pendiente",
                             unidad: o["unit"]?.texto ?? "", notas: o["notes"]?.texto ?? "", numerico: o["goalType"]?.texto == "numeric",
-                            actual: Dinero.decimal(o["currentValue"]) ?? 0, meta: Dinero.decimal(o["targetValue"]) ?? 0, hitos: hitos)
+                            actual: Dinero.decimal(o["currentValue"]) ?? 0, meta: Dinero.decimal(o["targetValue"]) ?? 0, hitos: hitos,
+                            pilares: LecturaMetodo.pilares(o), kaizen: LecturaMetodo.kaizen(o, habits: habits))
         }
     }
 
@@ -56,6 +60,7 @@ struct ObjetivosView: View {
     @State private var objetivos: [Objetivo]?
     @State private var abierto: ObjetivoAbierto?
     @State private var edicion: EdicionObjetivo?
+    @AppStorage("bitacora.objetivos.tablero") private var tablero = false
 
     var body: some View {
         ScrollView {
@@ -65,8 +70,16 @@ struct ObjetivosView: View {
                     Text("hitos y progreso.").font(Tipo.pie).foregroundStyle(Paleta.sobreContextoSuave)
                 }
                 VStack(alignment: .leading, spacing: 0) {
-                    HStack { Spacer(); AccionTexto(texto: "+ objetivo.") { edicion = EdicionObjetivo(objetivo: nil) } }.padding(.vertical, Espacio.xs)
-                    if let objetivos {
+                    HStack(spacing: Espacio.xs) {
+                        pestana("lista.", !tablero) { tablero = false }
+                        pestana("tablero.", tablero) { tablero = true }
+                        Spacer()
+                        AccionTexto(texto: "+ objetivo.") { edicion = EdicionObjetivo(objetivo: nil) }
+                    }.padding(.vertical, Espacio.xs)
+                    if let objetivos, tablero, !objetivos.isEmpty {
+                        TableroObjetivos(objetivos: objetivos, abrir: { abierto = ObjetivoAbierto(id: $0.id) },
+                                         mover: { g, e in Task { await c.guardar(MetodoOp.opEstado(objetivo: g.id, estado: e)) } })
+                    } else if let objetivos {
                         if objetivos.isEmpty { Text("ningún objetivo todavía.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l) }
                         ForEach(LecturaObjetivos.plazos, id: \.0) { plazo in
                             let grupo = objetivos.filter { $0.plazo == plazo.0 }
@@ -83,6 +96,15 @@ struct ObjetivosView: View {
         .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
         .hoja(item: $abierto) { a in FichaObjetivo(id: a.id).environment(c) }
         .hoja(item: $edicion) { e in EditorObjetivo(objetivo: e.objetivo).environment(c) }
+    }
+
+    private func pestana(_ texto: String, _ activa: Bool, _ accion: @escaping () -> Void) -> some View {
+        Button(action: accion) {
+            Text(texto).font(Tipo.poppins(14, activa ? .semibold : .medium, estilo: .footnote))
+                .padding(.horizontal, 11).padding(.vertical, 8)
+                .foregroundStyle(activa ? Paleta.sobreAcento : Paleta.textoSecundario)
+                .background(activa ? Paleta.acento : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }.buttonStyle(.plain).accessibilityAddTraits(activa ? .isSelected : [])
     }
 
     private func fila(_ g: Objetivo) -> some View {
@@ -176,6 +198,7 @@ private struct FichaObjetivo: View {
                             Button("añadir.", action: anadirHito).disabled(nuevoHito.trimmingCharacters(in: .whitespaces).isEmpty)
                         }
                     }
+                    MetodoSecciones(objetivo: g)
                 } else { ProgressView() }
             }
             .font(Tipo.cuerpo)
