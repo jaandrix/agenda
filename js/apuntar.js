@@ -101,8 +101,79 @@ function apuntarCifrasEscritas(texto) {
     return salida;
 }
 
+// «nota PE 3: revisar rúbrica» es una nota aunque no lleve los dos puntos detrás de «nota» («nota media» no).
+const APUNTAR_NOTA_SIN_PUNTOS = /^\s*nota\s+(?!(?:de|del|media|final|minima|maxima)\b)(?=\S)/;
+// «1.500,50 €» se leía como 500,50: los miles se quitan antes de interpretar.
+function apuntarSinMiles(t) { return t.replace(/(?<![\d.,])(\d{1,3}(?:\.\d{3})+)(?=(?:,\d{1,2})?(?![\d.]))/g, m => m.replace(/\./g, '')); }
+
+// Lo dictado escribe los días con letras: «el día veinte» pasa a «el día 20» (las horas ya las entiende el motor).
+const APUNTAR_DICTADO = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce', 'trece', 'catorce', 'quince',
+    'dieciseis', 'diecisiete', 'dieciocho', 'diecinueve', 'veinte', 'veintiuno', 'veintidos', 'veintitres', 'veinticuatro', 'veinticinco',
+    'veintiseis', 'veintisiete', 'veintiocho', 'veintinueve', 'treinta', 'treinta y uno'];
+function apuntarDictado(t) {
+    return t.replace(/\b(el\s+(?:d[ií]a\s+)?|d[ií]a\s+)(treinta y uno|[a-záéíóúñ]+)(?=\b)/gi, (m, pre, num) => {
+        const i = APUNTAR_DICTADO.indexOf(stripAccents(num.toLowerCase()).replace('veintiun', 'veintiuno').replace(/^un$/, 'uno').replace(/^primero$/, 'uno'));
+        return i >= 0 ? pre + (i + 1) : m;
+    });
+}
+// «gasté 12 en gasolina y 30 en comida»: dos gastos, no uno de 12 con «y 30 en comida» en el concepto.
+function apuntarVariosImportes(texto) {
+    const imp = '\\d+(?:[.,]\\d{1,2})?\\s*(?:€|eur(?:os)?|pavos)?';
+    const re = new RegExp(`(${imp}\\s+(?:en|de)\\s+[^;\\n]+?)\\s+y\\s+(?=${imp}\\s+(?:en|de)\\s)`, 'gi');
+    const verbo = (texto.match(/^\s*((?:me\s+)?(?:gast[eé]|pagu[eé]|he\s+gastado|he\s+pagado|gasto|pago))/i) || [])[1] || 'gasto';
+    return texto.replace(re, `$1; ${verbo} `);
+}
+
+// Validadores (P0 de la 0.17 y P1 de la 0.19, antes solo en la app nativa): lo que no se debe guardar nunca. El motor
+// corre lo que no existe («31 de febrero» daba el 3 de marzo) y crearía algo con «cancela la cita». Devuelve el motivo,
+// o '' si se puede apuntar.
+function apuntarExiste(d, m, y) { const f = new Date(y, m, d, 12); return m >= 0 && m <= 11 && f.getMonth() === m && f.getDate() === d; }
+function apuntarValidar(t, r) {
+    const n = apuntarNorm(t).trim();
+    const diaDe = iso => Number(String(iso || '').slice(8, 10));
+    if (/^(?:cancela|anula|borra|elimina|mueve|pospon|aplaza|retrasa|adelanta)\b/.test(n)
+        || /^(?:cambia|quita)\s+(?:la|el|lo|mi|las|los)\s+(?:cita|evento|tarea|reunion|cena|comida|quedada|de)\b/.test(n)) return 'apuntar solo crea cosas: para cambiar o borrar algo, búscalo y ábrelo';
+    if (/\?\s*$/.test(n) || /^¿/.test(n)) return 'eso es una pregunta: búscala en la barra';
+    const rc = r.recurrencia;
+    if (rc && rc.frecuencia === 'intervalo' && !(rc.cada >= 1)) return 'cada cuántos días: tiene que ser 1 o más';
+    if (rc && rc.frecuencia === 'mensual' && !(rc.diaMes >= 1 && rc.diaMes <= 31)) return `el día ${rc.diaMes} no existe en ningún mes`;
+    if (r.fechaDicha && !rc) {
+        const meses = APUNTAR_MESES.join('|');
+        const mesDe = x => /^\d+$/.test(x) ? Number(x) - 1 : APUNTAR_MESES.indexOf(x);
+        if (r.fechaFin) {
+            const g = n.match(/\bdel?\s+(\d{1,2})\b[\s\S]*?\b(?:al|hasta el)\s+(\d{1,2})\b/);
+            if (g && (diaDe(r.fecha) !== Number(g[1]) || diaDe(r.fechaFin) !== Number(g[2]))) return 'esa fecha no existe';
+            const dias = (new Date(r.fechaFin + 'T12:00:00') - new Date(r.fecha + 'T12:00:00')) / 864e5;
+            if (dias < 0 || dias > 120) return 'la fecha de fin va antes que la de inicio';
+        } else {
+            // «tema 3 de 17 a 19» no es una fecha: con «de», el mes va con letras.
+            const f = n.match(new RegExp(`\\b(\\d{1,2})\\s*(?:\\/|-(?=\\s*\\d{1,2}\\s*-\\s*\\d{2})|de\\s+(?=(?:${meses})\\b))(\\d{1,2}|${meses})(?:\\s*(?:\\/|-|de\\s+)(\\d{4}|\\d{2}))?\\b`));
+            if (f) {
+                const d = Number(f[1]), m = mesDe(f[2]), y = f[3] ? Number(f[3].length === 2 ? '20' + f[3] : f[3]) : null;
+                if (!apuntarExiste(d, m, y != null ? y : 2024)) return m >= 0 && m <= 11 && d >= 1 ? `el ${d} de ${APUNTAR_MESES[m]} no existe` : 'esa fecha no existe';
+                if (y == null && d === 29 && m === 1 && !String(r.fecha).endsWith('-02-29')) return `el 29 de febrero no existe en ${String(r.fecha).slice(0, 4)}`;
+            } else {
+                const e = n.match(/\bel\s+(?:dia\s+)?(\d{1,2})\b/) || n.match(/\b(?:lunes|martes|miercoles|jueves|viernes|sabado|domingo)\s+(?:dia\s+)?(\d{1,2})\b(?!\s*(?:[:.,]\d|h\b))/);
+                if (e && diaDe(r.fecha) !== Number(e[1])) return Number(e[1]) >= 1 && Number(e[1]) <= 31 ? `ese mes no tiene día ${Number(e[1])}` : `el día ${Number(e[1])} no existe`;
+            }
+        }
+    }
+    // Solo una fecha, una hora o un importe no es nada que apuntar.
+    if (!r.titulo && (r.importe == null || /^[\s\d.,€+]*(?:eur(?:os)?|pavos)?\s*$/.test(n))) return r.importe != null ? 'falta en qué' : 'falta qué es';
+    // Lo que no apunta nada: dice lo que ya no hay que hacer. «no olvidar…» sí se apunta.
+    if (!/^no\s+(?:te\s+)?olvid/.test(n) && /^(?:ya\s+no|no\s+(?:hay|tengo|tenemos|voy|vamos|quedamos|hace\s+falta|necesito|compres|comprar|hagas|vayas|tienes|habra))\b/.test(n))
+        return 'eso dice lo que no hay que hacer: apunta lo que sí, o búscalo para borrarlo';
+    // «examen de química» sin esa asignatura: avisa en vez de crear un evento con ese nombre.
+    if (!r.asignatura && typeof studies !== 'undefined' && (studies?.subjects || []).length) {
+        const m = n.match(/^(?:examen|parcial|final|recuperacion|entrega(?:r)?\s+(?:el\s+|la\s+)?(?:trabajo|practica))\s+(?:de\s+|del\s+)?([a-z0-9ñ][a-z0-9ñ ]*?)(?=\s+(?:el|la|para|a|en|mañana|pasado|hoy|este|esta|proximo|que)\b|$)/);
+        // apuntarNorm conserva la longitud: el nombre se recorta del texto original, con sus tildes.
+        if (m) return `no tienes ninguna asignatura «${t.trim().substr(n.indexOf(m[1]), m[1].trim().length)}»: créala en estudios o escríbelo sin «${n.split(' ')[0]}»`;
+    }
+    return '';
+}
+
 function interpretarApunte(texto) {
-    let resto = apuntarCifrasEscritas(' ' + String(texto || '').trim() + ' ');
+    let resto = apuntarCifrasEscritas(' ' + apuntarSinMiles(String(texto || '').trim()) + ' ');
     const n = apuntarNorm(resto);
     const r = { fecha: apuntarFechaBase || todayISO(), fechaDicha: false, fechaFin: '', anioDicho: false, hora: '', horaFin: '', importe: null, ingreso: false, comprar: false, nota: false, titulo: '', recurrencia: null, cumple: false, estudio: null, clase: false, viaje: false, eventoTipo: '', lugar: '', cuenta: '', categoria: '', forzado: '', conGente: false };
     const quitar = (re) => { const m = apuntarNorm(resto).match(re); if (!m) return null; resto = resto.slice(0, m.index) + ' ' + resto.slice(m.index + m[0].length); return m; };
@@ -118,28 +189,28 @@ function interpretarApunte(texto) {
     if (OCIO_PALABRA[dicho?.[1]]) {
         const ti = resto.replace(/\s+/g, ' ').trim();
         r.titulo = ti.charAt(0).toUpperCase() + ti.slice(1);
-        return r;
+        return apuntarConTexto(r, texto);
     }
     // Qué es: prefijos que no forman parte del título.
-    if (quitar(/^\s*(?:nota|idea|apunte|apuntar que)\s*:\s*/)) r.nota = true;
+    if (quitar(/^\s*(?:nota|idea|apunte|apuntar que)\s*:\s*/) || quitar(APUNTAR_NOTA_SIN_PUNTOS)) r.nota = true;
     quitar(/^\s*(?:recuerdame|recordarme|recordar|acuerdate de|no olvidar|no olvides|no te olvides de|tengo que|hay que|debo|apunta|apuntar|anota)\s+(?:que\s+)?/);
     if (quitar(/^\s*(?:anade|anadir|pon|apunta)?\s*(?:a|en)\s+la\s+(?:lista\s+de\s+la\s+)?compra\s*:?\s*/) || quitar(/\s+(?:a|en)\s+la\s+(?:lista\s+de\s+la\s+)?compra\s*$/)) r.comprar = true;
     // Lo que falta en casa va a la compra.
     if (quitar(/^\s*(?:falta|faltan|se (?:ha|han) acabado|se acabo|se acabaron|no (?:queda|quedan|hay)|queda poco|quedan pocos|quedan pocas|necesito|necesitamos)\s+(?:de\s+)?/)) r.comprar = true;
 
     let m = quitar(/[+]?\s*(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur(?:os)?\b|pavos\b)/) || quitar(/€\s*(\d+(?:[.,]\d{1,2})?)/);
-    if (!m && (m = quitar(/\b(?:gaste|he gastado|pague|he pagado|me ha costado|me costo|cuesta|costo|cobre|he cobrado|me han pagado|me pagan|me ingresan|ingrese|ingreso de|bizum de)\s+(\d+(?:[.,]\d{1,2})?)\b/))) {
+    if (!m && (m = quitar(/\b(?:gaste|he gastado|pague|he pagado|me ha costado|me costo|cuesta|costo|cobre|he cobrado|me han pagado|me pagan|me ingresan|me han ingresado|me han cobrado|me cobraron|me han devuelto|me devolvieron|ingrese|ingreso de|bizum de)\s+(\d+(?:[.,]\d{1,2})?)\b/))) {
         resto = ' ' + m[0].replace(/\s*\d+(?:[.,]\d{1,2})?\s*$/, '') + ' ' + resto;
     }
     // «gasto 30 gasolina», «ingreso nómina 1500», «pagar alquiler 800 el 1»: la palabra de delante ya dice que
     // el número es dinero, aunque no lleve €. Se salta el que va tras «el», «día» o «a las» (es fecha u hora).
-    if (!m && /^\s*(?:gasto|ingreso|pagar|cobrar)\b/.test(apuntarNorm(resto))) {
+    if (!m && /^\s*(?:gasto|ingreso|pagar|cobrar|nomina)\b/.test(apuntarNorm(resto))) {
         m = quitar(/(?<!\b(?:el|dia|las|del|al|y)\s)\b(\d+(?:[.,]\d{1,2})?)\b(?!\s*(?::|h\b|de\s+[a-z]+\b(?<=enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)))/);
         if (m) quitar(/^\s*(?:gasto|ingreso)\b\s*(?:de\s+)?/);
     }
-    if (m) { r.importe = Number(m[1].replace(',', '.')); r.ingreso = /^\s*\+/.test(m[0]) || /\b(cobr|ingres|nomina|me pagan|me han pagado|me ingresan|me devolvi|devolucion)/.test(n); }
+    if (m) { r.importe = Number(m[1].replace(',', '.')); r.ingreso = /^\s*\+/.test(m[0]) || /\b(cobre|he cobrado|cobro|cobrar|ingres|nomina|me pagan|me han pagado|me ingresan|me devolvi|me han devuelto|devolucion)/.test(n); }
     if (r.importe != null) {
-        quitar(/^\s*(?:gaste|he gastado|pague|he pagado|me ha costado|me costo|cobre|he cobrado|me han pagado|me pagan|me ingresan|ingrese|bizum de)\b/);
+        quitar(/^\s*(?:gaste|he gastado|pague|he pagado|me ha costado|me costo|cobre|he cobrado|me han pagado|me pagan|me ingresan|me han ingresado|me han cobrado|me cobraron|me han devuelto|me devolvieron|ingrese|bizum de)\b/);
         if (quitar(/\b(?:en|con|pagado en|pague en)\s+(?:efectivo|metalico|cash|billetes)\b/)) r.cuenta = 'efectivo';
         else if (quitar(/\b(?:con|en)\s+(?:la\s+)?(?:tarjeta|visa|bizum)\b/)) r.cuenta = 'tarjeta';
     }
@@ -149,8 +220,10 @@ function interpretarApunte(texto) {
     // fechas, que si no se quedarían con el «lunes».
     const dias = '(?:domingos?|lunes|martes|miercoles|jueves|viernes|sabados?)';
     if (quitar(/\b(?:todos los dias|cada dia|a diario|diariamente)\b/)) r.recurrencia = { frecuencia: 'diaria' };
-    else if ((m = quitar(new RegExp(`\\b(?:todos los|cada|los)\\s+(${dias}(?:\\s*(?:,|y)\\s*(?:los\\s+)?${dias})*)\\b`)))) {
-        const lista = m[1].split(/\s*(?:,|y)\s*(?:los\s+)?/).map(x => x.replace(/s$/, '').replace('sabado', 'sabado').replace('domingo', 'domingo')).map(x => x === 'lune' ? 'lunes' : x === 'marte' ? 'martes' : x === 'miercole' ? 'miercoles' : x === 'jueve' ? 'jueves' : x === 'vierne' ? 'viernes' : x);
+    else if ((m = quitar(new RegExp(`\\b(?:todos los|cada|los)\\s+(${dias}(?:\\s*(?:,|y)\\s*(?:los\\s+)?${dias})*)\\b`)))
+        // «clase de inglés martes y jueves a las 18»: en una clase, los días sin «el» delante ya son su horario.
+        || (/\bclases?\b/.test(n) && (m = quitar(new RegExp(`(?<!\\bel\\s)\\b(${dias}(?:\\s*(?:,|y)\\s*${dias})*)\\b`))))) {
+        const lista = m[1].split(/\s*(?:,|y)\s*(?:los\s+)?/).map(x => x.replace(/s$/, '')).map(x => x === 'lune' ? 'lunes' : x === 'marte' ? 'martes' : x === 'miercole' ? 'miercoles' : x === 'jueve' ? 'jueves' : x === 'vierne' ? 'viernes' : x);
         r.recurrencia = { frecuencia: 'semanal', dias: [...new Set(lista.filter(x => APUNTAR_DIAS.includes(x)))] };
     } else if ((m = quitar(/\bcada\s+(\d{1,2}|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|quince|veinte)\s+dias\b/))) r.recurrencia = { frecuencia: 'intervalo', cada: /^\d+$/.test(m[1]) ? Number(m[1]) : APUNTAR_NUMEROS[m[1]] };
     else if ((m = quitar(/\b(?:el\s+)?(?:dia\s+)?(\d{1,2})\s+de\s+cada\s+mes\b/))) r.recurrencia = { frecuencia: 'mensual', diaMes: Number(m[1]) };
@@ -158,10 +231,13 @@ function interpretarApunte(texto) {
 
     // De qué se trata (se quita del texto lo que solo dice el tipo).
     if (quitar(/\b(?:es\s+el\s+)?(?:cumple|cumpleanos)\s+(?:de\s+)?/)) r.cumple = true;
-    if ((m = quitar(/\b(examen|parcial|final|recuperacion|global|oral)\s+(?:de\s+|del\s+)?/))) r.estudio = { lista: 'exams', clase: m[1] };
-    else if ((m = quitar(/\b(?:entregar|entrega(?:\s+de)?)\s+(?:el\s+|la\s+)?/))) r.estudio = { lista: 'assignments', clase: 'trabajo' };
+    // Lo que dice que es un examen, una entrega o una clase se marca en vez de quitarse: si al final no lo es
+    // («tarea Entregar TFG v2», «Preparar clase 2ºB»), se queda en el título tal cual.
+    const marcar = (re) => { const mm = apuntarNorm(resto).match(re); if (!mm) return null; resto = resto.slice(0, mm.index) + '\u0001' + resto.slice(mm.index, mm.index + mm[0].length) + '\u0002' + resto.slice(mm.index + mm[0].length); return mm; };
+    if ((m = marcar(/\b(examen|parcial|final|recuperacion|global|oral)\s+(?:de\s+|del\s+)?/))) r.estudio = { lista: 'exams', clase: m[1] };
+    else if ((m = marcar(/\b(?:entregar|entrega(?:\s+de)?)\s+(?:el\s+|la\s+)?/))) r.estudio = { lista: 'assignments', clase: 'trabajo' };
     else if (/\b(trabajo|practica|ensayo|proyecto|memoria|informe)\s+de\s+/.test(apuntarNorm(resto)) && /\b(entreg|para el|hasta el)\b/.test(n)) r.estudio = { lista: 'assignments', clase: 'trabajo' };
-    if (r.importe == null && quitar(/\bclases?\s+(?:de\s+)?(?=\S)/)) r.clase = true;
+    if (r.importe == null && marcar(/\bclases?\s+(?:de\s+)?(?=\S)/)) r.clase = true;
     if (quitar(/\b(?:viaje|viajo|me voy de viaje|me voy|escapada|vacaciones)\s+(?:a|para|en)\s+/)) r.viaje = true;
     const nn = apuntarNorm(resto);
     for (const [re, tipo] of APUNTAR_EVENTOS) if (re.test(nn)) { r.eventoTipo = tipo; break; }
@@ -174,7 +250,7 @@ function interpretarApunte(texto) {
     const dia = k => { r.fecha = apuntarFechaDe(base, k); r.fechaDicha = true; };
     const fechaDe = (d, mes, anio) => {
         const f = new Date(anio != null ? anio : base.getFullYear(), mes, d, 12);
-        if (anio == null && isoLocal(f) < todayISO() && !r.cumple) f.setFullYear(f.getFullYear() + 1);
+        if (anio == null && isoLocal(f) < todayISO()) f.setFullYear(f.getFullYear() + 1);
         return f;
     };
     // Momento del día (se usa como hora si no se dice otra).
@@ -183,6 +259,8 @@ function interpretarApunte(texto) {
     else if ((m = quitar(/\besta\s+(manana|tarde|noche)\b/))) { momento = m[1]; dia(0); }
     else if (quitar(/\b(?:a|al)\s+medio\s?dia\b/)) momento = 'mediodia';
 
+    // «antes del viernes», «antes del 15»: ese día.
+    resto = resto.replace(/\bantes\s+del?\s+(?=(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\b)|\bantes\s+del\s+(?=\d)/i, ' el ');
     // Del 3 al 7 de noviembre / del 3/11 al 7/11: fecha y fecha de fin. Sin mes, «temas del 3 al 5» no son días.
     const rangoSinFechas = /\b(?:temas?|capitulos?|paginas?|pags?|ejercicios?|lecciones?|unidades?|preguntas?)\s+del?\s+\d{1,2}\s+(?:al|hasta el)\s+\d{1,2}\b(?!\s*(?:\/|de\s))/.test(n);
     if (!rangoSinFechas && (m = quitar(new RegExp(`\\bdel?\\s+(\\d{1,2})(?:\\s*(?:\\/|de\\s+)(\\d{1,2}|${APUNTAR_MESES_RE.slice(1, -1)}))?\\s+(?:al|hasta el)\\s+(\\d{1,2})(?:\\s*(?:\\/|de\\s+)(\\d{1,2}|${APUNTAR_MESES_RE.slice(1, -1)}))?\\b`)))) {
@@ -214,11 +292,18 @@ function interpretarApunte(texto) {
     else if (quitar(/\b(?:la\s+)?(?:semana\s+que\s+viene|proxima\s+semana|siguiente\s+semana)\b/)) dia(((1 - base.getDay() + 7) % 7) || 7);
     else if (quitar(/\b(?:este|el)\s+(?:finde|fin\s+de\s+semana)\b/)) dia((6 - base.getDay() + 7) % 7);
     else if (quitar(/\b(?:a\s+)?final(?:es)?\s+de\s+mes\b/)) { const d = new Date(base.getFullYear(), base.getMonth() + 1, 0, 12); r.fecha = isoLocal(d); r.fechaDicha = true; }
-    else if (!r.recurrencia && (m = quitar(/\b(?:el\s+)?(?:proximo\s+)?(domingo|lunes|martes|miercoles|jueves|viernes|sabado)(\s+que\s+viene|\s+proximo)?\b/))) {
-        const objetivo = APUNTAR_DIAS.indexOf(m[1]);
-        let k = (objetivo - base.getDay() + 7) % 7; if (k === 0) k = 7;
-        dia(k);
-    } else if ((m = quitar(new RegExp(`\\b(?:el\\s+(?:dia\\s+)?)?(\\d{1,2})\\s*(?:\\/|-|de\\s+)(\\d{1,2}|${APUNTAR_MESES_RE.slice(1, -1)})(?:\\s*(?:\\/|-|de\\s+)(\\d{4}|\\d{2}))?\\b`)))) {
+    else if (!r.recurrencia && (m = quitar(new RegExp(`\\b(?:el\\s+)?(?:proximo\\s+)?(domingo|lunes|martes|miercoles|jueves|viernes|sabado)(\\s+que\\s+viene|\\s+proximo)?(?:\\s+(?:dia\\s+)?(\\d{1,2})(?:\\s+de\\s+${APUNTAR_MESES_RE})?(?!\\d|\\s*(?:[:.,]\\d|h\\b|am\\b|pm\\b|de\\s+la\\b|(?:a|y)\\s+\\d)))?\\b`)))) {
+        // «el viernes 13»: manda el número; el nombre del día solo lo acompaña.
+        if (m[3]) {
+            const d = m[4] ? fechaDe(Number(m[3]), APUNTAR_MESES.indexOf(m[4])) : new Date(base.getFullYear(), base.getMonth(), Number(m[3]), 12);
+            if (isoLocal(d) < todayISO()) d.setMonth(d.getMonth() + 1);
+            r.fecha = isoLocal(d); r.fechaDicha = true;
+        } else {
+            const objetivo = APUNTAR_DIAS.indexOf(m[1]);
+            let k = (objetivo - base.getDay() + 7) % 7; if (k === 0) k = 7;
+            dia(k);
+        }
+    } else if ((m = quitar(new RegExp(`\\b(?:el\\s+(?:dia\\s+)?)?(\\d{1,2})\\s*(?:\\/|-(?=\\s*\\d{1,2}\\s*-\\s*\\d{2})|de\\s+(?=(?:${APUNTAR_MESES_RE.slice(1, -1)})))(\\d{1,2}|${APUNTAR_MESES_RE.slice(1, -1)})(?:\\s*(?:\\/|-|de\\s+)(\\d{4}|\\d{2}))?\\b`)))) {
         const mes = /^\d+$/.test(m[2]) ? Number(m[2]) - 1 : APUNTAR_MESES.indexOf(m[2]);
         const anio = m[3] ? Number(m[3].length === 2 ? '20' + m[3] : m[3]) : null;
         r.anioDicho = anio != null;
@@ -232,10 +317,14 @@ function interpretarApunte(texto) {
     // Hora: «a las 19», «a la una y media», «19:30», «19h», «7 pm», «8 menos
     // cuarto», «de 18 a 20» (empieza y acaba), «sobre las 8».
     const num = '(\\d{1,2}|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)';
-    const colaHora = `(?:\\s*[:.,h]\\s*(\\d{2})|\\s+y\\s+(media|cuarto)|\\s+menos\\s+(cuarto|\\d{1,2}))?(?:\\s*(am|pm|h\\b|de la (?:manana|tarde|noche|madrugada)))?(?:\\s+(?:a|hasta)\\s+(?:las?\\s+)?(\\d{1,2})(?:[:.](\\d{2}))?)?`;
+    // Los minutos van pegados con punto o coma («16.30», «16,30h»): con espacio, «PE 3, 16:30» daba las 3:16.
+    // El final puede ir con guion si lleva minutos («9:00-14:00»).
+    const colaHora = `(?:(?:\\s*:\\s*|[.,]|\\s*h\\s*)(\\d{2})|\\s+y\\s+(media|cuarto)|\\s+menos\\s+(cuarto|\\d{1,2}))?(?:\\s*(am|pm|h\\b|de la (?:manana|tarde|noche|madrugada)))?(?:\\s+(?:a|hasta)\\s+(?:las?\\s+)?(\\d{1,2})(?:[:.](\\d{2}))?|\\s*-\\s*(\\d{1,2})[:.](\\d{2}))?`;
     const reHora = new RegExp(`\\b(?:de|desde)?\\s*(?:a|sobre|hacia)?\\s*(?:las?\\s+)?${num}${colaHora}`);
     // Con «a las …» delante manda esa hora: en «PE 3 hoy a las 16,30h» la suelta tomaba el 3.
     const reHoraMarcada = new RegExp(`\\b(?:(?:de|desde)\\s+)?(?:a|sobre|hacia|de|desde)\\s+(?:las?\\s+)?${num}${colaHora}`);
+    // Si no, la que tiene forma de hora («16h», «16:30», «7 pm») antes que un número suelto: «PE 3 16h».
+    const reHoraForma = new RegExp(`\\b(\\d{1,2})(?=\\s*:\\s*\\d{2}|[.,]\\d{2}|\\s*h(?:\\b|\\d{2})|\\s*(?:am|pm)\\b)${colaHora}`);
     const leerHora = mm => {
         let h = /^\d+$/.test(mm[1]) ? Number(mm[1]) : APUNTAR_NUMEROS[mm[1]];
         let min = mm[2] ? Number(mm[2]) : mm[3] === 'media' ? 30 : mm[3] === 'cuarto' ? 15 : 0;
@@ -244,20 +333,21 @@ function interpretarApunte(texto) {
         const suf = mm[5] || '';
         // «a la una», «a las 5» a secas casi siempre es por la tarde.
         // Y de 8 a 11, si el plan es de noche: «cena con Marta a las nueve».
-        const deNoche = !suf && !momento && dicha >= 8 && dicha <= 11 && /\b(?:cena|cenar|cenamos|ceno|copas?|fiesta|concierto|discoteca|teatro)\b/.test(n);
+        const deNoche = !suf && !momento && dicha >= 8 && dicha <= 11 && /\b(?:cena|cenar|cenamos|ceno|copas?|fiesta|concierto|discoteca|teatro|cine)\b/.test(n);
         const tarde = /pm|tarde|noche/.test(suf) || (!suf && /tarde|noche/.test(momento)) || (!suf && !momento && !mm[2] && dicha >= 1 && dicha <= 7) || deNoche;
         if (tarde && h < 12) h += 12;
         if (/am|madrugada|manana/.test(suf) && h === 12) h = 0;
         return h < 24 && min < 60 ? `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}` : '';
     };
     const marcaHora = /\b(?:a|sobre|hacia|desde)\s+(?:las?\s+)?(?:\d|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)|\bde\s+\d{1,2}\s+a\s+\d|\b\d{1,2}\s*(?:[:.]\d{2}|h\b|am\b|pm\b)/;
-    if (marcaHora.test(apuntarNorm(resto)) && (m = quitar(reHoraMarcada.test(apuntarNorm(resto)) ? reHoraMarcada : reHora)) &&/\d|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce/.test(m[0])) {
+    const nr = apuntarNorm(resto);
+    if (marcaHora.test(nr) && (m = quitar(reHoraMarcada.test(nr) ? reHoraMarcada : reHoraForma.test(nr) ? reHoraForma : reHora)) &&/\d|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce/.test(m[0])) {
         r.hora = leerHora(m);
-        if (m[6] && r.hora) {
-            let h2 = Number(m[6]);
+        if ((m[6] || m[8]) && r.hora) {
+            let h2 = Number(m[6] || m[8]);
             const h1 = Number(r.hora.slice(0, 2));
             if (h2 <= h1 && h2 + 12 < 24) h2 += 12;
-            r.horaFin = `${String(h2).padStart(2, '0')}:${m[7] || '00'}`;
+            r.horaFin = `${String(h2).padStart(2, '0')}:${m[7] || m[9] || '00'}`;
         }
     }
     if (!r.hora && momento) r.hora = { manana: '09:00', mediodia: '14:00', tarde: '17:00', noche: '21:00' }[momento];
@@ -265,15 +355,29 @@ function interpretarApunte(texto) {
     if (/^\s*(?:comprar|compra)\b/.test(apuntarNorm(resto))) { r.comprar = true; resto = resto.replace(/^\s*(?:comprar|compra)\b\s*:?/i, ''); }
     if (r.comprar) quitar(/^\s*(?:anade|anadir|pon|poner|mete|meter|apunta)\s+/);
     if (r.importe != null) quitar(/^\s*(?:en|de|del|por)\s+(?:el\s+|la\s+|los\s+|las\s+)?/);
+    // «pagar 1.200 € de alquiler»: sin el importe quedaba «Pagar de alquiler».
+    if (r.importe != null) resto = resto.replace(/^(\s*pagar)\s+(?:de|del|en)\s+/i, '$1 ');
 
     // El lugar de un evento: «en La Pepita», «en el Palacio de Deportes».
     if (!r.comprar && r.importe == null) {
         const lm = resto.match(/\s(?:en|al|a la)\s+((?:el|la|los|las)\s+)?([A-ZÁÉÍÓÚÑ][\wáéíóúñü'’.-]*(?:\s+(?:de(?:l)?\s+(?:la\s+)?)?[A-ZÁÉÍÓÚÑ0-9][\wáéíóúñü'’.-]*)*)/);
         if (lm && (r.eventoTipo || r.fechaDicha || r.hora)) { r.lugar = ((lm[1] || '') + lm[2]).trim(); resto = resto.replace(lm[0], ' '); }
     }
-    const t = resto.replace(/\s+/g, ' ').replace(/^[\s,.;:-]+|[\s,.;:-]+$/g, '').replace(/^(?:el|la|los|las)\s+(?=\S)/i, m2 => (r.estudio ? '' : m2)).replace(/\s+(?:a|el|en|para|de|y|con)$/i, '').trim();
-    const t2 = r.comprar ? t.replace(/^(?:el|la|los|las|un|una|unos|unas|algo de|mas)\s+/i, '') : t;
-    r.titulo = t2.charAt(0).toUpperCase() + t2.slice(1);
+    const limpiar = (s, sinArticulo) => {
+        const t = s.replace(/\s+/g, ' ').replace(/^[\s,.;:-]+|[\s,.;:-]+$/g, '').replace(/^(?:el|la|los|las)\s+(?=\S)/i, m2 => (sinArticulo ? '' : m2)).replace(/\s+(?:a|el|en|para|de|y|con)$/i, '').trim();
+        const t2 = r.comprar ? t.replace(/^(?:el|la|los|las|un|una|unos|unas|algo de|mas)\s+/i, '') : t;
+        return t2.charAt(0).toUpperCase() + t2.slice(1);
+    };
+    r.titulo = limpiar(resto.replace(/\u0001[^\u0002]*\u0002/g, ' '), r.estudio || r.importe != null);
+    if (r.estudio && typeof studies !== 'undefined') r.asignatura = apuntarAsignatura(r.titulo);
+    const esEstudio = r.estudio && r.asignatura && r.fechaDicha && apartadoVisible('studies');
+    const esClase = r.clase && r.recurrencia?.dias?.length && r.hora;
+    if (r.forzado === 'tarea' || r.forzado === 'evento' || (r.estudio && !esEstudio) || (r.clase && !esClase)) r.titulo = limpiar(resto.replace(/[\u0001\u0002]/g, ''), r.importe != null);
+    // Lo que se repite ciertos días empieza el primero que toca.
+    if (r.recurrencia?.dias?.length && !r.fechaDicha) {
+        const k = Math.min(...r.recurrencia.dias.map(d => (APUNTAR_DIAS.indexOf(d) - base.getDay() + 7) % 7));
+        r.fecha = apuntarFechaDe(base, k);
+    }
 
     // Categoría y cuenta de un gasto.
     if (r.importe != null && !r.ingreso && typeof financePro !== 'undefined') {
@@ -284,9 +388,11 @@ function interpretarApunte(texto) {
             if (cat) { r.categoria = cat.id; break; }
         }
     }
-    if (r.estudio && typeof studies !== 'undefined') r.asignatura = apuntarAsignatura(r.titulo);
-    return r;
+    return apuntarConTexto(r, texto);
 }
+
+// El texto de cada cosa va con ella, sin verse al copiarla ni al pasarla a JSON, para validarla al describirla.
+function apuntarConTexto(r, texto) { Object.defineProperty(r, 'textoDicho', { value: String(texto || ''), enumerable: false }); return r; }
 
 // La asignatura que nombra el texto (por sus palabras), entre las del curso.
 function apuntarAsignatura(texto) {
@@ -326,10 +432,21 @@ function apuntarConFecha(t) {
 }
 
 function apuntarTrocear(texto) {
-    const piezas = String(texto || '').replace(/([.!?])\s+(?=\S)/g, '$1\n').split(/\n+|;\s*/).map(x => x.trim()).filter(Boolean);
+    const piezas = apuntarVariosImportes(apuntarDictado(String(texto || ''))).replace(/([.!?])\s+(?=\S)/g, '$1\n').split(/\n+|;\s*/).map(x => x.trim()).filter(Boolean);
     const SEP = /\s*,\s*(?:y\s+)?|\s+y\s+(?:luego\s+|despu[eé]s\s+|tambi[eé]n\s+|adem[aá]s\s+)?|\s+(?:luego|despu[eé]s|adem[aá]s|tambi[eé]n)\s+/gi;
     const salida = [];
     piezas.forEach(p => {
+        // Una nota va entera, con sus comas.
+        if (/^\s*(?:nota|idea|apunte|apuntar que)\s*:/.test(apuntarNorm(p)) || APUNTAR_NOTA_SIN_PUNTOS.test(apuntarNorm(p))) { salida.push(p); return; }
+        // «mañana: llamar al banco, pedir cita y comprar sellos»: el día de delante vale para todo lo que sigue.
+        const cab = p.match(/^([^:]{2,30}):\s+(?=\S)/);
+        const rc = cab && interpretarApunte(cab[1]);
+        const comun = rc && !rc.titulo && (rc.fechaDicha || rc.hora) ? cab[1].trim() : '';
+        if (comun) {
+            const antes = salida.length;
+            apuntarTrocear(p.slice(cab[0].length)).forEach(x => salida.push(`${x} ${comun}`));
+            if (salida.length > antes) return;
+        }
         const trozos = p.split(SEP);
         const sep = p.match(SEP) || [];
         let actual = trozos[0];
@@ -394,8 +511,15 @@ function apuntarRecurrenciaTexto(rc) {
     return `el día ${rc.diaMes} de cada mes`;
 }
 
-// Lo que se va a crear, en una línea, y si le falta algo para poder hacerlo.
+// Lo que se va a crear, en una línea, y si le falta algo para poder hacerlo o no se debe apuntar (apuntarValidar):
+// así lo enseñan igual la hoja, la barra del escritorio y el iPhone.
 function apuntarDescribir(r, tipo) {
+    const fallo = r.textoDicho != null ? apuntarValidar(r.textoDicho, r) : '';
+    const d = apuntarDescribirTipo(r, tipo);
+    if (fallo) d.falta = fallo;
+    return d;
+}
+function apuntarDescribirTipo(r, tipo) {
     if (r.comprar && tipo !== 'compra' && r.titulo && !/^comprar\b/i.test(r.titulo)) r = { ...r, titulo: 'Comprar ' + r.titulo.charAt(0).toLowerCase() + r.titulo.slice(1) };
     const cuando = `${apuntarFechaTexto(r.fecha)}${r.hora ? ` a las ${r.hora}${r.horaFin ? '–' + r.horaFin : ''}` : ''}`;
     const tit = escapeHtml(r.titulo || '…');
@@ -540,6 +664,8 @@ function openApuntar(fecha) {
 
 // Crea una cosa. Devuelve { aviso, hecho } o { error }.
 function apuntarCrear(texto, r, tipo) {
+    const fallo = apuntarValidar(texto, r);
+    if (fallo) return { error: fallo };
     if (r.comprar && tipo !== 'compra' && r.titulo && !/^comprar\b/i.test(r.titulo)) r = { ...r, titulo: 'Comprar ' + r.titulo.charAt(0).toLowerCase() + r.titulo.slice(1) };
     const id = p => `${p}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const conector = (op, prefijo) => {
@@ -567,7 +693,7 @@ function apuntarCrear(texto, r, tipo) {
         const hoy = todayISO();
         let nota = notes.find(x => x.date === hoy);
         if (!nota) { nota = { id: 'note_' + Date.now(), date: hoy, content: '', createdAt: new Date().toISOString() }; notes.push(nota); }
-        const anadido = (r.nota ? texto.replace(/^\s*(?:nota|idea|apunte|apuntar que)\s*:\s*/i, '') : texto).trim();
+        const anadido = (r.nota ? texto.replace(/^\s*(?:(?:nota|idea|apunte|apuntar que)\s*:|nota\s)\s*/i, '') : texto).trim();
         nota.content = [nota.content, anadido].filter(Boolean).join('\n\n');
         return { aviso: 'A la nota de hoy', hecho: { tipo: 'nota', notaId: nota.id, texto: anadido } };
     }

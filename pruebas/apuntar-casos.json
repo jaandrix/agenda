@@ -1136,15 +1136,15 @@
      "tipo": "cumple",
      "describir": {
       "tarea": {
-       "texto": "tarea, sábado, 14 mar, sin hora, Lucía",
+       "texto": "tarea, domingo, 14 mar, sin hora, Lucía",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, sábado, 14 mar, Lucía",
+       "texto": "evento, domingo, 14 mar, Lucía",
        "falta": ""
       },
       "gasto": {
-       "texto": "gasto de —, Lucía, sábado, 14 mar",
+       "texto": "gasto de —, Lucía, domingo, 14 mar",
        "falta": "falta el importe"
       },
       "compra": {
@@ -1160,11 +1160,11 @@
        "falta": ""
       },
       "examen": {
-       "texto": "examen de ?, sábado, 14 mar",
+       "texto": "examen de ?, domingo, 14 mar",
        "falta": "no encuentro la asignatura"
       },
       "trabajo": {
-       "texto": "entrega de ?, sábado, 14 mar",
+       "texto": "entrega de ?, domingo, 14 mar",
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
@@ -1176,7 +1176,7 @@
        "falta": "faltan los días"
       },
       "viaje": {
-       "texto": "viaje a Lucía, sábado, 14 mar",
+       "texto": "viaje a Lucía, domingo, 14 mar",
        "falta": ""
       },
       "libro": {
@@ -1198,7 +1198,7 @@
      },
      "nada": false,
      "r": {
-      "fecha": "2026-03-14",
+      "fecha": "2027-03-14",
       "fechaDicha": true,
       "fechaFin": "",
       "anioDicho": false,
@@ -1436,11 +1436,11 @@
      "tipo": "recurrente",
      "describir": {
       "tarea": {
-       "texto": "tarea, hoy, sin hora, Sacar la basura",
+       "texto": "tarea, martes, 10 nov, sin hora, Sacar la basura",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, hoy, Sacar la basura",
+       "texto": "evento, martes, 10 nov, Sacar la basura",
        "falta": ""
       },
       "gasto": {
@@ -1456,15 +1456,15 @@
        "falta": ""
       },
       "cumple": {
-       "texto": "cumpleaños de Sacar la basura, 5 de noviembre",
+       "texto": "cumpleaños de Sacar la basura, 10 de noviembre",
        "falta": "falta el día"
       },
       "examen": {
-       "texto": "examen de ?, hoy",
+       "texto": "examen de ?, martes, 10 nov",
        "falta": "no encuentro la asignatura"
       },
       "trabajo": {
-       "texto": "entrega de ?, hoy",
+       "texto": "entrega de ?, martes, 10 nov",
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
@@ -1476,7 +1476,7 @@
        "falta": "falta la hora"
       },
       "viaje": {
-       "texto": "viaje a Sacar la basura, hoy",
+       "texto": "viaje a Sacar la basura, martes, 10 nov",
        "falta": ""
       },
       "libro": {
@@ -1498,7 +1498,7 @@
      },
      "nada": false,
      "r": {
-      "fecha": "2026-11-05",
+      "fecha": "2026-11-10",
       "fechaDicha": false,
       "fechaFin": "",
       "anioDicho": false,
@@ -1637,22 +1637,22 @@
    "cosas": [
     {
      "texto": "clase de inglés lunes y miércoles a las 18",
-     "tipo": "evento",
+     "tipo": "clase",
      "describir": {
       "tarea": {
-       "texto": "tarea, lunes, 9 nov a las 18:00, Inglés y miércoles",
+       "texto": "tarea, lunes, 9 nov a las 18:00, Inglés",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, lunes, 9 nov a las 18:00, Inglés y miércoles",
+       "texto": "evento, lunes, 9 nov a las 18:00, Inglés",
        "falta": ""
       },
       "gasto": {
-       "texto": "gasto de —, Inglés y miércoles, lunes, 9 nov",
+       "texto": "gasto de —, Inglés",
        "falta": "falta el importe"
       },
       "compra": {
-       "texto": "a la compra: Inglés y miércoles",
+       "texto": "a la compra: Inglés",
        "falta": ""
       },
       "nota": {
@@ -1660,8 +1660,8 @@
        "falta": ""
       },
       "cumple": {
-       "texto": "cumpleaños de Inglés y miércoles, 9 de noviembre",
-       "falta": ""
+       "texto": "cumpleaños de Inglés, 9 de noviembre",
+       "falta": "falta el día"
       },
       "examen": {
        "texto": "examen de ?, lunes, 9 nov a las 18:00",
@@ -1672,38 +1672,38 @@
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
-       "texto": "Inglés y miércoles, todos los días a las 18:00",
+       "texto": "Inglés, cada lun, mié a las 18:00",
        "falta": ""
       },
       "clase": {
-       "texto": "clase de Inglés y miércoles,  a las 18:00",
-       "falta": "faltan los días"
+       "texto": "clase de Inglés, cada lun, mié a las 18:00",
+       "falta": ""
       },
       "viaje": {
-       "texto": "viaje a Inglés y miércoles, lunes, 9 nov",
+       "texto": "viaje a Inglés, lunes, 9 nov",
        "falta": ""
       },
       "libro": {
-       "texto": "libro para ocio: Inglés y miércoles",
+       "texto": "libro para ocio: Inglés",
        "falta": ""
       },
       "serie": {
-       "texto": "serie para ocio: Inglés y miércoles",
+       "texto": "serie para ocio: Inglés",
        "falta": ""
       },
       "peli": {
-       "texto": "película para ocio: Inglés y miércoles",
+       "texto": "película para ocio: Inglés",
        "falta": ""
       },
       "juego": {
-       "texto": "videojuego para ocio: Inglés y miércoles",
+       "texto": "videojuego para ocio: Inglés",
        "falta": ""
       }
      },
      "nada": false,
      "r": {
       "fecha": "2026-11-09",
-      "fechaDicha": true,
+      "fechaDicha": false,
       "fechaFin": "",
       "anioDicho": false,
       "hora": "18:00",
@@ -1712,8 +1712,14 @@
       "ingreso": false,
       "comprar": false,
       "nota": false,
-      "titulo": "Inglés y miércoles",
-      "recurrencia": null,
+      "titulo": "Inglés",
+      "recurrencia": {
+       "frecuencia": "semanal",
+       "dias": [
+        "lunes",
+        "miercoles"
+       ]
+      },
       "cumple": false,
       "estudio": null,
       "clase": true,
@@ -3783,22 +3789,22 @@
    "cosas": [
     {
      "texto": "me han devuelto 20 de la compra",
-     "tipo": "tarea",
+     "tipo": "gasto",
      "describir": {
       "tarea": {
-       "texto": "tarea, hoy, sin hora, Me han devuelto 20 de la compra",
+       "texto": "tarea, hoy, sin hora, Compra",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, hoy, Me han devuelto 20 de la compra",
+       "texto": "evento, hoy, Compra",
        "falta": ""
       },
       "gasto": {
-       "texto": "gasto de —, Me han devuelto 20 de la compra",
-       "falta": "falta el importe"
+       "texto": "ingreso de 20,00€, Compra",
+       "falta": ""
       },
       "compra": {
-       "texto": "a la compra: Me han devuelto 20 de la compra",
+       "texto": "a la compra: Compra",
        "falta": ""
       },
       "nota": {
@@ -3806,7 +3812,7 @@
        "falta": ""
       },
       "cumple": {
-       "texto": "cumpleaños de Me han devuelto 20 de la compra, 5 de noviembre",
+       "texto": "cumpleaños de Compra, 5 de noviembre",
        "falta": "falta el día"
       },
       "examen": {
@@ -3818,35 +3824,35 @@
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
-       "texto": "Me han devuelto 20 de la compra, todos los días",
+       "texto": "Compra, todos los días",
        "falta": ""
       },
       "clase": {
-       "texto": "clase de Me han devuelto 20 de la compra,  a las ?",
+       "texto": "clase de Compra,  a las ?",
        "falta": "faltan los días"
       },
       "viaje": {
-       "texto": "viaje a Me han devuelto 20 de la compra, hoy",
+       "texto": "viaje a Compra, hoy",
        "falta": ""
       },
       "libro": {
-       "texto": "libro para ocio: Me han devuelto 20 de la compra",
+       "texto": "libro para ocio: Compra",
        "falta": ""
       },
       "serie": {
-       "texto": "serie para ocio: Me han devuelto 20 de la compra",
+       "texto": "serie para ocio: Compra",
        "falta": ""
       },
       "peli": {
-       "texto": "película para ocio: Me han devuelto 20 de la compra",
+       "texto": "película para ocio: Compra",
        "falta": ""
       },
       "juego": {
-       "texto": "videojuego para ocio: Me han devuelto 20 de la compra",
+       "texto": "videojuego para ocio: Compra",
        "falta": ""
       }
      },
-     "nada": true,
+     "nada": false,
      "r": {
       "fecha": "2026-11-05",
       "fechaDicha": false,
@@ -3854,11 +3860,11 @@
       "anioDicho": false,
       "hora": "",
       "horaFin": "",
-      "importe": null,
-      "ingreso": false,
+      "importe": "20",
+      "ingreso": true,
       "comprar": false,
       "nota": false,
-      "titulo": "Me han devuelto 20 de la compra",
+      "titulo": "Compra",
       "recurrencia": null,
       "cumple": false,
       "estudio": null,
@@ -3881,22 +3887,22 @@
    "cosas": [
     {
      "texto": "nómina 1650",
-     "tipo": "tarea",
+     "tipo": "gasto",
      "describir": {
       "tarea": {
-       "texto": "tarea, hoy, sin hora, Nómina 1650",
+       "texto": "tarea, hoy, sin hora, Nómina",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, hoy, Nómina 1650",
+       "texto": "evento, hoy, Nómina",
        "falta": ""
       },
       "gasto": {
-       "texto": "gasto de —, Nómina 1650",
-       "falta": "falta el importe"
+       "texto": "ingreso de 1650,00€, Nómina",
+       "falta": ""
       },
       "compra": {
-       "texto": "a la compra: Nómina 1650",
+       "texto": "a la compra: Nómina",
        "falta": ""
       },
       "nota": {
@@ -3904,7 +3910,7 @@
        "falta": ""
       },
       "cumple": {
-       "texto": "cumpleaños de Nómina 1650, 5 de noviembre",
+       "texto": "cumpleaños de Nómina, 5 de noviembre",
        "falta": "falta el día"
       },
       "examen": {
@@ -3916,35 +3922,35 @@
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
-       "texto": "Nómina 1650, todos los días",
+       "texto": "Nómina, todos los días",
        "falta": ""
       },
       "clase": {
-       "texto": "clase de Nómina 1650,  a las ?",
+       "texto": "clase de Nómina,  a las ?",
        "falta": "faltan los días"
       },
       "viaje": {
-       "texto": "viaje a Nómina 1650, hoy",
+       "texto": "viaje a Nómina, hoy",
        "falta": ""
       },
       "libro": {
-       "texto": "libro para ocio: Nómina 1650",
+       "texto": "libro para ocio: Nómina",
        "falta": ""
       },
       "serie": {
-       "texto": "serie para ocio: Nómina 1650",
+       "texto": "serie para ocio: Nómina",
        "falta": ""
       },
       "peli": {
-       "texto": "película para ocio: Nómina 1650",
+       "texto": "película para ocio: Nómina",
        "falta": ""
       },
       "juego": {
-       "texto": "videojuego para ocio: Nómina 1650",
+       "texto": "videojuego para ocio: Nómina",
        "falta": ""
       }
      },
-     "nada": true,
+     "nada": false,
      "r": {
       "fecha": "2026-11-05",
       "fechaDicha": false,
@@ -3952,11 +3958,11 @@
       "anioDicho": false,
       "hora": "",
       "horaFin": "",
-      "importe": null,
-      "ingreso": false,
+      "importe": "1650",
+      "ingreso": true,
       "comprar": false,
       "nota": false,
-      "titulo": "Nómina 1650",
+      "titulo": "Nómina",
       "recurrencia": null,
       "cumple": false,
       "estudio": null,
@@ -4860,19 +4866,19 @@
      "tipo": "evento",
      "describir": {
       "tarea": {
-       "texto": "tarea, domingo, 15 nov, sin hora, Matemáticas",
+       "texto": "tarea, domingo, 15 nov, sin hora, Examen de matemáticas",
        "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "evento": {
-       "texto": "evento, domingo, 15 nov, Matemáticas",
+       "texto": "evento, domingo, 15 nov, Examen de matemáticas",
        "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "gasto": {
-       "texto": "gasto de —, Matemáticas, domingo, 15 nov",
+       "texto": "gasto de —, Examen de matemáticas, domingo, 15 nov",
        "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "compra": {
-       "texto": "a la compra: Matemáticas",
+       "texto": "a la compra: Examen de matemáticas",
        "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "nota": {
@@ -4880,7 +4886,7 @@
        "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "cumple": {
-       "texto": "cumpleaños de Matemáticas, 15 de noviembre",
+       "texto": "cumpleaños de Examen de matemáticas, 15 de noviembre",
        "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "examen": {
@@ -4892,31 +4898,31 @@
        "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "recurrente": {
-       "texto": "Matemáticas, todos los días",
+       "texto": "Examen de matemáticas, todos los días",
        "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "clase": {
-       "texto": "clase de Matemáticas,  a las ?",
+       "texto": "clase de Examen de matemáticas,  a las ?",
        "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "viaje": {
-       "texto": "viaje a Matemáticas, domingo, 15 nov",
+       "texto": "viaje a Examen de matemáticas, domingo, 15 nov",
        "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "libro": {
-       "texto": "libro para ocio: Matemáticas",
+       "texto": "libro para ocio: Examen de matemáticas",
        "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "serie": {
-       "texto": "serie para ocio: Matemáticas",
+       "texto": "serie para ocio: Examen de matemáticas",
        "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "peli": {
-       "texto": "película para ocio: Matemáticas",
+       "texto": "película para ocio: Examen de matemáticas",
        "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       },
       "juego": {
-       "texto": "videojuego para ocio: Matemáticas",
+       "texto": "videojuego para ocio: Examen de matemáticas",
        "falta": "no tienes ninguna asignatura «matemáticas»: créala en estudios o escríbelo sin «examen»"
       }
      },
@@ -4932,7 +4938,7 @@
       "ingreso": false,
       "comprar": false,
       "nota": false,
-      "titulo": "Matemáticas",
+      "titulo": "Examen de matemáticas",
       "recurrencia": null,
       "cumple": false,
       "estudio": {
@@ -4959,22 +4965,22 @@
    "cosas": [
     {
      "texto": "clase de piano martes y jueves a las 6",
-     "tipo": "evento",
+     "tipo": "clase",
      "describir": {
       "tarea": {
-       "texto": "tarea, martes, 10 nov a las 18:00, Piano y jueves",
+       "texto": "tarea, hoy a las 18:00, Piano",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, martes, 10 nov a las 18:00, Piano y jueves",
+       "texto": "evento, hoy a las 18:00, Piano",
        "falta": ""
       },
       "gasto": {
-       "texto": "gasto de —, Piano y jueves, martes, 10 nov",
+       "texto": "gasto de —, Piano",
        "falta": "falta el importe"
       },
       "compra": {
-       "texto": "a la compra: Piano y jueves",
+       "texto": "a la compra: Piano",
        "falta": ""
       },
       "nota": {
@@ -4982,50 +4988,50 @@
        "falta": ""
       },
       "cumple": {
-       "texto": "cumpleaños de Piano y jueves, 10 de noviembre",
-       "falta": ""
+       "texto": "cumpleaños de Piano, 5 de noviembre",
+       "falta": "falta el día"
       },
       "examen": {
-       "texto": "examen de ?, martes, 10 nov a las 18:00",
+       "texto": "examen de ?, hoy a las 18:00",
        "falta": "no encuentro la asignatura"
       },
       "trabajo": {
-       "texto": "entrega de ?, martes, 10 nov a las 18:00",
+       "texto": "entrega de ?, hoy a las 18:00",
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
-       "texto": "Piano y jueves, todos los días a las 18:00",
+       "texto": "Piano, cada mar, jue a las 18:00",
        "falta": ""
       },
       "clase": {
-       "texto": "clase de Piano y jueves,  a las 18:00",
-       "falta": "faltan los días"
+       "texto": "clase de Piano, cada mar, jue a las 18:00",
+       "falta": ""
       },
       "viaje": {
-       "texto": "viaje a Piano y jueves, martes, 10 nov",
+       "texto": "viaje a Piano, hoy",
        "falta": ""
       },
       "libro": {
-       "texto": "libro para ocio: Piano y jueves",
+       "texto": "libro para ocio: Piano",
        "falta": ""
       },
       "serie": {
-       "texto": "serie para ocio: Piano y jueves",
+       "texto": "serie para ocio: Piano",
        "falta": ""
       },
       "peli": {
-       "texto": "película para ocio: Piano y jueves",
+       "texto": "película para ocio: Piano",
        "falta": ""
       },
       "juego": {
-       "texto": "videojuego para ocio: Piano y jueves",
+       "texto": "videojuego para ocio: Piano",
        "falta": ""
       }
      },
      "nada": false,
      "r": {
-      "fecha": "2026-11-10",
-      "fechaDicha": true,
+      "fecha": "2026-11-05",
+      "fechaDicha": false,
       "fechaFin": "",
       "anioDicho": false,
       "hora": "18:00",
@@ -5034,8 +5040,14 @@
       "ingreso": false,
       "comprar": false,
       "nota": false,
-      "titulo": "Piano y jueves",
-      "recurrencia": null,
+      "titulo": "Piano",
+      "recurrencia": {
+       "frecuencia": "semanal",
+       "dias": [
+        "martes",
+        "jueves"
+       ]
+      },
       "cumple": false,
       "estudio": null,
       "clase": true,
@@ -5844,11 +5856,11 @@
      "tipo": "recurrente",
      "describir": {
       "tarea": {
-       "texto": "tarea, hoy, sin hora, Sacar la basura",
+       "texto": "tarea, martes, 10 nov, sin hora, Sacar la basura",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, hoy, Sacar la basura",
+       "texto": "evento, martes, 10 nov, Sacar la basura",
        "falta": ""
       },
       "gasto": {
@@ -5864,15 +5876,15 @@
        "falta": ""
       },
       "cumple": {
-       "texto": "cumpleaños de Sacar la basura, 5 de noviembre",
+       "texto": "cumpleaños de Sacar la basura, 10 de noviembre",
        "falta": "falta el día"
       },
       "examen": {
-       "texto": "examen de ?, hoy",
+       "texto": "examen de ?, martes, 10 nov",
        "falta": "no encuentro la asignatura"
       },
       "trabajo": {
-       "texto": "entrega de ?, hoy",
+       "texto": "entrega de ?, martes, 10 nov",
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
@@ -5884,7 +5896,7 @@
        "falta": "falta la hora"
       },
       "viaje": {
-       "texto": "viaje a Sacar la basura, hoy",
+       "texto": "viaje a Sacar la basura, martes, 10 nov",
        "falta": ""
       },
       "libro": {
@@ -5906,7 +5918,7 @@
      },
      "nada": false,
      "r": {
-      "fecha": "2026-11-05",
+      "fecha": "2026-11-10",
       "fechaDicha": false,
       "fechaFin": "",
       "anioDicho": false,
@@ -6138,7 +6150,7 @@
    "cosas": [
     {
      "texto": "clase de inglés martes a las 18",
-     "tipo": "evento",
+     "tipo": "clase",
      "describir": {
       "tarea": {
        "texto": "tarea, martes, 10 nov a las 18:00, Inglés",
@@ -6149,7 +6161,7 @@
        "falta": ""
       },
       "gasto": {
-       "texto": "gasto de —, Inglés, martes, 10 nov",
+       "texto": "gasto de —, Inglés",
        "falta": "falta el importe"
       },
       "compra": {
@@ -6162,7 +6174,7 @@
       },
       "cumple": {
        "texto": "cumpleaños de Inglés, 10 de noviembre",
-       "falta": ""
+       "falta": "falta el día"
       },
       "examen": {
        "texto": "examen de ?, martes, 10 nov a las 18:00",
@@ -6173,12 +6185,12 @@
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
-       "texto": "Inglés, todos los días a las 18:00",
+       "texto": "Inglés, cada mar a las 18:00",
        "falta": ""
       },
       "clase": {
-       "texto": "clase de Inglés,  a las 18:00",
-       "falta": "faltan los días"
+       "texto": "clase de Inglés, cada mar a las 18:00",
+       "falta": ""
       },
       "viaje": {
        "texto": "viaje a Inglés, martes, 10 nov",
@@ -6204,7 +6216,7 @@
      "nada": false,
      "r": {
       "fecha": "2026-11-10",
-      "fechaDicha": true,
+      "fechaDicha": false,
       "fechaFin": "",
       "anioDicho": false,
       "hora": "18:00",
@@ -6214,7 +6226,12 @@
       "comprar": false,
       "nota": false,
       "titulo": "Inglés",
-      "recurrencia": null,
+      "recurrencia": {
+       "frecuencia": "semanal",
+       "dias": [
+        "martes"
+       ]
+      },
       "cumple": false,
       "estudio": null,
       "clase": true,
@@ -6428,11 +6445,11 @@
      "tipo": "evento",
      "describir": {
       "tarea": {
-       "texto": "tarea, pasado mañana a las 10:00, Cine",
+       "texto": "tarea, pasado mañana a las 22:00, Cine",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, pasado mañana a las 10:00, Cine",
+       "texto": "evento, pasado mañana a las 22:00, Cine",
        "falta": ""
       },
       "gasto": {
@@ -6452,19 +6469,19 @@
        "falta": ""
       },
       "examen": {
-       "texto": "examen de ?, pasado mañana a las 10:00",
+       "texto": "examen de ?, pasado mañana a las 22:00",
        "falta": "no encuentro la asignatura"
       },
       "trabajo": {
-       "texto": "entrega de ?, pasado mañana a las 10:00",
+       "texto": "entrega de ?, pasado mañana a las 22:00",
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
-       "texto": "Cine, todos los días a las 10:00",
+       "texto": "Cine, todos los días a las 22:00",
        "falta": ""
       },
       "clase": {
-       "texto": "clase de Cine,  a las 10:00",
+       "texto": "clase de Cine,  a las 22:00",
        "falta": "faltan los días"
       },
       "viaje": {
@@ -6494,7 +6511,7 @@
       "fechaDicha": true,
       "fechaFin": "",
       "anioDicho": false,
-      "hora": "10:00",
+      "hora": "22:00",
       "horaFin": "",
       "importe": null,
       "ingreso": false,
@@ -6615,7 +6632,7 @@
      }
     },
     {
-     "texto": "gasto 20 en cena",
+     "texto": "gasté 20 en cena",
      "tipo": "gasto",
      "describir": {
       "tarea": {
@@ -7498,22 +7515,22 @@
    "cosas": [
     {
      "texto": "clase ingles lunes y miercoles a las 6",
-     "tipo": "evento",
+     "tipo": "clase",
      "describir": {
       "tarea": {
-       "texto": "tarea, lunes, 9 nov a las 18:00, Ingles y miercoles",
+       "texto": "tarea, lunes, 9 nov a las 18:00, Ingles",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, lunes, 9 nov a las 18:00, Ingles y miercoles",
+       "texto": "evento, lunes, 9 nov a las 18:00, Ingles",
        "falta": ""
       },
       "gasto": {
-       "texto": "gasto de —, Ingles y miercoles, lunes, 9 nov",
+       "texto": "gasto de —, Ingles",
        "falta": "falta el importe"
       },
       "compra": {
-       "texto": "a la compra: Ingles y miercoles",
+       "texto": "a la compra: Ingles",
        "falta": ""
       },
       "nota": {
@@ -7521,8 +7538,8 @@
        "falta": ""
       },
       "cumple": {
-       "texto": "cumpleaños de Ingles y miercoles, 9 de noviembre",
-       "falta": ""
+       "texto": "cumpleaños de Ingles, 9 de noviembre",
+       "falta": "falta el día"
       },
       "examen": {
        "texto": "examen de ?, lunes, 9 nov a las 18:00",
@@ -7533,38 +7550,38 @@
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
-       "texto": "Ingles y miercoles, todos los días a las 18:00",
+       "texto": "Ingles, cada lun, mié a las 18:00",
        "falta": ""
       },
       "clase": {
-       "texto": "clase de Ingles y miercoles,  a las 18:00",
-       "falta": "faltan los días"
+       "texto": "clase de Ingles, cada lun, mié a las 18:00",
+       "falta": ""
       },
       "viaje": {
-       "texto": "viaje a Ingles y miercoles, lunes, 9 nov",
+       "texto": "viaje a Ingles, lunes, 9 nov",
        "falta": ""
       },
       "libro": {
-       "texto": "libro para ocio: Ingles y miercoles",
+       "texto": "libro para ocio: Ingles",
        "falta": ""
       },
       "serie": {
-       "texto": "serie para ocio: Ingles y miercoles",
+       "texto": "serie para ocio: Ingles",
        "falta": ""
       },
       "peli": {
-       "texto": "película para ocio: Ingles y miercoles",
+       "texto": "película para ocio: Ingles",
        "falta": ""
       },
       "juego": {
-       "texto": "videojuego para ocio: Ingles y miercoles",
+       "texto": "videojuego para ocio: Ingles",
        "falta": ""
       }
      },
      "nada": false,
      "r": {
       "fecha": "2026-11-09",
-      "fechaDicha": true,
+      "fechaDicha": false,
       "fechaFin": "",
       "anioDicho": false,
       "hora": "18:00",
@@ -7573,8 +7590,14 @@
       "ingreso": false,
       "comprar": false,
       "nota": false,
-      "titulo": "Ingles y miercoles",
-      "recurrencia": null,
+      "titulo": "Ingles",
+      "recurrencia": {
+       "frecuencia": "semanal",
+       "dias": [
+        "lunes",
+        "miercoles"
+       ]
+      },
       "cumple": false,
       "estudio": null,
       "clase": true,
@@ -7599,11 +7622,11 @@
      "tipo": "recurrente",
      "describir": {
       "tarea": {
-       "texto": "tarea, hoy, sin hora, Sacar basura",
+       "texto": "tarea, martes, 10 nov, sin hora, Sacar basura",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, hoy, Sacar basura",
+       "texto": "evento, martes, 10 nov, Sacar basura",
        "falta": ""
       },
       "gasto": {
@@ -7619,15 +7642,15 @@
        "falta": ""
       },
       "cumple": {
-       "texto": "cumpleaños de Sacar basura, 5 de noviembre",
+       "texto": "cumpleaños de Sacar basura, 10 de noviembre",
        "falta": "falta el día"
       },
       "examen": {
-       "texto": "examen de ?, hoy",
+       "texto": "examen de ?, martes, 10 nov",
        "falta": "no encuentro la asignatura"
       },
       "trabajo": {
-       "texto": "entrega de ?, hoy",
+       "texto": "entrega de ?, martes, 10 nov",
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
@@ -7639,7 +7662,7 @@
        "falta": "falta la hora"
       },
       "viaje": {
-       "texto": "viaje a Sacar basura, hoy",
+       "texto": "viaje a Sacar basura, martes, 10 nov",
        "falta": ""
       },
       "libro": {
@@ -7661,7 +7684,7 @@
      },
      "nada": false,
      "r": {
-      "fecha": "2026-11-05",
+      "fecha": "2026-11-10",
       "fechaDicha": false,
       "fechaFin": "",
       "anioDicho": false,
@@ -9171,22 +9194,22 @@
    "cosas": [
     {
      "texto": "me han cobrado 30 de luz",
-     "tipo": "tarea",
+     "tipo": "gasto",
      "describir": {
       "tarea": {
-       "texto": "tarea, hoy, sin hora, Me han cobrado 30 de luz",
+       "texto": "tarea, hoy, sin hora, Luz",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, hoy, Me han cobrado 30 de luz",
+       "texto": "evento, hoy, Luz",
        "falta": ""
       },
       "gasto": {
-       "texto": "gasto de —, Me han cobrado 30 de luz",
-       "falta": "falta el importe"
+       "texto": "gasto de 30,00€, Luz",
+       "falta": ""
       },
       "compra": {
-       "texto": "a la compra: Me han cobrado 30 de luz",
+       "texto": "a la compra: Luz",
        "falta": ""
       },
       "nota": {
@@ -9194,7 +9217,7 @@
        "falta": ""
       },
       "cumple": {
-       "texto": "cumpleaños de Me han cobrado 30 de luz, 5 de noviembre",
+       "texto": "cumpleaños de Luz, 5 de noviembre",
        "falta": "falta el día"
       },
       "examen": {
@@ -9206,35 +9229,35 @@
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
-       "texto": "Me han cobrado 30 de luz, todos los días",
+       "texto": "Luz, todos los días",
        "falta": ""
       },
       "clase": {
-       "texto": "clase de Me han cobrado 30 de luz,  a las ?",
+       "texto": "clase de Luz,  a las ?",
        "falta": "faltan los días"
       },
       "viaje": {
-       "texto": "viaje a Me han cobrado 30 de luz, hoy",
+       "texto": "viaje a Luz, hoy",
        "falta": ""
       },
       "libro": {
-       "texto": "libro para ocio: Me han cobrado 30 de luz",
+       "texto": "libro para ocio: Luz",
        "falta": ""
       },
       "serie": {
-       "texto": "serie para ocio: Me han cobrado 30 de luz",
+       "texto": "serie para ocio: Luz",
        "falta": ""
       },
       "peli": {
-       "texto": "película para ocio: Me han cobrado 30 de luz",
+       "texto": "película para ocio: Luz",
        "falta": ""
       },
       "juego": {
-       "texto": "videojuego para ocio: Me han cobrado 30 de luz",
+       "texto": "videojuego para ocio: Luz",
        "falta": ""
       }
      },
-     "nada": true,
+     "nada": false,
      "r": {
       "fecha": "2026-11-05",
       "fechaDicha": false,
@@ -9242,11 +9265,11 @@
       "anioDicho": false,
       "hora": "",
       "horaFin": "",
-      "importe": null,
+      "importe": "30",
       "ingreso": false,
       "comprar": false,
       "nota": false,
-      "titulo": "Me han cobrado 30 de luz",
+      "titulo": "Luz",
       "recurrencia": null,
       "cumple": false,
       "estudio": null,
@@ -9743,7 +9766,7 @@
      }
     },
     {
-     "texto": "gasto 5 en bollo",
+     "texto": "gasté 5 en bollo",
      "tipo": "gasto",
      "describir": {
       "tarea": {
@@ -10908,15 +10931,15 @@
      "tipo": "cumple",
      "describir": {
       "tarea": {
-       "texto": "tarea, domingo, 3 may, sin hora, Ana",
+       "texto": "tarea, lunes, 3 may, sin hora, Ana",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, domingo, 3 may, Ana",
+       "texto": "evento, lunes, 3 may, Ana",
        "falta": ""
       },
       "gasto": {
-       "texto": "gasto de —, Ana, domingo, 3 may",
+       "texto": "gasto de —, Ana, lunes, 3 may",
        "falta": "falta el importe"
       },
       "compra": {
@@ -10932,11 +10955,11 @@
        "falta": ""
       },
       "examen": {
-       "texto": "examen de ?, domingo, 3 may",
+       "texto": "examen de ?, lunes, 3 may",
        "falta": "no encuentro la asignatura"
       },
       "trabajo": {
-       "texto": "entrega de ?, domingo, 3 may",
+       "texto": "entrega de ?, lunes, 3 may",
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
@@ -10948,7 +10971,7 @@
        "falta": "faltan los días"
       },
       "viaje": {
-       "texto": "viaje a Ana, domingo, 3 may",
+       "texto": "viaje a Ana, lunes, 3 may",
        "falta": ""
       },
       "libro": {
@@ -10970,7 +10993,7 @@
      },
      "nada": false,
      "r": {
-      "fecha": "2026-05-03",
+      "fecha": "2027-05-03",
       "fechaDicha": true,
       "fechaFin": "",
       "anioDicho": false,
@@ -11312,11 +11335,11 @@
      "tipo": "clase",
      "describir": {
       "tarea": {
-       "texto": "tarea, hoy a las 18:00, Inglés",
+       "texto": "tarea, martes, 10 nov a las 18:00, Inglés",
        "falta": ""
       },
       "evento": {
-       "texto": "evento, hoy a las 18:00, Inglés",
+       "texto": "evento, martes, 10 nov a las 18:00, Inglés",
        "falta": ""
       },
       "gasto": {
@@ -11332,15 +11355,15 @@
        "falta": ""
       },
       "cumple": {
-       "texto": "cumpleaños de Inglés, 5 de noviembre",
+       "texto": "cumpleaños de Inglés, 10 de noviembre",
        "falta": "falta el día"
       },
       "examen": {
-       "texto": "examen de ?, hoy a las 18:00",
+       "texto": "examen de ?, martes, 10 nov a las 18:00",
        "falta": "no encuentro la asignatura"
       },
       "trabajo": {
-       "texto": "entrega de ?, hoy a las 18:00",
+       "texto": "entrega de ?, martes, 10 nov a las 18:00",
        "falta": "no encuentro la asignatura"
       },
       "recurrente": {
@@ -11352,7 +11375,7 @@
        "falta": ""
       },
       "viaje": {
-       "texto": "viaje a Inglés, hoy",
+       "texto": "viaje a Inglés, martes, 10 nov",
        "falta": ""
       },
       "libro": {
@@ -11374,7 +11397,7 @@
      },
      "nada": false,
      "r": {
-      "fecha": "2026-11-05",
+      "fecha": "2026-11-10",
       "fechaDicha": false,
       "fechaFin": "",
       "anioDicho": false,
@@ -16177,7 +16200,7 @@
      }
     },
     {
-     "texto": "gasto 30 en comida",
+     "texto": "gasté 30 en comida",
      "tipo": "gasto",
      "describir": {
       "tarea": {
@@ -16279,19 +16302,19 @@
      "tipo": "evento",
      "describir": {
       "tarea": {
-       "texto": "tarea, viernes, 20 nov, sin hora, Química",
+       "texto": "tarea, viernes, 20 nov, sin hora, Examen de química",
        "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
       },
       "evento": {
-       "texto": "evento, viernes, 20 nov, Química",
+       "texto": "evento, viernes, 20 nov, Examen de química",
        "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
       },
       "gasto": {
-       "texto": "gasto de —, Química, viernes, 20 nov",
+       "texto": "gasto de —, Examen de química, viernes, 20 nov",
        "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
       },
       "compra": {
-       "texto": "a la compra: Química",
+       "texto": "a la compra: Examen de química",
        "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
       },
       "nota": {
@@ -16299,7 +16322,7 @@
        "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
       },
       "cumple": {
-       "texto": "cumpleaños de Química, 20 de noviembre",
+       "texto": "cumpleaños de Examen de química, 20 de noviembre",
        "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
       },
       "examen": {
@@ -16311,31 +16334,31 @@
        "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
       },
       "recurrente": {
-       "texto": "Química, todos los días",
+       "texto": "Examen de química, todos los días",
        "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
       },
       "clase": {
-       "texto": "clase de Química,  a las ?",
+       "texto": "clase de Examen de química,  a las ?",
        "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
       },
       "viaje": {
-       "texto": "viaje a Química, viernes, 20 nov",
+       "texto": "viaje a Examen de química, viernes, 20 nov",
        "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
       },
       "libro": {
-       "texto": "libro para ocio: Química",
+       "texto": "libro para ocio: Examen de química",
        "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
       },
       "serie": {
-       "texto": "serie para ocio: Química",
+       "texto": "serie para ocio: Examen de química",
        "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
       },
       "peli": {
-       "texto": "película para ocio: Química",
+       "texto": "película para ocio: Examen de química",
        "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
       },
       "juego": {
-       "texto": "videojuego para ocio: Química",
+       "texto": "videojuego para ocio: Examen de química",
        "falta": "no tienes ninguna asignatura «química»: créala en estudios o escríbelo sin «examen»"
       }
      },
@@ -16351,7 +16374,7 @@
       "ingreso": false,
       "comprar": false,
       "nota": false,
-      "titulo": "Química",
+      "titulo": "Examen de química",
       "recurrencia": null,
       "cumple": false,
       "estudio": {

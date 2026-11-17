@@ -1,5 +1,5 @@
 // Nota de la barra de apuntar contra los casos de pruebas/casos-barra.json (hechos con DeepSeek a partir de
-// pruebas/prompt-deepseek-barra.md). Pasa cada frase por el intérprete real (apuntarTrocear, interpretarApunte,
+// pruebas/prompt-deepseek-barra.md) y pruebas/casos-barra-2.json (frases reales de Alejandro, 0.24, con título y lugar). Pasa cada frase por el intérprete real (apuntarTrocear, interpretarApunte,
 // apuntarTipo) y cada búsqueda por barraBuscar, con hoy = jueves 5 de noviembre de 2026, y enseña qué falla.
 //     node pruebas/barra.mjs            (resumen y fallos)
 // No es una prueba que deba pasar entera: los casos son de otra IA y alguno es discutible. Sirve para ver por dónde
@@ -20,28 +20,41 @@ run(`
 `);
 
 const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-let ok = 0, total = 0;
-const fallos = [];
-for (const c of casos.apuntar) {
-    total++;
-    const salida = run(`apuntarTrocear(${JSON.stringify(c.frase)}).map(t => { const r = interpretarApunte(t); const tipo = apuntarTipo(r); return { tipo, titulo: r.titulo || '', fecha: r.fecha, hora: r.hora || null, hora_fin: r.horaFin || null, importe: r.importe ?? null, ingreso: !!r.ingreso }; })`);
-    const esperado = c.cosas;
-    const dif = [];
-    if (salida.length !== esperado.length) dif.push(`${salida.length} cosas en vez de ${esperado.length}`);
-    esperado.forEach((e, i) => {
-        const s = salida[i];
-        if (!s) return;
-        if (s.tipo !== e.tipo) dif.push(`tipo ${s.tipo} (esperado ${e.tipo})`);
-        if (e.fecha && s.fecha !== e.fecha && !['nota', 'serie', 'libro', 'peli', 'juego', 'compra'].includes(e.tipo)) dif.push(`fecha ${s.fecha} (esperada ${e.fecha})`);
-        if ((e.hora || null) !== (s.hora || null)) dif.push(`hora ${s.hora} (esperada ${e.hora})`);
-        if ((e.hora_fin || null) !== (s.hora_fin || null)) dif.push(`hora fin ${s.hora_fin} (esperada ${e.hora_fin})`);
-        if ((e.importe ?? null) !== (s.importe ?? null)) dif.push(`importe ${s.importe} (esperado ${e.importe})`);
-        if (e.tipo === 'gasto' && !!e.ingreso !== !!s.ingreso) dif.push(`ingreso ${s.ingreso} (esperado ${e.ingreso})`);
-    });
-    if (dif.length) fallos.push(`  · «${c.frase}» [${c.dificultad}]: ${dif.join('; ')}`); else ok++;
+// Cada fallo lleva su causa delante (trocear, tipo, fecha, hora, importe, título, lugar) para agruparlos.
+const sinArticulo = s => norm(s).replace(/^(?:el|la|los|las)\s+/, '').replace(/[\s.,;:]+$/, '');
+function nota(lista, conTitulo) {
+    let ok = 0;
+    const fallos = [], causas = {};
+    for (const c of lista) {
+        const salida = run(`apuntarTrocear(${JSON.stringify(c.frase)}).map(t => { const r = interpretarApunte(t); const tipo = apuntarTipo(r); return { tipo, titulo: r.titulo || '', fecha: r.fecha, hora: r.hora || null, hora_fin: r.horaFin || null, importe: r.importe ?? null, ingreso: !!r.ingreso, lugar: r.lugar || '' }; })`);
+        const esperado = c.cosas;
+        const dif = [];
+        const mal = (causa, txt) => { dif.push(txt); causas[causa] = (causas[causa] || 0) + 1; };
+        if (salida.length !== esperado.length) mal('trocear', `${salida.length} cosas en vez de ${esperado.length}`);
+        esperado.forEach((e, i) => {
+            const s = salida[i];
+            if (!s) return;
+            if (s.tipo !== e.tipo) mal('tipo', `tipo ${s.tipo} (esperado ${e.tipo})`);
+            if (e.fecha && s.fecha !== e.fecha && !['nota', 'serie', 'libro', 'peli', 'juego', 'compra'].includes(e.tipo)) mal('fecha', `fecha ${s.fecha} (esperada ${e.fecha})`);
+            if ((e.hora || null) !== (s.hora || null)) mal('hora', `hora ${s.hora} (esperada ${e.hora})`);
+            if ((e.hora_fin || null) !== (s.hora_fin || null)) mal('hora', `hora fin ${s.hora_fin} (esperada ${e.hora_fin})`);
+            if ((e.importe ?? null) !== (s.importe ?? null)) mal('importe', `importe ${s.importe} (esperado ${e.importe})`);
+            if (e.tipo === 'gasto' && !!e.ingreso !== !!s.ingreso) mal('importe', `ingreso ${s.ingreso} (esperado ${e.ingreso})`);
+            if (conTitulo && e.titulo != null && sinArticulo(s.titulo) !== sinArticulo(e.titulo)) mal('título', `título «${s.titulo}» (esperado «${e.titulo}»)`);
+            if (conTitulo && e.lugar && sinArticulo(s.lugar) !== sinArticulo(e.lugar)) mal('lugar', `lugar «${s.lugar}» (esperado «${e.lugar}»)`);
+        });
+        if (dif.length) fallos.push(`  · «${c.frase}»${c.dificultad ? ` [${c.dificultad}]` : ''}: ${dif.join('; ')}`); else ok++;
+    }
+    return { ok, total: lista.length, fallos, causas };
 }
-console.log(`apuntar: ${ok} de ${total} bien (${Math.round(ok / total * 100)} %)`);
-fallos.forEach(f => console.log(f));
+const casos2 = JSON.parse(readFileSync(new URL('casos-barra-2.json', import.meta.url), 'utf8'));
+for (const [nombre, res] of [['apuntar (casos-barra.json)', nota(casos.apuntar, false)], ['apuntar (casos-barra-2.json, con título y lugar)', nota(casos2.apuntar, true)]]) {
+    console.log(`${nombre}: ${res.ok} de ${res.total} bien (${Math.round(res.ok / res.total * 100)} %)`);
+    const orden = Object.entries(res.causas).sort((a, b) => b[1] - a[1]);
+    if (orden.length) console.log('  por causa: ' + orden.map(([k, v]) => `${k} ${v}`).join(', '));
+    res.fallos.forEach(f => console.log(f));
+    console.log('');
+}
 
 // Búsquedas sobre los datos del prompt
 run(`

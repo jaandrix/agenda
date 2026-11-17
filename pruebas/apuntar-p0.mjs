@@ -21,6 +21,13 @@ const BLOQUEAN = ['dentista el 31 de febrero', 'reunión 13/13/2026', 'cena el 3
     'viaje a Roma del 10 de mayo al 3 de abril', 'cancela la cita del dentista', 'mueve dentista al viernes', 'borra lo de ayer',
     'cambia la cena al sábado', '¿qué tengo mañana?'];
 for (const f of BLOQUEAN) test(`no se guarda: «${f}»`, () => assert.ok(leer(f)[0].error, 'sin aviso'));
+// Desde la 0.24 los validadores están en js/apuntar.js: la hoja y la barra de la web (apuntarDescribir para enseñarlo,
+// apuntarCrear para guardarlo) frenan lo mismo sin pasar por el puente.
+for (const f of BLOQUEAN) test(`la web tampoco lo guarda: «${f}»`, () => {
+    const [falta, error] = vm.runInContext(`(() => { const t = apuntarTrocear(${JSON.stringify(f)})[0]; const r = interpretarApunte(t); const tipo = apuntarTipo(r); return [apuntarDescribir(r, tipo).falta, apuntarValidar(t, r)]; })()`, ctx);
+    assert.ok(falta, 'sin aviso al describirlo');
+    assert.ok(error, 'apuntarCrear lo guardaría');
+});
 
 const ENTRAN = { 'cambiar el aceite del coche': {}, 'cancelar la suscripción de netflix': {}, 'pasar la aspiradora': {}, 'me han pagado 300': { importe: '300' },
     'gasté 1.500,50 € en el sofá': { importe: '1500.5' }, 'alquiler 1.500 €': { importe: '1500' }, 'café 2,40 €': { importe: '2.4' }, 'cena 12.50 €': { importe: '12.5' },

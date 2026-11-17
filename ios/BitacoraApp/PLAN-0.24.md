@@ -23,6 +23,36 @@ apps, así que cada arreglo vale para el PC y para el iPhone.
 7. Subir la versión `?v=` de `js/apuntar.js` en `index.html` sin arrastrar los cambios de la PWA que siguen en espera
    (commit con índice temporal).
 
+**Hecho el 17-11.** `node pruebas/barra.mjs` (mismo banco antes y después, medido con el `js/apuntar.js` de 3222d65):
+
+| banco | antes | después |
+|---|---|---|
+| `casos-barra.json` (DeepSeek, 91) | 60 (66 %) | 73 (80 %) |
+| `casos-barra-2.json` (frases de Alejandro, 99, mira también título y lugar) | 80 (81 %) | 98 (99 %) |
+| los dos (190) | 140 (74 %) | 171 (90 %) |
+
+Por causa, en el banco nuevo antes: título 16, hora 4, fecha 4, tipo 3, importe 2, trocear 2, lugar 1. Arreglado:
+- **Título:** «examen», «entregar» y «clase» se marcan en vez de quitarse y vuelven al título si al final no es examen,
+  entrega ni clase («tarea Entregar TFG v2», «Preparar clase 2ºB», «evento Examen PE 3»); «antes del viernes» ya no deja
+  «antes del»; «pagar 1.200 € de alquiler» da «Pagar alquiler»; con un importe, sin artículo delante («Nómina»).
+- **Hora:** la que tiene forma de hora («16h», «16:30») gana al número suelto («PE 3 16h» daba las 15:00); minutos
+  pegados con punto o coma (con espacio, «PE 3, 16:30» daba 3:16); final con guion («9:00-14:00»); «cine a las 10» es de
+  noche como la cena.
+- **Fecha:** «el viernes 13» manda el número; «3 de 17» y «1-5» no son fechas (con «de», el mes va con letras; con guion,
+  solo con año); los cumpleaños pasados van al año que viene; lo que se repite ciertos días empieza el primero que toca.
+- **Tipo e importe:** «nota …» sin dos puntos es nota (salvo «nota media/de/final»); «clase de X martes y jueves» es
+  clase aunque falte «los»; «nómina 1650», «me han ingresado/cobrado/devuelto» son movimientos («me han cobrado» es
+  gasto); miles («1.320,45 €») y varios importes («gasté 12 en el cine y 8 en palomitas») en el motor.
+- **Trocear:** «mañana: llamar al banco, pedir cita y comprar sellos» lleva el día a las tres; una nota no se parte.
+- **Validadores en la web:** `apuntarValidar` (fechas que no existen, repeticiones imposibles, cosas vacías, órdenes de
+  borrar o cambiar, preguntas, negaciones y asignatura que no existe), `apuntarSinMiles`, `apuntarDictado` y
+  `apuntarVariosImportes` pasan de `apuntar-puente.js` a `js/apuntar.js`. La web los aplica en `apuntarDescribir` (la
+  hoja y la barra del escritorio enseñan el motivo) y en `apuntarCrear` (no guarda); el puente solo conserva la
+  prioridad. `apuntar-p0.mjs` comprueba ahora también la web (55 pruebas).
+
+Queda sin resolver: «mañana a las 10 dentista y a las 12 recoger el coche» (la segunda cosa empieza por la hora y no se
+parte) y, del banco de DeepSeek, lo discutible («llamar a María a las 5» como evento, «12,50 de cena» sin €).
+
 ## 2. Lo que quedó de las auditorías
 
 - **B10:** los formularios que se cierran con un gesto deben preguntar si hay cambios (editor de tarea, evento,
