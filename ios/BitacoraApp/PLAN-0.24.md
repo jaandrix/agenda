@@ -28,6 +28,16 @@ apps, así que cada arreglo vale para el PC y para el iPhone.
 - **B10:** los formularios que se cierran con un gesto deben preguntar si hay cambios (editor de tarea, evento,
   movimiento, receta, viaje…). Un modificador común que compare el borrador con el original.
 - **A16:** símbolos del binario (P3, solo si sobra tiempo).
+- **P1, rendimiento del carrusel nuevo (de la 0.23).** En las dos ejecuciones de la 0.23, «carrusel: otra semana
+  (pintar)» va unas 2 veces más lento (50 → 101 ms) y «marcar tarea hasta Inicio» de 100 a 400 ms. Pista: en
+  `RendimientoAppTests` la vuelta deja Inicio en otra semana justo antes de marcar, así que marcar también devuelve el
+  carrusel a hoy. Mide un salto programático del `ScrollView` paginado (`scrollPosition`, páginas perezosas que se
+  crean), que en la app no pasa al marcar. Pasos: separar en la prueba «marcar» del cambio de semana; medir el salto
+  solo; si sigue caro, probar menos páginas (`alcance`), pintar las semanas sin `containerRelativeFrame` (ancho fijo
+  desde `GeometryReader`) o un `TabView` `.page` con las mismas ids. Sin tocar el paginado, que es lo que arregló el
+  deslizamiento.
+- **Medida estable:** desde la 0.23 se mide antes y ahora dos veces, intercaladas, y avisa (sin bloquear) por encima
+  del 30 % y 15 ms. Cuando sea estable entre ejecuciones, volver a hacerla bloqueante.
 - **Servidor:** probar el borrado de cuenta con una cuenta de prueba, nunca con la de Alejandro.
 
 ## 3. Lo que sigue en la web dentro de apartados ya nativos

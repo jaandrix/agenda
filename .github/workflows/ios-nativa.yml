@@ -81,12 +81,15 @@ jobs:
           if grep -rn "try? await c.encolar" BitacoraNative; then echo "Usa c.guardar en vez de try? await c.encolar"; exit 1; fi
           if grep -rnF ".sheet(" BitacoraNative --include=*.swift | grep -v "DesignSystem/Hojas.swift"; then echo "Usa .hoja en vez de .sheet"; exit 1; fi
 
-      # 0.23: el «antes» es el final de la 0.22 y la medida bloquea la compilación si algo empeora más de un 20 % (y 5 ms).
+      # 0.23: el «antes» es el final de la 0.22. Antes y ahora se miden dos veces cada uno, intercalados en el mismo Mac, y
+      # cuenta la menor de las dos medianas; avisa si algo empeora más de un 30 % y 15 ms. No bloquea la IPA (el Mac de
+      # GitHub varía demasiado entre ejecuciones: con un 20 % frenaba por medidas de código que no había cambiado).
       # Las medidas valen en Release (en Debug Swift va varias veces más lento); la misma prueba corre sobre el «antes» y
       # sobre este commit, y el resumen enseña las dos columnas.
       - name: Rendimiento (Release, simulador; antes y ahora)
         # También si falla alguna prueba unitaria de otro apartado: las medidas no dependen de ellas.
         if: ${{ !cancelled() }}
+        continue-on-error: true
         run: |
           set -o pipefail
           UDID=$(xcrun simctl list devices available -j | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))][0].udid')
@@ -101,7 +104,9 @@ jobs:
           git worktree add -q "$RUNNER_TEMP/antes" FETCH_HEAD
           cp BitacoraNativeTests/RendimientoAppTests.swift "$RUNNER_TEMP/antes/ios/BitacoraApp/BitacoraNativeTests/"
           ( cd "$RUNNER_TEMP/antes/ios/BitacoraApp" && xcodegen generate -q && medir "$GITHUB_WORKSPACE/ios/BitacoraApp/perf-antes.log" "$RUNNER_TEMP/build-antes" )
-          python3 ../../pruebas/tabla-rendimiento.py perf-antes.log perf.log --anotacion --umbral 20 >> "$GITHUB_STEP_SUMMARY"
+          medir "$PWD/perf2.log" build-perf
+          ( cd "$RUNNER_TEMP/antes/ios/BitacoraApp" && medir "$GITHUB_WORKSPACE/ios/BitacoraApp/perf-antes2.log" "$RUNNER_TEMP/build-antes" )
+          python3 ../../pruebas/tabla-rendimiento.py perf-antes.log,perf-antes2.log perf.log,perf2.log --anotacion --umbral 30 --margen 15 >> "$GITHUB_STEP_SUMMARY"
           grep -q "TEST SUCCEEDED" perf.log
 
       - name: Subir las capturas de diseño

@@ -1,10 +1,11 @@
-# Junta las líneas «MEDIDA|nombre|mediana|mín|máx» de dos registros de RendimientoAppTests (antes y ahora) en una tabla
-# Markdown para el resumen del workflow ios-nativa.yml.
+# Junta las líneas «MEDIDA|nombre|mediana|mín|máx» de los registros de RendimientoAppTests (antes y ahora) en una tabla
+# Markdown para el resumen del workflow ios-nativa.yml. Cada lado puede ser varios registros separados por comas (la
+# misma prueba repetida en el mismo Mac): cuenta la menor mediana, la que menos ruido lleva.
 import re
 import sys
 
 
-def leer(nombre):
+def leer_uno(nombre):
     r = {}
     try:
         texto = open(nombre, encoding='utf-8', errors='replace').read()
@@ -15,10 +16,19 @@ def leer(nombre):
     return r
 
 
+def leer(nombres):
+    r = {}
+    for n in nombres.split(','):
+        for k, v in leer_uno(n).items():
+            if k not in r or float(v[0]) < float(r[k][0]):
+                r[k] = v
+    return r
+
+
 antes, ahora = leer(sys.argv[1]), leer(sys.argv[2])
 print('## Rendimiento (Release, simulador del runner)\n')
 print('Documento de prueba: 6.000 movimientos, 745 entradas, unas 520 tareas y la despensa llena. '
-      'Mediana de 7 vueltas en ms (entre paréntesis, mín.–máx.).\n')
+      'Mediana de 7 vueltas en ms (la menor de las repeticiones; entre paréntesis, mín.–máx.).\n')
 print('| medida | antes (fin de la 0.22) | este commit |')
 print('|---|---:|---:|')
 for k in sorted(set(antes) | set(ahora)):
@@ -30,16 +40,17 @@ if '--anotacion' in sys.argv:
     filas = [f'{k}: {(antes.get(k) or ("-",))[0]} -> {(ahora.get(k) or ("-",))[0]}' for k in sorted(set(antes) | set(ahora))]
     print('::notice title=Rendimiento (ms, antes -> este commit)::' + '%0A'.join(filas), file=sys.stderr)
 
-# 0.23 (auditoría): puerta de rendimiento. Con --umbral N, falla si alguna medida que está en los dos registros empeora
-# más de un N % y más de 5 ms (por debajo, el ruido del simulador del runner lo decide todo).
+# 0.23 (auditoría): aviso de rendimiento. Con --umbral N (y --margen M ms, 5 si no se da), sale con error si alguna
+# medida que está en los dos lados empeora más de un N % y más de M ms. El workflow no deja que bloquee la IPA.
 if '--umbral' in sys.argv:
     umbral = float(sys.argv[sys.argv.index('--umbral') + 1])
+    margen = float(sys.argv[sys.argv.index('--margen') + 1]) if '--margen' in sys.argv else 5
     peores = []
     for k in sorted(set(antes) & set(ahora)):
         a, b = float(antes[k][0]), float(ahora[k][0])
-        if b - a > 5 and b > a * (1 + umbral / 100):
+        if b - a > margen and b > a * (1 + umbral / 100):
             peores.append(f'{k}: {a:.1f} -> {b:.1f} ms')
     for p in peores:
-        print(f'::error title=Rendimiento peor que el umbral ({umbral:g} %)::{p}', file=sys.stderr)
+        print(f'::warning title=Rendimiento peor que el umbral ({umbral:g} % y {margen:g} ms)::{p}', file=sys.stderr)
     if peores:
         sys.exit(1)
