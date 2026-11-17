@@ -133,6 +133,8 @@ struct CalendarioView: View {
                     .foregroundStyle(elegido ? Paleta.sobreAcento : (d == hoy ? Paleta.acento : Paleta.texto))
                     .frame(width: 34, height: 34)
                     .background(elegido ? Paleta.acento : Color.clear, in: Circle())
+                    // Tinta: hoy no puede ir en otro color que el resto de días, así que lleva su aro.
+                    .overlay(Circle().strokeBorder(Paleta.acento, lineWidth: 1.5).opacity(Paleta.mono && d == hoy && !elegido ? 1 : 0))
                 Circle().fill(n > 0 && !elegido ? Paleta.acento : .clear).frame(width: 4, height: 4)
             }
             .frame(maxWidth: .infinity, minHeight: 48)

@@ -47,7 +47,7 @@ enum LectorQR {
 struct CodigoQR: View {
     let datos: Data
     var body: some View {
-        if let img = QRMarcado.imagen(datos, placa: QRMarcado.colorPlaca(), letra: QRMarcado.colorLetra(), punto: UIColor(rgb: 0xE5532B)) ?? LectorQR.imagen(datos) {
+        if let img = QRMarcado.imagen(datos, placa: QRMarcado.colorPlaca(), letra: QRMarcado.colorLetra(), punto: UIColor(rgb: Paleta.mono ? 0x000000 : 0xE5532B)) ?? LectorQR.imagen(datos) {
             Image(uiImage: img).interpolation(.none).resizable().scaledToFit()
                 .padding(6)
                 .background(Color.white, in: RoundedRectangle(cornerRadius: Radio.control))

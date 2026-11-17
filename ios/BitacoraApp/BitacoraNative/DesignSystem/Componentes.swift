@@ -162,6 +162,13 @@ struct FilaCirculo<Delante: View, Texto: View, Cola: View>: View {
 struct FilaAgenda: View {
     private var prioridadTexto: Text {
         guard let p = prioridad, !hecho else { return Text("") }
+        // Tinta (0.25): sin color, la prioridad va por peso. Alta en negrita y tinta plena, media en tinta al 70 %, baja
+        // en el gris secundario y sin peso.
+        if Paleta.mono {
+            let peso: Font.Weight = p == "alta" ? .bold : p == "media" ? .semibold : .regular
+            let tinta = p == "alta" ? colorTexto : p == "media" ? colorTexto.opacity(0.7) : colorSuave
+            return Text(p + ". ").font(Tipo.poppins(16.5, peso, estilo: .body)).foregroundStyle(tinta)
+        }
         // Colores de la web (.prio-etq): alta #e5484d, media #d98a0b, baja #4c8df6. En los temas claros, una variante más
         // oscura para llegar a 4,5:1 sobre el fondo; ya hecha, hereda el color al 60 %.
         let color = Color.delTema { k in
@@ -201,8 +208,9 @@ struct FilaAgenda: View {
                     .enPrimeraLinea(14)
             }
         } texto: {
+            // En tinta, lo arrastrado o en curso no tiene un color que lo distinga: va en negrita (y su aro, entero).
             (prioridadTexto + Text(titulo))
-                .font(Tipo.poppins(16.5, .semibold, estilo: .body))
+                .font(Tipo.poppins(16.5, Paleta.mono && acento && !hecho ? .bold : .semibold, estilo: .body))
                 .foregroundStyle(hecho ? colorSuave : (acento ? colorAcento : colorTexto))
                 .strikethrough(hecho, color: colorSuave)
                 .multilineTextAlignment(.leading)
@@ -290,13 +298,14 @@ struct BarraBitacora: View {
         let esMenu = p.id == "mas"
         let largo = esMenu ? mantener : nil
         let base = VStack(spacing: 1) {
-                IconoBarra(id: p.icono, activo: on, detalle: Paleta.acentoBarra)
-                    .foregroundStyle(on ? Paleta.sobreBarra : Paleta.sobreBarraSuave)
+                IconoBarra(id: p.icono, activo: on, detalle: Paleta.mono && on ? Paleta.sobreAcento : Paleta.acentoBarra)
+                    .foregroundStyle(on ? (Paleta.mono ? Paleta.sobreAcento : Paleta.sobreBarra) : Paleta.sobreBarraSuave)
                     .frame(width: 24, height: 24)
                     .frame(width: 46, height: Self.tamanoIconoLateral)
                     .background {
                         if on {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Paleta.tinteBarra)
+                            // En tinta la placa es la tinta plena y el icono va invertido encima.
+                            RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Paleta.mono ? Paleta.acento : Paleta.tinteBarra)
                                 .matchedGeometryEffect(id: "placa", in: placa)
                         }
                     }
@@ -345,11 +354,12 @@ struct BarraBitacora: View {
 
     private var botonCentral: some View {
         Button(action: capturar) {
-            IconoBarra(id: "apuntar", detalle: Paleta.acento)
-                .foregroundStyle(Paleta.texto)
+            // En tinta, el botón principal: círculo de tinta plena con el icono invertido.
+            IconoBarra(id: "apuntar", detalle: Paleta.mono ? Paleta.sobreAcento : Paleta.acento)
+                .foregroundStyle(Paleta.mono ? Paleta.sobreAcento : Paleta.texto)
                 .scaleEffect(1.12)
                 .frame(width: Self.diametroCentral, height: Self.diametroCentral)
-                .background(Paleta.superficie, in: Circle())
+                .background(Paleta.mono ? Paleta.acento : Paleta.superficie, in: Circle())
                 .overlay(Circle().stroke(Paleta.acento, lineWidth: 2.5))
                 .padding(3)
                 .background(Paleta.fondo, in: Circle())
@@ -499,16 +509,28 @@ struct HojaContenido: ViewModifier {
 
 // Barra fina de avance en el color de progreso (estado en texto al lado, nunca solo el color).
 struct BarraAvance: View {
+    // Qué dice la barra cuando no hay color (tinta, 0.25): lo normal va lleno, lo que va bien hueco y lo que pide
+    // atención rayado. En los demás temas solo cuenta el color.
+    enum Forma { case llena, hueca, rayada }
     let valor: Double
     var fondo = Paleta.filoContexto
     var color = Paleta.progreso
     var alto: CGFloat = 4
+    var forma = Forma.llena
 
     var body: some View {
         GeometryReader { g in
+            let ancho = g.size.width * min(max(valor, 0), 1)
             ZStack(alignment: .leading) {
                 Capsule().fill(fondo)
-                Capsule().fill(color).frame(width: g.size.width * min(max(valor, 0), 1))
+                if Paleta.mono && forma == .hueca {
+                    Capsule().strokeBorder(color, lineWidth: min(1.5, alto / 3)).frame(width: max(ancho, alto))
+                } else if Paleta.mono && forma == .rayada {
+                    Capsule().fill(color).frame(width: ancho)
+                        .overlay(Trama(paso: max(3, alto * 0.75)).stroke(Paleta.fondo, lineWidth: 1).clipShape(Capsule()))
+                } else {
+                    Capsule().fill(color).frame(width: ancho)
+                }
             }
         }
         .frame(height: alto)

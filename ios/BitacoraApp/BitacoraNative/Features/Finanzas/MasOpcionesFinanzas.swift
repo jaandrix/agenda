@@ -322,7 +322,7 @@ struct MasOpcionesView: View {
                 if !t.nota.isEmpty { Text(t.nota).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
             }
             Spacer()
-            Text((t.tipo == "income" ? "+" : "-") + din(t.importe)).monospacedDigit().foregroundStyle(t.tipo == "income" ? Paleta.progreso : Paleta.texto)
+            Text((t.tipo == "income" ? "+" : "-") + din(t.importe)).monospacedDigit().foregroundStyle(t.tipo == "income" ? Paleta.positivo : Paleta.texto)
         }
     }
 

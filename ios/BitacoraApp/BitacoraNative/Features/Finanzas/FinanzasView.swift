@@ -297,7 +297,7 @@ struct FilaMovView: View {
                     Text(oculto ? "•••" : (f.tipo == "income" ? "+" : f.tipo == "expense" ? "−" : "") + FormatoFin.dinero(f.importe))
                         .font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit()
                 }
-                .foregroundStyle(f.tipo == "income" ? Paleta.progreso : Paleta.texto)
+                .foregroundStyle(f.tipo == "income" ? Paleta.positivo : Paleta.texto)
             }
             .padding(.vertical, 9)
             .contentShape(Rectangle())
@@ -410,7 +410,7 @@ private struct PestanaCuentas: View {
         .accessibilityElement(children: .combine)
         if m.ingresos != 0 || m.gastos != 0 {
             VStack(alignment: .leading, spacing: 6) {
-                BarraAvance(valor: min(1, m.ratio), fondo: Paleta.borde, color: m.ratio > 1 ? Paleta.atencion : Paleta.acento, alto: 6)
+                BarraAvance(valor: min(1, m.ratio), fondo: Paleta.borde, color: m.ratio > 1 ? Paleta.atencion : Paleta.acento, alto: 6, forma: m.ratio > 1 ? .rayada : .llena)
                 Text(m.ingresos > 0 ? "\(Int((m.ratio * 100).rounded())) % de lo que ha entrado, ya gastado." : "Este mes todavía no ha entrado nada.")
                     .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
             }
@@ -459,7 +459,7 @@ private struct PestanaCuentas: View {
         var t = Text(oculto ? "•••" : FormatoFin.dinero(r.gasto)).bold() + Text(" gastados hasta hoy")
         if r.antes != 0 {
             let dif = (oculto ? "•••" : FormatoFin.dinero(abs(r.dif))) + (r.dif > 0 ? " más" : " menos")
-            t = t + Text(", ") + Text(dif).foregroundColor(r.dif > 0 ? Paleta.atencion : Paleta.progreso) + Text(" que a día \(r.dia) de \(r.mesPasado)")
+            t = t + Text(", ") + Text(dif).foregroundColor(r.dif > 0 ? Paleta.atencion : Paleta.positivo) + Text(" que a día \(r.dia) de \(r.mesPasado)")
         }
         return t + Text(".")
     }
@@ -562,7 +562,7 @@ private struct PestanaPlanificacion: View {
     let oculto: Bool
     @Binding var hoja: HojaFinanzas?
 
-    private func color(_ s: String) -> Color { s == "superado" ? Paleta.atencion : s == "aviso" ? Paleta.acento : Paleta.progreso }
+    private func color(_ s: String) -> Color { s == "superado" ? Paleta.atencion : s == "aviso" ? Paleta.acento : Paleta.positivo }
     private func din(_ v: Double) -> String { oculto ? "•••" : FormatoFin.dinero(v) }
 
     var body: some View {
@@ -583,7 +583,7 @@ private struct PestanaPlanificacion: View {
                         Text(din(cat.spent)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit().foregroundStyle(Paleta.texto)
                         Text("de \(din(cat.available))").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
                     }
-                    BarraAvance(valor: min(100, max(2, cat.percentage)) / 100, fondo: Paleta.borde, color: color(cat.status), alto: 6)
+                    BarraAvance(valor: min(100, max(2, cat.percentage)) / 100, fondo: Paleta.borde, color: color(cat.status), alto: 6, forma: cat.status == "superado" ? .rayada : .llena)
                     HStack(alignment: .firstTextBaseline) {
                         Text(sub + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(2)
                         Spacer(minLength: Espacio.s)
@@ -656,13 +656,24 @@ private struct PestanaResumen: View {
         Text(t).font(Tipo.poppins(28, .bold, estilo: .title)).monospacedDigit().foregroundStyle(negativa ? Paleta.atencion : Paleta.texto)
     }
 
-    private func barra(_ nombre: String, _ v: Double, _ falta: Double, _ max: Double, color: Color) -> some View {
+    // En tinta, «entra.» va hueca (lo que suma) y «sale.» llena; lo que falta por entrar, rayado.
+    private func barra(_ nombre: String, _ v: Double, _ falta: Double, _ max: Double, color: Color, hueca: Bool = false) -> some View {
         HStack(spacing: 8) {
             Text(nombre).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(width: 44, alignment: .leading)
             GeometryReader { g in
                 HStack(spacing: 0) {
-                    Rectangle().fill(color).frame(width: g.size.width * v / max)
-                    if falta > 0 { Rectangle().fill(color.opacity(0.3)).frame(width: g.size.width * falta / max) }
+                    if Paleta.mono && hueca {
+                        Rectangle().strokeBorder(color, lineWidth: 1.5).frame(width: g.size.width * v / max)
+                    } else {
+                        Rectangle().fill(color).frame(width: g.size.width * v / max)
+                    }
+                    if falta > 0 {
+                        if Paleta.mono {
+                            Trama(paso: 4).stroke(color, lineWidth: 1).frame(width: g.size.width * falta / max).clipped()
+                        } else {
+                            Rectangle().fill(color.opacity(0.3)).frame(width: g.size.width * falta / max)
+                        }
+                    }
                     Spacer(minLength: 0)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 3))
@@ -680,7 +691,7 @@ private struct PestanaResumen: View {
             cifra(oculto ? "•••" : (neto >= 0 ? "+" : "−") + FormatoFin.dinero(abs(neto)), negativa: neto < 0)
             Text((neto >= 0 ? "te queda" : "has gastado más de lo que ha entrado") + (mes.falta > 0 ? ", y aún falta por entrar \(din(mes.falta)) del sueldo previsto" : "") + ".")
                 .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            barra("entra.", mes.entra, mes.falta, max, color: Paleta.progreso)
+            barra("entra.", mes.entra, mes.falta, max, color: Paleta.positivo, hueca: true)
             barra("sale.", mes.sale, 0, max, color: Paleta.acento)
             if conSueldo && mes.sueldo != 0 { FilaLibro(etiqueta: "sueldo previsto.", valor: din(mes.sueldo)) }
         }
@@ -715,7 +726,14 @@ private struct PestanaResumen: View {
             GeometryReader { g in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 3).fill(Paleta.borde)
-                    RoundedRectangle(cornerRadius: 3).fill(neg ? Paleta.atencion : Paleta.progreso).frame(width: g.size.width * ancho / 100)
+                    if Paleta.mono && neg {
+                        RoundedRectangle(cornerRadius: 3).fill(Paleta.atencion).frame(width: g.size.width * ancho / 100)
+                            .overlay(Trama(paso: 5).stroke(Paleta.fondo, lineWidth: 1).clipShape(RoundedRectangle(cornerRadius: 3)))
+                    } else if Paleta.mono {
+                        RoundedRectangle(cornerRadius: 3).strokeBorder(Paleta.positivo, lineWidth: 1.5).frame(width: g.size.width * ancho / 100)
+                    } else {
+                        RoundedRectangle(cornerRadius: 3).fill(neg ? Paleta.atencion : Paleta.positivo).frame(width: g.size.width * ancho / 100)
+                    }
                 }
             }
             .frame(height: 8)
@@ -773,14 +791,14 @@ private struct PestanaResumen: View {
         if oculto {
             Text("")
         } else if f.pct == nil, let c = f.cambio, abs(c) >= 0.5 {
-            Text((c >= 0 ? "+" : "−") + FormatoFin.dinero(abs(c))).font(Tipo.pie).foregroundStyle(c < 0 ? Paleta.atencion : Paleta.progreso)
+            Text((c >= 0 ? "+" : "−") + FormatoFin.dinero(abs(c))).font(Tipo.pie).foregroundStyle(c < 0 ? Paleta.atencion : Paleta.positivo)
         } else if let p = f.pct {
             let clase = abs(p) < 0.05 ? 0 : p > 0 ? 1 : -1
             HStack(spacing: 2) {
                 if clase != 0 { Image(systemName: clase > 0 ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill").font(.system(size: 8)) }
                 Text(FormatoFin.pct(p))
             }
-            .font(Tipo.pie).foregroundStyle(clase > 0 ? Paleta.progreso : clase < 0 ? Paleta.atencion : Paleta.textoSecundario)
+            .font(Tipo.pie).foregroundStyle(clase > 0 ? Paleta.positivo : clase < 0 ? Paleta.atencion : Paleta.textoSecundario)
         } else {
             Text("sin datos").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
         }
@@ -872,10 +890,9 @@ private struct GraficaObjetivo: View {
 }
 
 extension Color {
-    // Colores de categoría guardados como «#rrggbb» (financeProCategoryColor).
+    // Colores de categoría guardados como «#rrggbb» (financeProCategoryColor). En tinta, su gris (Grises.deColor).
     init(hexWeb: String) {
         let h = hexWeb.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
-        let v = UInt32(h, radix: 16) ?? 0x78716c
-        self.init(red: Double((v >> 16) & 0xff) / 255, green: Double((v >> 8) & 0xff) / 255, blue: Double(v & 0xff) / 255)
+        self = Color.deUsuario(UInt32(h, radix: 16) ?? 0x78716c)
     }
 }

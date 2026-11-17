@@ -243,7 +243,7 @@ struct FichaInversionView: View {
                     }
                 }
                 Text(d.estado + (d.correo.map { " Según el correo, la cartera valía \(FormatoFin.dinero($0))." } ?? ""))
-                    .font(Tipo.pie).foregroundStyle(d.estado.hasPrefix("guardado") && !d.distinto ? Paleta.progreso : Paleta.textoSecundario)
+                    .font(Tipo.pie).foregroundStyle(d.estado.hasPrefix("guardado") && !d.distinto ? Paleta.positivo : Paleta.textoSecundario)
                 BotonFin(texto: guardando ? "guardando." : "guardar \(d.mesTitulo).", acento: true) { Task { await guardarMes(confirmado: false) } }
                     .disabled(guardando)
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))

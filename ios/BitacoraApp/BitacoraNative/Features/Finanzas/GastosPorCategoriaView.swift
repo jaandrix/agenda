@@ -101,7 +101,7 @@ struct GastosPorCategoriaView: View {
     // Gastar más que el mes anterior se marca; gastar menos, en verde.
     private func cambioColor(_ x: GastosMes.Cat) -> Color {
         guard !oculto, x.anterior > 0 else { return Paleta.textoSecundario }
-        return x.total > x.anterior * 1.1 ? Paleta.atencion : x.total < x.anterior * 0.9 ? Paleta.progreso : Paleta.textoSecundario
+        return x.total > x.anterior * 1.1 ? Paleta.atencion : x.total < x.anterior * 0.9 ? Paleta.positivo : Paleta.textoSecundario
     }
 
     private func cargar() async {

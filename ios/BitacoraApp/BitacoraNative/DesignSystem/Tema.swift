@@ -2,15 +2,17 @@ import SwiftUI
 import UIKit
 
 // Los seis temas de la PWA (THEMES en js/datos.js; colores de styles.css). «acuarela» se enseña como «teja.».
-// «sistema» es papel o asfalto según el iPhone. En asfalto y papel la interfaz usa la arcilla del plan de la 0.12
+// «sistema» es papel o asfalto según el iPhone. «tinta» (0.25) es solo de la nativa: blanco, negro y grises, y sigue el
+// modo del iPhone como «sistema». Se guarda en este iPhone, nunca en la nube, así que la PWA no lo ve (Monocromo.swift).
+// En asfalto y papel la interfaz usa la arcilla del plan de la 0.12
 // (#C96A5A / #A64235) en lugar del naranja de la PWA: el #E5532B queda solo para el punto del logo (`Paleta.marca`).
 enum TemaElegido: String, CaseIterable, Identifiable {
-    case sistema, asfalto, papel, acuarela, pizarra, oliva, fundador
+    case sistema, asfalto, papel, acuarela, pizarra, oliva, fundador, tinta
     var id: String { rawValue }
     var nombre: String { self == .acuarela ? "teja." : rawValue + "." }
     var esquema: ColorScheme? {
         switch self {
-        case .sistema: return nil
+        case .sistema, .tinta: return nil
         case .asfalto, .fundador: return .dark
         default: return .light
         }
@@ -41,6 +43,10 @@ struct TemaTokens {
     var titulo: UInt32?
     var barra: UInt32?, sobreBarra: UInt32?, sobreBarraSuave: UInt32?, acentoBarra: UInt32?
     var filo: UInt32?, bordeAlfa: CGFloat?, aroAlfa: CGFloat?
+    // Tinta (0.25): sin color, lo bueno (ingresos, mejoras, presupuesto en orden) va en `positivo` y lo que pide atención en
+    // tinta plena. En los demás temas `positivo` es el progreso de siempre.
+    var positivo: UInt32?
+    var mono = false
 
     func con(_ c: UInt32, _ sc: UInt32, _ p: UInt32, _ sp: UInt32, _ a: UInt32) -> TemaTokens {
         var t = self
@@ -59,6 +65,7 @@ struct TemaTokens {
     static func de(_ t: TemaElegido, sistemaOscuro: Bool) -> TemaTokens {
         switch t {
         case .sistema: return de(sistemaOscuro ? .asfalto : .papel, sistemaOscuro: sistemaOscuro)
+        case .tinta: return sistemaOscuro ? Grises.noche : Grises.dia
         // Retoque de la 0.20 (pedido de Alejandro: «que tengan un poco más de personalidad, que se diferencien más»).
         // Texto y secundario cumplen AA (4,5:1) sobre fondo y superficie en todos.
         // 0.22: el aro de marcar llega a 3:1 en todos (en los claros no llegaba), las superficies se separan del fondo
@@ -126,7 +133,10 @@ enum Paleta {
     static let acento = Color.delTema { UIColor(rgb: $0.acento) }                                    // acento de interacción
     static let sobreAcento = Color.delTema { UIColor(rgb: $0.sobreAcento) }
     static let punto = Color.delTema { UIColor(rgb: $0.punto) }                                      // --m-punto
-    static let error = Color.delTema { UIColor(rgb: $0.oscuro ? 0xF2B8B5 : 0xB3261E) }
+    static let error = Color.delTema { UIColor(rgb: $0.mono ? $0.texto : ($0.oscuro ? 0xF2B8B5 : 0xB3261E)) }
+    static let positivo = Color.delTema { UIColor(rgb: $0.positivo ?? $0.progreso) }
+    // Leído al construir las vistas: la raíz se rehace con `.id(tema)` al cambiar de tema.
+    static var mono: Bool { TemaActivo.elegido == .tinta }
     // --border y --border-strong son la tinta con transparencia, no un gris propio.
     static let borde = Color.delTema { UIColor(rgb: $0.filo ?? $0.texto, alfa: $0.bordeAlfa ?? ($0.oscuro ? 0.08 : 0.07)) }
     static let bordeFuerte = Color.delTema { UIColor(rgb: $0.filo ?? $0.texto, alfa: min(0.32, ($0.bordeAlfa ?? 0.08) * 2)) }
@@ -159,8 +169,8 @@ enum Paleta {
     static let acentoBarra = Color.delTema { UIColor(rgb: $0.acentoBarra ?? $0.acento) }
     static let tinteBarra = Color.delTema { UIColor(rgb: $0.acentoBarra ?? $0.acento, alfa: $0.barra != nil && $0.sobreBarra != nil ? 0.2 : ($0.oscuro ? 0.12 : 0.08)) }
     static let filoBarra = Color.delTema { UIColor(rgb: $0.sobreBarra ?? $0.filo ?? $0.texto, alfa: $0.sobreBarra != nil ? 0.12 : min(0.32, ($0.bordeAlfa ?? 0.08) * 2)) }
-    // El punto oficial del logo «b.»: no cambia con el tema ni se usa en controles.
-    static let marca = Color(uiColor: UIColor(rgb: 0xE5532B))
+    // El punto oficial del logo «b.»: no cambia con el tema ni se usa en controles. En tinta, tinta (ni un punto de color).
+    static let marca = Color.delTema { UIColor(rgb: $0.mono ? $0.texto : 0xE5532B) }
 }
 
 enum Duracion {

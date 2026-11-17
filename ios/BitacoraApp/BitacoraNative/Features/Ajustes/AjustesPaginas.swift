@@ -549,6 +549,12 @@ struct BotonPeligro: ButtonStyle {
             .foregroundStyle(activo ? Paleta.error : Paleta.desactivado)
             .background(Paleta.error.opacity(activo ? 0.12 : 0.05), in: RoundedRectangle(cornerRadius: Radio.control))
             .overlay(RoundedRectangle(cornerRadius: Radio.control).stroke(activo ? Paleta.error : Paleta.borde, lineWidth: 1))
+            // Tinta: sin rojo, lo irreversible lleva borde doble (el secundario tiene uno solo y fino).
+            .overlay {
+                if Paleta.mono && activo {
+                    RoundedRectangle(cornerRadius: Radio.control - 3).stroke(Paleta.error, lineWidth: 1).padding(3)
+                }
+            }
             .opacity(configuration.isPressed ? 0.7 : 1)
     }
 }

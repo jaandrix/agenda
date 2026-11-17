@@ -256,7 +256,7 @@ struct CabeceraPerfil: View {
         HStack(spacing: 14) {
             Group {
                 if let foto {
-                    Image(uiImage: foto).resizable().scaledToFill()
+                    Image(uiImage: foto).resizable().scaledToFill().enGrises()
                 } else {
                     Text(String((nombre.isEmpty ? correo : nombre).prefix(1)).lowercased())
                         .font(Tipo.poppins(26, .bold, estilo: .title2)).foregroundStyle(Paleta.sobreAcento)
@@ -314,6 +314,7 @@ struct SelectorTema: View {
         case .pizarra: return "pizarra: azul marino frío sobre gris azulado."
         case .oliva: return "oliva: marfil, verde oliva y ciruela."
         case .fundador: return "fundador: carbón y dorado, para los socios."
+        case .tinta: return "tinta: blanco, negro y grises. sigue el día y la noche de tu iphone; lo importante, en tinta plena."
         }
     }
 }

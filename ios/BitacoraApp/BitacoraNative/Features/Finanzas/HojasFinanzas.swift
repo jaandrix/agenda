@@ -102,7 +102,7 @@ struct LogoSuscripcion: View {
     var body: some View {
         Group {
             if let img = logos.imagenes[id] {
-                Image(uiImage: img).resizable().scaledToFit()
+                Image(uiImage: img).resizable().scaledToFit().enGrises()
             } else {
                 Text(String(titulo.trimmingCharacters(in: .whitespaces).prefix(1)).uppercased())
                     .font(Tipo.poppins(lado * 0.5, .bold, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario)
@@ -151,7 +151,7 @@ struct ImportarExtractoView: View {
                         if let q = r.cuadre {
                             if q.cuadra {
                                 Text("saldo cuadrado con el extracto: " + (q.retenido > 0 ? "\(FormatoFin.dinero(q.saldoBanco ?? q.esperado)) en el banco menos \(FormatoFin.dinero(q.retenido)) retenidos que aún no enseña, \(FormatoFin.dinero(q.esperado))" : FormatoFin.dinero(q.esperado)) + ".")
-                                    .foregroundStyle(Paleta.progreso)
+                                    .foregroundStyle(Paleta.positivo)
                             }
                         }
                     }
@@ -251,7 +251,7 @@ struct ImportarExtractoView: View {
                         }
                         Spacer()
                         if let i = f.importe {
-                            Text((i > 0 ? "+" : "") + FormatoFin.dinero(i)).monospacedDigit().foregroundStyle(i > 0 ? Paleta.progreso : Paleta.texto)
+                            Text((i > 0 ? "+" : "") + FormatoFin.dinero(i)).monospacedDigit().foregroundStyle(i > 0 ? Paleta.positivo : Paleta.texto)
                         }
                     }
                 }
@@ -275,7 +275,7 @@ struct ImportarExtractoView: View {
             }
         }
         if let arreglado {
-            Section { Text(arreglado).foregroundStyle(Paleta.progreso) }
+            Section { Text(arreglado).foregroundStyle(Paleta.positivo) }
         } else if let d = q.detalle {
             if !d.sobran.isEmpty {
                 Section("sobran en bitácora (no están en el extracto).") {
@@ -684,7 +684,7 @@ struct PermitirView: View {
                     if let p, let precio {
                         let titulo = ["si": "sí, sin problema.", "justo": "sí, pero justo.", "no": "este mes, mejor no."][p.veredicto] ?? ""
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(titulo).font(Tipo.poppins(20, .bold, estilo: .title3)).foregroundStyle(p.veredicto == "no" ? Paleta.atencion : p.veredicto == "justo" ? Paleta.acento : Paleta.progreso)
+                            Text(titulo).font(Tipo.poppins(20, .bold, estilo: .title3)).foregroundStyle(p.veredicto == "no" ? Paleta.atencion : p.veredicto == "justo" ? Paleta.acento : Paleta.positivo)
                             Text(p.tras >= 0 ? "Te quedarían unos \(FormatoFin.dinero(p.tras)) hasta fin de mes (\(p.quedanDias) \(p.quedanDias == 1 ? "día" : "días"))." : "Te faltarían unos \(FormatoFin.dinero(-p.tras)) para llegar a fin de mes.")
                                 .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
                         }

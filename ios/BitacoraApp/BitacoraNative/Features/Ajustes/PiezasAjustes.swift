@@ -18,9 +18,10 @@ struct IconoFila: View {
 
     var body: some View {
         Icono(id: id)
-            .foregroundStyle(peligro ? Paleta.error : Paleta.texto)
+            .foregroundStyle(peligro ? (Paleta.mono ? Paleta.sobreAcento : Paleta.error) : Paleta.texto)
             .frame(width: 32, height: 32)
-            .background(peligro ? Paleta.error.opacity(0.12) : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            // Tinta: lo peligroso, sin rojo, en el cuadrado invertido.
+            .background(peligro ? (Paleta.mono ? Paleta.acento : Paleta.error.opacity(0.12)) : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
