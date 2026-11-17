@@ -66,10 +66,6 @@ struct EditorPresupuestoView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { if cambiado { descartar = true } else { cerrar() } } }
             }
-            .confirmationDialog("¿Descartar los cambios?", isPresented: $descartar, titleVisibility: .visible) {
-                Button("descartar.", role: .destructive) { cerrar() }
-                Button("seguir editando.", role: .cancel) {}
-            }
             .safeAreaInset(edge: .bottom) {
                 if let v, !v.cerrado {
                     BotonFin(texto: guardando ? "guardando." : "guardar planificación.", acento: cambiado) { Task { await guardar() } }
@@ -85,7 +81,7 @@ struct EditorPresupuestoView: View {
                 Task { await recalcular(nuevo) }
             }
         }
-        .interactiveDismissDisabled(cambiado)
+        .preguntarAlDescartar(cambiado, preguntar: $descartar) { cerrar() }
     }
 
     private func formulario(_ v: VistaPresupuesto) -> some View {

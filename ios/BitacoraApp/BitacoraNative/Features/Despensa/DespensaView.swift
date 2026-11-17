@@ -375,8 +375,26 @@ private struct EditorItemDespensa: View {
 private struct EditorRecetaDespensa: View {
     @Environment(\.dismiss) private var cerrar; let guardar: (String, Int, [String], [String], String) -> Void
     @State private var nombre: String; @State private var raciones: Int; @State private var ingredientes: String; @State private var pasos: String; @State private var notas: String
-    init(receta: RecetaDespensa?, guardar: @escaping (String, Int, [String], [String], String) -> Void) { self.guardar = guardar; _nombre = State(initialValue: receta?.nombre ?? ""); _raciones = State(initialValue: receta?.raciones ?? 2); _ingredientes = State(initialValue: receta?.ingredientes.map { $0.cantidad + "|" + $0.texto }.joined(separator: "\n") ?? ""); _pasos = State(initialValue: receta?.pasos.joined(separator: "\n") ?? ""); _notas = State(initialValue: receta?.notas ?? "") }
-    var body: some View { NavigationStack { FormCasa { TextField("nombre.", text: $nombre); Stepper("\(raciones) raciones.", value: $raciones, in: 1...24); Section("ingredientes, uno por línea.") { TextEditor(text: $ingredientes).editorCasa(alto: 130) }; Section("pasos, uno por línea.") { TextEditor(text: $pasos).editorCasa(alto: 110) }; TextField("notas.", text: $notas, axis: .vertical) }.formularioCasa().navigationTitle("receta.").toolbar { ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }; ToolbarItem(placement: .confirmationAction) { Button("guardar.") { guardar(nombre, raciones, ingredientes.components(separatedBy: .newlines).filter { !$0.isEmpty }, pasos.components(separatedBy: .newlines).filter { !$0.isEmpty }, notas); cerrar() }.disabled(nombre.isEmpty) } } } }
+    @State private var descartar = false
+    private let original: String
+    init(receta: RecetaDespensa?, guardar: @escaping (String, Int, [String], [String], String) -> Void) {
+        self.guardar = guardar
+        let n = receta?.nombre ?? "", r = receta?.raciones ?? 2, p = receta?.pasos.joined(separator: "\n") ?? "", no = receta?.notas ?? ""
+        let i = receta?.ingredientes.map { $0.cantidad + "|" + $0.texto }.joined(separator: "\n") ?? ""
+        _nombre = State(initialValue: n); _raciones = State(initialValue: r); _ingredientes = State(initialValue: i); _pasos = State(initialValue: p); _notas = State(initialValue: no)
+        original = Self.clave(n, r, i, p, no)
+    }
+    private static func clave(_ n: String, _ r: Int, _ i: String, _ p: String, _ no: String) -> String { [n, String(r), i, p, no].joined(separator: "\u{1}") }
+    // B10: el borrador frente a la receta que se abrió.
+    private var cambiado: Bool { Self.clave(nombre, raciones, ingredientes, pasos, notas) != original }
+    var body: some View {
+        NavigationStack {
+            FormCasa { TextField("nombre.", text: $nombre); Stepper("\(raciones) raciones.", value: $raciones, in: 1...24); Section("ingredientes, uno por línea.") { TextEditor(text: $ingredientes).editorCasa(alto: 130) }; Section("pasos, uno por línea.") { TextEditor(text: $pasos).editorCasa(alto: 110) }; TextField("notas.", text: $notas, axis: .vertical) }
+                .formularioCasa().navigationTitle("receta.")
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { if cambiado { descartar = true } else { cerrar() } } }; ToolbarItem(placement: .confirmationAction) { Button("guardar.") { guardar(nombre, raciones, ingredientes.components(separatedBy: .newlines).filter { !$0.isEmpty }, pasos.components(separatedBy: .newlines).filter { !$0.isEmpty }, notas); cerrar() }.disabled(nombre.isEmpty) } }
+                .preguntarAlDescartar(cambiado, preguntar: $descartar) { cerrar() }
+        }
+    }
 }
 private struct TerminarCompraView: View {
     @Environment(\.dismiss) private var cerrar; let guardar: (String, String, Bool) -> Void; @State private var tienda = ""; @State private var total = ""; @State private var finanzas = true

@@ -16,6 +16,7 @@ struct EditorTareaView: View {
     @State private var prioridad = ""
     @State private var guardando = false
     @State private var confirmarBorrado = false
+    @State private var descartar = false
     @State private var error: String?
     @State private var recordar = ""
     @State private var recordarCuando = Date().addingTimeInterval(3600)
@@ -120,7 +121,7 @@ struct EditorTareaView: View {
             .navigationTitle(inicial.nueva ? "nueva tarea." : "tarea.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
+                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { if cambiado { descartar = true } else { cerrar() } } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("guardar.") { Task { await guardar() } }.disabled(guardando || limpio.isEmpty || inicial.deTrabajo)
                 }
@@ -131,6 +132,7 @@ struct EditorTareaView: View {
             }
             .onAppear { if inicial.nueva { enfocado = true } }
             .task { await leerExtras() }
+            .preguntarAlDescartar(cambiado, preguntar: $descartar) { cerrar() }
         }
         .presentationDetents([.medium, .large])
     }
@@ -159,6 +161,15 @@ struct EditorTareaView: View {
         if d == hoy.sumando(dias: 1) { return "mañana." }
         if d == hoy.sumando(dias: 2) { return "pasado mañana." }
         return d.iso
+    }
+
+    // B10: lo que guardar cambiaría (las subtareas se guardan al momento y no cuentan).
+    private var cambiado: Bool {
+        guard !inicial.deTrabajo else { return false }
+        let textos = limpio != inicial.titulo.trimmingCharacters(in: .whitespacesAndNewlines) || notasLimpias != inicial.notas.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cuando = dia != inicial.dia || horaTexto != inicial.hora || prioridad != (inicial.prioridad ?? "")
+        let aviso = recordar != (recordarAntes?["tipo"]?.texto ?? "")
+        return textos || cuando || aviso
     }
 
     private var limpio: String { String(titulo.trimmingCharacters(in: .whitespacesAndNewlines).prefix(500)) }

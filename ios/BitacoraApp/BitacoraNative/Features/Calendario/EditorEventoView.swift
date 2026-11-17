@@ -28,6 +28,7 @@ struct EditorEventoView: View {
     @State private var finInicial: String?
     @State private var guardando = false
     @State private var confirmarBorrado = false
+    @State private var descartar = false
     @State private var error: String?
     @FocusState private var enfocado: Bool
     // Tipo de ocio explícito (ValorarOcio): con él, Bitácora crea «valorar …» tres horas después del final.
@@ -97,7 +98,7 @@ struct EditorEventoView: View {
             .navigationTitle(inicial.nuevo ? "nuevo evento." : "evento.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
+                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { if cambiado { descartar = true } else { cerrar() } } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("guardar.") { Task { await enviar(guardado) } }.disabled(guardando || limpio(titulo).isEmpty)
                 }
@@ -123,6 +124,7 @@ struct EditorEventoView: View {
                     conFin = true
                 }
             }
+            .preguntarAlDescartar(cambiado, preguntar: $descartar) { cerrar() }
         }
         .presentationDetents([.large])
     }
@@ -147,6 +149,18 @@ struct EditorEventoView: View {
         if ocio != ocioInicial { campos.merge(Self.camposOcio(ocio)) { _, b in b } }
         if finTexto != finInicial { campos["endTime"] = finTexto ?? "" }
         return .parcharEvento(id: inicial.id, campos: campos)
+    }
+
+    // B10: el borrador frente a lo que se abrió (el ocio que se pone solo por el título no cuenta).
+    private var cambiado: Bool {
+        let d = Self.cal.dateComponents([.year, .month, .day], from: fecha)
+        let h = Self.cal.dateComponents([.hour, .minute], from: hora)
+        let horaTexto: String? = conHora ? String(format: "%02d:%02d", h.hour ?? 0, h.minute ?? 0) : nil
+        let dia = LocalDay(year: d.year ?? 0, month: d.month ?? 0, day: d.day ?? 0)
+        let textos = limpio(titulo) != limpio(inicial.titulo) || limpio(lugar) != limpio(inicial.lugar)
+        let notasCambiadas = limpio(notas, 2000) != limpio(inicial.notas, 2000)
+        let cuando = dia != inicial.fecha || horaTexto != inicial.hora || finTexto != finInicial
+        return textos || notasCambiadas || cuando || (ocioTocado && ocio != ocioInicial)
     }
 
     private var finTexto: String? {

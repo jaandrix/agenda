@@ -22,6 +22,8 @@ struct EditorMovimientoView: View {
     }
 
     @State private var d: Borrador?
+    @State private var original: Borrador?
+    @State private var descartar = false
     @State private var fecha = Date()
     @State private var error: String?
     @State private var guardando = false
@@ -41,7 +43,7 @@ struct EditorMovimientoView: View {
             .navigationTitle(existente == nil ? "nuevo movimiento." : "editar movimiento.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
+                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { if cambiado { descartar = true } else { cerrar() } } }
                 ToolbarItem(placement: .confirmationAction) { Button("guardar.") { Task { await guardar() } }.disabled(guardando || d == nil) }
             }
             .confirmationDialog("¿Eliminar este movimiento?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
@@ -53,11 +55,19 @@ struct EditorMovimientoView: View {
                       var b = try? await m.llamar("movimientoDatos", [existente == nil ? "" : id, tipoInicial], como: Borrador.self) else { return }
                 b.id = id
                 d = b
+                original = b
                 fecha = Self.iso.date(from: b.fecha).map { Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: $0) ?? $0 } ?? Date()
                 if existente == nil { enfocado = true }
             }
+            .preguntarAlDescartar(cambiado, preguntar: $descartar) { cerrar() }
         }
         .presentationDetents([.large])
+    }
+
+    // B10: el borrador del motor frente al que llegó al abrir (la fecha va aparte hasta guardar).
+    private var cambiado: Bool {
+        guard let d, let original else { return false }
+        return d != original || Self.iso.string(from: fecha) != original.fecha
     }
 
     private var b: Binding<Borrador> { Binding(get: { d! }, set: { d = $0 }) }

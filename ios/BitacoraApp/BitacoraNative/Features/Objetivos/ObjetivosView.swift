@@ -219,6 +219,12 @@ private struct EditorObjetivo: View {
     @State private var notas: String
     @State private var id: String
     @State private var confirmarBorrado = false
+    @State private var descartar = false
+    @State private var original: [String]?
+
+    // B10: el borrador frente a lo que había al abrir (`original` se toma al aparecer).
+    private var clave: [String] { [titulo, plazo, estado, numerico ? "1" : "", actual, meta, unidad, notas].map { $0.trimmingCharacters(in: .whitespacesAndNewlines) } }
+    private var cambiado: Bool { original.map { $0 != clave } ?? false }
 
     init(objetivo: Objetivo?) {
         self.objetivo = objetivo
@@ -247,7 +253,7 @@ private struct EditorObjetivo: View {
             }
             .navigationTitle(objetivo == nil ? "nuevo objetivo." : "objetivo.").navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
+                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { if cambiado { descartar = true } else { cerrar() } } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("guardar.") {
                         // «1.234,5» (como lo enseña cifra) o «12.5»: con coma, el punto es de miles.
@@ -261,6 +267,8 @@ private struct EditorObjetivo: View {
                 Button("eliminar.", role: .destructive) { Task { if await c.guardar(.borrarEntrada(id: id)) { cerrar() } } }
                 Button("cancelar.", role: .cancel) {}
             }
+            .onAppear { if original == nil { original = clave } }
+            .preguntarAlDescartar(cambiado, preguntar: $descartar) { cerrar() }
         }
     }
 }

@@ -201,6 +201,8 @@ struct EditorFichaDocumento: View {
     @State private var notas: String
     @State private var borrar = false
     @State private var error: String?
+    @State private var descartar = false
+    @State private var original: [String]?
     static let tipos = ["DNI", "pasaporte", "carné de conducir", "seguro", "garantía", "contrato", "ITV", "tarjeta sanitaria"]
 
     init(editando: FichaEditando) {
@@ -247,7 +249,7 @@ struct EditorFichaDocumento: View {
             .font(Tipo.cuerpo).scrollContentBackground(.hidden).background(Paleta.fondo)
             .navigationTitle(editando.ficha == nil ? "nueva ficha." : "ficha.").navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
+                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { if cambiado { descartar = true } else { cerrar() } } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("guardar.") { Task { await enviar(FichaDocumentoOp.op(id: editando.id, titulo: titulo, tipoDoc: tipoDoc.trimmingCharacters(in: .whitespaces), caduca: fechaTexto, notas: notas)) } }
                         .disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -257,9 +259,15 @@ struct EditorFichaDocumento: View {
                 Button("borrar.", role: .destructive) { Task { await enviar(.borrarEntrada(id: editando.id)) } }
                 Button("cancelar.", role: .cancel) {}
             }
+            .onAppear { if original == nil { original = clave } }
+            .preguntarAlDescartar(cambiado, preguntar: $descartar) { cerrar() }
         }
         .presentationDetents([.large])
     }
+
+    // B10: el borrador frente a lo que había al abrir.
+    private var clave: [String] { [titulo, tipoDoc, fechaTexto, notas].map { $0.trimmingCharacters(in: .whitespacesAndNewlines) } }
+    private var cambiado: Bool { original.map { $0 != clave } ?? false }
 
     private var fechaTexto: String {
         guard conFecha else { return "" }

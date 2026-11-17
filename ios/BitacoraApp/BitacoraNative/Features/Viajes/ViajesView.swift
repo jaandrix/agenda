@@ -293,6 +293,8 @@ private struct EditorViaje: View {
     @State private var companeros: String
     @State private var notas: String
     @State private var id: String
+    @State private var descartar = false
+    @State private var original: [String]?
 
     init(viaje: Viaje?) {
         self.viaje = viaje
@@ -304,6 +306,14 @@ private struct EditorViaje: View {
         // El id se decide al abrir: si «guardar.» llega dos veces, el viaje sale una vez.
         _id = State(initialValue: viaje?.id ?? OperacionBitacora.nuevoIdEntrada())
     }
+
+    // B10: lo que se guardaría frente a lo que había al abrir (`original` se toma al aparecer).
+    private var clave: [String] {
+        let ida = conFechas ? CalendarioBitacora.madrid.dia(de: inicio).iso : ""
+        let vuelta = conFechas ? CalendarioBitacora.madrid.dia(de: max(fin, inicio)).iso : ""
+        return [titulo, destino, ida, vuelta, companeros, notas].map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+    }
+    private var cambiado: Bool { original.map { $0 != clave } ?? false }
 
     var body: some View {
         NavigationStack {
@@ -321,7 +331,7 @@ private struct EditorViaje: View {
             .environment(\.locale, Locale(identifier: "es_ES"))
             .navigationTitle(viaje == nil ? "nuevo viaje." : "viaje.").navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
+                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { if cambiado { descartar = true } else { cerrar() } } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("guardar.") {
                         let ida = conFechas ? CalendarioBitacora.madrid.dia(de: inicio).iso : ""
@@ -334,6 +344,8 @@ private struct EditorViaje: View {
                     }.disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty && destino.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
+            .onAppear { if original == nil { original = clave } }
+            .preguntarAlDescartar(cambiado, preguntar: $descartar) { cerrar() }
         }
     }
 
