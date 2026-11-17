@@ -21,6 +21,6 @@ enum UltimaGana {
 
 // Calcula fuera del hilo principal; nil si la carga ya no es la última (no hay que publicar nada).
 @MainActor
-func ultimaGana<T: Sendable>(_ prioridad: TaskPriority = .userInitiated, archivo: String = #fileID, linea: Int = #line, _ f: @escaping @Sendable () -> T) async -> T? {
+func ultimaGana<T: Sendable>(_ f: @escaping @Sendable () -> T, prioridad: TaskPriority = .userInitiated, archivo: String = #fileID, linea: Int = #line) async -> T? {
     await UltimaGana.calcular("\(archivo):\(linea)", prioridad: prioridad, f)
 }
