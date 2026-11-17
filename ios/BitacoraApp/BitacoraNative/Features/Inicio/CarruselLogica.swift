@@ -40,9 +40,14 @@ struct EstadoCarrusel: Equatable {
     // Las páginas del carrusel: cinco años antes y después de hoy, siempre las mismas (el id de cada página es su
     // lunes y nada se recentra). Solo si la semana que se ve se acerca al borde, la lista se rehace alrededor de ella.
     static let alcance = 260
-    static func semanas(hoy: LocalDay, visible: LocalDay) -> [LocalDay] {
+    static func centro(hoy: LocalDay, visible: LocalDay) -> LocalDay {
         let h = hoy.inicioSemanaLunes, v = visible.inicioSemanaLunes
-        let centro = abs(h.dias(hasta: v)) > 7 * (alcance - 10) ? v : h
+        return abs(h.dias(hasta: v)) > 7 * (alcance - 10) ? v : h
+    }
+
+    static func semanas(hoy: LocalDay, visible: LocalDay) -> [LocalDay] { semanas(centro: centro(hoy: hoy, visible: visible)) }
+
+    static func semanas(centro: LocalDay) -> [LocalDay] {
         let desde = centro.sumando(dias: -7 * alcance)
         let hasta = centro.sumando(dias: 7 * alcance)
         var r: [LocalDay] = [], l = desde

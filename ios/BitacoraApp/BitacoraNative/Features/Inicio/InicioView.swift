@@ -275,6 +275,7 @@ struct InicioCuerpo: View {
                     Text(PanoramaView.meses[v.dia.month - 1] + ".").font(Tipo.poppins(14, .semibold, estilo: .subheadline))
                         .foregroundStyle(cs).padding(.top, Tipo.tamano(Espacio.s))
                     CarruselDias(dias: v.semana, dia: v.dia, hoy: v.hoy, conCosas: v.conCosas, elegir: elegir)
+                        .equatable()
                     TimelineView(.everyMinute) { ctx in
                         BloqueSiguiente(vista: v, ahora: v.dia == v.hoy ? max(ctx.date, ahora) : ahora, bus: bus, abrirBus: abrirBus,
                                         nombres: nombresPostes, elegirPoste: elegirPoste)
@@ -457,7 +458,14 @@ struct BloqueSiguiente: View {
 // dentro del ScrollView vertical de Inicio; el scroll vertical se quedaba el toque y cancelaba el gesto sin llamar a
 // onEnded, así que la semana no cambiaba en el iPhone aunque la lógica (EstadoCarrusel) estuviera bien. El paginado
 // nativo convive con el scroll vertical. conCosas cubre las tres semanas alrededor del día que se ve (copia local).
-struct CarruselDias: View {
+// Equatable (0.23, medido en RendimientoAppTests): marcar una tarea o sincronizar rehace Inicio, pero el carrusel solo
+// se vuelve a evaluar si cambia lo suyo; y la lista de semanas se calcula una vez por centro (CacheSemanas), no en cada
+// pintado (eran 521 sumas de calendario cada vez).
+struct CarruselDias: View, Equatable {
+    static func == (a: CarruselDias, b: CarruselDias) -> Bool {
+        a.dias == b.dias && a.dia == b.dia && a.hoy == b.hoy && a.conCosas == b.conCosas
+    }
+
     let dias: [LocalDay]
     let dia: LocalDay
     let hoy: LocalDay
@@ -468,6 +476,7 @@ struct CarruselDias: View {
     @State private var semanasPasadas = 0
     // Hasta que el scroll se coloca en la semana del día, sus avisos de posición no son del dedo.
     @State private var listo = false
+    @State private var cache = CacheSemanas()
     static let letras = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
 
     init(dias: [LocalDay], dia: LocalDay, hoy: LocalDay, conCosas: Set<LocalDay>, elegir: @escaping (LocalDay) -> Void) {
@@ -483,7 +492,7 @@ struct CarruselDias: View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 0) {
-                    ForEach(EstadoCarrusel.semanas(hoy: hoy, visible: base), id: \.self) { lunes in
+                    ForEach(cache.semanas(hoy: hoy, visible: base), id: \.self) { lunes in
                         SemanaCarrusel(lunes: lunes, marcado: marcado, hoy: hoy, conCosas: conCosas, tocar: { tocar($0) })
                             .equatable()
                             .containerRelativeFrame(.horizontal)
@@ -535,6 +544,17 @@ struct CarruselDias: View {
         estado.tocar(d)
         colocar(d.inicioSemanaLunes)
         elegir(d)
+    }
+}
+
+final class CacheSemanas {
+    private var clave: LocalDay?
+    private var lista: [LocalDay] = []
+
+    func semanas(hoy: LocalDay, visible: LocalDay) -> [LocalDay] {
+        let c = EstadoCarrusel.centro(hoy: hoy, visible: visible)
+        if c != clave { lista = EstadoCarrusel.semanas(centro: c); clave = c }
+        return lista
     }
 }
 
