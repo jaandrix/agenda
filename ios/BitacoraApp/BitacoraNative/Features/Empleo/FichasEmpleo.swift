@@ -104,15 +104,24 @@ struct EditorFichaEmpleo: View {
     init(editando: FichaEmpleoEditando) {
         self.editando = editando
         let f = editando.ficha
-        let inicial: [String: String] = ["title": f?.titulo ?? "", "company": f?.empresa ?? "", "position": f?.cargo ?? "", "modalidad": f?.modalidad ?? "",
-                                         "startDate": f?.inicio ?? "", "endDate": f?.fin ?? "", "startTime": f?.entrada ?? "", "endTime": f?.salida ?? "",
-                                         "cotizationType": f?.cotizacion ?? "general", "logros": f?.logros ?? "", "motivoSalida": f?.motivoSalida ?? "", "notes": f?.notas ?? ""]
-        let d = f?.diasCotizados.map(String.init) ?? "", s = f?.sueldo ?? ""
+        let inicial = Self.campos(f)
+        let d = f?.diasCotizados.map { String($0) } ?? ""
+        let s = f?.sueldo ?? ""
         _campos = State(initialValue: inicial)
         _dias = State(initialValue: d)
         _sueldo = State(initialValue: s)
         _id = State(initialValue: f?.id ?? OperacionBitacora.nuevoIdEntrada())
         original = Self.clave(inicial, d, s)
+    }
+
+    private static func campos(_ f: FichaEmpleo?) -> [String: String] {
+        guard let f else { return ["cotizationType": "general"] }
+        var r: [String: String] = [:]
+        r["title"] = f.titulo; r["company"] = f.empresa; r["position"] = f.cargo; r["modalidad"] = f.modalidad
+        r["startDate"] = f.inicio; r["endDate"] = f.fin; r["startTime"] = f.entrada; r["endTime"] = f.salida
+        r["cotizationType"] = f.cotizacion.isEmpty ? "general" : f.cotizacion
+        r["logros"] = f.logros; r["motivoSalida"] = f.motivoSalida; r["notes"] = f.notas
+        return r
     }
 
     private static func clave(_ c: [String: String], _ d: String, _ s: String) -> [String] {

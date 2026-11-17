@@ -16,8 +16,8 @@ enum Medidas {
         (UserDefaults.standard.dictionary(forKey: clave) as? [String: [Double]]) ?? [:]
     }()
 
-    static var ahora: UInt64 { DispatchTime.now().uptimeNanoseconds }
-    static func ms(desde t0: UInt64) -> Double { Double(ahora &- t0) / 1_000_000 }
+    nonisolated static var ahora: UInt64 { DispatchTime.now().uptimeNanoseconds }
+    nonisolated static func ms(desde t0: UInt64) -> Double { Double(ahora &- t0) / 1_000_000 }
 
     static func anotar(_ nombre: String, ms: Double) {
         guard ms.isFinite, ms >= 0 else { return }

@@ -83,7 +83,7 @@ struct MasView: View {
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { MenuMas.desde($0) } }) else { return }
             menu = nuevo
-            Medidas.anotar("pestaña menú (cargar)", desde: t0)
+            await Medidas.anotar("pestaña menú (cargar)", desde: t0)
         }
     }
 

@@ -110,7 +110,7 @@ struct PlanView: View {
         .task(id: "\(c.revision)-\(modelo.desplazamiento)") {
             let t0 = Medidas.ahora
             await modelo.cargar(c)
-            if !Task.isCancelled { Medidas.anotar("pestaña plan (cargar)", desde: t0) }
+            if !Task.isCancelled { await Medidas.anotar("pestaña plan (cargar)", desde: t0) }
         }
         .confirmarBorrado($tareaABorrar, titulo: { "¿borrar «\($0.titulo)»?" }) { t in Task { await modelo.guardar(.borrarTarea(id: t.id), c) } }
     }
