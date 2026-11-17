@@ -121,6 +121,14 @@ final class RendimientoAppTests: XCTestCase {
         CATransaction.flush()
     }
 
+    // Deja que lo que la vista deja para el siguiente ciclo (onChange del carrusel, su posición) se haga fuera de la
+    // medida, para que no caiga en la siguiente.
+    private func asentar() async {
+        try? await Task.sleep(for: .milliseconds(30))
+        ventana?.rootViewController?.view.layoutIfNeeded()
+        CATransaction.flush()
+    }
+
     private func inicio(_ v: VistaInicio) -> some View {
         ScrollView { InicioCuerpo(vista: v, ahora: Date(), estado: .reposo) }
     }
@@ -195,7 +203,14 @@ final class RendimientoAppTests: XCTestCase {
                 let (v, calculo) = await reloj { await Task.detached { VistaInicio.desde(d, elegido: elegido) }.value }
                 anotar(k == 0 ? "carrusel: otro día (cálculo)" : "carrusel: otra semana (cálculo)", calculo)
                 anotar(k == 0 ? "carrusel: otro día (pintar)" : "carrusel: otra semana (pintar)", reloj0 { pintar(inicio(v), en: "inicio") })
+                await asentar()
             }
+
+            // 0.24: hasta la 0.23, «marcar» empezaba con Inicio en otra semana y medía también el salto del carrusel a
+            // hoy, que en la app no pasa al marcar. Ahora el salto se mide aparte y marcar sale de Inicio en hoy.
+            let vHoy = await Task.detached { VistaInicio.desde(d) }.value
+            anotar("carrusel: volver a hoy (pintar)", reloj0 { pintar(inicio(vHoy), en: "inicio") })
+            await asentar()
 
             // Marcar una tarea: la cola, el documento visible y la portada otra vez.
             let tarea = "t0_\(vuelta % 4)"

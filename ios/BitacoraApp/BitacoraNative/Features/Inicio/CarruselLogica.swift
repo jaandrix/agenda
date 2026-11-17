@@ -37,9 +37,11 @@ struct EstadoCarrusel: Equatable {
         return nuevo
     }
 
-    // Las páginas del carrusel: cinco años antes y después de hoy, siempre las mismas (el id de cada página es su
-    // lunes y nada se recentra). Solo si la semana que se ve se acerca al borde, la lista se rehace alrededor de ella.
-    static let alcance = 260
+    // Las páginas del carrusel: un año antes y después de hoy, siempre las mismas (el id de cada página es su lunes y
+    // nada se recentra). Solo si la semana que se ve se acerca al borde, la lista se rehace alrededor de ella.
+    // 0.24: eran cinco años (521 páginas) y pintar otra semana o volver a hoy costaba el doble que con el carrusel de
+    // la 0.22; el LazyHStack rehacía y colocaba todas las ids en cada salto. Con 105 basta para un año de deslizar.
+    static let alcance = 52
     static func centro(hoy: LocalDay, visible: LocalDay) -> LocalDay {
         let h = hoy.inicioSemanaLunes, v = visible.inicioSemanaLunes
         return abs(h.dias(hasta: v)) > 7 * (alcance - 10) ? v : h
