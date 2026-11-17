@@ -56,3 +56,10 @@ B1-B11), comprobados contra el código de la 0.22.
 4. Despensa: poner a un producto otra sección, volver a la automática y recargar.
 5. Importar un extracto grande: aparece «leyendo el archivo…» y se puede cancelar.
 6. Ajustes: tocar varias veces seguidas el mismo interruptor. Se queda como lo dejas.
+
+## Rendimiento tras el carrusel nuevo
+
+La primera compilación completa frenó en el umbral: sincronizar sin cambios hasta Inicio (15,1 → 41,8 ms), marcar una
+tarea hasta Inicio (112,2 → 150,9 ms) y pintar otra semana del carrusel (58,1 → 92,0 ms). Las tres pintan Inicio, y el
+carrusel paginado rehacía sus 521 semanas (sumas de calendario) en cada evaluación. d776417: caché por centro y
+`CarruselDias` Equatable, sin tocar el paginado.
