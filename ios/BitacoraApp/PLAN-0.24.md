@@ -50,3 +50,5 @@ Alejandro mande los números reales; la tabla de CI ya compara versiones.
 ## Qué probar al terminar
 
 Se escribirá al cerrar la versión, con frases concretas para Apuntar en el PC y en el iPhone.
+
+_17-11: la 0.23 se compila con 22b0df1 (todas las ?v= a la vez)._
