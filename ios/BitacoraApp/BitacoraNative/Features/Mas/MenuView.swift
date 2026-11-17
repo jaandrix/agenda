@@ -79,9 +79,11 @@ struct MasView: View {
         .navigationTitle("menú")
         .navigationDestination(for: String.self) { destino($0).toolbar(.visible, for: .navigationBar).navigationBarTitleDisplayMode(.inline) }
         .task(id: c.revision) {
+            let t0 = Medidas.ahora
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { MenuMas.desde($0) } }) else { return }
             menu = nuevo
+            Medidas.anotar("pestaña menú (cargar)", desde: t0)
         }
     }
 

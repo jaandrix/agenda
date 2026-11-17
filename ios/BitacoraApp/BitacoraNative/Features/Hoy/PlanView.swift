@@ -107,7 +107,11 @@ struct PlanView: View {
         .background(Paleta.fondo.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
-        .task(id: "\(c.revision)-\(modelo.desplazamiento)") { await modelo.cargar(c) }
+        .task(id: "\(c.revision)-\(modelo.desplazamiento)") {
+            let t0 = Medidas.ahora
+            await modelo.cargar(c)
+            if !Task.isCancelled { Medidas.anotar("pestaña plan (cargar)", desde: t0) }
+        }
         .confirmarBorrado($tareaABorrar, titulo: { "¿borrar «\($0.titulo)»?" }) { t in Task { await modelo.guardar(.borrarTarea(id: t.id), c) } }
     }
 }

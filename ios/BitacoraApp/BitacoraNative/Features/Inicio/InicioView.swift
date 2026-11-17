@@ -128,7 +128,7 @@ struct InicioView: View {
                          abrirBus: { c.pestana = .mas; c.rutaMas = ["transporte"] },
                          nombresPostes: nombresPostes,
                          elegirPoste: { elegirPoste($0) },
-                         elegir: { d in elegido = d == vista?.hoy ? nil : d },
+                         elegir: { d in elegir(d) },
                          aviso: aviso)
             .equatable()
         }
@@ -176,6 +176,8 @@ struct InicioView: View {
               let doc else { vista = nil; return }
         guard elegido == objetivo, !Task.isCancelled else { return }
         vista = v
+        Medidas.inicioConDatos()
+        Medidas.terminarAlPintar("marcar tarea hasta Inicio", "carrusel: otro día", "carrusel: otra semana")
         // Los partidos de tus equipos (srv_p_) se añaden después, sin esperar a pintar (con su caché de 12 h).
         let partidos = await c.entorno.servicios.deportes.eventos(doc, desde: v.dia, dias: 1)[v.dia] ?? []
         guard !partidos.isEmpty else { return }
@@ -222,10 +224,16 @@ struct InicioView: View {
         bus = await c.entorno.servicios.transporte.tiempos(poste: poste)
     }
 
+    private func elegir(_ d: LocalDay) {
+        if let v = vista { Medidas.empezar(d.inicioSemanaLunes == v.dia.inicioSemanaLunes ? "carrusel: otro día" : "carrusel: otra semana") }
+        elegido = d == vista?.hoy ? nil : d
+    }
+
     // Como Plan: un toque a la vez por tarea y, si la cola no se puede guardar, aviso (la vista se rehace con lo real).
     private func marcar(_ t: TareaPlan) {
         guard !enVuelo.contains(t.id) else { return }
         enVuelo.insert(t.id)
+        Medidas.empezar("marcar tarea hasta Inicio")
         Task {
             defer { enVuelo.remove(t.id) }
             do {

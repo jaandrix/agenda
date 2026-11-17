@@ -110,6 +110,7 @@ final class AppCoordinator {
 
     // El + de la barra y el de cada día: la hoja de apuntar con la fecha de ese día.
     func abrirApuntar(dia: LocalDay? = nil) {
+        Medidas.empezar("apuntar: abrir la hoja")
         modal = .apuntar(ApuntarInicial(fechaBase: dia))
     }
 

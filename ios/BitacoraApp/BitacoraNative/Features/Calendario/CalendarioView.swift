@@ -18,13 +18,14 @@ final class CalendarioModel {
     func cargar(_ c: AppCoordinator) async {
         turno += 1
         let mio = turno
+        let t0 = Medidas.ahora
         let doc = await c.documentoVisible()
         let m = mes
         let v: VistaMes? = await Task.detached(priority: .userInitiated) {
             doc.map { LecturaCalendario.mes($0, m) }
         }.value
         guard mio == turno else { return }
-        if m == mes { vista = v }
+        if m == mes { vista = v; Medidas.anotar("pestaña calendario (cargar)", desde: t0) }
         // Los partidos de tus equipos, cuando llegan de la red.
         guard let doc, let v, let primero = LocalDay(year: m.year, month: m.month, day: 1) else { return }
         let partidos = await c.entorno.servicios.deportes.eventos(doc, desde: primero, dias: 31)

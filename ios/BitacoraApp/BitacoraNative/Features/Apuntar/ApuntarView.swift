@@ -92,6 +92,7 @@ struct ApuntarView: View {
                 if !b.isEmpty { texto = b; deBorrador = true }
             }
             cargado = true
+            Medidas.terminarAlPintar("apuntar: abrir la hoja")
             // El teclado, cuando la hoja ya ha subido: así no compiten la presentación y el teclado en el mismo fotograma.
             try? await Task.sleep(for: .milliseconds(160))
             escribiendo = true
@@ -110,8 +111,10 @@ struct ApuntarView: View {
             let t = texto
             guard !t.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { items = []; return }
             let base = inicial.fechaBase.flatMap { $0 == hoy ? nil : $0.iso }
+            let t0 = Medidas.ahora
             let r = (try? await InterpreteApuntar.compartido.interpretar(t, fechaBase: base, contexto: contexto)) ?? []
             guard !Task.isCancelled else { return }
+            Medidas.anotar("apuntar: interpretar", desde: t0)
             items = r
             if r.count > 3, detente != .large { detente = .large }
         }

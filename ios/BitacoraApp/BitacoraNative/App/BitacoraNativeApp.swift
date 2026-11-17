@@ -9,6 +9,7 @@ struct BitacoraNativeApp: App {
     // Los títulos de navegación y las pestañas los dibuja UIKit, que no ve el `.font` de SwiftUI: sin esto salían
     // con la letra del sistema aunque Poppins estuviera cargada.
     init() {
+        Medidas.abrirApp()
         UserDefaults.standard.removeObject(forKey: "bitacora.glass")
         func poppins(_ nombre: String, _ tamano: CGFloat, _ estilo: UIFont.TextStyle) -> UIFont {
             UIFontMetrics(forTextStyle: estilo).scaledFont(for: UIFont(name: nombre, size: tamano) ?? .systemFont(ofSize: tamano))
@@ -167,7 +168,10 @@ struct PrincipalView: View {
             if let aviso = c.aviso { AvisoFlotante(texto: aviso) }
         }
         .animation(sinMovimiento ? nil : .easeOut(duration: 0.18), value: c.aviso)
-        .onChange(of: c.pestana) { _, p in if p == .calendario || p == .finanzas { c.secundaria = p } }
+        .onChange(of: c.pestana) { _, p in
+            Medidas.cambioDePestana(p)
+            if p == .calendario || p == .finanzas { c.secundaria = p }
+        }
         .fullScreenCover(item: Binding(get: { c.web.map(PaginaWeb.init) }, set: { c.web = $0?.url })) { NavegadorWeb(url: $0.url).ignoresSafeArea() }
         .hoja(item: $c.modal) { m in
             // Las hojas son las del sistema (detents, arrastrar para cerrar) con el fondo, la tinta y la letra de Bitácora.

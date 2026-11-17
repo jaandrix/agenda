@@ -184,6 +184,7 @@ struct FinanzasView: View {
     }
 
     private func cargar() async {
+        let t0 = Medidas.ahora
         guard let doc = await c.documentoVisible() else { return }
         let motor = MotorFinanzas.compartido
         let tab = pestana
@@ -192,6 +193,7 @@ struct FinanzasView: View {
             try await motor.cargar(doc)
             oculto = ((try? doc.valor(de: "blurFinances")) ?? nil)?.booleano == true
             try await pintar(tab, motor, opciones)
+            if !Task.isCancelled { Medidas.anotar("pestaña finanzas (cargar)", desde: t0) }
         } catch {
             aviso = (error as? LocalizedError)?.errorDescription ?? "no se pudo calcular finanzas."
             return

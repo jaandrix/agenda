@@ -48,6 +48,7 @@ struct AjustesView: View {
                 conexiones
                 cuenta
                 datos
+                avanzado
                 ayuda
             }
             .padding(.horizontal, 20)
@@ -147,6 +148,14 @@ struct AjustesView: View {
             SeparadorMenu()
             NavigationLink(value: "estado") {
                 FilaAjuste(icono: "estado", titulo: "estado de la sincronización.", detalle: c.pendientes > 0 ? "\(c.pendientes) cambios por subir." : "todo subido.")
+            }.buttonStyle(EstiloFila())
+        }
+    }
+
+    private var avanzado: some View {
+        GrupoMenu(titulo: "avanzado.") {
+            NavigationLink { MedidasView() } label: {
+                FilaAjuste(icono: "estado", titulo: "medidas.", detalle: "lo que tarda la app en este iphone, para copiarlo.")
             }.buttonStyle(EstiloFila())
         }
     }
