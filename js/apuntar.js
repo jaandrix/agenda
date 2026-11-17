@@ -232,7 +232,10 @@ function interpretarApunte(texto) {
     // Hora: «a las 19», «a la una y media», «19:30», «19h», «7 pm», «8 menos
     // cuarto», «de 18 a 20» (empieza y acaba), «sobre las 8».
     const num = '(\\d{1,2}|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)';
-    const reHora = new RegExp(`\\b(?:de|desde)?\\s*(?:a|sobre|hacia)?\\s*(?:las?\\s+)?${num}(?:\\s*[:.,h]\\s*(\\d{2})|\\s+y\\s+(media|cuarto)|\\s+menos\\s+(cuarto|\\d{1,2}))?(?:\\s*(am|pm|h\\b|de la (?:manana|tarde|noche|madrugada)))?(?:\\s+(?:a|hasta)\\s+(?:las?\\s+)?(\\d{1,2})(?:[:.](\\d{2}))?)?`);
+    const colaHora = `(?:\\s*[:.,h]\\s*(\\d{2})|\\s+y\\s+(media|cuarto)|\\s+menos\\s+(cuarto|\\d{1,2}))?(?:\\s*(am|pm|h\\b|de la (?:manana|tarde|noche|madrugada)))?(?:\\s+(?:a|hasta)\\s+(?:las?\\s+)?(\\d{1,2})(?:[:.](\\d{2}))?)?`;
+    const reHora = new RegExp(`\\b(?:de|desde)?\\s*(?:a|sobre|hacia)?\\s*(?:las?\\s+)?${num}${colaHora}`);
+    // Con «a las …» delante manda esa hora: en «PE 3 hoy a las 16,30h» la suelta tomaba el 3.
+    const reHoraMarcada = new RegExp(`\\b(?:(?:de|desde)\\s+)?(?:a|sobre|hacia|de|desde)\\s+(?:las?\\s+)?${num}${colaHora}`);
     const leerHora = mm => {
         let h = /^\d+$/.test(mm[1]) ? Number(mm[1]) : APUNTAR_NUMEROS[mm[1]];
         let min = mm[2] ? Number(mm[2]) : mm[3] === 'media' ? 30 : mm[3] === 'cuarto' ? 15 : 0;
@@ -248,7 +251,7 @@ function interpretarApunte(texto) {
         return h < 24 && min < 60 ? `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}` : '';
     };
     const marcaHora = /\b(?:a|sobre|hacia|desde)\s+(?:las?\s+)?(?:\d|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)|\bde\s+\d{1,2}\s+a\s+\d|\b\d{1,2}\s*(?:[:.]\d{2}|h\b|am\b|pm\b)/;
-    if (marcaHora.test(apuntarNorm(resto)) && (m = quitar(reHora)) && /\d|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce/.test(m[0])) {
+    if (marcaHora.test(apuntarNorm(resto)) && (m = quitar(reHoraMarcada.test(apuntarNorm(resto)) ? reHoraMarcada : reHora)) &&/\d|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce/.test(m[0])) {
         r.hora = leerHora(m);
         if (m[6] && r.hora) {
             let h2 = Number(m[6]);
