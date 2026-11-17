@@ -43,4 +43,38 @@ final class EmpleoTests: XCTestCase {
         let (sin, _) = AplicarOperaciones.sobre(dos, [.borrarCitaLaboral(id: "lab_a")])
         XCTAssertEqual(LecturaEmpleo.vista(sin, hoy: "2026-11-10").citas.map(\.id), ["lab_b"])
     }
+
+    // 0.24: fichas de empleo como saveEntry (type: work) y los días de getCotizationDays.
+    func testFichasDeEmpleoYVidaLaboral() throws {
+        let doc = try DocumentoBitacora(datos: Data(#"{"entries": [{"id": "w1", "type": "work", "title": "Acme", "company": "Acme", "startDate": "2026-01-01", "endDate": "2026-01-31", "cotizedDays": 20, "documentos": [1]}, {"id": "e1", "type": "event", "title": "cine"}]}"#.utf8))
+        let antes = LecturaFichasEmpleo.fichas(doc, hoy: "2026-11-10")
+        XCTAssertEqual(antes.first?.dias(hoy: "2026-11-10"), 20)
+        XCTAssertTrue(antes.first?.deVidaLaboral == true)
+        let ops: [OperacionBitacora] = [
+            FichaEmpleoOp.op(id: "w2", campos: ["company": "Bitácora", "position": "dev", "startDate": "2026-11-01", "modalidad": "remoto"], diasCotizados: "", sueldo: "1.500,50"),
+            FichaEmpleoOp.op(id: "w1", campos: ["company": "Acme SA", "startDate": "2026-01-01", "endDate": "2026-01-31"], diasCotizados: "", sueldo: ""),
+            FichaEmpleoOp.op(id: "e1", campos: ["company": "no"], diasCotizados: "", sueldo: ""),
+            FichaEmpleoOp.op(id: "w3", campos: [:], diasCotizados: "", sueldo: ""),
+        ]
+        let (r, _) = AplicarOperaciones.sobre(doc, ops)
+        let (dos, _) = AplicarOperaciones.sobre(r, ops)
+        let f = LecturaFichasEmpleo.fichas(dos, hoy: "2026-11-10")
+        XCTAssertEqual(f.map(\.id), ["w2", "w1"])
+        XCTAssertEqual(f[0].dias(hoy: "2026-11-10"), 10)
+        XCTAssertEqual(f[0].nombre, "Bitácora")
+        XCTAssertEqual(f[1].dias(hoy: "2026-11-10"), 31)
+        XCTAssertFalse(f[1].deVidaLaboral)
+        let lista = try XCTUnwrap(dos.valor(de: "entries")?.lista)
+        let w2 = try XCTUnwrap(lista.first { $0["id"]?.comoId == "w2" })
+        XCTAssertEqual(w2["categoryId"], .string("cat_trabajo"))
+        XCTAssertEqual(w2["title"], .string("Bitácora"))
+        XCTAssertEqual(w2["salary"], .number("1500.5"))
+        XCTAssertEqual(w2["status"], .string("Trabajo actual"))
+        let w1 = try XCTUnwrap(lista.first { $0["id"]?.comoId == "w1" })
+        XCTAssertEqual(w1["title"], .string("Acme SA"))
+        XCTAssertEqual(w1["documentos"]?.lista?.count, 1)
+        XCTAssertEqual(w1["cotizedDays"], .null)
+        XCTAssertEqual(lista.first { $0["id"]?.comoId == "e1" }?["title"], .string("cine"))
+        XCTAssertEqual(lista.count, 3)
+    }
 }

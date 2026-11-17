@@ -18,7 +18,7 @@ enum OperacionesExtra {
 
     static func claves(_ tipo: String) -> [String] {
         switch tipo {
-        case entradaQR, quitarEntradaQR, FichaDocumentoOp.tipo: return ["entries"]
+        case entradaQR, quitarEntradaQR, FichaDocumentoOp.tipo, FichaEmpleoOp.tipo: return ["entries"]
         case quitarConector, conector, descartarConector: return clavesConector
         case CambioFinanzas.tipo: return CambioFinanzas.claves
         case ValorarOcio.tipo: return ValorarOcio.claves
@@ -98,6 +98,8 @@ enum OperacionesExtra {
             r = OperacionesDespensa.aplicar(tipo, d, r)
         case FichaDocumentoOp.tipo:
             r = FichaDocumentoOp.aplicar(d, r)
+        case FichaEmpleoOp.tipo:
+            r = FichaEmpleoOp.aplicar(d, r)
         case OperacionesAjustes.aviso, OperacionesAjustes.feed, OperacionesAjustes.token:
             r = OperacionesAjustes.aplicar(tipo, d, r)
         default:

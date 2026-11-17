@@ -1,8 +1,8 @@
 import SwiftUI
 
 // Empleo: la agenda laboral de js/agenda-laboral.js (horario por día de la semana, citas `lab_` y si salen en el
-// calendario principal) y el empleo actual. Las fichas de empleo, la vida laboral, el CV y el importador con IA siguen
-// en la web («fichas, vida laboral y cv.»): PLAN-0.17.md.
+// calendario principal), el empleo actual y, desde la 0.24, las fichas de empleo y la vida laboral (FichasEmpleo.swift).
+// El CV, el PDF y el importador del informe con IA siguen en la web («cv e importar vida laboral.»).
 
 struct CitaLaboral: Sendable, Identifiable, Equatable { let id, fecha, ini, fin, titulo, tipo, lugar, notas: String }
 
@@ -11,9 +11,10 @@ struct VistaEmpleo: Sendable, Equatable {
     var horario: [Int: (String, String)]
     var citas: [CitaLaboral]
     var empleo: String?
+    var fichas: [FichaEmpleo] = []
 
     static func == (a: VistaEmpleo, b: VistaEmpleo) -> Bool {
-        a.enPrincipal == b.enPrincipal && a.citas == b.citas && a.empleo == b.empleo
+        a.enPrincipal == b.enPrincipal && a.citas == b.citas && a.empleo == b.empleo && a.fichas == b.fichas
             && a.horario.keys.sorted() == b.horario.keys.sorted() && a.horario.allSatisfy { k, v in b.horario[k]?.0 == v.0 && b.horario[k]?.1 == v.1 }
     }
 }
@@ -38,7 +39,8 @@ enum LecturaEmpleo {
             $0["type"]?.texto == "work" && (($0["endDate"]?.texto ?? "").isEmpty || ($0["endDate"]?.texto ?? "") >= hoy)
         }.map { o in [o["company"]?.texto ?? o["title"]?.texto ?? "", o["position"]?.texto ?? ""].filter { !$0.isEmpty }.joined(separator: ", ") }
         // laboralEnPrincipal: sin agenda o sin decir nada, sí.
-        return VistaEmpleo(enPrincipal: a?["enPrincipal"]?.booleano != false, horario: horario, citas: citas, empleo: empleo)
+        return VistaEmpleo(enPrincipal: a?["enPrincipal"]?.booleano != false, horario: horario, citas: citas, empleo: empleo,
+                           fichas: LecturaFichasEmpleo.fichas(doc, hoy: hoy))
     }
 
     static func fecha(_ iso: String) -> Date? {
@@ -58,8 +60,13 @@ enum LecturaEmpleo {
 private enum ModalEmpleo: Identifiable {
     case cita(CitaLaboral?)
     case horario
+    case ficha(FichaEmpleo?)
     var id: String {
-        switch self { case .cita(let c): return "cita-" + (c?.id ?? "nueva"); case .horario: return "horario" }
+        switch self {
+        case .cita(let c): return "cita-" + (c?.id ?? "nueva")
+        case .horario: return "horario"
+        case .ficha(let f): return "ficha-" + (f?.id ?? "nueva")
+        }
     }
 }
 
@@ -91,6 +98,7 @@ struct EmpleoView: View {
             switch m {
             case .cita(let cita): EditorCitaLaboral(cita: cita, hoy: hoy).environment(c)
             case .horario: EditorHorarioLaboral(horario: vista?.horario ?? [:]).environment(c)
+            case .ficha(let f): EditorFichaEmpleo(editando: FichaEmpleoEditando(ficha: f)).environment(c)
             }
         }
     }
@@ -120,7 +128,50 @@ struct EmpleoView: View {
             AccionTexto(texto: verPasadas ? "ocultar las pasadas." : "ver las pasadas (\(pasadas.count)).") { verPasadas.toggle() }.padding(.top, Espacio.s)
             if verPasadas { ForEach(Array(pasadas)) { fila($0) } }
         }
-        AccionTexto(texto: "fichas, vida laboral y cv.") { c.web = Apartados.webURL("work") }.padding(.top, Espacio.l)
+        fichas(v)
+        AccionTexto(texto: "cv e importar vida laboral.") { c.web = Apartados.webURL("work") }.padding(.top, Espacio.l)
+    }
+
+    // renderWork: los empleos actuales y el historial, con los días de cada uno y el total.
+    @ViewBuilder private func fichas(_ v: VistaEmpleo) -> some View {
+        let total = v.fichas.reduce(0) { $0 + $1.dias(hoy: hoy) }
+        let oficiales = v.fichas.filter(\.deVidaLaboral).count
+        HStack { CabeceraSeccion(titulo: "empleos.", detalle: v.fichas.isEmpty ? nil : "\(v.fichas.count)"); Spacer(); AccionTexto(texto: "+ empleo.") { modal = .ficha(nil) } }
+            .padding(.top, Espacio.l)
+        if v.fichas.isEmpty {
+            Text("ningún empleo todavía.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
+        } else {
+            Text("vida laboral. \(total) días trabajados en total" + Self.fuente(oficiales, de: v.fichas.count))
+                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.xs)
+        }
+        ForEach(v.fichas) { filaFicha($0) }
+    }
+
+    static func fuente(_ oficiales: Int, de n: Int) -> String {
+        if oficiales == 0 { return ", estimados." }
+        if oficiales == n { return ", según tu informe." }
+        return ", \(oficiales) de \(n) según tu informe."
+    }
+
+    private func filaFicha(_ f: FichaEmpleo) -> some View {
+        let activo = f.activo(hoy: hoy)
+        let fechas = f.inicio + (f.fin.isEmpty || activo ? " → actual" : " → " + f.fin)
+        let modalidad = LecturaFichasEmpleo.modalidades.first { $0.0 == f.modalidad && !$0.0.isEmpty }.map { String($0.1.dropLast()) } ?? ""
+        let meta = [f.subtitulo, fechas, modalidad, activo ? "" : f.motivoSalida].filter { !$0.isEmpty }.joined(separator: ", ")
+        return Button { modal = .ficha(f) } label: {
+            HStack(alignment: .firstTextBaseline, spacing: Espacio.s) {
+                VStack(alignment: .leading, spacing: 2) {
+                    if activo { Text("empleo actual.").font(Tipo.pie).foregroundStyle(Paleta.acento) }
+                    Text(f.nombre.lowercased() + ".").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
+                    Text(meta).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                }.frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text("\(f.dias(hoy: hoy))").font(Tipo.cuerpoFuerte).monospacedDigit().foregroundStyle(Paleta.texto)
+                    Text(f.deVidaLaboral ? "días, informe." : "días.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                }
+            }.padding(.vertical, 10).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+        }.buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
     }
 
     private func fila(_ cita: CitaLaboral) -> some View {
