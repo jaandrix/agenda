@@ -53,3 +53,4 @@ Se escribirá al cerrar la versión, con frases concretas para Apuntar en el PC 
 
 _17-11: la 0.23 se compila con 22b0df1 (todas las ?v= a la vez)._
 _17-11: relanzada otra vez (GitHub sin Mac en 7befa7d)._
+_17-11: relanzada a mano (GitHub sin Mac en f1163f8)._
