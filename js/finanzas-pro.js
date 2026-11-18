@@ -395,8 +395,9 @@
             return financeProNormalizar(financeProCategoryById(t.category)?.name).trim() === 'inversiones';
         }
 
+        // Un ingreso unido a la compra que devuelve (reembolsoDe, finanzas-salud.js) tampoco es ingreso: resta del gasto.
         function financeProNeutro(t) {
-            return !!(t && (t.ahorro || financeProEsAjuste(t) || financeProEsInversion(t)));
+            return !!(t && (t.ahorro || financeProEsAjuste(t) || financeProEsInversion(t) || (t.type === 'income' && t.reembolsoDe)));
         }
 
         function financeProFueraDeCategoria(t) {
@@ -870,6 +871,7 @@
                 if (t.type === 'income') income += Number(t.amount) || 0;
                 else if (t.type === 'expense') expense += Number(t.amount) || 0;
             });
+            if (typeof saludReembolsosMes === 'function') expense = Math.max(0, expense - saludReembolsosMes(monthKey));
             return { income, expense };
         }
 
@@ -1039,10 +1041,11 @@
             monthKey = monthKey || financeMonthKey();
             const cat = financeProCategoryById(catId);
             if (!cat) return 0;
+            const vinculados = typeof saludReembolsosCategoria === 'function' ? saludReembolsosCategoria(catId, monthKey) : 0;
             const incomeCat = financePro.categories.find(c => c.type === 'income' && c.name.toLowerCase() === cat.name.toLowerCase());
-            if (!incomeCat) return 0;
-            return financePro.transactions
-                .filter(t => t.type === 'income' && t.category === incomeCat.id && t.date.slice(0, 7) === monthKey && !financeProFueraDeCategoria(t))
+            if (!incomeCat) return vinculados;
+            return vinculados + financePro.transactions
+                .filter(t => t.type === 'income' && !t.reembolsoDe && t.category === incomeCat.id && t.date.slice(0, 7) === monthKey && !financeProFueraDeCategoria(t))
                 .reduce((s, t) => s + (Number(t.amount) || 0), 0);
         }
 
@@ -2426,6 +2429,7 @@
         function financeProEtiquetaNeutro(t) {
             if (t.ahorro) return t.type === 'income' ? 'de tus ahorros.' : 'a tus ahorros.';
             if (financeProEsInversion(t)) return t.type === 'income' ? 'de tu inversión.' : 'a tu inversión.';
+            if (t.type === 'income' && t.reembolsoDe) return 'devolución de una compra.';
             return 'ajuste de saldo.';
         }
 

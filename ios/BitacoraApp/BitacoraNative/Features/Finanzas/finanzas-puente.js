@@ -774,6 +774,42 @@
             dividirCat = null;
             return JSON.stringify(l.map(function (t) { return { id: String(t.id), dia: financeDateLabelShort(t.date), concepto: String(t.note || t.bankNote || 'movimiento'), importe: Number(t.amount) || 0 }; }));
         },
+        // 0.25, salud de Finanzas (js/finanzas-salud.js): todo lo de la hoja «salud.» en una lectura.
+        salud: function (opciones) {
+            var o = JSON.parse(opciones || '{}');
+            var filaP = function (p) { var f = fila(p.t); f.propuesta = p.tipo; f.motivo = String(p.motivo || ''); f.con = p.con ? fila(p.con) : null; return f; };
+            var mes = financeMonthKey();
+            var c = saludColchones();
+            var ingresoCobro = Number(o.ingreso) > 0 ? Number(o.ingreso) : (c.estabilizacion.base || finResSueldoPrevisto(mes) || 0);
+            var a = saludAjustes();
+            return JSON.stringify({
+                avisos: saludAvisos(),
+                propuestas: saludPropuestas().slice(0, 150).map(filaP),
+                porRevisar: saludPorRevisar().slice(0, 150).map(function (p) { var f = fila(p.t); f.motivo = p.motivo; f.bizum = /bizum/i.test(p.t.bankNote || p.t.note || ''); return f; }),
+                presupuesto: saludPresupuestoAvisos(mes),
+                futuros: saludPresupuestosFuturos().map(function (x) { return { mes: x.mes, titulo: financeMonthLabel(x.mes), duplicados: x.duplicados.length, suscripcionesFuera: x.suscripcionesFuera, fijosFuera: x.fijosFuera, exceso: x.exceso, ingresos: x.ingresos, asignado: x.asignado }; }),
+                colchones: c,
+                costeNeto: saludCosteNeto(o.mes || mes),
+                semanal: saludSemanal(),
+                cierre: saludCierre(o.cierre || null),
+                reparto: saludReparto(ingresoCobro),
+                suscripciones: saludSuscripcionesRevisar(),
+                deseos: saludDeseos(),
+                ajustes: { mesesObjetivo: a.mesesObjetivo, umbralFondo: a.umbralFondo, extraEmergencia: a.extraEmergencia, ordinario: a.ordinario, tramos: a.tramos, avisos: { semanal: !!a.avisos.semanal, cierre: !!a.avisos.cierre, trimestral: !!a.avisos.trimestral } },
+                cuentas: financeProCuentas().map(function (k) { return { id: k, nombre: String(nombreCuenta(k)) }; }),
+                categorias: financePro.categories.map(function (x) { return { id: String(x.id), nombre: String(x.name || x.id), tipo: x.type || '', icono: x.icon || 'other', color: x.color || '' }; })
+            });
+        },
+        // Las compras que puede devolver un ingreso, para elegir a mano.
+        saludCompras: function (id) {
+            var t = financePro.transactions.find(function (x) { return String(x.id) === id; });
+            return JSON.stringify(saludComprasCandidatas(t, 8).map(function (x) { return fila(x.t); }));
+        },
+        fondoDatos: function (id) { return JSON.stringify(saludFichaFondo(id)); },
+        saludAccion: function (nombre, datos) {
+            var d = JSON.parse(datos || '{}');
+            return JSON.stringify(enCopia(function () { return saludAccion(nombre, d); }));
+        },
         // La foto de antes de importar (financeFotoFinanzas), para «deshacer importación.».
         foto: function () { return JSON.stringify(financeFotoFinanzas()); },
         accion: function (nombre, datos) {

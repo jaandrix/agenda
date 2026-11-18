@@ -64,6 +64,7 @@
                 { key: 'cash', label: 'Tus cuentas', balance: saldoLiquido() },
                 { key: 'emergency', label: 'Fondo de emergencia', balance: finRedondo(financeProfile.emergency) },
                 { key: 'vacation', label: 'Reserva de vacaciones', balance: finRedondo(financeProfile.vacation) },
+                ...(Number(financeProfile.estabilizacion?.saldo) > 0 ? [{ key: 'estabilizacion', label: 'Reserva de estabilización', balance: finRedondo(financeProfile.estabilizacion.saldo) }] : []),
                 { key: 'invested', label: 'Inversiones', balance: finRedondo(financeProfile.invested) },
                 ...(financeProfile.customAccounts || []).map(a => ({ key: a.id, label: a.name, balance: finRedondo(a.balance) }))
             ];

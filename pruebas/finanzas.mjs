@@ -462,3 +462,135 @@ test('traspasos e inversión no cambian ingresos, gastos ni tasa de ahorro', () 
     assert.deepEqual(JSON.parse(run('__cifras()')), antes);
     assert.match(run('finResPanelAhorro()'), /fin-res-cifra ">70,0 %[\s\S]*, en curso\./, 'la cifra grande es la del mes anterior y el de ahora va marcado');
 });
+
+// 0.25, salud de Finanzas (js/finanzas-salud.js): lo que GPT encontró en unas finanzas reales.
+const SALUD = `__vaciar({ bancos: 1000, online: 100 });
+    financePro.categories = financeProDefaultCategories();
+    globalThis.__d = k => financeProSumarDias(todayISO(), -k);
+    globalThis.__mes = todayISO().slice(0, 7);
+    financePro.transactions.push(
+        { id: 'compra', date: __d(5), account: 'online', type: 'expense', amount: 50, note: 'Zalando pedido', category: 'cat_compras' },
+        { id: 'devuelve', date: __d(1), account: 'online', type: 'income', amount: 50, note: 'Zalando refund' },
+        { id: 'sale', date: __d(2), account: 'bancos', type: 'expense', amount: 200, note: 'REVOLUT**1234' },
+        { id: 'entra', date: __d(2), account: 'online', type: 'income', amount: 200, note: 'Top-up by *1234' },
+        { id: 'hucha', date: __d(3), account: 'online', type: 'expense', amount: 30, note: 'To pocket EUR Ahorro' },
+        { id: 'fcf', date: __d(3), account: 'online', type: 'income', amount: 40, note: 'Flexible Cash Funds withdrawal' },
+        { id: 'fondo', date: __d(3), account: 'online', type: 'expense', amount: 150, note: 'MyInvestor aportación' },
+        { id: 'bizum', date: __d(3), account: 'online', type: 'income', amount: 20, note: 'Bizum de Persona 2' });`;
+
+test('salud: propone ahorro, inversión, traspaso y reembolso sin tocar nada hasta que se acepta', () => {
+    const { run } = cargarApp();
+    run(SALUD);
+    const antes = run('JSON.stringify(financePro)');
+    const p = JSON.parse(run('JSON.stringify(saludPropuestas().map(p => [p.tipo, p.t.id, p.con ? p.con.id : null]).sort())'));
+    assert.deepEqual(p, [['ahorro', 'fcf', null], ['ahorro', 'hucha', null], ['inversion', 'fondo', null], ['reembolso', 'devuelve', 'compra'], ['traspaso', 'sale', 'entra']].sort());
+    assert.equal(run('JSON.stringify(financePro)'), antes, 'proponer no cambia nada');
+    assert.deepEqual(JSON.parse(run('JSON.stringify(saludPorRevisar().map(x => [x.t.id, x.motivo]))')), [['bizum', 'bizum sin categoría.']]);
+    assert.deepEqual(JSON.parse(run('JSON.stringify(financeProMonthTotals(__mes))')), { income: 310, expense: 430 });
+    run(`saludAccion('propuestas', {})`);
+    assert.deepEqual(JSON.parse(run('JSON.stringify(financeProMonthTotals(__mes))')), { income: 20, expense: 0 }, 'solo queda el Bizum como ingreso; la compra devuelta no es gasto');
+    assert.equal(run(`financePro.transactions.find(t => t.id === 'sale').type`), 'transfer');
+    assert.equal(run(`financePro.transactions.some(t => t.id === 'entra')`), false, 'el traspaso se guarda una vez');
+    assert.equal(run(`JSON.stringify(saludPropuestas())`), '[]');
+});
+
+test('salud: un reembolso vinculado resta de la categoría de su compra y no es ingreso', () => {
+    const { run } = cargarApp();
+    run(SALUD);
+    run(`saludAccion('resolver', { id: 'devuelve', como: 'reembolso', compra: 'compra' })`);
+    assert.equal(run(`financeProCategoryExpense('cat_compras', __mes)`), 50);
+    assert.equal(run(`financeProCategoryRefunds('cat_compras', __mes)`), 50);
+    assert.equal(run(`financeProCategorySpend('cat_compras', __mes)`), 0);
+    assert.equal(run(`financeProNeutro(financePro.transactions.find(t => t.id === 'devuelve'))`), true);
+    assert.deepEqual(JSON.parse(run(`JSON.stringify(saludCosteNeto(__mes).find(c => c.id === 'cat_compras'))`)), { id: 'cat_compras', nombre: 'Compras', bruto: 50, devuelto: 50, neto: 0, destacada: true });
+    assert.throws(() => run(`saludAccion('resolver', { id: 'compra', como: 'reembolso', compra: 'compra' })`), /Solo un ingreso/);
+    run(`saludAccion('resolver', { id: 'bizum', como: 'bien' })`);
+    assert.equal(run('saludPorRevisar().length'), 0, 'así está bien lo saca de por revisar');
+});
+
+test('salud: casillas repetidas del presupuesto, se avisan y se quitan', () => {
+    const { run } = cargarApp();
+    run(`__vaciar({ bancos: 0 });
+        financePro.categories = financeProDefaultCategories();
+        globalThis.__m1 = longtermMonthOffset(financeMonthKey(), 1);
+        financeProfile.budgetPlans = { [__m1]: { salary: 150, contributions: 0, allocations: [
+            { id: 'x1', label: 'Cuenta conjunta', amount: 100, categoryId: '' },
+            { id: 'x2', label: 'cuenta conjunta', amount: 100, categoryId: '' },
+            { id: 'x3', label: 'Ocio', amount: 60, categoryId: 'cat_ocio' }] } };
+        financeProfile.budgetHistory = [];
+        entries = [{ id: 's1', type: 'subscription', title: 'Música', amount: 10, renewalDay: 3, active: true }];`);
+    const a = JSON.parse(run('JSON.stringify(saludPresupuestoAvisos(__m1))'));
+    assert.deepEqual(a.duplicados.map(d => d.id), ['x2']);
+    assert.equal(a.exceso, 120, '260 + 10 de suscripciones planificados con 150 de ingresos');
+    assert.equal(JSON.parse(run('JSON.stringify(saludPresupuestosFuturos())')).length, 1);
+    run(`saludAccion('quitarDuplicados', {})`);
+    assert.deepEqual(JSON.parse(run('JSON.stringify(financeProfile.budgetPlans[__m1].allocations.map(a => a.id))')), ['x1', 'x3']);
+    run(`financeProfile.budgetPlans[__m1].autoQuitadas = { subscription: true }`);
+    assert.equal(JSON.parse(run('JSON.stringify(saludPresupuestoAvisos(__m1))')).suscripcionesFuera, 10);
+    run(`saludAccion('reponerCompromisos', { mes: __m1 })`);
+    assert.equal(run(`financeProfile.budgetPlans[__m1].allocations.some(a => a.auto === 'subscription')`), true);
+});
+
+test('salud: meses que cubre el fondo y reserva de estabilización', () => {
+    const { run } = cargarApp();
+    run(`__vaciar({ bancos: 0 });
+        financePro.categories = financeProDefaultCategories();
+        financeProfile.emergency = 300;
+        [[-1, 1234, 400], [-2, 568, 380], [-3, 800, 420]].forEach(([k, ing, viv]) => {
+            const m = longtermMonthOffset(financeMonthKey(), k);
+            financePro.transactions.push({ id: 'i' + k, date: m + '-05', account: 'bancos', type: 'income', amount: ing, category: 'cat_sueldo' },
+                { id: 'v' + k, date: m + '-06', account: 'bancos', type: 'expense', amount: viv, category: 'cat_vivienda' },
+                { id: 'o' + k, date: m + '-07', account: 'bancos', type: 'expense', amount: 90, category: 'cat_ocio' });
+        });`);
+    const c = JSON.parse(run('JSON.stringify(saludColchones())'));
+    assert.equal(c.esencialesMes, 400, 'solo lo esencial (vivienda), no el ocio');
+    assert.equal(c.cubre, 0.8);
+    assert.equal(c.objetivoFondo, 1200);
+    assert.equal(c.estabilizacion.base, 800, 'la mediana de lo que entra');
+    assert.equal(c.estabilizacion.objetivoPropuesto, 700, 'tres veces lo que falta en el peor mes, redondeado');
+    run(`saludAccion('esenciales', { ids: ['cat_vivienda', 'cat_ocio'] })`);
+    assert.equal(JSON.parse(run('JSON.stringify(saludColchones())')).esencialesMes, 490);
+    run(`saludAccion('estabilizacion', { saldo: '200' })`);
+    assert.deepEqual(JSON.parse(run('JSON.stringify(saludEstabilizacionMes(600))')), { usar: 200, reponer: 0 }, 'mes flojo: se usa lo que hay');
+    assert.deepEqual(JSON.parse(run('JSON.stringify(saludEstabilizacionMes(1000))')), { usar: 0, reponer: 200 });
+    assert.equal(run('activosTotales()'), run('saldoLiquido()') + 300 + 200, 'la reserva cuenta en los activos totales');
+});
+
+test('salud: reparto del día de cobro en orden y con la inversión por tramos', () => {
+    const { run } = cargarApp();
+    run(`__vaciar({ bancos: 0 });
+        financePro.categories = financeProDefaultCategories();
+        financeProfile.emergency = 300;
+        financePro.salud = { ordinario: 500 };`);
+    assert.deepEqual([600, 800, 1000].map(i => Number(run(`saludTramo(${i})`))), [50, 100, 150]);
+    const r = JSON.parse(run('JSON.stringify(saludReparto(800))'));
+    assert.deepEqual(r.pasos.map(p => [p.clave, p.importe]), [['ordinario', 500], ['estabilizacion', 0], ['emergencia', 150], ['inversion', 100], ['ocio', 50]]);
+    assert.equal(r.pasos.reduce((s, p) => s + p.importe, 0), 800, 'se reparte todo, ni más ni menos');
+    const flojo = JSON.parse(run('JSON.stringify(saludReparto(450))'));
+    assert.equal(flojo.falta, 50);
+    assert.deepEqual(flojo.pasos.map(p => p.importe), [450, 0, 0, 0, 0]);
+    run(`saludAccion('cerrarMes', { respuestas: ['la cena del viernes', 'cocinar más'] })`);
+    const cierre = JSON.parse(run('JSON.stringify(saludCierre())'));
+    assert.equal(cierre.cerrado, true);
+    assert.deepEqual(cierre.respuestas, ['la cena del viernes', 'cocinar más']);
+    assert.equal(Object.keys(cierre.cifras).length, 7);
+});
+
+test('salud: ficha del fondo, suscripciones y esperas solo guardan lo que se escribe', () => {
+    const { run } = cargarApp();
+    run(`__vaciar({ bancos: 0 });
+        financeProfile.investmentAccounts = [{ id: 'inv1', name: 'Fondo indexado', contributions: [] }];
+        financeProfile.wishlist = [];
+        entries = [{ id: 's1', type: 'subscription', title: 'Música', amount: 10, renewalDay: 3, active: true, date: '2020-01-01' }];`);
+    assert.throws(() => run(`saludAccion('fichaFondo', { id: 'inv1', isin: 'XX12' })`), /ISIN/);
+    assert.throws(() => run(`saludAccion('fichaFondo', { id: 'inv1', riesgo: 9 })`), /1 a 7/);
+    run(`saludAccion('fichaFondo', { id: 'inv1', isin: 'ie00 b03hd191', indice: 'MSCI World', riesgo: '4', ter: '0,20' })`);
+    assert.deepEqual(JSON.parse(run('JSON.stringify(financeProfile.investmentAccounts[0].fondo)')), { isin: 'IE00B03HD191', indice: 'MSCI World', riesgo: 4, ter: 0.2 });
+    assert.equal(JSON.parse(run('JSON.stringify(saludSuscripcionesRevisar())'))[0].toca, true, 'sin revisar desde hace más de tres meses');
+    run(`saludAccion('suscripcionRevisada', { id: 's1' }); saludAccion('suscripcionUso', { id: 's1' })`);
+    assert.equal(JSON.parse(run('JSON.stringify(saludSuscripcionesRevisar())'))[0].toca, false);
+    run(`saludAccion('esperar', { titulo: 'Cámara', precio: '300', dias: 7 })`);
+    const w = JSON.parse(run('JSON.stringify(saludDeseos())'))[0];
+    assert.equal(w.diasSugeridos, 7);
+    assert.ok(w.horasQuedan > 160 && w.horasQuedan <= 168 && !w.listo);
+});

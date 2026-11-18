@@ -193,7 +193,8 @@ enum LecturaFinanzas {
         let invertido = redondo(invertidoBruto)
         let emergencia = redondo(Dinero.decimal(perfil["emergency"]) ?? 0)
         let vacaciones = redondo(Dinero.decimal(perfil["vacation"]) ?? 0)
-        let aMano = (perfil["customAccounts"]?.lista ?? []).reduce(Decimal(0)) { $0 + redondo(Dinero.decimal($1["balance"]) ?? 0) }
+        let estabilizacion = redondo(Dinero.decimal(perfil["estabilizacion"]?["saldo"]) ?? 0)
+        let aMano = (perfil["customAccounts"]?.lista ?? []).reduce(Decimal(0)) { $0 + redondo(Dinero.decimal($1["balance"]) ?? 0) } + max(0, estabilizacion)
         let operativo = redondo(liquido + invertido + emergencia)
         let activos = redondo(operativo + vacaciones + aMano)
 
@@ -315,6 +316,8 @@ enum LecturaFinanzas {
         let nombreCuenta: (String) -> String = { k in cuentasJSON[k]?["name"]?.texto ?? (k.isEmpty ? "" : k.prefix(1).uppercased() + String(k.dropFirst())) }
 
         var ingresos: Decimal = 0, gastos: Decimal = 0, diferenciaFP: Decimal = 0
+        var devueltoMes: Decimal = 0
+        let compras = comprasReembolsables(pro, nombreCat)
         var movimientos: [Movimiento] = []
         var mesesSet = Set<String>()
 
@@ -346,6 +349,7 @@ enum LecturaFinanzas {
             if fecha.hasPrefix(mes), enSaldo, (tipo == "income" || tipo == "expense"), !neut {
                 if tipo == "income" { ingresos += importe } else { gastos += importe }
             }
+            if fecha.hasPrefix(mes), enSaldo, esReembolso(o), compras.contains(o["reembolsoDe"]?.comoId ?? "") { devueltoMes += importe }
             let catId = o["category"]?.texto ?? ""
             let concepto = [o["note"], o["description"], o["concepto"]].compactMap { $0?.texto }.first { !$0.isEmpty } ?? ""
             let hora = o["hora"]?.texto ?? ""
@@ -356,6 +360,7 @@ enum LecturaFinanzas {
                                           claveDia: claveDia(o), categoriaId: catId))
         }
         movimientos.sort { ($0.fecha, $0.claveDia, $0.id) > ($1.fecha, $1.claveDia, $1.id) }
+        gastos = max(0, gastos - devueltoMes)
         let cuentas = claves.map { k in
             CuentaSaldo(id: k, nombre: cuentasJSON[k]?["name"]?.texto ?? (k.prefix(1).uppercased() + String(k.dropFirst())), saldo: redondo(saldos[k] ?? 0), enSaldo: true)
         }
@@ -363,14 +368,20 @@ enum LecturaFinanzas {
     }
 
     static func totalesMes(mes: String, pro: [String: JSONValue], nombreCat: [String: String]) -> TotalesMes {
-        var ing: Decimal = 0, gas: Decimal = 0
+        var ing: Decimal = 0, gas: Decimal = 0, devuelto: Decimal = 0
+        let compras = comprasReembolsables(pro, nombreCat)
         for t in pro["transactions"]?.lista ?? [] {
             guard let o = t.objeto, let imp = Dinero.decimal(o["amount"]) else { continue }
             let tipo = o["type"]?.texto ?? ""
-            guard tipo == "income" || tipo == "expense", (o["date"]?.texto ?? "").hasPrefix(mes), !neutro(o, nombreCat) else { continue }
+            guard tipo == "income" || tipo == "expense", (o["date"]?.texto ?? "").hasPrefix(mes) else { continue }
+            if esReembolso(o) {
+                if compras.contains(o["reembolsoDe"]?.comoId ?? "") { devuelto += imp }
+                continue
+            }
+            guard !neutro(o, nombreCat) else { continue }
             if tipo == "income" { ing += imp } else { gas += imp }
         }
-        return TotalesMes(mes: mes, ingresos: redondo(ing), gastos: redondo(gas))
+        return TotalesMes(mes: mes, ingresos: redondo(ing), gastos: redondo(max(0, gas - devuelto)))
     }
 
     static func historialAhorro(pro: [String: JSONValue], nombreCat: [String: String], hastaMes: String) -> [TotalesMes] {
@@ -497,9 +508,18 @@ enum LecturaFinanzas {
         }
     }
     private static func categoryRefunds(catId: String, mes: String, pro: [String: JSONValue]) -> Decimal {
-        (pro["transactions"]?.lista ?? []).reduce(Decimal(0)) { s, t in
-            guard let o = t.objeto, o["type"]?.texto == "income", o["category"]?.texto == catId, (o["date"]?.texto ?? "").hasPrefix(mes),
-                  o["viaje"]?.booleano != true, !fueraDeCategoria(o) else { return s }
+        var categoriaDe: [String: String] = [:]
+        for t in pro["transactions"]?.lista ?? [] {
+            guard let o = t.objeto, o["type"]?.texto == "expense", o["viaje"]?.booleano != true, let id = o["id"]?.comoId else { continue }
+            categoriaDe[id] = o["category"]?.texto ?? ""
+        }
+        return (pro["transactions"]?.lista ?? []).reduce(Decimal(0)) { s, t in
+            guard let o = t.objeto, o["type"]?.texto == "income", (o["date"]?.texto ?? "").hasPrefix(mes) else { return s }
+            if esReembolso(o) {
+                guard categoriaDe[o["reembolsoDe"]?.comoId ?? ""] == catId else { return s }
+                return s + (Dinero.decimal(o["amount"]) ?? 0)
+            }
+            guard o["category"]?.texto == catId, o["viaje"]?.booleano != true, !fueraDeCategoria(o) else { return s }
             return s + (Dinero.decimal(o["amount"]) ?? 0)
         }
     }
@@ -660,8 +680,23 @@ enum LecturaFinanzas {
         return "o" + String(repeating: "0", count: max(0, 6 - txt.count)) + txt
     }
 
+    // Un ingreso unido a la compra que devuelve (reembolsoDe, js/finanzas-salud.js): no es ingreso y resta del gasto.
+    static func esReembolso(_ o: [String: JSONValue]) -> Bool {
+        o["type"]?.texto == "income" && !(o["reembolsoDe"]?.comoId ?? "").isEmpty
+    }
+
+    // Las compras que cuentan como gasto, por id: un reembolso solo resta si su compra cuenta (saludReembolsosMes).
+    static func comprasReembolsables(_ pro: [String: JSONValue], _ nombres: [String: String]) -> Set<String> {
+        var r = Set<String>()
+        for t in pro["transactions"]?.lista ?? [] {
+            guard let o = t.objeto, o["type"]?.texto == "expense", let id = o["id"]?.comoId, !neutro(o, nombres) else { continue }
+            r.insert(id)
+        }
+        return r
+    }
+
     static func neutro(_ o: [String: JSONValue], _ nombres: [String: String]) -> Bool {
-        if o["ahorro"]?.booleano == true || o["ajuste"]?.booleano == true || (o["id"]?.comoId ?? "").hasPrefix("ptx_adj_") { return true }
+        if o["ahorro"]?.booleano == true || o["ajuste"]?.booleano == true || (o["id"]?.comoId ?? "").hasPrefix("ptx_adj_") || esReembolso(o) { return true }
         let cat = o["category"]?.texto ?? ""
         if cat == "cat_inversion_gasto" || cat == "cat_inversion_ing" { return true }
         let nombre = (nombres[cat] ?? "").folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "es_ES"))

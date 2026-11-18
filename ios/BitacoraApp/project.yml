@@ -102,6 +102,8 @@ targets:
         buildPhase: resources
       - path: ../../js/inversion.js
         buildPhase: resources
+      - path: ../../js/finanzas-salud.js
+        buildPhase: resources
       - path: ../../js/asistente.js
         buildPhase: resources
       - path: BitacoraWidgets/Fonts

@@ -259,3 +259,22 @@ test('el resumen dice de qué tipo es cada suscripción o gasto fijo (para «al 
     const r = JSON.parse(run(`__fin.pestana('resumen', '{}')`));
     assert.deepEqual(r.suscripciones.map(s => s.tipo).sort(), ['fixed_expense', 'subscription']);
 });
+
+test('salud de Finanzas en el iPhone: una lectura y escrituras como cambios', () => {
+    const run = cargarMotor();
+    const hoy = run('todayISO()'), ayer = run(`financeProSumarDias('${hoy}', -1)`);
+    const pro = { transactions: [
+        { id: 'c', date: ayer, account: 'online', type: 'expense', amount: 30, note: 'Tienda pedido', category: 'cat_compras' },
+        { id: 'r', date: hoy, account: 'online', type: 'income', amount: 30, note: 'Tienda refund' },
+        { id: 'b', date: hoy, account: 'online', type: 'income', amount: 12, note: 'Bizum de Ana' }] };
+    run(`__fin.cargar(${JSON.stringify(JSON.stringify(pro))}, '[]', '{"emergency":300}', null)`);
+    const s = JSON.parse(run(`__fin.salud('{}')`));
+    assert.deepEqual(s.propuestas.map(p => [p.propuesta, p.id, p.con.id]), [['reembolso', 'r', 'c']]);
+    assert.deepEqual(s.porRevisar.map(p => [p.id, p.bizum]), [['b', true]]);
+    assert.equal(s.reparto.pasos.length, 5);
+    assert.equal(s.colchones.fondo, 300);
+    const r = JSON.parse(run(`__fin.saludAccion('propuestas', '{"tipo":"reembolso"}')`));
+    assert.deepEqual(r.cambios.movimientos.cambiar.map(x => [x.id, x.poner.reembolsoDe]), [['r', 'c']]);
+    assert.equal(JSON.parse(run(`__fin.salud('{}')`)).propuestas.length, 0, 'el estado se queda ya cambiado');
+    assert.throws(() => run(`__fin.saludAccion('resolver', '{"id":"nada","como":"bien"}')`), /ya no está/);
+});

@@ -33,12 +33,12 @@ actor MotorFinanzas {
     static let compartido = MotorFinanzas()
 
     // El orden importa (como en index.html): cada archivo usa lo de los anteriores. pruebas/finanzas-ios.mjs lee esta lista.
-    static let archivos = ["nucleo", "datos", "entradas", "finanzas", "finanzas-pro", "presupuesto", "suscripciones", "finanzas-resumen", "inversion", "asistente"]
+    static let archivos = ["nucleo", "datos", "entradas", "finanzas", "finanzas-pro", "presupuesto", "suscripciones", "finanzas-resumen", "inversion", "finanzas-salud", "asistente"]
     static let claves = ["financePro", "entries", "financeProfile", "investmentData"]
     // Lecturas puras: su resultado vale mientras no cambie el estado.
     private static let lecturas: Set<String> = ["logos", "logoPendientes", "gestor", "gestion", "revisar", "buscar", "movimientoDatos",
                                                 "suscripcionDatos", "esInversion", "permitir", "serie", "gastosMes", "presupuestoDatos",
-                                                "inversionDatos", "dividirCandidatos"]
+                                                "inversionDatos", "dividirCandidatos", "salud", "saludCompras", "fondoDatos"]
     static let senales = OSSignposter(subsystem: "es.appbitacora.nativa", category: "finanzas")
 
     private var js: JSContext?
