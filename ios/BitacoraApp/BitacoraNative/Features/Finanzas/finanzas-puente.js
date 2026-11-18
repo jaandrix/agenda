@@ -788,6 +788,7 @@
                 avisos: saludAvisos(),
                 propuestas: propuestas.slice(0, 150).map(filaP),
                 porRevisar: saludPorRevisar(propuestas).slice(0, 150).map(function (p) { var f = fila(p.t); f.motivo = p.motivo; f.bizum = /bizum/i.test(p.t.bankNote || p.t.note || ''); return f; }),
+                bizumsRecibidos: saludBizumsRecibidos().length,
                 presupuesto: saludPresupuestoAvisos(mes),
                 futuros: saludPresupuestosFuturos().map(function (x) { return { mes: x.mes, titulo: financeMonthLabel(x.mes), duplicados: x.duplicados.length, suscripcionesFuera: x.suscripcionesFuera, fijosFuera: x.fijosFuera, exceso: x.exceso, ingresos: x.ingresos, asignado: x.asignado }; }),
                 colchones: c,

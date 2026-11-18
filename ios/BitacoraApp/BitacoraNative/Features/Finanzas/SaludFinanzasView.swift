@@ -81,7 +81,11 @@ struct ModeloSalud: Decodable, Equatable {
         let cerrado: Bool
     }
     struct Paso: Decodable, Equatable, Identifiable { let clave, nombre, nota: String; let importe: Double; var id: String { clave } }
-    struct Reparto: Decodable, Equatable { let ingreso, ordinarioBase, falta: Double; let pasos: [Paso] }
+    struct Reparto: Decodable, Equatable {
+        let ingreso, ordinarioBase, falta: Double
+        let sinMargen: Bool?
+        let pasos: [Paso]
+    }
     struct Suscripcion: Decodable, Equatable, Identifiable {
         let id, titulo: String
         let importe: Double
@@ -109,6 +113,7 @@ struct ModeloSalud: Decodable, Equatable {
     let avisos: [Aviso]
     let propuestas: [FilaSalud]
     let porRevisar: [FilaSalud]
+    let bizumsRecibidos: Int?
     let presupuesto: Presupuesto
     let futuros: [Futuro]
     let colchones: Colchones
@@ -292,7 +297,9 @@ struct SaludFinanzasView: View {
                 Text("Para \(mesesTexto(k.mesesObjetivo)) harían falta \(din(k.objetivoFondo)); tienes \(din(k.fondo)).").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
             }
             NavigationLink("qué gastos son esenciales.") { EsencialesSaludView(e: e) }
-        } header: { Text("fondo de emergencia.") }
+        } header: { Text("fondo de emergencia.") } footer: {
+            if !k.elegidasAMano { Text("Con las esenciales por defecto (vivienda, comida, transporte, salud...). Elige las tuyas para que la cifra sea la de verdad.") }
+        }
         Section {
             FilaLibro(etiqueta: "tienes", valor: din(s.saldo))
             FilaLibro(etiqueta: "objetivo", valor: s.objetivo > 0 ? din(s.objetivo) : "sin datos")
@@ -447,7 +454,22 @@ struct PorRevisarSaludView: View {
 
     var body: some View {
         let lista = e.m?.porRevisar ?? []
+        let bizums = e.m?.bizumsRecibidos ?? 0
         FormCasa {
+            if bizums > 0 {
+                Section {
+                    Menu {
+                        ForEach((e.m?.categorias ?? []).filter { $0.tipo == "income" }) { cat in
+                            Button(cat.nombre) { Task { await e.accion(c, "bizums", ["categoria": cat.id]) } }
+                        }
+                    } label: {
+                        Text("pasar los \(bizums) Bizums recibidos a...").foregroundStyle(Paleta.acento)
+                    }
+                    .disabled(e.trabajando)
+                } footer: {
+                    Text("Casi siempre son amigos pagando su parte. En «Comida y bebida» (la de ingreso) restan de lo que gastas en comida y bebida y dejan de contar como ingreso.")
+                }
+            }
             if lista.isEmpty { Text("nada por revisar.").foregroundStyle(Paleta.textoSecundario) }
             ForEach(lista) { p in
                 VStack(alignment: .leading, spacing: 4) {
@@ -648,7 +670,12 @@ struct CobroSaludView: View {
                 }
                 Button("repartir.") { calcular() }
             }
-            if let r = e.m?.reparto {
+            if let r = e.m?.reparto, r.sinMargen == true {
+                Section {
+                    Text("Lo que gastas de media al mes (\(oculto ? "•••" : FormatoFin.dinero(r.ordinarioBase))) pasa de lo que ha entrado: no queda nada que repartir.")
+                    Text("Si tu gasto normal es menor, ponlo en ajustes, «gastos del mes.».").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                }
+            } else if let r = e.m?.reparto {
                 Section {
                     ForEach(r.pasos) { p in
                         VStack(alignment: .leading, spacing: 2) {

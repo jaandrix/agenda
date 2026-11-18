@@ -12,7 +12,7 @@
         const SALUD_BOLSILLO = /\bpockets?\b|\bhucha\b|bolsillo|\bvaults?\b|savings|flexible cash|cash funds?|money market|fondo monetario|\bfrom eur [a-z]|\bto eur [a-z]/i;
         const SALUD_INVERSION = /myinvestor|indexa|inversis|trade ?republic|vanguard|amundi|fidelity|\bisin\b|fondo index|suscripci[oó]n (?:de )?fondo|compra (?:de )?(?:participaciones|fondo)/i;
         const SALUD_REEMBOLSO = /refund|reembols|devoluc|devuelt|revert|reversal|retroced|anulaci[oó]n|chargeback|abono (?:de )?compra/i;
-        const SALUD_ESENCIAL = /alquiler|hipoteca|vivienda|\bluz\b|\bagua\b|\bgas\b|electric|internet|tel[eé]fono|m[oó]vil|seguro|supermercado|alimentaci|transporte|gasolina|combustible|farmacia|salud|suministro|comunidad|matr[ií]cula|universidad/i;
+        const SALUD_ESENCIAL = /alquiler|hipoteca|vivienda|\bluz\b|\bagua\b|\bgas\b|electric|internet|tel[eé]fono|m[oó]vil|seguro|supermercado|alimentaci|comida|transporte|gasolina|combustible|farmacia|salud|suministro|comunidad|matr[ií]cula|universidad/i;
         const SALUD_NETO = /compras|coleccionab/i;
         const SALUD_TRAMOS = [{ hasta: 700, importe: 50 }, { hasta: 900, importe: 100 }, { hasta: null, importe: 150 }];
 
@@ -110,8 +110,14 @@
             return Math.abs((new Date(a + 'T12:00:00') - new Date(b + 'T12:00:00')) / 86400000);
         }
 
+        // Lo que repiten los conceptos del banco sin decir qué se compró («Bizum payment to», «Transfer from»...): compartir
+        // una de estas palabras no hace a un ingreso devolución de un gasto (la simulación con datos reales unía
+        // «Payment from ...» a cualquier Bizum).
+        const SALUD_PALABRAS_VACIAS = new Set(['payment', 'transfer', 'from', 'money', 'added', 'bizum', 'pocket', 'card', 'compra', 'pago',
+            'transferencia', 'recibida', 'emitida', 'enviada', 'revolut', 'ibercaja', 'with', 'withdrawal', 'top-up', 'topup', 'para', 'desde',
+            'cuenta', 'orden', 'concepto', 'tarjeta', 'refund', 'reembolso', 'devolucion']);
         function saludPalabras(s) {
-            return new Set(financeProNormalizar(s).split(/[^a-z0-9]+/).filter(w => w.length >= 4 && !/^\d+$/.test(w)));
+            return new Set(financeProNormalizar(s).split(/[^a-z0-9]+/).filter(w => w.length >= 4 && !/^\d+$/.test(w) && !SALUD_PALABRAS_VACIAS.has(w)));
         }
 
         // Las palabras del concepto de cada movimiento, una vez (en el iPhone, JavaScriptCore va sin JIT).
@@ -141,12 +147,14 @@
             const desde = financeProSumarDias(ingreso.date, -120);
             return (gastos || financePro.transactions || []).filter(t => {
                 if (t.type !== 'expense' || !t.date || t.date > ingreso.date || t.date < desde || financeProNeutro(t)) return false;
+                const c = saludConcepto(t);
+                if (SALUD_BOLSILLO.test(c) || SALUD_INVERSION.test(c)) return false;
                 return (Number(t.amount) || 0) - (yaUsadas.get(String(t.id)) || 0) >= imp - 0.005;
             }).map(t => {
                 const comun = [...saludPalabrasDe(t)].some(w => pal.has(w));
                 const exacto = Math.abs((Number(t.amount) || 0) - imp) < 0.005;
                 const puntos = (comun ? 4 : 0) + (t.account === ingreso.account ? 2 : 0) + (exacto ? 1 : 0) - saludDias(t.date, ingreso.date) / 200;
-                return { t, puntos, comun };
+                return { t, puntos, comun, exacto };
             }).sort((a, b) => b.puntos - a.puntos).slice(0, max);
         }
 
@@ -198,7 +206,8 @@
                 else if (p.inversion) r.push({ tipo: 'inversion', t, motivo: t.type === 'income' ? 'viene de tu inversión: no es un ingreso.' : 'es una aportación a tu inversión: no es un gasto.' });
                 else if (t.type === 'income' && !t.pendiente && (p.reembolso || !t.category)) {
                     const cand = saludComprasCandidatas(t, 1, yaUsadas, gastos)[0];
-                    if (cand && (p.reembolso ? true : cand.comun && t.account === cand.t.account && !t.category)) {
+                    if (cand && (p.reembolso ? cand.comun || cand.exacto : cand.comun && t.account === cand.t.account && !t.category)) {
+                        yaUsadas.set(String(cand.t.id), (yaUsadas.get(String(cand.t.id)) || 0) + (Number(t.amount) || 0));
                         r.push({ tipo: 'reembolso', t, con: cand.t, motivo: `devuelve ${saludConcepto(cand.t) || 'una compra'} del ${financeDateLabelShort(cand.t.date)} (${financeMoney(cand.t.amount)}).` });
                     }
                 }
@@ -215,9 +224,9 @@
                 if (!saludLibre(t) || enPropuesta.has(t)) return;
                 const p = saludParecido(t);
                 let motivo = '';
-                if (p.bizum && !t.category) motivo = 'bizum sin categoría.';
+                if (p.bizum && !t.category) motivo = t.type === 'income' ? 'bizum recibido sin categoría.' : 'bizum enviado sin categoría.';
                 else if (p.reembolso && t.type === 'income') motivo = 'parece una devolución: ¿de qué compra?';
-                else if (t.needsReview || !t.category) motivo = t.type === 'income' ? 'ingreso sin categoría.' : 'gasto sin categoría.';
+                else if (t.type === 'income' && !t.category) motivo = 'ingreso sin categoría.';
                 if (motivo) r.push({ t, motivo });
             });
             return r.sort((a, b) => String(b.t.date).localeCompare(String(a.t.date)));
@@ -289,6 +298,12 @@
                 return 'Se queda como está';
             }
             throw new Error('No sé hacer eso');
+        }
+
+        // Los Bizums recibidos sin categoría, todos a la vez. Con una categoría de ingreso que se llama como una de gasto
+        // (Comida y bebida), restan de ese gasto, como cualquier devolución.
+        function saludBizumsRecibidos() {
+            return (financePro.transactions || []).filter(t => saludLibre(t) && t.type === 'income' && !t.category && /bizum/i.test(saludConcepto(t)));
         }
 
         function saludAplicarPropuestas(tipo, ids) {
@@ -490,7 +505,8 @@
             resto -= inversion;
             pasos.push({ clave: 'inversion', nombre: 'inversión.', importe: inversion, nota: `tramo de ${financeMoney(tramo)} al mes.` });
             pasos.push({ clave: 'ocio', nombre: 'ocio y caprichos.', importe: saludRedondo(Math.max(0, resto)), nota: '' });
-            return { ingreso, ordinarioBase, falta: saludRedondo(Math.max(0, ordinarioBase - ingreso - estab.usar)), pasos };
+            const faltaMes = saludRedondo(Math.max(0, ordinarioBase - ingreso - estab.usar));
+            return { ingreso, ordinarioBase, falta: faltaMes, sinMargen: ordinarioBase >= ingreso + estab.usar, pasos };
         }
 
         function saludCargosProximos(dias) {
@@ -608,6 +624,14 @@
             case 'propuestas': {
                 const n = saludAplicarPropuestas(d.tipo || null, d.ids || null);
                 return n ? `${n} ${n === 1 ? 'movimiento reclasificado' : 'movimientos reclasificados'}` : 'Nada que cambiar';
+            }
+            case 'bizums': {
+                const c = financeProCategoryById(d.categoria);
+                if (!c || c.type !== 'income') throw new Error('Elige una categoría de ingreso');
+                const quiero = Array.isArray(d.ids) ? new Set(d.ids.map(String)) : null;
+                const l = saludBizumsRecibidos().filter(t => !quiero || quiero.has(String(t.id)));
+                l.forEach(t => { t.category = c.id; t.needsReview = false; delete t.categoriaAuto; });
+                return l.length ? `${l.length} ${l.length === 1 ? 'Bizum pasa' : 'Bizums pasan'} a ${c.name}` : 'No había Bizums recibidos sin categoría';
             }
             case 'quitarDuplicados': {
                 const n = saludQuitarDuplicados(d.meses);
@@ -735,6 +759,7 @@
         function renderSaludFinanzas() {
             const propuestas = saludPropuestas();
             const revisar = saludPorRevisar(propuestas);
+            const bizums = saludBizumsRecibidos();
             const pres = saludPresupuestoAvisos();
             const futuros = saludPresupuestosFuturos();
             const k = saludColchones();
@@ -776,6 +801,11 @@
                 </div>
                 <div class="finance-panel" style="margin-top:14px">
                     <div class="modal-label">por revisar. ${revisar.length}</div>
+                    ${bizums.length ? `<div class="finance-modal-note" style="margin:6px 0 10px">${bizums.length} ${bizums.length === 1 ? 'Bizum recibido' : 'Bizums recibidos'} sin categoría: casi siempre, amigos pagando su parte. En la categoría de ingreso «Comida y bebida» restan de lo que gastas en comida y bebida.
+                        <select class="modal-input" style="max-width:240px;margin-top:6px" aria-label="pasar los Bizums" onchange="if(this.value){saludWeb('bizums', { categoria: this.value })}">
+                            <option value="">pasar ${bizums.length === 1 ? 'el Bizum' : `los ${bizums.length}`} a...</option>
+                            ${(financePro.categories || []).filter(c => c.type === 'income').map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('')}
+                        </select></div>` : ''}
                     ${revisar.length ? revisar.slice(0, 60).map(r => saludFilaWeb(r.t, r.motivo, opciones(r.t))).join('') : '<div class="finance-empty-state">Nada por revisar.</div>'}
                 </div>
                 <div class="finance-panel" style="margin-top:14px">
@@ -786,7 +816,7 @@
                 <div class="finance-panel" style="margin-top:14px">
                     <div class="modal-label">colchones.</div>
                     <div class="finance-modal-note">
-                        ${k.esencialesMes ? `Tus gastos esenciales son unos ${financeMoney(k.esencialesMes)} al mes: tu fondo de ${financeMoney(k.fondo)} cubre <b>${String(k.cubre).replace('.', ',')} ${k.cubre === 1 ? 'mes' : 'meses'}</b>. Para ${k.mesesObjetivo} harían falta ${financeMoney(k.objetivoFondo)}.` : 'Todavía no hay meses cerrados con gastos esenciales.'}
+                        ${k.esencialesMes ? `${k.elegidasAMano ? '' : 'Con las esenciales por defecto (vivienda, comida, transporte, salud...): '}tus gastos esenciales son unos ${financeMoney(k.esencialesMes)} al mes: tu fondo de ${financeMoney(k.fondo)} cubre <b>${String(k.cubre).replace('.', ',')} ${k.cubre === 1 ? 'mes' : 'meses'}</b>. Para ${k.mesesObjetivo} harían falta ${financeMoney(k.objetivoFondo)}.` : 'Todavía no hay meses cerrados con gastos esenciales.'}
                     </div>
                     <div class="finance-modal-note" style="margin-top:8px">
                         Reserva de estabilización, aparte del fondo: tienes ${financeMoney(est.saldo)}${est.objetivo ? ` de ${financeMoney(est.objetivo)}` : ''}.

@@ -485,7 +485,7 @@ test('salud: propone ahorro, inversión, traspaso y reembolso sin tocar nada has
     const p = JSON.parse(run('JSON.stringify(saludPropuestas().map(p => [p.tipo, p.t.id, p.con ? p.con.id : null]).sort())'));
     assert.deepEqual(p, [['ahorro', 'fcf', null], ['ahorro', 'hucha', null], ['inversion', 'fondo', null], ['reembolso', 'devuelve', 'compra'], ['traspaso', 'sale', 'entra']].sort());
     assert.equal(run('JSON.stringify(financePro)'), antes, 'proponer no cambia nada');
-    assert.deepEqual(JSON.parse(run('JSON.stringify(saludPorRevisar().map(x => [x.t.id, x.motivo]))')), [['bizum', 'bizum sin categoría.']]);
+    assert.deepEqual(JSON.parse(run('JSON.stringify(saludPorRevisar().map(x => [x.t.id, x.motivo]))')), [['bizum', 'bizum recibido sin categoría.']]);
     assert.deepEqual(JSON.parse(run('JSON.stringify(financeProMonthTotals(__mes))')), { income: 310, expense: 430 });
     run(`saludAccion('propuestas', {})`);
     assert.deepEqual(JSON.parse(run('JSON.stringify(financeProMonthTotals(__mes))')), { income: 20, expense: 0 }, 'solo queda el Bizum como ingreso; la compra devuelta no es gasto');
@@ -593,4 +593,36 @@ test('salud: ficha del fondo, suscripciones y esperas solo guardan lo que se esc
     const w = JSON.parse(run('JSON.stringify(saludDeseos())'))[0];
     assert.equal(w.diasSugeridos, 7);
     assert.ok(w.horasQuedan > 160 && w.horasQuedan <= 168 && !w.listo);
+});
+
+test('salud: los fallos de la simulación con datos reales (reembolsos mal unidos, Bizums y reparto sin margen)', () => {
+    const { run } = cargarApp();
+    run(`__vaciar({ online: 0 });
+        financePro.categories = financeProDefaultCategories();
+        financePro.categories.push({ id: 'cat_comida_ing', name: 'Comida y bebida', type: 'income' });
+        const d = k => financeProSumarDias(todayISO(), -k);
+        financePro.transactions.push(
+            { id: 'bolsillo', date: d(30), account: 'online', type: 'expense', amount: 20, note: 'To pocket EUR Arriesgados from EUR' },
+            { id: 'paula', date: d(2), account: 'online', type: 'income', amount: 20, note: 'Transfer from PAULA GARCIA PEREZ' },
+            { id: 'cena', date: d(20), account: 'online', type: 'expense', amount: 64, note: 'Bizum payment to: Damian M.C.' },
+            { id: 'p1', date: d(10), account: 'online', type: 'income', amount: 50, note: 'Payment from A. PASCUAL PUENTE' },
+            { id: 'r1', date: d(9), account: 'online', type: 'income', amount: 40, note: 'Tienda refund' },
+            { id: 'r2', date: d(8), account: 'online', type: 'income', amount: 40, note: 'Tienda refund' },
+            { id: 'tienda', date: d(15), account: 'online', type: 'expense', amount: 60, note: 'Tienda', category: 'cat_compras' },
+            { id: 'b1', date: d(3), account: 'online', type: 'income', amount: 15, note: 'Money added via BIZUM' },
+            { id: 'b2', date: d(3), account: 'online', type: 'income', amount: 12, note: 'Money added via BIZUM' },
+            { id: 'sin', date: d(3), account: 'online', type: 'expense', amount: 3, note: 'El Quiosco', needsReview: true });`);
+    const reembolsos = JSON.parse(run(`JSON.stringify(saludPropuestas().filter(p => p.tipo === 'reembolso').map(p => [p.t.id, p.con.id]))`));
+    assert.deepEqual(reembolsos, [['r1', 'tienda']], 'ni un bolsillo es una compra, ni «payment» une nada, ni dos devoluciones de 40 caben en 60');
+    const motivos = JSON.parse(run(`JSON.stringify(saludPorRevisar().map(x => x.t.id))`));
+    assert.ok(!motivos.includes('sin'), 'un gasto sin categoría ya está en «por ajustar»');
+    assert.ok(motivos.includes('b1') && motivos.includes('p1'));
+    run(`saludAccion('bizums', { categoria: 'cat_comida_ing' })`);
+    assert.equal(run(`saludBizumsRecibidos().length`), 0);
+    assert.equal(run(`financeProNeutro(financePro.transactions.find(t => t.id === 'b1'))`), false, 'siguen siendo ingreso de su categoría');
+    assert.equal(run(`financeProCategoryRefunds('cat_comida', todayISO().slice(0, 7))`) >= 27, true, 'y restan de lo gastado en comida y bebida');
+    assert.equal(run(`saludEsencialesIds().has('cat_comida')`), true, 'comida y bebida es esencial por defecto');
+    run(`financePro.salud = { ordinario: 853 }`);
+    assert.equal(JSON.parse(run('JSON.stringify(saludReparto(800))')).sinMargen, true);
+    assert.equal(JSON.parse(run('JSON.stringify(saludReparto(1200))')).sinMargen, false);
 });
