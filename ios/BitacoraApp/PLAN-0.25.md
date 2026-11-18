@@ -136,3 +136,92 @@ persona) y las láminas `tinta-dia.png` y `tinta-noche.png` en `capturas-diseno`
   que nada salga de color (si algo sale, es un color suelto que se escapó del tema: avisar con captura).
 - Una entrada con QR: negro sobre blanco, punto negro.
 - Volver a cualquier otro tema: todo como antes (las portadas vuelven a color).
+
+## Finanzas («salud.»)
+
+GPT leyó el Markdown que exporta Bitácora con las finanzas reales de Alejandro y encontró que la contabilidad mezclaba
+gasto, ahorro, traspasos y reembolsos. Esta parte arregla lo que tiene arreglo. **Nada se reclasifica solo:** Bitácora
+propone y Alejandro acepta una a una o todas las de un tipo. No hay migraciones.
+
+### Dónde está
+
+- **Motor:** `js/finanzas-salud.js` (nuevo, va en `index.html`, en `MotorFinanzas.archivos` y en `project.yml`). Todo
+  calcula sin tocar nada salvo `saludAccion(nombre, datos)`, la única escritura: en la web dentro de
+  `commitFinanceChange`, en el iPhone por `finanzas-puente.js` (`__fin.saludAccion`) como una operación de
+  `CambioFinanzas`. Lecturas del puente: `salud`, `saludCompras`, `fondoDatos`; la pestaña de cuentas trae `salud`
+  (cuántas propuestas, por revisar y avisos).
+- **iPhone:** `SaludFinanzasView.swift` (hoja `.salud`, se abre desde la línea «salud.» de la pestaña de cuentas) y la
+  sección «el fondo.» en la ficha de inversión (`InversionView.swift`).
+- **Web:** Finanzas → acciones. → «salud.» con lo de los puntos 1 a 3. El Markdown para la IA lleva una sección «Salud
+  financiera».
+
+### Datos nuevos (todos dentro de claves que ya existían: el contrato no cambia)
+
+| Dónde | Campo | Qué |
+| --- | --- | --- |
+| movimiento | `reembolsoDe` | id de la compra que devuelve un ingreso |
+| movimiento | `revisado` | «está bien así.»: sale de propuestas y de por revisar |
+| `financePro.salud` | `esenciales`, `mesesObjetivo`, `umbralFondo`, `extraEmergencia`, `ordinario`, `tramos`, `avisos`, `ultimaSemanal`, `cierres[mes]` | ajustes, rutinas y el historial de cierres |
+| `financeProfile.estabilizacion` | `saldo`, `objetivo`, `base` | la reserva de estabilización (vacío = lo propone Bitácora) |
+| suscripción (`entries`) | `ultimoUso`, `revisadaEn` | última vez que se usó y última revisión |
+| cuenta de inversión | `fondo` | `isin`, `indice`, `riesgo` (1 a 7), `ter`, `comisiones`, `notas` |
+| deseo (`wishlist`) | `esperaDesde`, `esperaHasta` | la espera antes de una compra grande |
+
+### Los ocho puntos
+
+1. **Clasificación estricta.** `saludClase(t)`: ingreso, gasto, traspaso, ahorro, inversión, ajuste o reembolso.
+   `saludPropuestas` detecta bolsillos, huchas y Flexible Cash Funds (ahorro), el bróker o el fondo (inversión),
+   traspasos entre cuentas propias (mismo importe, ≤3 días, uno de los dos con pinta de transferencia, «Top-up»,
+   «Revolut» o el nombre de la otra cuenta; nunca Bizum) y devoluciones (concepto de reembolso, o un ingreso sin
+   categoría con palabras de una compra anterior de la misma cuenta). **Reembolso vinculado:** `financeProNeutro` lo
+   deja fuera de ingresos, `financeProCategoryRefunds` lo suma a la categoría de la compra (gasto neto) y
+   `financeProMonthTotals` lo resta del gasto del mes; `LecturaFinanzas.swift` hace lo mismo. «por revisar.»: Bizums sin
+   categoría, ingresos o gastos sin categoría y devoluciones sin compra, con «resolver.» (categoría, ahorros, inversión,
+   traspaso con otra cuenta, devolución de una compra, está bien así).
+2. **Presupuestos honestos.** Casilla repetida = mismo nombre (sin mayúsculas ni acentos), importe y categoría en el
+   mismo mes. Se avisa en el mes actual y en los futuros guardados, y «quitar las casillas repetidas.» deja la primera
+   (nunca en meses cerrados). Las suscripciones y los gastos fijos ya entraban solos como compromiso; si en un mes se
+   quitaron (`autoQuitadas`), se avisa con «volver a ponerlos.». Aviso si lo planificado (con compromisos) pasa de los
+   ingresos previstos.
+3. **Colchones.** Gastos esenciales = media de los últimos 6 meses cerrados de las categorías esenciales (netas de
+   devoluciones) más los gastos fijos. Por defecto, las de vivienda, suministros, súper, transporte, seguros, salud y
+   estudios; editables. «tu fondo cubre X meses». Reserva de estabilización aparte: referencia = mediana de lo que
+   entró en esos meses, objetivo propuesto = 3 × (referencia − peor mes), redondeado a 10. Cuenta en activos totales,
+   como la de vacaciones (no en el patrimonio operativo).
+4. **Coste neto** por categoría (gastado, devuelto o vendido, neto), con Compras y Coleccionables primero.
+5. **Rutinas.** Semana: por revisar, propuestas, lo que queda en presupuestos y cargos de 7 días, «hecha.». Día de
+   cobro, en este orden: gastos del mes (media de los tres últimos o el que se ponga), reserva de estabilización (en un
+   mes flojo se usa; en uno bueno se repone con lo que pasa de la referencia), fondo de emergencia (50 % de lo que sobra
+   mientras esté por debajo de 1.500 €), inversión por tramos (menos de 700 → 50; hasta 900 → 100; más → 150) y ocio.
+   Cierre de mes: ingresos, gastos, ahorro con tasa, a la inversión y fondo con los meses que cubre, más «¿qué gasto no
+   volverías a hacer?» y «¿qué vas a cambiar el mes que viene?», guardado en `financePro.salud.cierres`. Avisos
+   opcionales (semana, cierre, suscripciones) arriba de «salud.»; no son notificaciones push.
+6. **Suscripciones:** «la usé hoy.» y «revisada.»; piden revisión a los 90 días sin revisar o a los 30 sin usar.
+7. **Ficha del fondo:** solo lo que escribe Alejandro. El ISIN se comprueba solo por su forma (12 caracteres), el riesgo
+   de 1 a 7 y el TER como porcentaje.
+8. **Compras grandes:** «esperar 48 h.» o «esperar 7 días.» (sugiere 7 a partir de 150 €), con lo que queda y «ya has
+   esperado: ¿lo sigues queriendo?».
+
+### Pruebas
+
+`pruebas/finanzas.mjs`: 6 nuevas (propuestas sin tocar nada hasta aceptar, reembolso vinculado y coste neto, casillas
+repetidas, meses que cubre y estabilización, reparto del día de cobro y cierre, ficha del fondo con suscripciones y
+esperas). `pruebas/finanzas-ios.mjs`: la lectura `salud` y una escritura como cambios desde el motor del iPhone.
+`FinanzasLecturaTests.testReembolsoVinculadoRestaDelGasto` en Swift. Las de antes, en verde; Xcode no se ha compilado
+aquí (Windows): lo compila el workflow `ios-nativa.yml`.
+
+### Qué probar en el iPhone
+
+- **Finanzas → cuentas:** debajo de «+ movimiento.», la línea «salud. N por clasificar». Ábrela.
+- **Propuestas:** que salgan los bolsillos de Revolut y Flexible Cash Funds como ahorro, MyInvestor como inversión, las
+  recargas de Ibercaja a Revolut como traspaso y las devoluciones con su compra. Acepta **una** («sí.») y mira en
+  movimientos que ha cambiado; luego decide el resto. Si alguna está mal, «no, está bien así.».
+- **Por revisar:** un Bizum, «resolver.» → categoría. Un ingreso que sea devolución → «devolución de una compra...» y
+  elige la compra: en resumen, el gasto de esa categoría baja.
+- **Presupuestos:** con «Cuenta conjunta» repetida de diciembre a junio, «quitar las casillas repetidas.» y comprueba un
+  mes futuro en planificación.
+- **Colchones:** «qué gastos son esenciales.», marca las tuyas; los meses que cubren tus 300 € tienen que tener
+  sentido. Pon lo que tienes en la reserva de estabilización.
+- **Rutinas:** día de cobro con 568, 800 y 1.234 €; cierre de octubre con las dos respuestas.
+- **Inversión → tu fondo:** ISIN, índice, riesgo, TER; guardar y volver a abrir.
+- **La web:** Finanzas → acciones. → salud.; y «exportar para tu ia.» trae «Salud financiera» al final.

@@ -683,15 +683,26 @@ struct CierreSaludView: View {
 
     private func din(_ v: Double) -> String { oculto ? "•••" : FormatoFin.dinero(v) }
 
+    private func lineaAhorro(_ x: ModeloSalud.Cifras) -> String {
+        guard let t = x.tasa else { return din(x.ahorro) }
+        let pct = FormatoFin.pct(t).replacingOccurrences(of: "+", with: "")
+        return din(x.ahorro) + ", " + pct
+    }
+
+    private func lineaFondo(_ x: ModeloSalud.Cifras) -> String {
+        guard let m = x.cubre else { return din(x.fondo) }
+        return din(x.fondo) + ", " + mesesTexto(m)
+    }
+
     var body: some View {
         FormCasa {
             if let k = e.m?.cierre {
                 Section {
                     FilaLibro(etiqueta: "ingresos", valor: din(k.cifras.ingresos))
                     FilaLibro(etiqueta: "gastos", valor: din(k.cifras.gastos))
-                    FilaLibro(etiqueta: "ahorro", valor: din(k.cifras.ahorro) + (k.cifras.tasa.map { ", " + FormatoFin.pct($0).replacingOccurrences(of: "+", with: "") } ?? ""), acento: k.cifras.ahorro < 0)
+                    FilaLibro(etiqueta: "ahorro", valor: lineaAhorro(k.cifras), acento: k.cifras.ahorro < 0)
                     FilaLibro(etiqueta: "a la inversión", valor: din(k.cifras.invertido))
-                    FilaLibro(etiqueta: "fondo", valor: din(k.cifras.fondo) + (k.cifras.cubre.map { ", " + mesesTexto($0) } ?? ""))
+                    FilaLibro(etiqueta: "fondo", valor: lineaFondo(k.cifras))
                 } header: { Text(k.titulo.lowercased() + ".") }
                 Section {
                     Text(k.preguntas.first ?? "").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
