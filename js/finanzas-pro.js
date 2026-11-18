@@ -1927,6 +1927,7 @@
         // pareciera un panel de administración. Importar está a la vista en movimientos.
         function finAccionesMenu(boton) {
             abrirMenuAcciones(boton, [
+                ['salud.', () => openSaludFinanzas()],
                 ['cuentas y saldos iniciales.', openFinanceProAccountsSettings],
                 ['categorías.', openFinanceProCategoriesModal],
                 ['reglas de importación.', openFinanceProRulesModal],

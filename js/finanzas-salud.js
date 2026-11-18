@@ -686,3 +686,116 @@
             }
             throw new Error('acción desconocida');
         }
+
+        // ---------- la web: «salud.» (Finanzas → acciones.) con lo de los puntos 1 a 3 ----------
+        // Mínimo a propósito: la interfaz completa está en la app del iPhone. Cada cambio pasa por commitFinanceChange y
+        // el modal se rehace por dentro, sin cerrarse.
+
+        function openSaludFinanzas() {
+            showModal(`<div class="salud-modal">${renderSaludFinanzas()}</div>`);
+        }
+
+        function saludRefrescarModal() {
+            const caja = document.querySelector('#modal-container .salud-modal');
+            if (caja) caja.innerHTML = renderSaludFinanzas();
+            if (typeof repintarTrasModal === 'function') repintarTrasModal();
+        }
+
+        async function saludWeb(nombre, datos) {
+            const hecho = await commitFinanceChange(() => saludAccion(nombre, datos || {}), { ok: r => r });
+            if (hecho) saludRefrescarModal();
+        }
+
+        function saludWebResolver(id, como, extra) {
+            saludWeb('resolver', { id, como, ...(extra || {}) });
+        }
+
+        function saludWebSelect(sel, id) {
+            const v = sel.value;
+            sel.value = '';
+            if (!v) return;
+            const [como, valor] = v.split(':');
+            if (como === 'categoria') saludWebResolver(id, 'categoria', { categoria: valor });
+            else if (como === 'traspaso') saludWebResolver(id, 'traspaso', { cuenta: valor });
+            else if (como === 'reembolso') saludWebResolver(id, 'reembolso', { compra: valor });
+            else saludWebResolver(id, como);
+        }
+
+        function saludFilaWeb(t, sub, acciones) {
+            const signo = t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '';
+            return `<div class="finance-rule-row">
+                <div class="finance-rule-info">
+                    <div class="finance-rule-text">${escapeHtml(saludConcepto(t) || 'movimiento')} <span style="white-space:nowrap">${signo}${financeMoney(t.amount)}</span></div>
+                    <div class="finance-rule-sub">${escapeHtml(financeDateLabelShort(t.date))}, ${escapeHtml(financeProCuentaNombre(t.account))}. ${escapeHtml(sub)}</div>
+                </div>
+                ${acciones}
+            </div>`;
+        }
+
+        function renderSaludFinanzas() {
+            const propuestas = saludPropuestas();
+            const revisar = saludPorRevisar(propuestas);
+            const pres = saludPresupuestoAvisos();
+            const futuros = saludPresupuestosFuturos();
+            const k = saludColchones();
+            const est = k.estabilizacion;
+            const nombres = { traspaso: 'traspasos entre tus cuentas.', ahorro: 'a o de tus ahorros.', inversion: 'inversión.', reembolso: 'devoluciones.' };
+            const grupos = Object.keys(nombres).map(tipo => {
+                const l = propuestas.filter(p => p.tipo === tipo);
+                if (!l.length) return '';
+                return `<div class="modal-label">${nombres[tipo]}</div>
+                    ${l.slice(0, 40).map(p => saludFilaWeb(p.t, p.motivo, `<button class="vista-btn" onclick="saludWeb('propuestas', { ids: ['${jsAttr(p.t.id)}'] })">sí.</button>
+                        <button class="vista-btn" onclick="saludWebResolver('${jsAttr(p.t.id)}', 'bien')">no.</button>`)).join('')}
+                    <button class="vista-btn" style="margin:6px 0 10px" onclick="saludWeb('propuestas', { tipo: '${tipo}' })">aceptar ${l.length === 1 ? 'esta' : `las ${l.length}`}.</button>`;
+            }).join('');
+            const opciones = t => {
+                const cats = (financePro.categories || []).filter(c => c.type === t.type);
+                const cuentas = financeProCuentas().filter(c => c !== t.account);
+                const compras = t.type === 'income' ? saludComprasCandidatas(t, 5) : [];
+                return `<select class="modal-input" style="max-width:190px" aria-label="resolver" onchange="saludWebSelect(this, '${jsAttr(t.id)}')">
+                    <option value="">resolver.</option>
+                    <optgroup label="categoría">${cats.map(c => `<option value="categoria:${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('')}</optgroup>
+                    <option value="ahorro">${t.type === 'income' ? 'sale de mis ahorros.' : 'va a mis ahorros.'}</option>
+                    <option value="inversion">inversión.</option>
+                    <optgroup label="traspaso con">${cuentas.map(c => `<option value="traspaso:${escapeHtml(c)}">${escapeHtml(financeProCuentaNombre(c))}</option>`).join('')}</optgroup>
+                    ${compras.length ? `<optgroup label="devuelve">${compras.map(x => `<option value="reembolso:${escapeHtml(x.t.id)}">${escapeHtml((saludConcepto(x.t) || 'compra').slice(0, 30))}, ${financeMoney(x.t.amount)}</option>`).join('')}</optgroup>` : ''}
+                    <option value="bien">está bien así.</option>
+                </select>`;
+            };
+            const avisosPres = [
+                pres.exceso ? `Planificas ${financeMoney(pres.exceso)} más de los ${financeMoney(pres.ingresos)} que esperas ingresar.` : '',
+                pres.suscripcionesFuera || pres.fijosFuera ? `Este mes faltan ${financeMoney(pres.suscripcionesFuera + pres.fijosFuera)} de suscripciones y gastos fijos. <button class="vista-btn" onclick="saludWeb('reponerCompromisos', { mes: '${pres.mes}' })">volver a ponerlos.</button>` : '',
+                ...futuros.map(f => `${escapeHtml(financeMonthLabel(f.mes).toLowerCase())}: ${[f.duplicados.length ? `${f.duplicados.length} ${f.duplicados.length === 1 ? 'casilla repetida' : 'casillas repetidas'}` : '', f.suscripcionesFuera + f.fijosFuera ? 'sin suscripciones ni gastos fijos' : '', f.exceso ? `${financeMoney(f.exceso)} por encima de lo previsto` : ''].filter(Boolean).join(', ')}.`)
+            ].filter(Boolean);
+            const hayDuplicados = pres.duplicados.length || futuros.some(f => f.duplicados.length);
+            return `<div class="modal-title">salud.</div>
+                <div class="finance-modal-note" style="margin-bottom:12px">Ahorro, traspasos, inversión y devoluciones no son ingreso ni gasto. Bitácora propone; nada cambia hasta que lo aceptas. El resto (rutinas, día de cobro, cierre de mes, suscripciones, ficha del fondo) está en la app del iPhone.</div>
+                <div class="finance-panel">
+                    <div class="modal-label">propuestas. ${propuestas.length}</div>
+                    ${propuestas.length ? grupos : '<div class="finance-empty-state">Nada que proponer.</div>'}
+                </div>
+                <div class="finance-panel" style="margin-top:14px">
+                    <div class="modal-label">por revisar. ${revisar.length}</div>
+                    ${revisar.length ? revisar.slice(0, 60).map(r => saludFilaWeb(r.t, r.motivo, opciones(r.t))).join('') : '<div class="finance-empty-state">Nada por revisar.</div>'}
+                </div>
+                <div class="finance-panel" style="margin-top:14px">
+                    <div class="modal-label">presupuestos.</div>
+                    <div class="finance-modal-note">${avisosPres.length ? avisosPres.map(a => `<div style="margin:4px 0">${a}</div>`).join('') : 'Sin casillas repetidas ni compromisos olvidados.'}</div>
+                    ${hayDuplicados ? `<button class="vista-btn" style="margin-top:8px" onclick="saludWeb('quitarDuplicados', {})">quitar las casillas repetidas.</button>` : ''}
+                </div>
+                <div class="finance-panel" style="margin-top:14px">
+                    <div class="modal-label">colchones.</div>
+                    <div class="finance-modal-note">
+                        ${k.esencialesMes ? `Tus gastos esenciales son unos ${financeMoney(k.esencialesMes)} al mes: tu fondo de ${financeMoney(k.fondo)} cubre <b>${String(k.cubre).replace('.', ',')} ${k.cubre === 1 ? 'mes' : 'meses'}</b>. Para ${k.mesesObjetivo} harían falta ${financeMoney(k.objetivoFondo)}.` : 'Todavía no hay meses cerrados con gastos esenciales.'}
+                    </div>
+                    <div class="finance-modal-note" style="margin-top:8px">
+                        Reserva de estabilización, aparte del fondo: tienes ${financeMoney(est.saldo)}${est.objetivo ? ` de ${financeMoney(est.objetivo)}` : ''}.
+                        ${est.meses >= 2 ? `En los últimos ${est.meses} meses entró entre ${financeMoney(est.minimo)} y ${financeMoney(est.maximo)}; la referencia es ${financeMoney(est.base)}.` : ''}
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center">
+                        <input class="modal-input" id="salud-estab-saldo" style="max-width:140px" inputmode="decimal" placeholder="tienes" value="${est.saldo || ''}">
+                        <input class="modal-input" id="salud-estab-objetivo" style="max-width:140px" inputmode="decimal" placeholder="objetivo ${est.objetivoPropuesto || ''}">
+                        <button class="vista-btn" onclick="saludWeb('estabilizacion', { saldo: document.getElementById('salud-estab-saldo').value, objetivo: document.getElementById('salud-estab-objetivo').value })">guardar.</button>
+                    </div>
+                </div>`;
+        }
