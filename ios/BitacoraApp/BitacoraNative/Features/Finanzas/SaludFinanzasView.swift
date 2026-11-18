@@ -459,7 +459,7 @@ struct PorRevisarSaludView: View {
         }
         .navigationTitle("por revisar.")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $devolucion) { p in CompraDevueltaSaludView(p: p, e: e, oculto: oculto) }
+        .hoja(item: $devolucion) { p in CompraDevueltaSaludView(p: p, e: e, oculto: oculto) }
     }
 
     private func menu(_ p: FilaSalud) -> some View {
