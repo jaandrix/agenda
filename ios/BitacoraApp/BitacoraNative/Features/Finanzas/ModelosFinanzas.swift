@@ -68,6 +68,7 @@ struct ModeloCuentas: Decodable, Equatable {
     let cuentas: [Cuenta]
     let cargos: Cargos
     let ultimos: [FilaMov]
+    let salud: ResumenSalud?
 }
 
 struct ModeloMovimientos: Decodable, Equatable {

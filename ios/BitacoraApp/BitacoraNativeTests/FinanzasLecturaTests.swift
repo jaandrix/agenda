@@ -34,6 +34,23 @@ final class FinanzasLecturaTests: XCTestCase {
         XCTAssertEqual(v.saldoLiquido, 100 - 10 - 5 - 7 - 3 - 20 + 50)
     }
 
+    // 0.25: una devolución unida a su compra (reembolsoDe) no es ingreso y resta del gasto, como financeProMonthTotals.
+    func testReembolsoVinculadoRestaDelGasto() throws {
+        let d = try doc(#"""
+        {"financePro": {"accounts": {"online": {"balance0": 0}}, "transactions": [
+            {"id": "c1", "type": "expense", "amount": 50, "account": "online", "date": "2026-11-02", "category": "cat_compras"},
+            {"id": "r1", "type": "income", "amount": 50, "account": "online", "date": "2026-11-05", "reembolsoDe": "c1"},
+            {"id": "g1", "type": "expense", "amount": 20, "account": "online", "date": "2026-11-03"}
+        ]}, "financeProfile": {"estabilizacion": {"saldo": 200}}}
+        """#)
+        let v = LecturaFinanzas.vista(d, hoy: hoy)
+        XCTAssertEqual(v.gastosMes, 20)
+        XCTAssertEqual(v.ingresosMes, 0)
+        XCTAssertTrue(v.movimientos.first { $0.id == "r1" }?.neutro == true)
+        XCTAssertEqual(v.saldoLiquido, -20)
+        XCTAssertEqual(v.patrimonio.aMano, 200)
+    }
+
     func testBaseCeroSinDatos() throws {
         let d = try doc(#"{}"#)
         let v = LecturaFinanzas.vista(d, hoy: hoy)

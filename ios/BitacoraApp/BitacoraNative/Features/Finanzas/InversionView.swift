@@ -271,6 +271,8 @@ struct FichaInversionView: View {
                 }
             } header: { Text("si mantienes el ritmo.") }
 
+            FichaFondoSeccion(id: id)
+
             Section {
                 if d.historico.isEmpty {
                     Text("Todavía no hay meses. Apunta el primero arriba.").foregroundStyle(Paleta.textoSecundario)
@@ -340,5 +342,67 @@ struct FichaInversionView: View {
     private func cambiarTasa() async {
         do { _ = try await escribirFinanzas(c, "inversionTasa", [tasa]); await cargar(mes) }
         catch { aviso = mensajeMotor(error, "no se pudo guardar.") }
+    }
+}
+
+// MARK: - ficha del fondo (0.25)
+
+// ISIN, índice, riesgo de 1 a 7, TER y comisiones: solo lo que escribe la persona (saludAccion «fichaFondo»).
+private struct DatosFondo: Decodable, Equatable {
+    let isin, indice, ter, comisiones, notas: String
+    let riesgo: Int
+}
+
+struct FichaFondoSeccion: View {
+    @Environment(AppCoordinator.self) private var c
+    let id: String
+    @State private var isin = ""
+    @State private var indice = ""
+    @State private var riesgo = 0
+    @State private var ter = ""
+    @State private var comisiones = ""
+    @State private var notas = ""
+    @State private var aviso: String?
+    @State private var guardando = false
+
+    var body: some View {
+        Section {
+            TextField("ISIN, como IE00B03HD191", text: $isin).textInputAutocapitalization(.characters).autocorrectionDisabled()
+            TextField("índice que sigue", text: $indice)
+            Picker("riesgo.", selection: $riesgo) {
+                Text("sin poner").tag(0)
+                ForEach(1...7, id: \.self) { n in Text("\(n) de 7").tag(n) }
+            }
+            HStack {
+                Text("TER.")
+                Spacer()
+                TextField("0,20", text: $ter).keyboardType(.decimalPad).multilineTextAlignment(.trailing).monospacedDigit().frame(maxWidth: 80)
+                Text("%").foregroundStyle(Paleta.textoSecundario)
+            }
+            TextField("otras comisiones", text: $comisiones)
+            TextField("notas", text: $notas, axis: .vertical)
+            if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+            Button(guardando ? "guardando." : "guardar la ficha.") { Task { await guardar() } }.disabled(guardando)
+        } header: { Text("el fondo.") } footer: {
+            Text("Cópialo del documento de datos fundamentales del fondo. Bitácora no lo busca ni lo comprueba.")
+        }
+        .task(id: id) { await cargar() }
+    }
+
+    private func cargar() async {
+        guard let m = try? await motorListo(c), let d = try? await m.llamar("fondoDatos", [id], como: DatosFondo.self) else { return }
+        isin = d.isin; indice = d.indice; riesgo = d.riesgo; ter = d.ter; comisiones = d.comisiones; notas = d.notas
+    }
+
+    private func guardar() async {
+        guardando = true
+        defer { guardando = false }
+        let datos: [String: Any] = ["id": id, "isin": isin, "indice": indice, "riesgo": riesgo == 0 ? "" : String(riesgo), "ter": ter, "comisiones": comisiones, "notas": notas]
+        do {
+            let json = String(data: try JSONSerialization.data(withJSONObject: datos), encoding: .utf8) ?? "{}"
+            aviso = try await escribirFinanzas(c, "saludAccion", ["fichaFondo", json])
+        } catch let e {
+            aviso = mensajeMotor(e, "no se pudo guardar.")
+        }
     }
 }

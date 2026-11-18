@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 // se preparan después, en segundo plano, para que cambiar de pestaña no espere.
 
 enum HojaFinanzas: Identifiable {
-    case importar, buscar, gestor, editarSuscripcion(String?), permitir, revisar, opcion(OpcionFinanzas), presupuesto, objetivo, inversion(String)
+    case importar, buscar, gestor, editarSuscripcion(String?), permitir, revisar, opcion(OpcionFinanzas), presupuesto, objetivo, inversion(String), salud
     var id: String {
         switch self {
         case .importar: return "importar"
@@ -19,6 +19,7 @@ enum HojaFinanzas: Identifiable {
         case .objetivo: return "objetivo"
         case .inversion(let id): return "inversion:" + id
         case .opcion(let o): return "opcion:" + o.rawValue
+        case .salud: return "salud"
         }
     }
 }
@@ -145,6 +146,7 @@ struct FinanzasView: View {
         case .presupuesto: EditorPresupuestoView()
         case .objetivo: ObjetivoPatrimonioView()
         case .inversion(let id): FichaInversionView(id: id, oculto: escondido)
+        case .salud: SaludFinanzasView(oculto: escondido)
         }
     }
 
@@ -349,6 +351,35 @@ struct AvisoPorAjustar: View {
 
 // MARK: - cuentas.
 
+// La entrada a «salud.» (0.25): una línea con lo que espera, o solo el enlace si no hay nada.
+private struct AvisoSalud: View {
+    let s: ResumenSalud
+    let abrir: () -> Void
+
+    private var texto: String {
+        let n = s.propuestas + s.porRevisar
+        var partes: [String] = []
+        if n > 0 { partes.append("\(n) por clasificar") }
+        if s.avisos > 0 { partes.append("\(s.avisos) " + (s.avisos == 1 ? "aviso" : "avisos")) }
+        if partes.isEmpty { return "salud de tus finanzas." }
+        return "salud. " + partes.joined(separator: ", ")
+    }
+
+    var body: some View {
+        let hay = s.propuestas + s.porRevisar + s.avisos > 0
+        Button(action: abrir) {
+            HStack {
+                Text(texto).font(Tipo.poppins(14, .medium, estilo: .footnote)).foregroundStyle(hay ? Paleta.texto : Paleta.acento)
+                Spacer()
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Paleta.textoSecundario)
+            }
+            .frame(minHeight: 44)
+        }
+        .buttonStyle(.plain)
+        .padding(.top, Espacio.s)
+    }
+}
+
 private struct PestanaCuentas: View {
     let m: ModeloCuentas
     let oculto: Bool
@@ -367,6 +398,7 @@ private struct PestanaCuentas: View {
         GraficaPatrimonio(g: m.grafica, oculto: oculto, rango: $rango, extras: $extras)
         BotonFin(texto: "+ movimiento.", acento: true, accion: nuevo).padding(.top, Espacio.m)
         if m.porAjustar.n > 0 || !m.porAjustar.incidencias.isEmpty { AvisoPorAjustar(p: m.porAjustar) { hoja = .revisar } }
+        if let s = m.salud { AvisoSalud(s: s) { hoja = .salud } }
         // renderAvisoPresupuestos
         if !m.avisosPresupuesto.isEmpty {
             VStack(alignment: .leading, spacing: 6) {

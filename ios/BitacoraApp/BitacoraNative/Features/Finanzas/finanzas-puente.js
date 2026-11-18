@@ -233,7 +233,8 @@
                 ritmo: ritmo(),
                 cuentas: financeProCuentas().map(function (k) { return { id: k, nombre: String(nombreCuenta(k)).toLowerCase(), saldo: financeProAccountBalance(k) }; }),
                 cargos: cargos(3),
-                ultimos: financeProOrdenados().slice(0, 5).map(fila)
+                ultimos: financeProOrdenados().slice(0, 5).map(fila),
+                salud: saludResumen()
             };
         },
         movimientos: function (o) {
@@ -780,12 +781,13 @@
             var filaP = function (p) { var f = fila(p.t); f.propuesta = p.tipo; f.motivo = String(p.motivo || ''); f.con = p.con ? fila(p.con) : null; return f; };
             var mes = financeMonthKey();
             var c = saludColchones();
+            var propuestas = saludPropuestas();
             var ingresoCobro = Number(o.ingreso) > 0 ? Number(o.ingreso) : (c.estabilizacion.base || finResSueldoPrevisto(mes) || 0);
             var a = saludAjustes();
             return JSON.stringify({
                 avisos: saludAvisos(),
-                propuestas: saludPropuestas().slice(0, 150).map(filaP),
-                porRevisar: saludPorRevisar().slice(0, 150).map(function (p) { var f = fila(p.t); f.motivo = p.motivo; f.bizum = /bizum/i.test(p.t.bankNote || p.t.note || ''); return f; }),
+                propuestas: propuestas.slice(0, 150).map(filaP),
+                porRevisar: saludPorRevisar(propuestas).slice(0, 150).map(function (p) { var f = fila(p.t); f.motivo = p.motivo; f.bizum = /bizum/i.test(p.t.bankNote || p.t.note || ''); return f; }),
                 presupuesto: saludPresupuestoAvisos(mes),
                 futuros: saludPresupuestosFuturos().map(function (x) { return { mes: x.mes, titulo: financeMonthLabel(x.mes), duplicados: x.duplicados.length, suscripcionesFuera: x.suscripcionesFuera, fijosFuera: x.fijosFuera, exceso: x.exceso, ingresos: x.ingresos, asignado: x.asignado }; }),
                 colchones: c,

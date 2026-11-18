@@ -207,9 +207,9 @@
         }
 
         // Lo que hay que mirar a mano: sin categoría, Bizums sin categoría e ingresos que parecen devoluciones sin compra.
-        function saludPorRevisar() {
+        function saludPorRevisar(propuestas) {
             const enPropuesta = new Set();
-            saludPropuestas().forEach(p => { enPropuesta.add(p.t); if (p.con) enPropuesta.add(p.con); });
+            (propuestas || saludPropuestas()).forEach(p => { enPropuesta.add(p.t); if (p.con) enPropuesta.add(p.con); });
             const r = [];
             (financePro.transactions || []).forEach(t => {
                 if (!saludLibre(t) || enPropuesta.has(t)) return;
@@ -512,8 +512,9 @@
             const mes = financeMonthKey();
             const m = financeBudgetUnifiedModel(mes, presupuestoPlanDe(mes).plan, null);
             const quedaPresupuestos = saludRedondo(m.categories.reduce((s, c) => s + Math.max(0, c.remaining), 0));
+            const propuestas = saludPropuestas();
             return {
-                porRevisar: saludPorRevisar().length, propuestas: saludPropuestas().length,
+                porRevisar: saludPorRevisar(propuestas).length, propuestas: propuestas.length,
                 queda: quedaPresupuestos, presupuestosPasados: m.categories.filter(c => c.status === 'superado').map(c => String(c.name)),
                 cargos: saludCargosProximos(7), ultima: saludAjustes().ultimaSemanal
             };
@@ -559,7 +560,7 @@
         function saludFichaFondo(id) {
             const a = (financeProfile.investmentAccounts || []).find(x => String(x.id) === String(id));
             const f = a?.fondo || {};
-            return { id: String(id), nombre: String(a?.name || 'inversión'), isin: f.isin || '', indice: f.indice || '', riesgo: f.riesgo || null, ter: f.ter ?? '', comisiones: f.comisiones || '', notas: f.notas || '' };
+            return { id: String(id), nombre: String(a?.name || 'inversión'), isin: f.isin || '', indice: f.indice || '', riesgo: Number(f.riesgo) || 0, ter: f.ter == null ? '' : String(f.ter).replace('.', ','), comisiones: f.comisiones || '', notas: f.notas || '' };
         }
 
         function saludIsinValido(s) {
@@ -575,6 +576,12 @@
                 const precio = Number(w.price) || 0;
                 return { id: String(w.id), titulo: String(w.title || ''), precio, esperaHasta: w.esperaHasta || null, horasQuedan: hasta && hasta > ahora ? Math.ceil((hasta - ahora) / 3600000) : 0, listo: !!hasta && hasta <= ahora, diasSugeridos: precio >= 150 ? 7 : 2 };
             });
+        }
+
+        // Lo que cabe en una línea de Finanzas: cuántas cosas esperan en «salud.».
+        function saludResumen() {
+            const propuestas = saludPropuestas();
+            return { propuestas: propuestas.length, porRevisar: saludPorRevisar(propuestas).length, avisos: saludAvisos().length + (saludPresupuestoAvisos().duplicados.length ? 1 : 0) };
         }
 
         // ---------- avisos (opcionales, se ven al abrir Finanzas) ----------
