@@ -140,8 +140,9 @@ final class TintaTests: XCTestCase {
             .font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit()
             etiqueta("categorías: cada color, su gris.")
             HStack(spacing: 8) {
-                ForEach(Array(zip(IconosCategoria.lista.prefix(6), ["#E5484D", "#F2C94C", "#2463C9", "#30A46C", "#8E4EC6", ""])), id: \.0.clave) { par in
-                    IconoCategoria(icono: par.0.clave, color: par.1, tam: 36)
+                let colores = ["#E5484D", "#F2C94C", "#2463C9", "#30A46C", "#8E4EC6", ""]
+                ForEach(0..<colores.count, id: \.self) { n in
+                    IconoCategoria(icono: IconosCategoria.lista[n].clave, color: colores[n], tam: 36)
                 }
             }
             etiqueta("ocio, nube y estados.")
@@ -149,7 +150,7 @@ final class TintaTests: XCTestCase {
             HStack(spacing: 16) {
                 IndicadorSync(estado: .reposo)
                 IndicadorSync(estado: .trayendo)
-                IndicadorSync(estado: .error)
+                IndicadorSync(estado: .error("sin red"))
             }
             FilaLibro(etiqueta: "gastado este mes.", valor: "642,10 €")
             Text("comida con marta").font(Tipo.cuerpo).foregroundStyle(Paleta.texto).frame(maxWidth: .infinity, alignment: .leading).campoCasa(activo: true)
