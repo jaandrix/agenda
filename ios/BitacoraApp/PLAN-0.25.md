@@ -225,3 +225,4 @@ aquí (Windows): lo compila el workflow `ios-nativa.yml`.
 - **Rutinas:** día de cobro con 568, 800 y 1.234 €; cierre de octubre con las dos respuestas.
 - **Inversión → tu fondo:** ISIN, índice, riesgo, TER; guardar y volver a abrir.
 - **La web:** Finanzas → acciones. → salud.; y «exportar para tu ia.» trae «Salud financiera» al final.
+_relanzada (intento 1, GitHub sin Mac)._
