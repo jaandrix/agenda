@@ -1839,6 +1839,20 @@
                 lines.push('');
             }
 
+            // 0.25: lo que hace falta para leer bien estas cifras (finanzas-salud.js).
+            if (typeof saludColchones === 'function') {
+                const k = saludColchones(), e = k.estabilizacion;
+                const propuestas = saludPropuestas();
+                lines.push('## Salud financiera');
+                lines.push('Ingresos y gastos no incluyen ahorro (bolsillos), traspasos entre cuentas propias, inversión, ajustes de saldo ni devoluciones unidas a su compra (que restan del gasto de su categoría).');
+                lines.push(`- Gastos esenciales medios: ${financeMoney(k.esencialesMes)} al mes. El fondo de emergencia (${financeMoney(k.fondo)}) cubre ${k.cubre ?? 'sin datos'} meses; objetivo de ${k.mesesObjetivo} meses: ${financeMoney(k.objetivoFondo)}.`);
+                lines.push(`- Reserva de estabilización: ${financeMoney(e.saldo)} de ${financeMoney(e.objetivo)}; ingreso de referencia ${financeMoney(e.base)} (últimos meses entre ${financeMoney(e.minimo)} y ${financeMoney(e.maximo)}).`);
+                lines.push(`- Sin clasificar: ${propuestas.length} propuestas pendientes y ${saludPorRevisar(propuestas).length} movimientos por revisar.`);
+                const neto = saludCosteNeto().filter(c => c.destacada || c.devuelto);
+                if (neto.length) lines.push(mdTable(['Categoría (este mes)', 'Gastado', 'Devuelto o vendido', 'Neto'], neto.map(c => [c.nombre, financeMoney(c.bruto), financeMoney(c.devuelto), financeMoney(c.neto)])));
+                lines.push('');
+            }
+
             return lines.join('\n');
         }
 
