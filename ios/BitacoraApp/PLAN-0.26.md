@@ -79,3 +79,5 @@ F-09, F-10, F-11, F-13 y F-07 en el iPhone. XCTest: `testElLibroUsaLaHojaDeMovim
 4. «deshacer importación.» → «quitar solo lo que entró.» de la última: quita solo esos movimientos.
 5. iPhone: lo mismo con el Excel de Ibercaja (elige la hoja buena) y el CSV de Revolut; filas de hucha sin casilla.
 6. Un CSV con fechas 04/05 y sin cabecera en español: pregunta el formato antes de importar.
+
+_19-11: la IPA de la 0.26 se compila con 99c7d8d (recargas de Revolut ya conciliadas no se repiten)._
