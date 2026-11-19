@@ -212,10 +212,19 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         assert.equal(importar(filas, 'bancos').cuadre.cuadra, true);
     });
 
-    test('una recarga entre tus bancos es un traspaso sin tener reglas', { todo: 'a 2 o 3 días y con el concepto «Revolut**…» en Ibercaja no se empareja: cuenta como gasto y como ingreso para quien aún no tenga la regla' }, () => {
-        vaciar({ online: aperturaRevolut(), bancos: aperturaIbercaja() });
-        importar(IBERCAJA, 'bancos'); REVOLUT.forEach(e => importar(e, 'online'));
-        assert.equal(run(`financePro.transactions.filter(t => t.type === 'income' && /Top-up/.test(t.note || '')).length`), 0);
+    // Arreglado el 19-11 (auditoría F-05). La recarga del 28-10 (536,96 €) no sale en el extracto de Ibercaja, que acaba
+    // ese día: solo tiene una mitad y se queda como está (la propone «salud.»).
+    test('una recarga entre tus bancos es un traspaso sin tener reglas, en los dos órdenes', () => {
+        const recargasIbercaja = new Set(IBERCAJA.filter(r => /Revolut/.test(r[4])).map(r => Math.abs(numero(r[6]))));
+        for (const orden of ['ibercaja primero', 'revolut primero']) {
+            vaciar({ online: aperturaRevolut(), bancos: aperturaIbercaja() });
+            if (orden === 'ibercaja primero') { importar(IBERCAJA, 'bancos'); REVOLUT.forEach(e => importar(e, 'online')); }
+            else { REVOLUT.forEach(e => importar(e, 'online')); importar(IBERCAJA, 'bancos'); }
+            ctx.__recargas = [...recargasIbercaja];
+            const sueltas = run(`JSON.stringify(financePro.transactions.filter(t => t.type === 'income' && /Top-up/.test(t.note || '') && t.date >= '2023-09-01' && t.date <= '2023-10-26' && __recargas.includes(Number(t.amount))).map(t => [t.date, t.amount]))`);
+            assert.equal(sueltas, '[]', orden);
+            assert.ok(run(`financePro.transactions.filter(t => t.type === 'transfer' && t.account === 'bancos' && t.transferTo === 'online').length`) >= 6, orden);
+        }
     });
 }
 
@@ -625,4 +634,165 @@ test('salud: los fallos de la simulación con datos reales (reembolsos mal unido
     run(`financePro.salud = { ordinario: 853 }`);
     assert.equal(JSON.parse(run('JSON.stringify(saludReparto(800))')).sinMargen, true);
     assert.equal(JSON.parse(run('JSON.stringify(saludReparto(1200))')).sinMargen, false);
+});
+
+
+// ---- Importador 0.26 (auditoría de GPT del 19-11, casos-adversos-importador.mjs y uno por arreglo) ----
+const nuevoImportador = () => {
+    const app = cargarApp();
+    app.importar = (datos, cuenta) => { app.ctx.__d = datos; return JSON.parse(app.run(`JSON.stringify(__importar(__d, ${JSON.stringify(cuenta)}))`)); };
+    app.preparar = (datos, cuenta) => { app.ctx.__d = datos; app.run(`globalThis.__imp = financeProPrepararImport(__d, ${JSON.stringify(cuenta)}); renderFinanceProImportFilas(__imp)`); };
+    app.movs = () => JSON.parse(app.run(`JSON.stringify(financePro.transactions.map(t => ({ id: t.id, account: t.account, type: t.type, amount: t.amount, note: t.note, bankNote: t.bankNote, pendiente: !!t.pendiente, conciliado: !!t.conciliado, transferTo: t.transferTo })))`));
+    return app;
+};
+
+test('F-01: Status, Transaction Status, State y Estado; pendiente, anulado, hecho y desconocido', () => {
+    const { run, importar, preparar, movs } = nuevoImportador();
+    for (const cab of ['Status', 'Transaction Status', 'State', 'Estado']) {
+        run(`__vaciar({ bancos: 0 })`);
+        const r = importar(`Date,Description,Amount,${cab},Balance\n10/11/2026,Compra real,-10,COMPLETED,90\n11/11/2026,Cargo pendiente,-20,PENDING,70\n12/11/2026,Cargo anulado,-30,REVERTED,70\n12/11/2026,Otro anulado,-5,VOIDED,70\n12/11/2026,Rechazado,-6,REJECTED,70\n13/11/2026,Asentado,-1,SETTLED,69\n13/11/2026,Raro,-2,QUIZÁ,69`, 'bancos');
+        const m = movs();
+        assert.deepEqual(m.map(t => [t.note, t.amount, t.pendiente]).sort(), [['Asentado', 1, false], ['Cargo pendiente', 20, true], ['Compra real', 10, false]], cab);
+        assert.equal(r.excluidas, 4, `${cab}: anuladas y el estado desconocido salen desmarcados`);
+    }
+    preparar(`Date,Description,Amount,Status\n13/11/2026,Raro,-2,QUIZÁ`, 'bancos');
+    assert.match(run(`financeProFilasDelExtracto(__imp)[0].fuera`), /estado del banco/);
+    run(`__vaciar({ bancos: 0 }); __imp.excluidas = new Set(); financeProEjecutarImport(__imp)`);
+    assert.equal(run(`financePro.transactions.length`), 1, 'el estado desconocido entra si se marca a mano');
+});
+
+test('F-01: un pendiente que luego sale anulado se quita aunque su fila venga desmarcada', () => {
+    const { run, importar } = nuevoImportador();
+    run(`__vaciar({ online: 100 })`);
+    const cab = 'Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance';
+    importar(`${cab}\nCard Payment,Current,2026-11-10 10:00:00,,Hotel,-50.00,0.00,EUR,PENDING,`, 'online');
+    assert.equal(run(`financePro.transactions.length`), 1);
+    const r = importar(`${cab}\nCard Payment,Current,2026-11-10 10:00:00,,Hotel,-50.00,0.00,EUR,REVERTED,`, 'online');
+    assert.equal(r.anulados, 1);
+    assert.equal(run(`financePro.transactions.length`), 0);
+});
+
+test('F-02: dos compras distintas del mismo importe y fechas cercanas son dos; lo idéntico sí sale desmarcado', () => {
+    const { run, preparar } = nuevoImportador();
+    run(`__vaciar({ bancos: 0 }); financePro.transactions.push({ id: 'viejo', date: '2026-11-10', account: 'bancos', type: 'expense', amount: 12.34, note: 'Panadería' })`);
+    preparar(`Fecha,Concepto,Importe\n12/11/2026,Farmacia,-12.34\n10/11/2026,Panadería,-12.34`, 'bancos');
+    assert.deepEqual(JSON.parse(run(`JSON.stringify([...__imp.excluidas])`)), [1], 'solo la panadería idéntica');
+    assert.equal(run(`__imp.posibles.has(0)`), false, 'la panadería ya tiene su fila: la farmacia no se le parece');
+    run(`financeProEjecutarImport(__imp)`);
+    assert.equal(run(`financePro.transactions.length`), 2);
+    run(`__vaciar({ bancos: 0 }); financePro.transactions.push({ id: 'viejo', date: '2026-11-10', account: 'bancos', type: 'expense', amount: 12.34, note: 'Panadería' })`);
+    preparar(`Fecha,Concepto,Importe\n12/11/2026,Farmacia,-12.34`, 'bancos');
+    assert.equal(run(`__imp.excluidas.size`), 0, 'caso de GPT: la farmacia sigue marcada');
+    assert.match(run(`__imp.posibles.get(0) || ''`), /se parece a «Panadería»/, 'con un aviso');
+    run(`__vaciar({ bancos: 0 }); financePro.transactions.push({ id: 'otro', date: '2026-11-11', account: 'online', type: 'expense', amount: 12.34, note: 'Panadería' })`);
+    preparar(`Fecha,Concepto,Importe\n12/11/2026,Farmacia,-12.34`, 'bancos');
+    assert.equal(run(`__imp.excluidas.size`), 0, 'un gasto de otra cuenta no tapa uno de esta');
+});
+
+test('F-02: dos gastos iguales el mismo día en la misma cuenta son dos', () => {
+    const { run, importar } = nuevoImportador();
+    run(`__vaciar({ bancos: 0 })`);
+    importar(`Fecha,Concepto,Importe\n10/11/2026,Café,-1.60\n10/11/2026,Café,-1.60`, 'bancos');
+    assert.equal(run(`financePro.transactions.length`), 2);
+    assert.equal(importar(`Fecha,Concepto,Importe\n10/11/2026,Café,-1.60\n10/11/2026,Café,-1.60`, 'bancos').nuevos, 0);
+});
+
+test('F-03: un apunte a mano de otra cuenta no se funde por los céntimos; salud lo propone y se une al aceptarlo', () => {
+    const { run, importar, movs } = nuevoImportador();
+    run(`__vaciar({ bancos: 0, online: 0 }); financePro.transactions.push({ id: 'manual-online', date: '2026-11-10', account: 'online', type: 'expense', amount: 8.42, note: 'Café', manual: true })`);
+    importar(`Fecha,Concepto,Importe\n10/11/2026,Farmacia,-8.42`, 'bancos');
+    const m = movs();
+    assert.equal(m.length, 2);
+    assert.deepEqual(m.find(t => t.id === 'manual-online'), { id: 'manual-online', account: 'online', type: 'expense', amount: 8.42, note: 'Café', pendiente: false, conciliado: false });
+    const p = JSON.parse(run(`JSON.stringify(saludPropuestas().filter(p => p.tipo === 'apunte').map(p => [p.t.id, p.con.note]))`));
+    assert.deepEqual(p, [['manual-online', 'Farmacia']]);
+    run(`saludAplicarPropuestas('apunte')`);
+    assert.deepEqual(movs().map(t => [t.id, t.account, t.note, t.bankNote, t.conciliado]), [['manual-online', 'bancos', 'Café', 'Farmacia', true]]);
+});
+
+test('F-03: un apunte a mano se funde solo en su cuenta, o en otra si el concepto se parece', () => {
+    const { run, importar, movs } = nuevoImportador();
+    run(`__vaciar({ bancos: 0, online: 0 }); financePro.transactions.push({ id: 'm1', date: '2026-11-10', account: 'bancos', type: 'expense', amount: 5, note: 'parking', manual: true },
+        { id: 'm2', date: '2026-11-10', account: 'online', type: 'expense', amount: 3.75, note: 'primaprix', manual: true })`);
+    importar(`Fecha,Concepto,Importe\n11/11/2026,Zaragoza ApParca,-5.00\n10/11/2026,PAGO MOVIL EN PRIMAPRIX ZARAG,-3.75`, 'bancos');
+    assert.deepEqual(movs().map(t => [t.id, t.account, t.bankNote, t.conciliado]).sort(), [['m1', 'bancos', 'Zaragoza ApParca', true], ['m2', 'bancos', 'PAGO MOVIL EN PRIMAPRIX ZARAG', true]]);
+});
+
+test('F-04: ajustar y fijar el saldo descuentan lo retenido, también con otra diferencia a la vez', async () => {
+    const { run } = nuevoImportador();
+    run(`__vaciar({ bancos: 0 }); closeModal = () => {}; render = () => {}; saveData = async () => {}; showToast = () => {};`);
+    await run(`window._financeProCuadre = { esperado: 100, actual: 80, retenido: 10, hasta: '2026-11-12', cuenta: 'bancos' }; financeProAjustarAlExtracto()`);
+    assert.equal(run(`financePro.transactions[0].amount`), 10);
+    run(`__vaciar({ bancos: 0 })`);
+    await run(`window._financeProCuadre = { esperado: 100, actual: 95, retenido: 10, hasta: '2026-11-12', cuenta: 'bancos' }; financeProAjustarAlExtracto()`);
+    assert.deepEqual(JSON.parse(run(`JSON.stringify([financePro.transactions[0].type, financePro.transactions[0].amount])`)), ['expense', 5]);
+    assert.equal(run(`financeProDiferenciaCuadre({ esperado: 100, actual: 80, retenido: 10 })`), 10);
+    assert.equal(run(`financeProDiferenciaCuadre({ esperado: 100, actual: 80, retenido: 10, diff: 7 })`), 7);
+});
+
+test('F-08: el formato de fechas e importes se decide con todo el archivo y, si no se puede, se pregunta', () => {
+    const { run, preparar } = nuevoImportador();
+    run(`__vaciar({ bancos: 0 })`);
+    preparar(`Date,Description,Amount\n04/05/2026,Shop,"1,234.56"\n04/13/2026,Shop,"1,234"`, 'bancos');
+    assert.deepEqual(JSON.parse(run(`JSON.stringify([__imp.mapping.fechas, __imp.mapping.decimal, financeProFormatoListo(__imp)])`)), ['mdy', '.', true]);
+    assert.deepEqual(JSON.parse(run(`JSON.stringify(financeProFilasDelExtracto(__imp).map(f => [f.date, f.val]))`)), [['2026-04-05', 1234.56], ['2026-04-13', 1234]]);
+    preparar(`Fecha,Concepto,Importe\n04/05/2026,Tienda,"1,234"\n13/05/2026,Tienda,"2,50"`, 'bancos');
+    assert.deepEqual(JSON.parse(run(`JSON.stringify(financeProFilasDelExtracto(__imp).map(f => [f.date, f.val]))`)), [['2026-05-04', 1.23], ['2026-05-13', 2.5]]);
+    preparar(`Date,Description,Amount\n04/05/2026,Shop,"1,234"`, 'bancos');
+    assert.deepEqual(JSON.parse(run(`JSON.stringify([__imp.formato.dudaFechas, __imp.formato.dudaDecimal, financeProListoParaImportar(__imp)])`)), [true, true, false]);
+    run(`financeProElegirFormato(__imp, 'fechas', 'mdy'); financeProElegirFormato(__imp, 'decimal', '.')`);
+    assert.equal(run(`financeProListoParaImportar(__imp)`), true);
+    assert.deepEqual(JSON.parse(run(`JSON.stringify(financeProFilasDelExtracto(__imp).map(f => [f.date, f.val]))`)), [['2026-04-05', 1234]]);
+    preparar(`Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance\nCard Payment,Current,2026-05-04 10:00:00,2026-05-04 10:00:01,Shop,-1.234,0.00,EUR,COMPLETED,10`, 'online');
+    assert.equal(run(`financeProFormatoListo(__imp)`), true, 'Revolut no pregunta');
+});
+
+test('F-10: una fila de hucha marcada a mano no entra en la cuenta', () => {
+    const { run, preparar } = nuevoImportador();
+    run(`__vaciar({ online: 0 })`);
+    preparar(`Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance\nTransfer,Savings,2026-11-10 10:00:00,2026-11-10 10:00:01,To pocket EUR Viaje,20.00,0.00,EUR,COMPLETED,20\nCard Payment,Current,2026-11-10 11:00:00,2026-11-10 11:00:01,Shop,-5.00,0.00,EUR,COMPLETED,95`, 'online');
+    assert.equal(run(`financeProFilasDelExtracto(__imp)[0].bloqueada`), true);
+    run(`window._financeProImport = __imp; renderFinanceProImportMapping = () => ''; financeProImportFila(0, true)`);
+    assert.equal(run(`__imp.excluidas.has(0)`), true, 'la vista previa no deja marcarla');
+    run(`__imp.excluidas = new Set(); financeProEjecutarImport(__imp)`);
+    assert.deepEqual(JSON.parse(run(`JSON.stringify(financePro.transactions.map(t => t.note))`)), ['Shop'], 'y quien importa la vuelve a mirar');
+});
+
+test('F-11: sin columna de saldo se dice que no se ha podido comprobar', () => {
+    const { run, preparar } = nuevoImportador();
+    run(`__vaciar({ bancos: 0 })`);
+    preparar(`Fecha,Concepto,Importe\n10/11/2026,Tienda,-5`, 'bancos');
+    assert.equal(run(`financeProTieneSaldo(__imp)`), false);
+    assert.match(run(`window._financeProImport = __imp; renderFinanceProImportMapping()`), /no trae la columna de saldo/);
+});
+
+test('F-13: cada movimiento nuevo lleva su lote y su fila; quitar el lote quita solo eso; el mismo archivo se reconoce', () => {
+    const { run, importar, preparar } = nuevoImportador();
+    run(`__vaciar({ bancos: 0 }); financePro.transactions.push({ id: 'mio', date: '2026-11-01', account: 'bancos', type: 'expense', amount: 3, note: 'a mano' })`);
+    const csv = `Fecha,Concepto,Importe\n10/11/2026,Tienda,-5\n11/11/2026,Bar,-2`;
+    const r = importar(csv, 'bancos');
+    assert.deepEqual(JSON.parse(run(`JSON.stringify(financePro.transactions.filter(t => t.importLote === ${JSON.stringify(r.lote)}).map(t => [t.note, t.importFila, typeof t.importHuella]))`)), [['Tienda', 2, 'string'], ['Bar', 3, 'string']]);
+    preparar(csv, 'bancos');
+    assert.ok(run(`!!financeProLoteRepetido(__imp)`));
+    assert.equal(run(`financeProQuitarLoteEn(${JSON.stringify(r.lote)})`), 2);
+    assert.deepEqual(JSON.parse(run(`JSON.stringify(financePro.transactions.map(t => t.id))`)), ['mio']);
+});
+
+test('F-06: se puede importar a una cuenta que no es de las tres de siempre', () => {
+    const { run, importar } = nuevoImportador();
+    run(`__vaciar({}); financePro.accounts.myinv = { name: 'MyInvestor', balance0: 0 }`);
+    importar(`Fecha,Concepto,Importe\n10/11/2026,Aportación,-50`, 'myinv');
+    assert.equal(run(`financePro.transactions[0].account`), 'myinv');
+    assert.ok(run(`financeProCuentasImportables().includes('myinv')`));
+});
+
+test('F-09: las hojas de un Excel van en el orden del libro, primero las visibles, y con las fechas de 1904', () => {
+    const { run } = cargarApp();
+    const libro = `<workbook xmlns:r="r"><workbookPr date1904="1"/><sheets><sheet name="Portada" r:id="rId1"/><sheet name="Oculta" state="hidden" r:id="rId2"/><sheet name="Movimientos" r:id="rId3"/></sheets></workbook>`;
+    const rels = `<Relationships><Relationship Id="rId1" Target="worksheets/sheet3.xml"/><Relationship Id="rId2" Target="worksheets/sheet1.xml"/><Relationship Id="rId3" Target="/xl/worksheets/sheet2.xml"/></Relationships>`;
+    const r = JSON.parse(run(`JSON.stringify(financeProHojasDelLibro(${JSON.stringify(libro)}, ${JSON.stringify(rels)}, ['xl/worksheets/sheet1.xml', 'xl/worksheets/sheet2.xml', 'xl/worksheets/sheet3.xml']))`));
+    assert.deepEqual(r, { hojas: ['xl/worksheets/sheet3.xml', 'xl/worksheets/sheet2.xml', 'xl/worksheets/sheet1.xml'], fecha1904: true, visibles: 2 });
+    assert.deepEqual(JSON.parse(run(`JSON.stringify(financeProHojasDelLibro('', '', ['xl/worksheets/sheet10.xml', 'xl/worksheets/sheet2.xml']))`)), { hojas: ['xl/worksheets/sheet2.xml', 'xl/worksheets/sheet10.xml'], fecha1904: false });
+    assert.equal(run(`financeProEsCabecera(['Banco'])`), false);
+    assert.equal(run(`financeProEsCabecera(['Fecha', 'Importe'])`), true);
 });

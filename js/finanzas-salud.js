@@ -196,6 +196,17 @@
                 tomadas.add(mejor); tomadas.add(sal);
                 r.push({ tipo: 'traspaso', t: sal, con: mejor, motivo: `sale de ${financeProCuentaNombre(sal.account)} y entra en ${financeProCuentaNombre(mejor.account)} el mismo importe.` });
             });
+            // apunte (0.26): un apunte a mano y un movimiento del banco que parecen el mismo (importe exacto, ≤3 días) y que
+            // el importador ya no funde solo porque no está claro: otra cuenta o concepto distinto (auditoría F-03).
+            const bancoLibre = (financePro.transactions || []).filter(t => !t.manual && (t.type === 'income' || t.type === 'expense') && t.date && !tomadas.has(t));
+            libres.forEach(t => {
+                if (!t.manual || t.conciliado || tomadas.has(t)) return;
+                const b = bancoLibre.filter(x => !tomadas.has(x) && x.type === t.type && Math.abs((Number(x.amount) || 0) - (Number(t.amount) || 0)) < 0.005 && saludDias(x.date, t.date) <= 3)
+                    .sort((x, y) => saludDias(x.date, t.date) - saludDias(y.date, t.date))[0];
+                if (!b) return;
+                tomadas.add(t); tomadas.add(b);
+                r.push({ tipo: 'apunte', t, con: b, motivo: `parece «${saludConcepto(b) || 'un movimiento'}» de ${financeProCuentaNombre(b.account)} del ${financeDateLabelShort(b.date)}: si es el mismo, se quedan uno con tu nota y la cuenta y la fecha del banco.` });
+            });
             const yaUsadas = saludYaDevuelto(null);
             const gastos = (financePro.transactions || []).filter(t => t.type === 'expense' && t.date && !financeProNeutro(t));
             libres.forEach(t => {
@@ -290,6 +301,15 @@
                 if (d.con) saludHacerTraspaso(t, saludPorId(d.con));
                 else saludTraspasoCon(t, d.cuenta);
                 return 'Ahora es un traspaso entre tus cuentas';
+            case 'apunte': {
+                const b = saludPorId(d.con);
+                if (!b || b === t || !t.manual || b.type !== t.type) throw new Error('Ese movimiento ya no está');
+                Object.assign(t, { date: b.date, account: b.account, bankNote: b.bankNote ?? b.note, conciliado: true, needsReview: false });
+                ['pendiente', 'hora', 'orden', 'importLote', 'importFila', 'importHuella', 'claveImport', 'claveImport2'].forEach(k => { if (b[k] !== undefined) t[k] = b[k]; });
+                if (!t.category && b.category) t.category = b.category;
+                financePro.transactions = financePro.transactions.filter(x => x !== b);
+                return 'Unido al movimiento del banco';
+            }
             case 'desvincular':
                 delete t.reembolsoDe;
                 return 'Ya no cuenta como devolución';
@@ -764,7 +784,7 @@
             const futuros = saludPresupuestosFuturos();
             const k = saludColchones();
             const est = k.estabilizacion;
-            const nombres = { traspaso: 'traspasos entre tus cuentas.', ahorro: 'a o de tus ahorros.', inversion: 'inversión.', reembolso: 'devoluciones.' };
+            const nombres = { apunte: 'apuntes a mano que ya trajo el banco.', traspaso: 'traspasos entre tus cuentas.', ahorro: 'a o de tus ahorros.', inversion: 'inversión.', reembolso: 'devoluciones.' };
             const grupos = Object.keys(nombres).map(tipo => {
                 const l = propuestas.filter(p => p.tipo === tipo);
                 if (!l.length) return '';

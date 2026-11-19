@@ -98,6 +98,7 @@ const GUIA_IA_RECETAS = [
         'Descarga el extracto desde la web o la app de tu banco, en Excel (.xlsx) o CSV. Si tu banco solo da .xls (el formato antiguo), ábrelo y guárdalo como .xlsx o CSV.',
         'En Finanzas, pulsa «importar.» y sube el archivo. En el móvil también puedes pulsar «importar extracto.» y pegar lo que hayas copiado (por ejemplo, el CSV de Revolut desde su botón de compartir).',
         'Revisa que la cuenta destino sea la correcta y que las columnas de fecha, concepto e importe estén bien.',
+        'Revisa las filas: las que ya están salen desmarcadas; las que solo se parecen por el importe siguen marcadas con un aviso. Si Bitácora pregunta el formato de las fechas o de los importes, elígelo.',
         'Pulsa «Importar movimientos». Bitácora evita duplicados, aunque los extractos se solapen.',
         'Si el extracto trae el saldo y no cuadra, Bitácora te enseña qué sobra o qué falta, para arreglarlo con un botón.',
     ]],
@@ -244,6 +245,7 @@ const GUIA_IA_PROBLEMAS = [
         'Si tu banco separa cargos y abonos en dos columnas, marca «Mi banco separa cargo y abono en dos columnas».',
         'Si es un .xls antiguo, ábrelo en Excel o LibreOffice y guárdalo como .xlsx o CSV.',
         'Si aparece algo duplicado, Finanzas tiene «Buscar duplicados»; y si el saldo no cuadra con el del extracto, la ventana del cuadre enseña qué sobra o qué falta.',
+        'Si un apunte a mano y su cargo del banco quedan los dos, mira «salud.»: propone unirlos. Si una importación salió mal, «deshacer importación.» → «quitar solo lo que entró.».',
     ]],
     ['Un movimiento cuenta como gasto y no lo es', [
         'Si es dinero que va o viene de una hucha o bolsillo, márcalo como «va a mis ahorros.» o «viene de mis ahorros.».',
