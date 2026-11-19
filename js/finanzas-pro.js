@@ -3774,13 +3774,17 @@
                     || financeProTraspasoAprendido(m.account, type, description);
                 const effectiveAccount = rule ? (type === 'income' ? rule.otherAccount : m.account) : m.account;
                 const dedupeKey = `${effectiveAccount}|${date}|${amount}|${description}`;
+                // Con una regla de traspaso, la fila puede estar ya conciliada con un traspaso apuntado (financeProTraspasoCercano),
+                // que guarda la clave con la cuenta del extracto y no con la de la regla: reimportar el extracto de Revolut volvía
+                // a crear las recargas de septiembre (simulación con la exportación real del 29-10, 677,25 €).
+                const clavesFila = [...new Set([effectiveAccount, m.account])].flatMap(c => [date, ...altDates].map(d => `${c}|${d}|${amount}|${description}`));
                 // Primero, lo que ya existe tal cual (misma cuenta, día, importe
                 // y concepto): esa fila es ese movimiento y no se busca nada
                 // más. Antes se buscaba antes un pendiente parecido, y el
                 // aparcamiento del 1 de octubre «completaba» el pendiente del
                 // 9, que se movía al día 1 y quedaba duplicado.
                 if (!esAnulado) {
-                    const exacta = [dedupeKey, ...altDates.map(d => `${effectiveAccount}|${d}|${amount}|${description}`)].find(yaEsta);
+                    const exacta = clavesFila.find(yaEsta);
                     if (exacta) {
                         consumir(exacta);
                         ponerMarca(financePro.transactions.find(t => !t.hora && t.orden == null && [`${t.account}|${t.date}|${t.amount}|${t.bankNote ?? t.note ?? ''}`, t.claveImport].includes(exacta)));
@@ -3827,7 +3831,7 @@
                 // Se comprueba también con las fechas alternativas de la
                 // fila (ver altDates arriba) para no duplicar un movimiento
                 // que ya se importó pendiente con otra fecha.
-                const repetida = [dedupeKey, ...altDates.map(d => `${effectiveAccount}|${d}|${amount}|${description}`)].find(yaEsta);
+                const repetida = clavesFila.find(yaEsta);
                 if (repetida) { consumir(repetida); skipped++; return; }
                 // En la cuenta del extracto: con una regla de traspaso, effectiveAccount es la otra (Ibercaja), y allí encontraba
                 // cualquier movimiento del mismo día e importe (el historial antiguo) y daba la recarga por ya apuntada.
@@ -3861,8 +3865,17 @@
                 if (mitad) {
                     reclamados.add(mitad);
                     if (!mitad.bankNote && mitad.note) mitad.bankNote = mitad.note;
+                    const propia = `${mitad.account}|${mitad.date}|${mitad.amount}|${mitad.bankNote ?? mitad.note ?? ''}`;
                     Object.assign(mitad, { type: 'transfer', account: effectiveAccount, transferTo: type === 'income' ? m.account : rule.otherAccount, category: undefined, needsReview: false, categoriaAuto: undefined, conciliado: true });
                     if (!mitad.claveImport) mitad.claveImport = dedupeKey; else mitad.claveImport2 = dedupeKey;
+                    // Como en financeProEmparejarTraspasos: el traspaso lleva la fecha de la recarga, no la de cuando Ibercaja
+                    // la asienta, o el extracto de Revolut de fin de mes no cuadraba (677,25 € en septiembre, datos reales).
+                    if (date < mitad.date && !mitad.claveImport2) {
+                        mitad.claveImport2 = propia;
+                        mitad.date = date;
+                        delete mitad.orden; delete mitad.hora;
+                        Object.assign(mitad, marcaDia);
+                    }
                     conciliados++;
                     return;
                 }

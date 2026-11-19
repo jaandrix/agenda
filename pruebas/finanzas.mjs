@@ -796,3 +796,27 @@ test('F-09: las hojas de un Excel van en el orden del libro, primero las visible
     assert.equal(run(`financeProEsCabecera(['Banco'])`), false);
     assert.equal(run(`financeProEsCabecera(['Fecha', 'Importe'])`), true);
 });
+
+// Lo que sacó la simulación con la exportación real del 29-10 y sus extractos de Ibercaja y Revolut.
+test('con regla de traspaso: reimportar la recarga de Revolut ya conciliada con el traspaso de Ibercaja no la repite', () => {
+    const { run, importar } = nuevoImportador();
+    run(`__vaciar({ bancos: 1000, online: 0 }); financePro.rules = [{ id: 'r1', matchText: 'Top-up by *0000', otherAccount: 'bancos', enabled: true }];
+        financePro.transactions.push({ id: 'tr', date: '2026-10-01', account: 'bancos', transferTo: 'online', type: 'transfer', amount: 300, note: 'Revolut**0000*' })`);
+    const csv = `Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance\nTopup,Current,2026-09-29 07:57:44,2026-09-29 07:58:02,Top-up by *0000,300.00,0.00,EUR,COMPLETED,300.00`;
+    importar(csv, 'online');
+    importar(csv, 'online');
+    assert.equal(run(`financePro.transactions.length`), 1, 'sigue habiendo un solo traspaso');
+});
+
+test('con regla de traspaso: la recarga unida a su mitad de Ibercaja lleva la fecha de la recarga y los dos extractos cuadran', () => {
+    const { run, importar } = nuevoImportador();
+    run(`__vaciar({ bancos: 1000, online: 0 }); financePro.rules = [{ id: 'r1', matchText: 'Top-up by *0000', otherAccount: 'bancos', enabled: true }]`);
+    const ib = [['Nº Orden', 'Fecha Operacion', 'Fecha Valor', 'Concepto', 'Descripción', 'Referencia', 'Importe', 'Saldo'], ['1', '01/10/2026', '01/10/2026', 'TARJETA VISA', 'Revolut**0000*', '1', '-300,00', '700,00']];
+    assert.equal(importar(ib, 'bancos').cuadre.cuadra, true);
+    const r = importar(`Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance\nTopup,Current,2026-09-29 07:57:44,2026-09-29 07:58:02,Top-up by *0000,300.00,0.00,EUR,COMPLETED,300.00`, 'online');
+    assert.equal(r.cuadre.cuadra, true, 'Revolut cuadra a 30 de septiembre');
+    assert.deepEqual(JSON.parse(run(`JSON.stringify(financePro.transactions.map(t => [t.type, t.date, t.account, t.transferTo]))`)), [['transfer', '2026-09-29', 'bancos', 'online']]);
+    const otra = importar(ib, 'bancos');
+    assert.equal(otra.nuevos, 0, 'reimportar Ibercaja no la repite');
+    assert.equal(otra.cuadre.cuadra, true);
+});

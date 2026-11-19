@@ -42,10 +42,28 @@ exportación del 29-10 (1.115 movimientos) no está en disco: se pidió a la ses
 | E. Excel real de Santander | 134 movimientos | igual |
 | F. 13 formatos de banco | — | mismos saldos, fechas y movimientos en los 13 |
 
+### Con la exportación real del 29-10 y sus extractos
+
+La exportación (`bitacora_finanzas_2026-10-29(5).md`, 1.115 movimientos) y los extractos reales (Ibercaja de enero a
+octubre de 2026 en .xlsx; Revolut de 2026, septiembre y 1-18 de octubre) estaban en la papelera de Windows: se
+copiaron al scratchpad para leerlos, sin restaurarlos ni subirlos. La exportación se reconstruye como en la sesión de
+la 0.25 (con la regla «Top-up by *1185» → Ibercaja). Arnés: `sim3.mjs` (copia en las notas de la sesión).
+
+| Escenario | Viejo (`8a890f2`) | Nuevo |
+|---|---|---|
+| R1. Sobre su estado del 29-10, reimportar Ibercaja del año, Revolut septiembre, 1-18 octubre y 2026 entero | nada nuevo; Ibercaja 800 €, Revolut 983,18 € | primera versión: 4 recargas de septiembre duplicadas (Ibercaja −677,25 €). Arreglado (`clavesFila`: con una regla, la clave se busca también con la cuenta del extracto). Ahora Ibercaja 800 € igual y Revolut 982,73 €: los 0,45 € son del arnés (la exportación no trae el concepto del banco ni la hora; en la app, «cafe dachser» lleva el de Breasy y su hora y se reconoce) |
+| R2. Desde cero, Ibercaja y luego Revolut (el orden de la guía) | Ibercaja cuadra; Revolut de septiembre no cuadra (677,25 €) | los cuatro extractos cuadran: la recarga unida a su mitad de Ibercaja lleva la fecha de la recarga |
+| R3. Desde cero, Revolut y luego Ibercaja | Ibercaja no cuadra (−351,38 €; la nómina del 7-10 se perdía en el traspaso del mismo importe) y Revolut tampoco (850 €) | Ibercaja cuadra y la nómina está; Revolut igual que antes (850 €) |
+
+Pendiente que sale de aquí: en su estado actual, los traspasos de las recargas tienen la fecha de Ibercaja, así que el
+extracto de Revolut de un fin de mes con recargas no cuadra (septiembre, 677,25 €, igual que con el importador
+viejo). No se cambia solo al reimportar (serían datos ya guardados): debería proponerlo el cuadre o «salud.». Y el
+orden Revolut → Ibercaja sigue sin cuadrar Revolut (850 €, también antes): importar primero Ibercaja.
+
 ## Pruebas
 
 `node --test pruebas/finanzas.mjs pruebas/finanzas-ios.mjs pruebas/importar-ios-web.mjs pruebas/concurrencia-ios.mjs
-pruebas/sincronizar.mjs pruebas/contrato-ios.mjs`: 209 de 209, ninguna `todo`. Nuevas: F-01 (cuatro cabeceras, seis
+pruebas/sincronizar.mjs pruebas/contrato-ios.mjs`: 217 de 217, ninguna `todo`. Nuevas: F-01 (cuatro cabeceras, seis
 estados, pendiente que se anula), F-02 (dos compras de 12,34 €, mismo día y misma cuenta), F-03 (con y sin concepto,
 y «salud.»), F-04 (retenido con otra diferencia), F-05 (los dos órdenes), F-06, F-08 (EE. UU., España, dudoso),
 F-09, F-10, F-11, F-13 y F-07 en el iPhone. XCTest: `testElLibroUsaLaHojaDeMovimientosVisibleYLasFechasDe1904`.
