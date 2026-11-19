@@ -23,7 +23,7 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
     case crearMovimiento(id: String, tipo: String, importe: String, cuenta: String, categoria: String?, fecha: String, hora: String, concepto: String)
     // Fila de un extracto bancario. `claveImport` es estable para que volver a importar el mismo archivo no duplique.
     case importarMovimiento(id: String, claveImport: String, tipo: String, importe: String, cuenta: String, fecha: String, hora: String, concepto: String)
-    // Desde la 0.17, con la clave de la web (ImportadorFinanzas.operaciones). importarMovimiento queda para lo que ya estaba en cola.
+    // Desde la 0.17, con la clave de la web (ClaveImportacion, en CambioFinanzas.swift). importarMovimiento queda para lo que ya estaba en cola.
     case importarFila(id: String, clave: String, vez: Int, tipo: String, importe: String, cuenta: String, fecha: String, hora: String, concepto: String)
     // CONTRATO-ESTUDIOS-PROYECTOS.md. Solo trabajos: en los exámenes la web no usa `done`.
     case marcarTrabajo(asignaturaId: String, id: String, hecho: Bool, momentoMs: Int64)

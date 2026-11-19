@@ -381,7 +381,7 @@ struct PropuestasSaludView: View {
     let oculto: Bool
 
     private struct Grupo: Identifiable { let id, titulo: String }
-    private static let tipos: [Grupo] = [Grupo(id: "traspaso", titulo: "traspasos entre tus cuentas."), Grupo(id: "ahorro", titulo: "a o de tus ahorros."),
+    private static let tipos: [Grupo] = [Grupo(id: "apunte", titulo: "apuntes a mano que ya trajo el banco."), Grupo(id: "traspaso", titulo: "traspasos entre tus cuentas."), Grupo(id: "ahorro", titulo: "a o de tus ahorros."),
                                         Grupo(id: "inversion", titulo: "inversión."), Grupo(id: "reembolso", titulo: "devoluciones.")]
 
     var body: some View {

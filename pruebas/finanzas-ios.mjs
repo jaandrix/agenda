@@ -25,18 +25,33 @@ export function cargarMotor() {
     return c => vm.runInContext(c, ctx);
 }
 
+// Lo mismo que ClaveImportacion.claves en Swift.
+const clavesDe = t => {
+    if (!t || typeof t.date !== 'string' || !Number.isFinite(Number(t.amount))) return [];
+    const nota = t.bankNote ?? t.note ?? '', cifra = String(Number(t.amount));
+    return [t.account && `${t.account}|${t.date}|${cifra}|${nota}`, t.transferTo && `${t.transferTo}|${t.date}|${cifra}|${nota}`, t.claveImport, t.claveImport2].filter(Boolean);
+};
+
 // Lo mismo que CambioFinanzas.aplicar en Swift.
 export function aplicar(estado, c) {
     const pro = estado.financePro;
     const lista = pro.transactions;
     for (const id of c.movimientos.quitar) { const i = lista.findIndex(t => String(t.id) === id); if (i >= 0) lista.splice(i, 1); }
+    const veces = () => { const v = {}; lista.forEach(t => clavesDe(t).forEach(k => { v[k] = (v[k] || 0) + 1; })); return v; };
     for (const x of c.movimientos.cambiar) {
         const t = lista.find(t => String(t.id) === x.id);
-        if (!t) continue;
+        if (!t) {
+            if (x.siFalta && !lista.some(y => String(y.id) === String(x.siFalta.id)) && !clavesDe(x.siFalta).some(k => veces()[k])) lista.push(x.siFalta);
+            continue;
+        }
         Object.assign(t, x.poner);
         x.quitar.forEach(k => delete t[k]);
     }
-    for (const { t } of c.movimientos.anadir) if (!lista.some(y => String(y.id) === String(t.id))) lista.push(t);
+    for (const x of c.movimientos.anadir) {
+        if (lista.some(y => String(y.id) === String(x.t.id))) continue;
+        if (x.claves) { const v = veces(); if (x.claves.some((k, i) => (v[k] || 0) > x.veces[i])) continue; }
+        lista.push(x.t);
+    }
     Object.entries(c.pro).forEach(([k, v]) => { if (v === null) delete pro[k]; else pro[k] = v; });
     Object.entries(c.perfil).forEach(([k, v]) => { if (v === null) delete estado.financeProfile[k]; else estado.financeProfile[k] = v; });
     const ent = estado.entries;
@@ -277,4 +292,16 @@ test('salud de Finanzas en el iPhone: una lectura y escrituras como cambios', ()
     assert.deepEqual(r.cambios.movimientos.cambiar.map(x => [x.id, x.poner.reembolsoDe]), [['r', 'c']]);
     assert.equal(JSON.parse(run(`__fin.salud('{}')`)).propuestas.length, 0, 'el estado se queda ya cambiado');
     assert.throws(() => run(`__fin.saludAccion('resolver', '{"id":"nada","como":"bien"}')`), /ya no está/);
+});
+
+test('F-07: en el iPhone, una fila que se unió a un apunte borrado en otro dispositivo entra igual, y un traspaso no se duplica por la otra cuenta', () => {
+    const run = cargarMotor();
+    const estado = { financePro: { enabled: true, accounts: { efectivo: { name: 'Efectivo', balance0: 0 }, bancos: { name: 'Ibercaja', balance0: 0 }, online: { name: 'Revolut', balance0: 0 } }, categories: [], transactions: [{ id: 'm1', date: '2026-11-10', account: 'bancos', type: 'expense', amount: 5, note: 'parking', manual: true }], categoryBudgets: {}, rules: [], programados: [] }, financeProfile: {}, entries: [] };
+    run(`__fin.cargar(${JSON.stringify(JSON.stringify(estado.financePro))}, '[]', '{}', null)`);
+    run(`__fin.importarPreparar(${JSON.stringify('Fecha,Concepto,Importe\n10/11/2026,Zaragoza ApParca,-5.00')}, 'bancos')`);
+    const r = JSON.parse(run(`__fin.importarEjecutar()`));
+    assert.ok(r.cambios.movimientos.cambiar[0].siFalta, 'lo unido viaja entero');
+    const nube = { ...estado, financePro: { ...estado.financePro, transactions: [] } };
+    aplicar(nube, r.cambios);
+    assert.deepEqual(nube.financePro.transactions.map(t => [t.id, t.bankNote]), [['m1', 'Zaragoza ApParca']]);
 });

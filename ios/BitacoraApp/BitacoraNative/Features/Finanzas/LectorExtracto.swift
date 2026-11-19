@@ -3,7 +3,8 @@ import Compression
 
 // El archivo del banco, leído como en la web antes de pasarlo a financeProPrepararImport:
 //   texto: handleFinanceProImportFile (UTF-16 con marca o con ceros entre letras, UTF-8 estricto y si no Windows-1252);
-//   Excel (.xlsx): financeProLeerExcel (zip, primera hoja, textos compartidos y fechas guardadas como número).
+//   Excel (.xlsx): financeProLeerExcel (zip, la hoja de los movimientos en el orden del libro, textos compartidos y
+//   fechas guardadas como número, también las de los libros que cuentan desde 1904).
 // El resultado es lo que recibe el motor: el texto, o las filas en JSON.
 enum LectorExtracto {
     enum Fallo: LocalizedError {
@@ -75,16 +76,31 @@ enum LectorExtracto {
         let leer = { (n: String) -> Data? in partes[n] }
         let compartidas = leer("xl/sharedStrings.xml").map { XMLExcel.compartidas($0) } ?? []
         let estilos = leer("xl/styles.xml").map { XMLExcel.estilos($0) } ?? XMLExcel.Estilos(formatos: [:], xfs: [])
-        let hojas = partes.keys.filter { $0.range(of: #"^xl/worksheets/[^/]+\.xml$"#, options: .regularExpression) != nil }
-            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
-        guard let primera = hojas.first, let hoja = leer(primera) else { throw Fallo.excel }
-        try Task.checkCancellation()
-        guard let filas = XMLExcel.filas(hoja, compartidas: compartidas, estilos: estilos) else {
+        // 0.26 (F-09), como financeProHojasDelLibro: las hojas en el orden del libro, primero las visibles, y la primera
+        // con una cabecera de movimientos. Antes, la primera por nombre de archivo: una portada u hoja oculta delante fallaba.
+        let libro = XMLExcel.libro(leer("xl/workbook.xml"), relaciones: leer("xl/_rels/workbook.xml.rels"), nombres: Array(partes.keys))
+        var elegidas: [[String]]?
+        for nombre in libro.hojas.prefix(12) {
+            guard let hoja = leer(nombre) else { continue }
             try Task.checkCancellation()
-            throw Fallo.demasiado
+            guard let filas = XMLExcel.filas(hoja, compartidas: compartidas, estilos: estilos, fecha1904: libro.fecha1904) else {
+                try Task.checkCancellation()
+                throw Fallo.demasiado
+            }
+            if elegidas == nil { elegidas = filas }
+            if filas.prefix(40).contains(where: esCabecera) { elegidas = filas; break }
         }
+        guard let filas = elegidas else { throw Fallo.excel }
         let ancho = filas.map(\.count).max() ?? 0
         return filas.map { $0 + Array(repeating: "", count: ancho - $0.count) }
+    }
+
+    // financeProEsCabecera: una columna de fecha y otra de importe.
+    static func esCabecera(_ fila: [String]) -> Bool {
+        let cab = fila.map { $0.trimmingCharacters(in: .whitespaces).lowercased() }
+        let fecha = #"^(fecha|date|started date|completed date|booking date|value date|f\. ?(operaci|operat|valor|contable))"#
+        let importe = "^(importe|amount|cantidad|cargo|abono|debe|haber|neto)"
+        return cab.contains { $0.range(of: fecha, options: .regularExpression) != nil } && cab.contains { $0.range(of: importe, options: .regularExpression) != nil }
     }
 
     private static func zip(_ datos: Data) throws -> [String: Data] {
@@ -106,7 +122,7 @@ enum LectorExtracto {
             let ini = local + 30 + u16(local + 26) + u16(local + 28)
             guard ini >= 0, ini + comprimido <= buf.count else { throw Fallo.excel }
             let trozo = Data(buf[ini..<(ini + comprimido)])
-            if nombre.hasPrefix("xl/") && nombre.hasSuffix(".xml") {
+            if (nombre.hasPrefix("xl/") && nombre.hasSuffix(".xml")) || nombre == "xl/_rels/workbook.xml.rels" {
                 try Task.checkCancellation()
                 // Lo declarado no es de fiar: se limita lo declarado y también lo que sale de verdad.
                 guard tamano <= maxXML, tamano <= max(comprimido, 1) * maxRatio else { throw Fallo.grande }
@@ -167,6 +183,35 @@ private enum XMLExcel {
         return r
     }
 
+    struct Libro { let hojas: [String]; let fecha1904: Bool }
+
+    static func libro(_ d: Data?, relaciones: Data?, nombres: [String]) -> Libro {
+        let porNombre = nombres.filter { $0.range(of: #"^xl/worksheets/[^/]+\.xml$"#, options: .regularExpression) != nil }
+            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        guard let d else { return Libro(hojas: porNombre, fecha1904: false) }
+        var destino: [String: String] = [:]
+        if let relaciones {
+            let l = Lector()
+            l.alAbrir = { n, a in
+                guard n == "Relationship", let id = a["Id"], let t = a["Target"] else { return }
+                destino[id] = t.hasPrefix("/") ? String(t.dropFirst()) : "xl/" + (t.hasPrefix("./") ? String(t.dropFirst(2)) : t)
+            }
+            l.leer(relaciones)
+        }
+        var visibles: [String] = [], ocultas: [String] = [], fecha1904 = false
+        let l = Lector()
+        l.alAbrir = { n, a in
+            if n == "workbookPr", let v = a["date1904"] { fecha1904 = v == "1" || v == "true" }
+            guard n == "sheet" else { return }
+            let id = a.first { $0.key == "id" || $0.key.hasSuffix(":id") }?.value
+            guard let id, let ruta = destino[id], nombres.contains(ruta) else { return }
+            if a["state"] == "hidden" || a["state"] == "veryHidden" { ocultas.append(ruta) } else { visibles.append(ruta) }
+        }
+        l.leer(d)
+        let hojas = visibles + ocultas
+        return Libro(hojas: hojas.isEmpty ? porNombre : hojas, fecha1904: fecha1904)
+    }
+
     static func estilos(_ d: Data) -> Estilos {
         var formatos: [String: String] = [:], xfs: [String] = []
         var enCellXfs = false, cellXfsVisto = false
@@ -182,7 +227,8 @@ private enum XMLExcel {
     }
 
     // nil si pasa de los límites de filas o columnas, o si se cancela.
-    static func filas(_ d: Data, compartidas: [String], estilos: Estilos) -> [[String]]? {
+    static func filas(_ d: Data, compartidas: [String], estilos: Estilos, fecha1904: Bool = false) -> [[String]]? {
+        let base: Double = fecha1904 ? 24107 : 25569
         func esFecha(_ id: String) -> Bool {
             if let n = Int(id), (14...22).contains(n) || (45...47).contains(n) { return true }
             let f = (estilos.formatos[id] ?? "").replacingOccurrences(of: #""[^"]*"|\[[^\]]*\]"#, with: "", options: .regularExpression)
@@ -224,7 +270,7 @@ private enum XMLExcel {
                     let i = Int(estilo) ?? 0
                     let xf: String? = i >= 0 && i < estilos.xfs.count ? estilos.xfs[i] : nil
                     if !v.isEmpty, let num = Double(v), let xf, esFecha(xf) {
-                        let fecha = Date(timeIntervalSince1970: ((num - 25569) * 86_400_000).rounded() / 1000)
+                        let fecha = Date(timeIntervalSince1970: ((num - base) * 86_400_000).rounded() / 1000)
                         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
                         let c = cal.dateComponents([.year, .month, .day], from: fecha)
                         valor = String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)

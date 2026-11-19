@@ -138,13 +138,23 @@ struct ModeloBusqueda: Decodable, Equatable {
 
 struct VistaImportacion: Decodable, Equatable {
     struct Cuenta: Decodable, Equatable, Identifiable { let id, nombre: String }
-    struct Fila: Decodable, Equatable, Identifiable { let fila: Int; let fecha, dia, concepto, fuera: String; let importe: Double?; let ya, marcada: Bool; var id: Int { fila } }
+    struct Fila: Decodable, Equatable, Identifiable {
+        let fila: Int; let fecha, dia, concepto, fuera: String; let importe: Double?; let ya, marcada: Bool
+        // 0.26: coincidencia posible (sigue marcada, con aviso) y filas que no se pueden marcar (anuladas, de una hucha).
+        let posible: String?; let bloqueada: Bool?
+        var id: Int { fila }
+    }
+    // 0.26 (F-08): formato de fechas e importes del archivo; si las filas no lo dejan claro, se pregunta.
+    struct Formato: Decodable, Equatable { let fechas, decimal: String; let dudaFechas, dudaDecimal, preguntaFechas, preguntaDecimal: Bool }
     let cuenta: String
     let cuentaDetectada, confirmada, conSaldo: Bool
     let cuentas: [Cuenta]
     let nuevas, ya, fuera, total: Int
     let boton: String
     let filas: [Fila]
+    let formato: Formato?
+    let repetido: String?
+    var formatoListo: Bool { !(formato?.dudaFechas ?? false) && !(formato?.dudaDecimal ?? false) }
 }
 
 struct ResultadoImportacion: Decodable, Equatable {

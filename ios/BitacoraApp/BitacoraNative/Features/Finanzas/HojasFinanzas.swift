@@ -192,8 +192,8 @@ struct ImportarExtractoView: View {
                         if resultado != nil {
                             BotonFin(texto: "hecho.", acento: true) { cerrar() }
                         } else if let v = vista {
-                            BotonFin(texto: trabajando ? "importando…" : textoImportar(v), acento: v.confirmada) { Task { await ejecutar() } }
-                                .disabled(!v.confirmada || trabajando)
+                            BotonFin(texto: trabajando ? "importando…" : textoImportar(v), acento: v.confirmada && v.formatoListo) { Task { await ejecutar() } }
+                                .disabled(!v.confirmada || !v.formatoListo || trabajando)
                         }
                     }
                     .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 8)
@@ -216,6 +216,7 @@ struct ImportarExtractoView: View {
 
     private func textoImportar(_ v: VistaImportacion) -> String {
         guard v.confirmada else { return "elige la cuenta primero." }
+        guard v.formatoListo else { return "elige el formato primero." }
         let n = v.nuevas
         return n == 0 ? "comprobar el saldo con el extracto." : "importar \(n) \(n == 1 ? "movimiento" : "movimientos")."
     }
@@ -231,12 +232,19 @@ struct ImportarExtractoView: View {
                 Button("es \(v.cuentas.first { $0.id == v.cuenta }?.nombre ?? v.cuenta).") { Task { await paso("importarConfirmar", []) } }
             }
         }
+        if let f = v.formato, f.preguntaFechas || f.preguntaDecimal { formatoView(f) }
         Section {
             VStack(alignment: .leading, spacing: 4) {
                 Text(v.nuevas > 0 ? "\(v.nuevas) \(v.nuevas == 1 ? "nueva" : "nuevas")" : "nada nuevo").font(Tipo.cuerpoFuerte)
                 Text((v.ya > 0 ? "\(v.ya) ya \(v.ya == 1 ? "estaba" : "estaban") en \(v.cuentas.first { $0.id == v.cuenta }?.nombre ?? v.cuenta)" : "ninguna estaba ya")
-                     + (v.fuera > 0 ? ", \(v.fuera) \(v.fuera == 1 ? "no cuenta" : "no cuentan") (anuladas o de una hucha)" : "") + ", de \(v.total) filas.")
+                     + (v.fuera > 0 ? ", \(v.fuera) \(v.fuera == 1 ? "no cuenta" : "no cuentan") (anuladas, de una hucha o con un estado que no conozco)" : "") + ", de \(v.total) filas.")
                     .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                if let r = v.repetido, !r.isEmpty {
+                    Text("Este mismo archivo ya lo importaste el \(r): lo que ya está no entra otra vez.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                }
+                if !v.conSaldo {
+                    Text("Este extracto no trae la columna de saldo: no podré comprobar que cuadra con el banco.").font(Tipo.pie).foregroundStyle(Paleta.atencion)
+                }
             }
         }
         Section {
@@ -248,6 +256,7 @@ struct ImportarExtractoView: View {
                             Text(f.concepto.isEmpty ? "sin concepto" : f.concepto).lineLimit(1)
                             if !f.fuera.isEmpty { Text(f.fuera).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
                             else if f.ya { Text("parece que ya está.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+                            else if let p = f.posible, !p.isEmpty { Text(p).font(Tipo.pie).foregroundStyle(Paleta.atencion) }
                         }
                         Spacer()
                         if let i = f.importe {
@@ -255,11 +264,36 @@ struct ImportarExtractoView: View {
                         }
                     }
                 }
+                .disabled(f.bloqueada ?? false)
             }
         } header: {
             Text("las filas.")
         } footer: {
-            Text("Las que parecen ya apuntadas (mismo importe en 4 días, o dos que suman uno) salen desmarcadas. Puedes cambiar cualquiera.")
+            Text("Salen desmarcadas las que ya están (mismo importe y concepto, o dos que suman un traspaso ya apuntado). Las que solo se parecen por el importe siguen marcadas, con un aviso: míralas. Las anuladas y las de una hucha no cuentan nunca.")
+        }
+    }
+
+    // 0.26 (F-08): si las filas no dicen si 04/05 es 4 de mayo o 5 de abril, o si 1,234 son mil o uno, se pregunta.
+    @ViewBuilder private func formatoView(_ f: VistaImportacion.Formato) -> some View {
+        Section {
+            if f.preguntaFechas {
+                Picker("las fechas.", selection: Binding(get: { f.dudaFechas ? "" : f.fechas }, set: { k in Task { await paso("importarFormato", ["fechas", k]) } })) {
+                    if f.dudaFechas { Text("elige.").tag("") }
+                    Text("día/mes/año").tag("dmy")
+                    Text("mes/día/año").tag("mdy")
+                }
+            }
+            if f.preguntaDecimal {
+                Picker("los importes.", selection: Binding(get: { f.dudaDecimal ? "" : f.decimal }, set: { k in Task { await paso("importarFormato", ["decimal", k]) } })) {
+                    if f.dudaDecimal { Text("elige.").tag("") }
+                    Text("1,234 son 1,23 €").tag(",")
+                    Text("1,234 son 1.234 €").tag(".")
+                }
+            }
+        } header: {
+            Text("el formato del archivo.")
+        } footer: {
+            Text("No lo puedo saber por las filas: 04/05 puede ser 4 de mayo o 5 de abril, y 1,234 puede ser 1,23 € o 1.234 €.")
         }
     }
 

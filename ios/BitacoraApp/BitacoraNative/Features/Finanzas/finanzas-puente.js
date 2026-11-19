@@ -51,18 +51,30 @@
         var pro0 = JSON.parse(f.pro), perfil0 = JSON.parse(f.perfil), ent0 = JSON.parse(f.entries);
         var pro1 = JSON.parse(JSON.stringify(financePro)), perfil1 = JSON.parse(JSON.stringify(financeProfile)), ent1 = JSON.parse(JSON.stringify(entries));
         var tx = diffLista(pro0.transactions, pro1.transactions);
+        // F-07 (0.26): un movimiento del banco que la importación unió a otro (un apunte a mano, un pendiente) viaja
+        // también entero en `siFalta`: si al llegar a la nube ese otro ya no está (se borró en otro dispositivo), entra
+        // como movimiento del banco en vez de perderse sin avisar.
+        if (tx.cambiar.length) {
+            var nuevos = porId(pro1.transactions);
+            tx.cambiar.forEach(function (c) {
+                var t = nuevos[c.id];
+                if (t && (t.conciliado || t.importLote || t.bankNote) && typeof t.date === 'string') c.siFalta = t;
+            });
+        }
         // Para no duplicar si la operación se vuelve a aplicar sobre una nube que ya tiene la misma fila (otra importación
         // del mismo extracto en la web): las claves con las que la web la reconoce y cuántas había antes.
         // Con `vez` contada aquí, Swift no tiene que decodificar todo financePro en el hilo principal para contarla.
         if (tx.anadir.length) {
             var cuenta = {};
             (pro0.transactions || []).forEach(function (t) { clavesTx(t).forEach(function (k) { cuenta[k] = (cuenta[k] || 0) + 1; }); });
+            // Todas las claves y no solo la primera (F-07): un traspaso importado desde Revolut en un dispositivo y desde
+            // Ibercaja en otro coincide por la clave de la otra cuenta, no por la suya.
             tx.anadir = tx.anadir.map(function (t) {
-                var k = clavesTx(t)[0];
-                if (k === undefined) return { t: t };
-                var vez = cuenta[k] || 0;
-                cuenta[k] = vez + 1;
-                return { t: t, clave: k, vez: vez };
+                var ks = clavesTx(t);
+                if (!ks.length) return { t: t };
+                var veces = ks.map(function (k) { return cuenta[k] || 0; });
+                ks.forEach(function (k) { cuenta[k] = (cuenta[k] || 0) + 1; });
+                return { t: t, clave: ks[0], vez: veces[0], claves: ks, veces: veces };
             });
         }
         return {
@@ -358,16 +370,21 @@
         var n = filas.length - imp.excluidas.size;
         var conSaldo = false;
         try { conSaldo = !!financeProTieneSaldo(imp); } catch (e) {}
+        var fo = imp.formato || {};
+        var repetido = financeProLoteRepetido(imp);
         return {
             cuenta: imp.mapping.account, cuentaDetectada: !!imp.cuentaDetectada, confirmada: financeProCuentaConfirmada(imp),
-            cuentas: FINANCE_PRO_ACCOUNT_KEYS.map(function (k) { return { id: k, nombre: String(nombreCuenta(k)) }; }),
+            cuentas: financeProCuentasImportables().map(function (k) { return { id: k, nombre: String(nombreCuenta(k)) }; }),
             nuevas: n, ya: filas.length - n - nFuera, fuera: nFuera, total: filas.length,
             boton: financeProTextoBotonImport(imp),
             filas: filas.map(function (f) {
                 return { fila: f.fila, fecha: f.date || '', dia: f.date ? financeDateLabelShort(f.date) : 'sin fecha', concepto: String(f.desc || '').slice(0, 60),
-                    importe: Number.isFinite(f.val) ? f.val : null, fuera: f.fuera || '', ya: imp.yaApuntadas.has(f.fila), marcada: !imp.excluidas.has(f.fila) };
+                    importe: Number.isFinite(f.val) ? f.val : null, fuera: f.fuera || '', ya: imp.yaApuntadas.has(f.fila), marcada: !imp.excluidas.has(f.fila),
+                    posible: imp.posibles && imp.posibles.has(f.fila) ? String(imp.posibles.get(f.fila)) : '', bloqueada: !!f.bloqueada };
             }),
-            conSaldo: conSaldo
+            conSaldo: conSaldo,
+            formato: { fechas: fo.fechas || 'dmy', decimal: fo.decimal || '', dudaFechas: !!fo.dudaFechas && !fo.fechasElegidas, dudaDecimal: !!fo.dudaDecimal && !fo.decimalElegido, preguntaFechas: !!fo.dudaFechas, preguntaDecimal: !!fo.dudaDecimal },
+            repetido: repetido ? new Date(repetido.cuando).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : ''
         };
     }
 
@@ -907,7 +924,7 @@
                 case 'cuadreAjustar':
                     var c2 = ultimoCuadre;
                     if (!c2) return false;
-                    var d2 = Math.round((c2.esperado - c2.actual) * 100) / 100;
+                    var d2 = financeProDiferenciaCuadre(c2);
                     if (Math.abs(d2) < 0.005) return false;
                     financePro.transactions.push({ id: 'ptx_adj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), date: c2.hasta, account: c2.cuenta, type: d2 > 0 ? 'income' : 'expense', amount: Math.abs(d2), note: 'Ajuste de saldo', ajuste: true });
                     ultimoCuadre = null;
@@ -915,7 +932,7 @@
                 case 'cuadreFijar':
                     var c3 = ultimoCuadre;
                     if (!c3) return false;
-                    var d3 = Math.round((c3.esperado - (c3.retenido || 0) - c3.actual) * 100) / 100;
+                    var d3 = financeProDiferenciaCuadre(c3);
                     if (Math.abs(d3) < 0.005) return false;
                     financePro.accounts[c3.cuenta].balance0 = Math.round((Number(financePro.accounts[c3.cuenta].balance0 || 0) + d3) * 100) / 100;
                     ultimoCuadre = null;
@@ -975,15 +992,22 @@
             imp = financeProPrepararImport(datos, cuenta || undefined);
             return JSON.stringify(vistaImport());
         },
-        importarCuenta: function (k) { imp.mapping.account = k; imp.excluidas = null; imp.cuentaConfirmada = true; return JSON.stringify(vistaImport()); },
+        importarCuenta: function (k) {
+            if (financeProCuentasImportables().indexOf(k) < 0) return JSON.stringify(vistaImport());
+            imp.mapping.account = k; imp.excluidas = null; imp.cuentaConfirmada = true; return JSON.stringify(vistaImport());
+        },
+        importarFormato: function (clave, valor) { financeProElegirFormato(imp, clave, valor); return JSON.stringify(vistaImport()); },
         importarConfirmar: function () { imp.cuentaConfirmada = true; return JSON.stringify(vistaImport()); },
         importarFila: function (fila, marcada) {
             fila = Number(fila); marcada = marcada === true || marcada === 'true';
+            var f = financeProFilasDelExtracto(imp)[fila];
+            if (f && f.bloqueada) return JSON.stringify(vistaImport());
             imp.excluidas = new Set(imp.excluidas);
             if (marcada) imp.excluidas.delete(fila); else imp.excluidas.add(fila);
             return JSON.stringify(vistaImport());
         },
         importarEjecutar: function () {
+            if (!imp || !financeProListoParaImportar(imp)) throw new Error(imp && !financeProCuentaConfirmada(imp) ? 'Elige la cuenta primero' : 'Elige el formato de fechas e importes primero');
             var r = enCopia(function () {
                 renderFinanceProImportFilas(imp);
                 var antes = financePro.transactions.length;

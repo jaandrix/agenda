@@ -66,29 +66,67 @@ enum CambioFinanzas {
         var lista = entrada
         let quitar = Set((c["quitar"]?.lista ?? []).compactMap { $0.comoId ?? $0.texto })
         if !quitar.isEmpty { lista.removeAll { quitar.contains($0["id"]?.comoId ?? "") } }
+        var faltan: [JSONValue] = []
         for x in c["cambiar"]?.lista ?? [] {
-            guard let id = x["id"]?.comoId ?? x["id"]?.texto, let n = lista.firstIndex(where: { $0["id"]?.comoId == id }), var o = lista[n].objeto else { continue }
+            guard let id = x["id"]?.comoId ?? x["id"]?.texto else { continue }
+            guard let n = lista.firstIndex(where: { $0["id"]?.comoId == id }), var o = lista[n].objeto else {
+                // 0.26 (F-07): lo que la importación unió a un movimiento que ya no está entra como movimiento del banco.
+                if conClave, let t = x["siFalta"], t.objeto != nil { faltan.append(t) }
+                continue
+            }
             for (k, v) in x["poner"]?.objeto ?? [:] { o[k] = v }
             for k in x["quitar"]?.lista ?? [] { if let k = k.texto { o.removeValue(forKey: k) } }
             lista[n] = .object(o)
         }
         var ids = Set(lista.compactMap { $0["id"]?.comoId })
-        var veces: [String: Int]?
+        var veces: [String: Int] = [:]
+        if conClave { for t in lista { for k in ClaveImportacion.claves(t) { veces[k, default: 0] += 1 } } }
+        for t in faltan {
+            guard let id = t["id"]?.comoId, !ids.contains(id) else { continue }
+            let ks = ClaveImportacion.claves(t)
+            if ks.contains(where: { veces[$0, default: 0] > 0 }) { continue }
+            for k in ks { veces[k, default: 0] += 1 }
+            lista.append(t)
+            ids.insert(id)
+        }
         for x in c["anadir"]?.lista ?? [] {
             let t = conClave ? (x["t"] ?? x) : x
             guard let id = t["id"]?.comoId, !ids.contains(id) else { continue }
-            if conClave, let k = x["clave"]?.texto, let vez = x["vez"].flatMap({ Dinero.decimal($0) }) {
-                if veces == nil {
-                    var v: [String: Int] = [:]
-                    for t in lista { for k in ClaveImportacion.claves(t) { v[k, default: 0] += 1 } }
-                    veces = v
-                }
-                if Decimal(veces![k, default: 0]) > vez { continue }
-                veces![k, default: 0] += 1
-            }
+            if conClave, yaEnLaNube(x, veces) { continue }
+            if conClave { for k in ClaveImportacion.claves(t) { veces[k, default: 0] += 1 } }
             lista.append(t)
             ids.insert(id)
         }
         return lista
+    }
+
+    // Si otro dispositivo ya añadió esta fila: alguna de sus claves está en la nube más veces de las que había cuando se
+    // importó (`veces` del motor, una por clave; las operaciones de antes de la 0.26 solo traen `clave` y `vez`).
+    private static func yaEnLaNube(_ x: JSONValue, _ veces: [String: Int]) -> Bool {
+        if let ks = x["claves"]?.lista, let vs = x["veces"]?.lista, ks.count == vs.count {
+            for (k, v) in zip(ks, vs) {
+                guard let k = k.texto, let vez = Dinero.decimal(v) else { continue }
+                if Decimal(veces[k, default: 0]) > vez { return true }
+            }
+            return false
+        }
+        if let k = x["clave"]?.texto, let vez = x["vez"].flatMap({ Dinero.decimal($0) }) { return Decimal(veces[k, default: 0]) > vez }
+        return false
+    }
+}
+
+// Las claves con las que la web reconoce un movimiento ya importado (financeProEjecutarImport, «existentes»):
+// cuenta|fecha|importe|concepto del banco (bankNote, o la nota), lo mismo desde la otra cuenta de un traspaso,
+// claveImport y claveImport2.
+enum ClaveImportacion {
+    static func claves(_ t: JSONValue) -> [String] {
+        guard let o = t.objeto, let fecha = o["date"]?.texto, let importe = Dinero.decimal(o["amount"]) else { return [] }
+        let nota = o["bankNote"]?.texto ?? o["note"]?.texto ?? ""
+        let cifra = NSDecimalNumber(decimal: importe).stringValue
+        var r: [String] = []
+        if let c = o["account"]?.texto { r.append([c, fecha, cifra, nota].joined(separator: "|")) }
+        if let c = o["transferTo"]?.texto, !c.isEmpty { r.append([c, fecha, cifra, nota].joined(separator: "|")) }
+        for k in ["claveImport", "claveImport2"] { if let c = o[k]?.texto, !c.isEmpty { r.append(c) } }
+        return r
     }
 }
