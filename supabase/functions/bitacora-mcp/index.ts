@@ -195,6 +195,8 @@ function aplicarOp(data: any, op: any, id: string) {
         if (op.coleccion === 'evento') data.entries = (data.entries || []).filter((e: any) => e?.id !== op.id);
         if (op.coleccion === 'movimiento' && data.financePro) data.financePro.transactions = (data.financePro.transactions || []).filter((t: any) => t?.id !== op.id);
         if (op.coleccion === 'tarea') { const loc = buscarTarea(data.dayPlanner, op.id); if (loc) loc.lista.splice(loc.i, 1); }
+    } else if (op.tipo === 'listas') {
+        listasAplicarOp(data.listasPanorama = Array.isArray(data.listasPanorama) ? data.listasPanorama : [], op);
     } else if (op.tipo === 'dia') {
         if (op.esfuerzo) (data.dailyEffort = data.dailyEffort || {})[op.fecha] = op.esfuerzo;
         (data.habits || []).forEach((h: any) => {
@@ -203,6 +205,131 @@ function aplicarOp(data: any, op: any, id: string) {
         });
     }
 }
+
+// Listas de Panorama (listasPanorama): misma función que listasAplicarOp en js/listas.js, para leer con lo pendiente
+// ya aplicado. Si cambia una, cambiar la otra.
+function listasAplicarOp(listas: any[], op: any): boolean {
+    const caja = (id: string) => listas.find((c: any) => c && c.id === id);
+    const buscar = (c: any, id: string) => {
+        const ir = (arr: any[], padre: any): any => {
+            for (let i = 0; i < arr.length; i++) {
+                if (arr[i].id === id) return { nodo: arr[i], hermanos: arr, indice: i, padre };
+                const r = ir(arr[i].hijos || [], arr[i]);
+                if (r) return r;
+            }
+            return null;
+        };
+        return c ? ir(c.tareas || (c.tareas = []), null) : null;
+    };
+    const todas = (arr: any[]): any[] => (arr || []).flatMap((n: any) => [n, ...todas(n.hijos)]);
+    const existe = (id: string) => listas.some((c: any) => todas(c.tareas).some((n: any) => n.id === id));
+    const marcar = (n: any, hecha: boolean) => { if (hecha) { if (!n.hecha) { n.hecha = true; n.hechaEn = op.cuando || new Date().toISOString(); } } else { n.hecha = false; delete n.hechaEn; } };
+    const insertar = (c: any, padreId: string | null, indice: number | null, nodos: any[]) => {
+        const p = padreId ? buscar(c, padreId)?.nodo : null;
+        if (padreId && !p) return false;
+        const arr = p ? (p.hijos = Array.isArray(p.hijos) ? p.hijos : []) : c.tareas;
+        if (p) delete p.plegada;
+        arr.splice(indice == null ? arr.length : Math.max(0, Math.min(indice, arr.length)), 0, ...nodos);
+        return true;
+    };
+    if (op.accion === 'crear_lista') {
+        if (caja(op.id)) return false;
+        listas.push({ id: op.id, titulo: op.titulo || '', ...(op.color ? { color: op.color } : {}), tareas: (op.tareas || []).filter((n: any) => !existe(n.id)) });
+        return true;
+    }
+    const c = caja(op.lista);
+    if (!c) return false;
+    if (op.accion === 'lista') {
+        if (op.titulo != null) c.titulo = op.titulo;
+        if (op.color !== undefined) { if (op.color) c.color = op.color; else delete c.color; }
+        if (op.ocultarHechas !== undefined) { if (op.ocultarHechas) c.ocultarHechas = true; else delete c.ocultarHechas; }
+        return true;
+    }
+    if (op.accion === 'borrar_lista') { listas.splice(listas.indexOf(c), 1); return true; }
+    if (op.accion === 'quitar_hechas') {
+        const filtrar = (arr: any[]): any[] => arr.filter((n: any) => !n.hecha).map((n: any) => { if (n.hijos) n.hijos = filtrar(n.hijos); return n; });
+        c.tareas = filtrar(c.tareas || []);
+        return true;
+    }
+    if (op.accion === 'anadir') {
+        const nodos = (op.tareas || []).filter((n: any) => !existe(n.id));
+        return nodos.length ? insertar(c, op.padre, op.indice, nodos) : false;
+    }
+    const f = buscar(c, op.id);
+    if (!f) return false;
+    if (op.accion === 'editar') {
+        if (op.texto != null) f.nodo.texto = op.texto;
+        if (op.hecha !== undefined) { marcar(f.nodo, op.hecha); if (op.conSubtareas) todas(f.nodo.hijos).forEach((n: any) => marcar(n, op.hecha)); }
+        if (op.plegada !== undefined) { if (op.plegada) f.nodo.plegada = true; else delete f.nodo.plegada; }
+        return true;
+    }
+    if (op.accion === 'borrar') { f.hermanos.splice(f.indice, 1); return true; }
+    if (op.accion === 'mover') {
+        const destino = caja(op.aLista || op.lista);
+        if (!destino || (op.padre && (op.padre === f.nodo.id || todas(f.nodo.hijos).some((n: any) => n.id === op.padre)))) return false;
+        f.hermanos.splice(f.indice, 1);
+        if (insertar(destino, op.padre, op.indice, [f.nodo])) return true;
+        f.hermanos.splice(f.indice, 0, f.nodo);
+        return false;
+    }
+    return false;
+}
+
+const LISTAS_COLORES = ['rosa', 'melocotón', 'amarillo', 'menta', 'cielo', 'lavanda', 'salvia', 'arena'];
+const LISTAS_NIVELES = 4;
+const listasTodas = (arr: any[]): any[] => (arr || []).flatMap((n: any) => [n, ...listasTodas(n.hijos)]);
+const listasAltura = (n: any): number => 1 + Math.max(0, ...(n.hijos || []).map(listasAltura));
+const listasId = (p: string) => `${p}_${Date.now().toString(36)}${crypto.randomUUID().replace(/-/g, '').slice(0, 6)}`;
+function listasNivel(c: any, id: string): number {
+    const ir = (arr: any[], nivel: number): number => {
+        for (const n of arr || []) { if (n.id === id) return nivel; const r = ir(n.hijos, nivel + 1); if (r >= 0) return r; }
+        return -1;
+    };
+    return ir(c.tareas, 0);
+}
+function listasPorNombre(listas: any[], q: unknown) {
+    const t = norm(q).trim();
+    if (!t) throw new Error(`Falta la lista. Listas: ${listas.map((c: any) => `«${c.titulo || 'sin nombre'}» (${c.id})`).join(', ') || 'ninguna'}.`);
+    const c = listas.find((x: any) => x.id === q) || listas.find((x: any) => norm(x.titulo).trim() === t);
+    if (c) return c;
+    const parecidas = listas.filter((x: any) => norm(x.titulo).includes(t));
+    if (parecidas.length === 1) return parecidas[0];
+    throw new Error(`${parecidas.length ? 'Hay varias listas con ese nombre' : `No encuentro la lista «${q}»`}. Listas: ${(parecidas.length ? parecidas : listas).map((x: any) => `«${x.titulo || 'sin nombre'}» (${x.id})`).join(', ') || 'ninguna'}.`);
+}
+function listasTareaPorTexto(c: any, q: unknown) {
+    const t = norm(q).trim();
+    const todas = listasTodas(c.tareas);
+    if (!t) throw new Error('Falta la tarea (su id o su texto).');
+    const n = todas.find((x: any) => x.id === q) || todas.find((x: any) => norm(x.texto).trim() === t);
+    if (n) return n;
+    const parecidas = todas.filter((x: any) => norm(x.texto).includes(t));
+    if (parecidas.length === 1) return parecidas[0];
+    throw new Error(`${parecidas.length ? 'Hay varias tareas que encajan' : `No encuentro «${q}» en «${c.titulo}»`}: ${(parecidas.length ? parecidas : todas).slice(0, 40).map((x: any) => `«${x.texto}» (${x.id})`).join(', ') || 'la lista está vacía'}. Usa el id.`);
+}
+// Lo que manda la IA ([«texto»] o [{ texto, hecha, subtareas }]) a nodos con id, sin pasar de cuatro niveles.
+function listasNodos(entrada: unknown, nivel: number): any[] {
+    if (!Array.isArray(entrada)) return [];
+    return entrada.slice(0, 200).map((x: any) => {
+        const texto = String(typeof x === 'string' ? x : x?.texto ?? '').replace(/\s+/g, ' ').trim().slice(0, 500);
+        if (!texto) return null;
+        const subs = typeof x === 'object' && x ? x.subtareas : null;
+        if (Array.isArray(subs) && subs.length && nivel + 1 >= LISTAS_NIVELES) throw new Error(`Como mucho ${LISTAS_NIVELES} niveles: «${texto}» no puede llevar subtareas ahí.`);
+        const n: any = { id: listasId('lt'), texto, hecha: false, hijos: listasNodos(subs, nivel + 1) };
+        if (typeof x === 'object' && x?.hecha === true) { n.hecha = true; n.hechaEn = new Date().toISOString(); }
+        return n;
+    }).filter(Boolean);
+}
+function listasTexto(listas: any[]): string {
+    if (!listas.length) return 'No hay listas en Panorama.';
+    return listas.map((c: any) => {
+        const todas = listasTodas(c.tareas);
+        const filas: string[] = [];
+        const ir = (arr: any[], nivel: number) => (arr || []).forEach((n: any) => { filas.push(`${'  '.repeat(nivel)}- [${n.hecha ? 'x' : ' '}] ${n.texto} (${n.id})${n.plegada ? ' [plegada]' : ''}`); ir(n.hijos, nivel + 1); });
+        ir(c.tareas, 0);
+        return `«${c.titulo || 'sin nombre'}» (${c.id}${c.color ? ', color ' + c.color : ''}${c.ocultarHechas ? ', oculta las hechas' : ''}), ${todas.filter((n: any) => n.hecha).length} de ${todas.length} hechas\n${filas.join('\n') || '  (vacía)'}`;
+    }).join('\n\n');
+}
+
 
 // Misma lógica que moverTareaConector en app.js: con día y hora va a la
 // línea de ese día; sin alguno de los dos, a "tareas pendientes".
@@ -994,6 +1121,34 @@ const HERRAMIENTAS = [
         inputSchema: { type: 'object', properties: { cosas: { type: 'array', items: { type: 'string' }, maxItems: 80 }, lista: { type: 'string', description: 'Opcional: nombre de otra lista (si no, la actual)' } }, required: ['cosas'] },
     },
     {
+        name: 'listas',
+        description: 'Las listas de Panorama: cajas de tareas con subtareas (hasta 4 niveles) que el usuario usa para organizarse en el ordenador. Llama antes a accion=ver: devuelve cada lista con sus tareas en árbol, marcadas [x] si están hechas, y sus ids. Lo demás se aplica solo y se puede deshacer: crear_lista (titulo, opcional color y tareas), lista (cambiar titulo_nuevo, color u ocultar_hechas), anadir (tareas a una lista; con padre, como subtareas de esa tarea; posicion 0 = la primera), editar (texto_nuevo), marcar (hecha; con_subtareas marca también todas las de debajo), plegar (plegada), mover (a otra posición, a dentro de otra tarea con padre, al primer nivel sin padre, o a otra lista con a_lista), borrar (una tarea con todo lo que tiene debajo), quitar_hechas y borrar_lista. Antes de borrar una lista o una tarea con subtareas, confírmalo con el usuario. Las listas y las tareas se buscan por id o por su texto; mejor el id que da ver. Los títulos van en minúscula, como los pondría el usuario.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                accion: { type: 'string', enum: ['ver', 'crear_lista', 'lista', 'borrar_lista', 'anadir', 'editar', 'marcar', 'plegar', 'mover', 'borrar', 'quitar_hechas'] },
+                lista: { type: 'string', description: 'Id o título de la lista (todas salvo ver y crear_lista)' },
+                tarea: { type: 'string', description: 'Id o texto de la tarea (editar, marcar, plegar, mover, borrar)' },
+                titulo: { type: 'string', description: 'Para crear_lista' },
+                titulo_nuevo: { type: 'string', description: 'Para lista: nuevo nombre' },
+                texto_nuevo: { type: 'string', description: 'Para editar' },
+                color: { type: 'string', enum: ['rosa', 'melocotón', 'amarillo', 'menta', 'cielo', 'lavanda', 'salvia', 'arena', 'ninguno'], description: 'Subrayado suave del título de la lista (crear_lista o lista); ninguno lo quita' },
+                tareas: {
+                    type: 'array', maxItems: 200, description: 'Para crear_lista y anadir: textos, u objetos con subtareas anidadas del mismo tipo',
+                    items: { anyOf: [{ type: 'string' }, { type: 'object', properties: { texto: { type: 'string' }, hecha: { type: 'boolean' }, subtareas: { type: 'array', items: {} } }, required: ['texto'] }] },
+                },
+                padre: { type: 'string', description: 'Id o texto de la tarea dentro de la que va (anadir, mover). En mover, vacío = primer nivel' },
+                posicion: { type: 'number', description: 'Lugar entre sus hermanas, 0 = la primera (anadir, mover). Sin ella, al final' },
+                a_lista: { type: 'string', description: 'Para mover a otra lista: su id o título' },
+                hecha: { type: 'boolean', description: 'Para marcar (por defecto true)' },
+                con_subtareas: { type: 'boolean', description: 'Para marcar: también todas las de debajo' },
+                plegada: { type: 'boolean', description: 'Para plegar (por defecto true)' },
+                ocultar_hechas: { type: 'boolean', description: 'Para lista' },
+            },
+            required: ['accion'],
+        },
+    },
+    {
         name: 'receta',
         description: 'Guarda una receta en Despensa → recetas de Bitácora (por ejemplo a partir de una foto, un enlace o lo que el usuario dicte): nombre, raciones, ingredientes (uno por elemento, con su cantidad delante: «200 g nata», «2 huevos») y pasos. Si ya hay una receta con ese nombre, la actualiza. Con a_la_lista: true, además pasa a la lista de la compra los ingredientes que falten. Usa nombres de ingredientes sencillos, como se apuntarían en una lista. Se aplica solo y se puede deshacer.',
         inputSchema: {
@@ -1500,6 +1655,82 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (!cosas.length) throw new Error('Falta qué comprar');
             await encolar(userId, { tipo: 'compra', cosas, lista: a.lista ? String(a.lista) : '' });
             return `Añadido a la lista de la compra${a.lista ? ' «' + a.lista + '»' : ''}: ${cosas.join(', ')}.`;
+        }
+        case 'listas': {
+            const listas = Array.isArray(data.listasPanorama) ? data.listasPanorama : [];
+            if (a.accion === 'ver') return listasTexto(listas);
+            const cuando = new Date().toISOString();
+            const color = a.color === undefined ? undefined : a.color === 'ninguno' || a.color === '' ? '' : String(a.color);
+            if (color && !LISTAS_COLORES.includes(color)) throw new Error(`Color desconocido. Colores: ${LISTAS_COLORES.join(', ')} o ninguno.`);
+            const posicion = Number.isInteger(a.posicion) && a.posicion >= 0 ? a.posicion : null;
+            const cuantas = (n: number) => n === 1 ? '1 tarea' : `${n} tareas`;
+            if (a.accion === 'crear_lista') {
+                const titulo = String(a.titulo || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+                if (!titulo) throw new Error('Falta el título de la lista');
+                const tareas = listasNodos(a.tareas, 0);
+                const n = listasTodas(tareas).length;
+                await encolar(userId, { tipo: 'listas', accion: 'crear_lista', id: listasId('lst'), titulo, color: color || undefined, tareas, cuando, resumen: `lista «${titulo}»${n ? ' con ' + cuantas(n) : ''}.` });
+                return `Lista «${titulo}» creada en Panorama${n ? ' con ' + cuantas(n) : ''}.${SOLO}`;
+            }
+            const c = listasPorNombre(listas, a.lista);
+            const nombre = `«${c.titulo || 'sin nombre'}»`;
+            const op: any = { tipo: 'listas', accion: a.accion, lista: c.id, cuando };
+            let respuesta = '';
+            if (a.accion === 'lista') {
+                const titulo = a.titulo_nuevo !== undefined ? String(a.titulo_nuevo).replace(/\s+/g, ' ').trim().slice(0, 120) : undefined;
+                if (titulo === undefined && color === undefined && a.ocultar_hechas === undefined) throw new Error('No hay nada que cambiar: titulo_nuevo, color u ocultar_hechas');
+                if (titulo !== undefined) op.titulo = titulo;
+                if (color !== undefined) op.color = color;
+                if (a.ocultar_hechas !== undefined) op.ocultarHechas = a.ocultar_hechas === true;
+                respuesta = `lista ${nombre}${titulo !== undefined ? ` ahora se llama «${titulo}»` : ''}${color !== undefined ? (color ? `, título en ${color}` : ', título sin color') : ''}${a.ocultar_hechas !== undefined ? (a.ocultar_hechas ? ', oculta las hechas' : ', enseña las hechas') : ''}.`;
+            } else if (a.accion === 'borrar_lista') {
+                respuesta = `lista ${nombre} borrada con ${cuantas(listasTodas(c.tareas).length)}.`;
+            } else if (a.accion === 'quitar_hechas') {
+                const n = listasTodas(c.tareas).filter((x: any) => x.hecha).length;
+                if (!n) return `En ${nombre} no hay nada hecho que quitar.`;
+                respuesta = `${n === 1 ? 'quitada 1 tarea hecha' : `quitadas ${n} tareas hechas`} de ${nombre}.`;
+            } else if (a.accion === 'anadir') {
+                const padre = a.padre ? listasTareaPorTexto(c, a.padre) : null;
+                const nivel = padre ? listasNivel(c, padre.id) + 1 : 0;
+                if (nivel >= LISTAS_NIVELES) throw new Error(`Como mucho ${LISTAS_NIVELES} niveles: «${padre.texto}» ya está en el último.`);
+                const tareas = listasNodos(a.tareas, nivel);
+                if (!tareas.length) throw new Error('Faltan las tareas');
+                Object.assign(op, { padre: padre?.id || null, indice: posicion, tareas });
+                respuesta = `${cuantas(listasTodas(tareas).length)} en ${nombre}${padre ? `, dentro de «${padre.texto}»` : ''}.`;
+            } else {
+                const t = listasTareaPorTexto(c, a.tarea);
+                op.id = t.id;
+                if (a.accion === 'editar') {
+                    const texto = String(a.texto_nuevo ?? '').replace(/\s+/g, ' ').trim().slice(0, 500);
+                    if (!texto) throw new Error('Falta texto_nuevo');
+                    op.texto = texto;
+                    respuesta = `«${t.texto}» ahora es «${texto}» (${nombre}).`;
+                } else if (a.accion === 'marcar') {
+                    op.accion = 'editar';
+                    op.hecha = a.hecha !== false;
+                    op.conSubtareas = a.con_subtareas === true;
+                    const pendientes = listasTodas(t.hijos).filter((x: any) => !x.hecha).length;
+                    respuesta = `«${t.texto}» ${op.hecha ? 'hecha' : 'pendiente'}${op.conSubtareas && (t.hijos || []).length ? ', con sus subtareas' : ''} (${nombre}).${op.hecha && !op.conSubtareas && pendientes ? ` Le quedan ${pendientes} subtareas sin hacer; con con_subtareas se marcan también.` : ''}`;
+                } else if (a.accion === 'plegar') {
+                    op.accion = 'editar';
+                    op.plegada = a.plegada !== false;
+                    respuesta = `«${t.texto}» ${op.plegada ? 'plegada' : 'desplegada'} (${nombre}).`;
+                } else if (a.accion === 'borrar') {
+                    const n = listasTodas(t.hijos).length;
+                    respuesta = `borrada «${t.texto}»${n ? ` y ${n === 1 ? 'su subtarea' : `sus ${n} subtareas`}` : ''} (${nombre}).`;
+                } else if (a.accion === 'mover') {
+                    const destino = a.a_lista ? listasPorNombre(listas, a.a_lista) : c;
+                    const padre = a.padre ? listasTareaPorTexto(destino, a.padre) : null;
+                    if (padre && (padre.id === t.id || listasTodas(t.hijos).some((x: any) => x.id === padre.id))) throw new Error('No se puede mover una tarea dentro de sí misma');
+                    const nivel = padre ? listasNivel(destino, padre.id) + 1 : 0;
+                    if (nivel + listasAltura(t) > LISTAS_NIVELES) throw new Error(`Como mucho ${LISTAS_NIVELES} niveles: «${t.texto}» y lo que tiene debajo no caben ahí.`);
+                    Object.assign(op, { aLista: destino.id, padre: padre?.id || null, indice: posicion });
+                    respuesta = `«${t.texto}» movida${destino !== c ? ` a «${destino.titulo}»` : ''}${padre ? `, dentro de «${padre.texto}»` : ', al primer nivel'}${posicion !== null ? `, posición ${posicion + 1}` : ''}.`;
+                } else throw new Error('Acción desconocida');
+            }
+            op.resumen = respuesta;
+            await encolar(userId, op);
+            return respuesta.charAt(0).toUpperCase() + respuesta.slice(1) + SOLO;
         }
         case 'receta': {
             const ingredientes = (Array.isArray(a.ingredientes) ? a.ingredientes : []).map((x: any) => String(x || '').trim()).filter(Boolean).slice(0, 60);

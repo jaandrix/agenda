@@ -268,6 +268,14 @@
                 if (!nuevo) return null;
                 return linea('test', `test «${corto(t.titulo)}», ${t.preguntas.length} preguntas (repaso → test).`, { accion: 'test_quitar', id: nuevo.id });
             }
+            // Listas de Panorama: se guarda cómo estaban las cajas tocadas y deshacer las deja así.
+            if (op.tipo === 'listas') {
+                if (registroConector.some(l => l.id === ref)) return null;
+                const tocadas = [...new Set([op.lista, op.aLista, op.accion === 'crear_lista' ? op.id : null].filter(Boolean))];
+                const antes = tocadas.map(id => { const i = listasDatos().findIndex(c => c.id === id); return { id, i, caja: i >= 0 ? JSON.parse(JSON.stringify(listasDatos()[i])) : null }; });
+                if (!listasAplicarOp(listasDatos(), op)) return null;
+                return linea('listas', op.resumen || 'listas de panorama.', { accion: 'listas', antes });
+            }
             if (op.tipo === 'objetivo') {
                 const g = entries.find(x => x.id === op.id && x.type === 'goal');
                 if (!g) return null;
@@ -648,6 +656,13 @@
             } else if (d.accion === 'apuntes') {
                 for (const h of d.hechos || []) { if (h.tipo === 'conector') await deshacerConector(h.ref, true); else apuntarQuitar(h); }
                 apuntesRecientes.forEach(a => { if ((d.apuntes || []).includes(a.id)) a.deshecho = true; });
+            } else if (d.accion === 'listas') {
+                const l = listasDatos();
+                [...d.antes].reverse().forEach(({ id, i, caja }) => {
+                    const j = l.findIndex(c => c.id === id);
+                    if (j >= 0) l.splice(j, 1);
+                    if (caja) l.splice(Math.min(i, l.length), 0, caja);
+                });
             } else if (d.accion === 'pedido_quitar') {
                 pedidos = pedidos.filter(p => p.id !== d.id);
             } else if (d.accion === 'deseo_quitar') {
@@ -745,7 +760,7 @@
         // en la bandeja sin tocar sus datos hasta que pulse "validar".
         // Desde el 23-10 casi todo se aplica solo (con deshacer en el historial). En la bandeja quedan el dinero
         // (movimientos, correcciones, extractos) y los borrados, donde un error de la IA cuesta más.
-        const OPS_AUTOMATICAS = ['evento', 'inversion', 'editar_evento', 'entrada', 'ocio', 'tarjetas', 'compra', 'ticket', 'receta', 'proyecto', 'apuntar', 'correo', 'pedido', 'objetivo', 'laboral', 'profe', 'test',
+        const OPS_AUTOMATICAS = ['evento', 'inversion', 'editar_evento', 'entrada', 'ocio', 'tarjetas', 'compra', 'ticket', 'receta', 'proyecto', 'apuntar', 'correo', 'pedido', 'objetivo', 'laboral', 'profe', 'test', 'listas',
             'tarea', 'editar_tarea', 'tarea_recurrente', 'estudio_crear', 'estudio_editar', 'clase', 'nota', 'habito', 'dia', 'enlace', 'deseo', 'entrada_crear', 'entrada_editar'];
         // Filas ya validadas o descartadas aquí que el servidor quizá aún no
         // ha borrado (se borran después de guardar): sin esto, una lectura
@@ -834,6 +849,7 @@
             if (op.tipo === 'enlace') return 'enlaces';
             if (op.tipo === 'clase') return 'estudios';
             if (op.tipo === 'objetivo') return 'objetivos';
+            if (op.tipo === 'listas') return 'panorama';
             if (op.tipo === 'inversion') return 'finanzas';
             if (op.tipo === 'laboral') return 'empleo';
             if (op.tipo === 'profe') return 'profesorado';
@@ -892,6 +908,7 @@
                 case 'ticket': return { tipo: 'ticket de la compra', texto: op.tienda || '', meta: [op.total ? financeMoney(Number(op.total)) : '', `${(op.lineas || []).length} productos`].filter(Boolean).join(', ') };
                 case 'proyecto': return { tipo: 'proyecto', texto: op.accion === 'crear' ? op.titulo : op.accion === 'tareas' ? (op.tareas || []).join(', ') : op.tarea || op.fase || op.texto || '', meta: op.accion };
                 case 'inversion': return { tipo: 'foto de inversión', texto: `${op.cuenta || 'cuenta'}, ${op.mes}`, meta: op.correo ? `cartera ${financeMoney(Number(op.correo.valor))}` : '' };
+                case 'listas': return { tipo: 'listas de panorama', texto: op.resumen || op.accion, meta: '' };
                 case 'objetivo': return { tipo: 'objetivo', texto: op.hito || (op.hitos || []).join(', ') || (op.actual ?? ''), meta: op.accion };
                 case 'laboral': return { tipo: 'agenda laboral', texto: op.cita?.titulo || op.accion, meta: op.cita?.fecha ? fecha(op.cita.fecha) : '' };
                 case 'profe': return { tipo: 'profesorado', texto: op.titulo || op.accion, meta: op.fecha ? fecha(op.fecha) : '' };
@@ -978,7 +995,7 @@
         }
 
         const REGISTRO_ICONO = '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M12 14h76v54H42L22 86V68H12z"/></svg>';
-        const BANDEJA_ORDEN = ['planificador', 'estudios', 'finanzas', 'viajes', 'objetivos', 'notas', 'rutinas y esfuerzo', 'documentos', 'enlaces', 'cumpleaños', 'eventos', 'otros'];
+        const BANDEJA_ORDEN = ['planificador', 'estudios', 'finanzas', 'viajes', 'objetivos', 'notas', 'rutinas y esfuerzo', 'documentos', 'enlaces', 'cumpleaños', 'eventos', 'panorama', 'otros'];
         let bandejaHistorialAbierto = false;
         let bandejaBusqueda = '';
 

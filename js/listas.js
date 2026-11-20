@@ -55,6 +55,80 @@
             }, 400);
         }
 
+        // Colores del título (subrayado de rotulador, muy suave). La clave es lo que se guarda; el conector usa las mismas.
+        const LISTAS_COLORES = [['rosa', '#f4a7b9'], ['melocotón', '#f7c19a'], ['amarillo', '#f3dc6b'], ['menta', '#9fdcbc'], ['cielo', '#a3c9ef'], ['lavanda', '#c7b3ee'], ['salvia', '#bfd29d'], ['arena', '#e2cba6']];
+        const listaColor = clave => (LISTAS_COLORES.find(([k]) => k === clave) || [])[1] || null;
+
+        // Operaciones del conector (op.tipo 'listas'), ya con ids resueltos por el servidor. Es la misma función que
+        // listasAplicarOp en supabase/functions/bitacora-mcp/index.ts (allí sirve para leer con lo pendiente aplicado):
+        // si cambia una, cambiar la otra. Devuelve false si no había nada que hacer.
+        function listasAplicarOp(listas, op) {
+            const caja = id => listas.find(c => c && c.id === id);
+            const buscar = (c, id) => {
+                const ir = (arr, padre) => {
+                    for (let i = 0; i < arr.length; i++) {
+                        if (arr[i].id === id) return { nodo: arr[i], hermanos: arr, indice: i, padre };
+                        const r = ir(arr[i].hijos || [], arr[i]);
+                        if (r) return r;
+                    }
+                    return null;
+                };
+                return c ? ir(c.tareas || (c.tareas = []), null) : null;
+            };
+            const todas = arr => (arr || []).flatMap(n => [n, ...todas(n.hijos)]);
+            const existe = id => listas.some(c => todas(c.tareas).some(n => n.id === id));
+            const marcar = (n, hecha) => { if (hecha) { if (!n.hecha) { n.hecha = true; n.hechaEn = op.cuando || new Date().toISOString(); } } else { n.hecha = false; delete n.hechaEn; } };
+            const insertar = (c, padreId, indice, nodos) => {
+                const p = padreId ? buscar(c, padreId)?.nodo : null;
+                if (padreId && !p) return false;
+                const arr = p ? (p.hijos = Array.isArray(p.hijos) ? p.hijos : []) : c.tareas;
+                if (p) delete p.plegada;
+                arr.splice(indice == null ? arr.length : Math.max(0, Math.min(indice, arr.length)), 0, ...nodos);
+                return true;
+            };
+            if (op.accion === 'crear_lista') {
+                if (caja(op.id)) return false;
+                listas.push({ id: op.id, titulo: op.titulo || '', ...(op.color ? { color: op.color } : {}), tareas: (op.tareas || []).filter(n => !existe(n.id)) });
+                return true;
+            }
+            const c = caja(op.lista);
+            if (!c) return false;
+            if (op.accion === 'lista') {
+                if (op.titulo != null) c.titulo = op.titulo;
+                if (op.color !== undefined) { if (op.color) c.color = op.color; else delete c.color; }
+                if (op.ocultarHechas !== undefined) { if (op.ocultarHechas) c.ocultarHechas = true; else delete c.ocultarHechas; }
+                return true;
+            }
+            if (op.accion === 'borrar_lista') { listas.splice(listas.indexOf(c), 1); return true; }
+            if (op.accion === 'quitar_hechas') {
+                const filtrar = arr => arr.filter(n => !n.hecha).map(n => { if (n.hijos) n.hijos = filtrar(n.hijos); return n; });
+                c.tareas = filtrar(c.tareas || []);
+                return true;
+            }
+            if (op.accion === 'anadir') {
+                const nodos = (op.tareas || []).filter(n => !existe(n.id));
+                return nodos.length ? insertar(c, op.padre, op.indice, nodos) : false;
+            }
+            const f = buscar(c, op.id);
+            if (!f) return false;
+            if (op.accion === 'editar') {
+                if (op.texto != null) f.nodo.texto = op.texto;
+                if (op.hecha !== undefined) { marcar(f.nodo, op.hecha); if (op.conSubtareas) todas(f.nodo.hijos).forEach(n => marcar(n, op.hecha)); }
+                if (op.plegada !== undefined) { if (op.plegada) f.nodo.plegada = true; else delete f.nodo.plegada; }
+                return true;
+            }
+            if (op.accion === 'borrar') { f.hermanos.splice(f.indice, 1); return true; }
+            if (op.accion === 'mover') {
+                const destino = caja(op.aLista || op.lista);
+                if (!destino || (op.padre && (op.padre === f.nodo.id || todas(f.nodo.hijos).some(n => n.id === op.padre)))) return false;
+                f.hermanos.splice(f.indice, 1);
+                if (insertar(destino, op.padre, op.indice, [f.nodo])) return true;
+                f.hermanos.splice(f.indice, 0, f.nodo);
+                return false;
+            }
+            return false;
+        }
+
         // ---------- pintar ----------
         function renderPanoramaListas() {
             listasNormalizar();
@@ -84,7 +158,7 @@
             return `<article class="lst-caja" id="lst-caja-${escapeHtml(c.id)}" data-caja="${escapeHtml(c.id)}" ondragover="listaSobreCaja(event)" ondrop="listaSoltarEnCaja(event)" ondragleave="listaDejarCaja(event)">
                 <header class="lst-caja-cab">
                     <span class="lst-asa lst-asa-caja" draggable="true" ondragstart="listaEmpezarCaja(event)" ondragend="listaAcabarArrastre()" title="arrastrar para ordenar"><i class="ico ico-asa" aria-hidden="true"></i></span>
-                    <span class="lst-caja-titulo" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="nombre de la lista" data-ph="sin nombre." onkeydown="listaTeclaTitulo(event)" onblur="listaRenombrar(this)">${escapeHtml(c.titulo || '')}</span>
+                    <span class="lst-caja-nombre" onclick="if (event.target === this) this.firstElementChild.focus()"><span class="lst-caja-titulo${listaColor(c.color) ? ' tinta' : ''}"${listaColor(c.color) ? ` style="--lst-tinta:${listaColor(c.color)}"` : ''} contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="nombre de la lista" data-ph="sin nombre." onkeydown="listaTeclaTitulo(event)" onblur="listaRenombrar(this)">${escapeHtml(c.titulo || '')}</span></span>
                     ${todas.length ? `<span class="lst-caja-cuenta${hechas === todas.length ? ' lleno' : ''}">${hechas}/${todas.length}</span>` : ''}
                     <button type="button" class="lst-boton" aria-label="opciones de la lista" onclick="listaMenuCaja(this)"><i class="ico ico-puntos" aria-hidden="true"></i></button>
                 </header>
@@ -104,6 +178,7 @@
                 <button type="button" class="lst-check${n.hecha ? ' on' : ''}" role="checkbox" aria-checked="${!!n.hecha}" aria-label="hecha" onclick="listaMarcar(this)"></button>
                 <span class="lst-texto" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="tarea" data-ph="escribe." onkeydown="listaTecla(event)" oninput="listaEscribir(this)" onblur="listaSoltarTexto(this)" onpaste="listaPegar(event)">${escapeHtml(n.texto || '')}</span>
                 ${cuenta}
+                ${nivel < LISTAS_NIVELES - 1 ? '<button type="button" class="lst-boton lst-sub" aria-label="añadir subtarea" title="añadir subtarea" onclick="listaNuevaSubtarea(this)"><i class="ico ico-mas" aria-hidden="true"></i></button>' : ''}
                 <button type="button" class="lst-boton lst-borrar" aria-label="borrar tarea" onclick="listaBorrarTarea(this)"><i class="ico ico-x" aria-hidden="true"></i></button>
             </div>`;
         }
@@ -186,6 +261,7 @@
             const cajas = listasDatos(), i = cajas.indexOf(caja);
             const hayHijos = listaTodas(caja.tareas).some(n => (n.hijos || []).length);
             abrirMenuAcciones(boton, [
+                ['color del título.', () => listaElegirColor(caja.id)],
                 [caja.ocultarHechas ? 'mostrar las hechas.' : 'ocultar las hechas.', () => listaAlternarHechas(boton)],
                 ...(hayHijos ? [['plegar todo.', () => listaPlegarTodo(caja.id, true)], ['desplegar todo.', () => listaPlegarTodo(caja.id, false)]] : []),
                 ...(listaTodas(caja.tareas).some(n => n.hecha) ? [['quitar las hechas.', () => listaQuitarHechas(caja.id)]] : []),
@@ -193,6 +269,32 @@
                 ...(i < cajas.length - 1 ? [['mover después.', () => listaMoverCaja(caja.id, 1)]] : []),
                 ['eliminar lista.', () => listaConfirmarBorrarCaja(caja.id)],
             ]);
+        }
+        function listaElegirColor(cajaId) {
+            const c = listaCaja(cajaId);
+            if (!c) return;
+            const id = jsAttr(cajaId);
+            showModal(`<div class="modal-title">color del título.</div>
+                <p class="finance-modal-note" style="margin-top:0">Un subrayado suave bajo «${escapeHtml(c.titulo || 'sin nombre')}».</p>
+                <div class="lst-colores">${LISTAS_COLORES.map(([k, hex]) => `<button type="button" class="lst-color${c.color === k ? ' on' : ''}" style="--lst-tinta:${hex}" aria-pressed="${c.color === k}" onclick="listaPonerColor('${id}', '${k}')"><span class="lst-color-muestra">${escapeHtml(c.titulo || 'lista')}</span><small>${k}.</small></button>`).join('')}</div>
+                <button class="btn-secondary" style="margin-top:12px" onclick="listaPonerColor('${id}', '')">sin color.</button>`);
+        }
+        function listaPonerColor(cajaId, color) {
+            const c = listaCaja(cajaId);
+            closeModal();
+            if (!c) return;
+            if (color) c.color = color; else delete c.color;
+            listaRepintarCaja(cajaId);
+            listasGuardar();
+        }
+        function listaNuevaSubtarea(boton) {
+            const { caja, id } = listaDe(boton);
+            const f = listaBuscar(caja, id);
+            if (!f || f.nivel + 1 >= LISTAS_NIVELES) return;
+            const nuevo = listaNodo('');
+            listaHijos(f.nodo).push(nuevo);
+            delete f.nodo.plegada;
+            listaRepintarCaja(caja.id, [nuevo.id, 0]);
         }
         function listaAlternarHechas(el) {
             const { caja } = listaDe(el);
