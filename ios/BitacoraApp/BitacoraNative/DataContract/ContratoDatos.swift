@@ -13,7 +13,7 @@ enum ContratoDatos {
         "collectibleCategories", "collectibles", "dayPlanner", "recurringTasks", "dailyEffort",
         "studies", "links", "linkCategories", "blurFinances", "pedidos", "hansei", "apartadosConfig",
         "perfilLaboral", "profesorado", "agendaLaboral", "listaCompra", "estudiar", "avisoDiarioVisto",
-        "apuntesRecientes", "calendarioFeedVersion", "bienvenida", "servicios",
+        "apuntesRecientes", "calendarioFeedVersion", "bienvenida", "servicios", "listasPanorama",
         // claves-fin
     ]
 

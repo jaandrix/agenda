@@ -171,6 +171,7 @@
                     ${renderHomeAvisos(hallazgos)}
                     ${renderPanoramaHoy()}
                     ${renderPanoramaTarjetas()}
+                    ${renderPanoramaListas()}
                     <section class="pano-mas-panel"><div class="pano-mas-cab">más.</div>
                     <div class="home-launcher-list pano-mas">${rows}</div></section>
                 </div>
