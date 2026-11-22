@@ -455,6 +455,7 @@
                 if (assignment) assignment.done = item.done;
             }
             if (item.proyectoTareaId && typeof proyectoTareaDesdePlanner === 'function') proyectoTareaDesdePlanner(item.proyectoId, item.proyectoTareaId, item.done);
+            if (item.listaTareaId && typeof listaTareaDesdePlanner === 'function') listaTareaDesdePlanner(item.listaId, item.listaTareaId, item.done);
 
             // Al completarla, queda constancia como evento en el calendario
             // (con la fecha real en que se completó); al desmarcarla, se retira.

@@ -10792,3 +10792,9 @@ body:not(.papel) .lst-caja-titulo.tinta, body:not(.papel) .lst-color-muestra { -
 .lst-color:hover, .lst-color.on { border-color:var(--text-primary); }
 .lst-color-muestra { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 3px; font-size:14px; font-weight:800; }
 .lst-color small { flex:none; font-size:11.5px; color:var(--text-secondary); }
+
+/* 22-11: «→ hoy» de las listas (como en Proyectos) y la marca «en hoy.» cuando ya está en el planificador. */
+.lst-fila .lst-hoy { opacity:0; width:auto; height:22px; margin-top:1px; padding:0 6px; font:600 11.5px var(--font-family); white-space:nowrap; }
+.lst-fila:hover .lst-hoy, .lst-fila:focus-within .lst-hoy { opacity:1; }
+.lst-en-hoy { flex:none; margin-top:3px; font-size:11px; font-weight:600; color:var(--text-secondary); white-space:nowrap; }
+@media (hover: none) { .lst-fila .lst-hoy { opacity:.6; } }

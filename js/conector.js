@@ -41,12 +41,14 @@
 
         // Igual que al marcarla a mano (togglePlannerItemDone): una tarea
         // del día hecha deja constancia en el calendario y, si viene de un
-        // trabajo de Estudios, lo marca también.
+        // trabajo de Estudios, un proyecto o una lista de Panorama, lo marca también.
         function marcarTareaConector(item, enDia, hecha) {
             item.done = hecha;
             if (hecha) item.hechaEn = Date.now(); else delete item.hechaEn;
             if (!enDia) return;
             if (item.linkedAssignmentId) { const a = findAssignmentById(item.linkedAssignmentId); if (a) a.done = hecha; }
+            if (item.proyectoTareaId && typeof proyectoTareaDesdePlanner === 'function') proyectoTareaDesdePlanner(item.proyectoId, item.proyectoTareaId, hecha);
+            if (item.listaTareaId && typeof listaTareaDesdePlanner === 'function') listaTareaDesdePlanner(item.listaId, item.listaTareaId, hecha);
             const logId = 'planner_done_' + item.id;
             entries = entries.filter(e => e.id !== logId);
             if (hecha) entries.push({ id: logId, type: 'event', eventType: 'otro', title: 'Completado: ' + item.title, date: todayISO(), time: item.time || '', place: '', notes: item.notes || '', category: 'Planificador', calendarLog: true, ...camposCompletado(item, typeof enDia === 'string' ? enDia : null) });

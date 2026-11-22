@@ -147,10 +147,10 @@
 
         function renderListaCaja(c) {
             const todas = listaTodas(c.tareas), hechas = todas.filter(n => n.hecha).length;
-            const filas = [];
+            const filas = [], enHoy = listaIdsEnHoy();
             const pintar = (arr, nivel) => arr.forEach(n => {
                 if (c.ocultarHechas && n.hecha) return;
-                filas.push(renderListaFila(c, n, nivel));
+                filas.push(renderListaFila(c, n, nivel, enHoy));
                 if (!n.plegada) pintar(n.hijos || [], nivel + 1);
             });
             pintar(c.tareas, 0);
@@ -168,7 +168,7 @@
             </article>`;
         }
 
-        function renderListaFila(c, n, nivel) {
+        function renderListaFila(c, n, nivel, enHoy = new Set()) {
             const hijos = n.hijos || [];
             const hechasH = hijos.filter(h => h.hecha).length;
             const cuenta = hijos.length ? `<span class="lst-cuenta${hechasH === hijos.length ? ' lleno' : ''}" title="subtareas hechas">${hechasH}/${hijos.length}</span>` : '';
@@ -178,6 +178,7 @@
                 <button type="button" class="lst-check${n.hecha ? ' on' : ''}" role="checkbox" aria-checked="${!!n.hecha}" aria-label="hecha" onclick="listaMarcar(this)"></button>
                 <span class="lst-texto" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="tarea" data-ph="escribe." onkeydown="listaTecla(event)" oninput="listaEscribir(this)" onblur="listaSoltarTexto(this)" onpaste="listaPegar(event)">${escapeHtml(n.texto || '')}</span>
                 ${cuenta}
+                ${n.hecha ? '' : enHoy.has(n.id) ? '<span class="lst-en-hoy">en hoy.</span>' : '<button type="button" class="lst-boton lst-hoy" title="llevar a hoy en el planificador" onclick="listaAHoy(this)">→ hoy</button>'}
                 ${nivel < LISTAS_NIVELES - 1 ? '<button type="button" class="lst-boton lst-sub" aria-label="añadir subtarea" title="añadir subtarea" onclick="listaNuevaSubtarea(this)"><i class="ico ico-mas" aria-hidden="true"></i></button>' : ''}
                 <button type="button" class="lst-boton lst-borrar" aria-label="borrar tarea" onclick="listaBorrarTarea(this)"><i class="ico ico-x" aria-hidden="true"></i></button>
             </div>`;
@@ -516,6 +517,8 @@
             poner(nodo);
             if (conHijas) listaTodas(nodo.hijos).forEach(poner);
             listaRepintarCaja(caja.id);
+            const tocadas = new Set([nodo, ...(conHijas ? listaTodas(nodo.hijos) : [])].map(n => n.id));
+            if (typeof plannerItemsForOffset === 'function') plannerItemsForOffset(0).filter(it => tocadas.has(it.listaTareaId) && !!it.done !== hecha).forEach(it => togglePlannerItemDone(it.id, 0));
             if (hecha) document.querySelector(`.lst-fila[data-id="${CSS.escape(nodo.id)}"] .lst-check`)?.classList.add('sella');
             if (typeof haptico === 'function' && hecha) haptico('suave');
             listasGuardar();
@@ -537,6 +540,29 @@
                 const arr = destino ? listaHijos(destino) : c.tareas;
                 arr.splice(Math.min(indice, arr.length), 0, nodo);
             });
+        }
+
+        // Enlace con el planificador, como «→ hoy» en Proyectos: la tarea del día guarda listaId y listaTareaId, y marcarla
+        // en un sitio la marca en el otro (togglePlannerItemDone llama a listaTareaDesdePlanner).
+        function listaIdsEnHoy() {
+            return new Set(typeof plannerItemsForOffset === 'function' ? plannerItemsForOffset(0).filter(it => it.listaTareaId).map(it => it.listaTareaId) : []);
+        }
+        function listaAHoy(boton) {
+            const { caja, id } = listaDe(boton);
+            const f = listaBuscar(caja, id);
+            if (!f) return;
+            const hoy = plannerItemsForOffset(0);
+            if (hoy.some(it => it.listaTareaId === id)) { showToast('Ya está en el planificador de hoy'); return; }
+            const texto = (f.nodo.texto || '').trim() || 'tarea';
+            hoy.push({ id: 'planner_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), time: '', title: caja.titulo ? `${caja.titulo}: ${texto}` : texto, notes: '', done: false, listaId: caja.id, listaTareaId: id });
+            listaRepintarCaja(caja.id);
+            showToast('Añadida a hoy en el planificador');
+            listasGuardar();
+        }
+        function listaTareaDesdePlanner(cajaId, id, hecha) {
+            const f = listaBuscar(listaCaja(cajaId), id);
+            if (!f || !!f.nodo.hecha === !!hecha) return;
+            if (hecha) { f.nodo.hecha = true; f.nodo.hechaEn = new Date().toISOString(); } else { f.nodo.hecha = false; delete f.nodo.hechaEn; }
         }
 
         // Barra de deshacer propia: el toast de la app no lleva botón.
