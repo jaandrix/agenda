@@ -4446,7 +4446,17 @@ function financeProFilasYaApuntadas(imp) {
 }
 function renderFinanceProImportFilas(imp) {
     const filas = financeProFilasDelExtracto(imp);
-    if (!imp.excluidas) { imp.yaApuntadas = financeProFilasYaApuntadas(imp); imp.excluidas = new Set([...imp.yaApuntadas, ...filas.filter(f => f.fuera).map(f => f.fila)]); }
+    if (!imp.excluidas) {
+        imp.yaApuntadas = financeProFilasYaApuntadas(imp);
+        imp.excluidas = new Set([...imp.yaApuntadas, ...filas.filter(f => f.fuera).map(f => f.fila)]);
+        // Si Bitácora ya cuadra con el saldo del extracto, no falta nada: lo dudoso («¿ya está?») sale desmarcado, porque
+        // importarlo solo puede descuadrar. Con el Revolut del 22-11 eran 20 filas renombradas a mano («Claude» →
+        // «Anthropic») o recargas guardadas con la fecha de Ibercaja, todas marcadas: o se desmarcaban una a una o duplicaban.
+        let antes = null;
+        try { antes = financeProCuadreExtracto(imp); } catch (_) { /* sin saldo en el extracto */ }
+        imp.cuadraAntes = !!antes?.cuadra;
+        if (imp.cuadraAntes) imp.posibles?.forEach((_, fila) => imp.excluidas.add(fila));
+    }
     if (!imp.posibles) imp.posibles = new Map();
     const n = filas.length - imp.excluidas.size;
     const nFuera = filas.filter(f => f.fuera).length;
@@ -4454,11 +4464,12 @@ function renderFinanceProImportFilas(imp) {
     const nPosibles = filas.filter(f => imp.posibles.has(f.fila) && !imp.excluidas.has(f.fila)).length;
     return `<div class="fin-imp-resumen"><b>${n ? `${n} ${n === 1 ? 'nueva' : 'nuevas'}` : 'nada nuevo'}</b><span>${nYa > 0 ? `${nYa} ya ${nYa === 1 ? 'estaba' : 'estaban'} en ${escapeHtml(financePro.accounts[imp.mapping.account]?.name || imp.mapping.account)}` : 'ninguna estaba ya'}${nFuera ? `, ${nFuera} ${nFuera === 1 ? 'no cuenta' : 'no cuentan'} (anuladas, de una hucha o con un estado que no conozco)` : ''}${nPosibles ? `, ${nPosibles} por revisar` : ''}, de ${filas.length} filas.</span></div>
         <details class="fin-imp-lista" ${filas.length <= 25 || nPosibles ? 'open' : ''}><summary>ver las filas.</summary>
+        ${imp.cuadraAntes ? `<div class="finance-modal-note" style="margin:6px 0"><b>tu saldo ya cuadra con el del extracto.</b> No falta nada, así que lo que solo se parece («¿ya está?») sale desmarcado: márcalo solo si sabes que falta.</div>` : ''}
         <div class="finance-modal-note" style="margin:6px 0">Salen desmarcadas las que ya están (mismo importe y concepto, o dos que suman un traspaso ya apuntado). Las que solo se parecen por el importe siguen marcadas, con un aviso: míralas. Las anuladas y las de una hucha no cuentan nunca.</div>
         <div class="fin-imp-filas">${filas.map(f => `<label class="fin-imp-fila ${imp.yaApuntadas.has(f.fila) ? 'ya' : ''}">
             <input type="checkbox" ${imp.excluidas.has(f.fila) ? '' : 'checked'} ${f.bloqueada ? 'disabled' : ''} onchange="financeProImportFila(${f.fila}, this.checked)">
             <span>${f.date ? financeDateLabelShort(f.date) : 'sin fecha'}</span>
-            <b>${escapeHtml(f.desc.slice(0, 60) || 'sin concepto')}${f.fuera ? `<small>${escapeHtml(f.fuera)}</small>` : imp.yaApuntadas.has(f.fila) ? '<small>parece que ya está.</small>' : imp.posibles.has(f.fila) ? `<small>${escapeHtml(imp.posibles.get(f.fila))}</small>` : ''}</b>
+            <b>${escapeHtml(f.desc.slice(0, 60) || 'sin concepto')}${f.fuera ? `<small>${escapeHtml(f.fuera)}</small>` : imp.yaApuntadas.has(f.fila) ? '<small>parece que ya está.</small>' : imp.posibles.has(f.fila) ? `<small>${escapeHtml(imp.cuadraAntes ? imp.posibles.get(f.fila).replace('Si lo es, desmárcala.', 'Como ya cuadra, sale desmarcada.') : imp.posibles.get(f.fila))}</small>` : ''}</b>
             <i class="${f.val > 0 ? 'positiva' : ''}">${Number.isFinite(f.val) ? (f.val > 0 ? '+' : '') + financeMoney(f.val) : ''}</i>
         </label>`).join('')}</div></details>`;
 }

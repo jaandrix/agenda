@@ -142,6 +142,36 @@
         var d = new Date((iso || todayISO()) + 'T12:00:00');
         return d.getDate() + ' ' + MESES[d.getMonth()].slice(0, 3);
     }
+    // 0.27 (pendiente de la 0.26): los traspasos emparejados antes de acb8a46 llevan la fecha en que el banco de origen los
+    // asienta, no la de la recarga, y el extracto de Revolut de un fin de mes con recargas no cuadra. Se propone (nunca
+    // solo) lo mismo que hace ahora financeProEmparejarTraspasos: la fecha de la otra mitad (su clave, en claveImport, es
+    // de la cuenta de destino y de hasta 4 días antes) y la clave propia en claveImport2, para que reimportar el banco de
+    // origen lo siga reconociendo. Con claveImport2 ya ocupada no se propone: no habría dónde guardar la clave propia.
+    function traspasosConFechaDelBanco() {
+        var r = [];
+        financePro.transactions.forEach(function (t) {
+            if (t.type !== 'transfer' || !t.transferTo || t.claveImport2 || !t.claveImport || !t.date) return;
+            var p = String(t.claveImport).split('|');
+            if (p.length < 4 || p[0] !== t.transferTo || !/^\d{4}-\d{2}-\d{2}$/.test(p[1]) || p[1] >= t.date) return;
+            if (Math.abs(Number(p[2]) - Number(t.amount)) >= 0.005) return;
+            if ((new Date(t.date + 'T12:00:00') - new Date(p[1] + 'T12:00:00')) / 86400000 > 4) return;
+            r.push({ t: t, fecha: p[1] });
+        });
+        return r;
+    }
+    function ponerFechaTraspaso(ids) {
+        var n = 0;
+        traspasosConFechaDelBanco().forEach(function (x) {
+            if (ids && ids.indexOf(String(x.t.id)) < 0) return;
+            var t = x.t, nota = t.bankNote != null ? t.bankNote : (t.note != null ? t.note : '');
+            t.claveImport2 = t.account + '|' + t.date + '|' + t.amount + '|' + nota;
+            t.date = x.fecha;
+            delete t.orden; delete t.hora;
+            n++;
+        });
+        return n === 1 ? 'Un traspaso con la fecha de la recarga.' : n + ' traspasos con la fecha de la recarga.';
+    }
+
     function fila(t) {
         var cat = financeProNeutro(t) ? { name: financeProEtiquetaNeutro(t).replace(/\.$/, '') } : financeProCategoryById(t.category);
         return {
@@ -380,7 +410,7 @@
             filas: filas.map(function (f) {
                 return { fila: f.fila, fecha: f.date || '', dia: f.date ? financeDateLabelShort(f.date) : 'sin fecha', concepto: String(f.desc || '').slice(0, 60),
                     importe: Number.isFinite(f.val) ? f.val : null, fuera: f.fuera || '', ya: imp.yaApuntadas.has(f.fila), marcada: !imp.excluidas.has(f.fila),
-                    posible: imp.posibles && imp.posibles.has(f.fila) ? String(imp.posibles.get(f.fila)) : '', bloqueada: !!f.bloqueada };
+                    posible: imp.posibles && imp.posibles.has(f.fila) ? String(imp.cuadraAntes ? imp.posibles.get(f.fila).replace('Si lo es, desmárcala.', 'Como ya cuadra, sale desmarcada.') : imp.posibles.get(f.fila)) : '', bloqueada: !!f.bloqueada };
             }),
             conSaldo: conSaldo,
             formato: { fechas: fo.fechas || 'dmy', decimal: fo.decimal || '', dudaFechas: !!fo.dudaFechas && !fo.fechasElegidas, dudaDecimal: !!fo.dudaDecimal && !fo.decimalElegido, preguntaFechas: !!fo.dudaFechas, preguntaDecimal: !!fo.dudaDecimal },
@@ -815,6 +845,10 @@
                 reparto: saludReparto(ingresoCobro),
                 suscripciones: saludSuscripcionesRevisar(),
                 deseos: saludDeseos(),
+                fechasTraspaso: traspasosConFechaDelBanco().slice(0, 150).map(function (x) {
+                    var f = fila(x.t);
+                    return { id: f.id, titulo: f.titulo, meta: f.meta, importe: f.importe, dia: f.dia, nuevoDia: fechaCorta(x.fecha) };
+                }),
                 ajustes: { mesesObjetivo: a.mesesObjetivo, umbralFondo: a.umbralFondo, extraEmergencia: a.extraEmergencia, ordinario: a.ordinario, tramos: a.tramos, avisos: { semanal: !!a.avisos.semanal, cierre: !!a.avisos.cierre, trimestral: !!a.avisos.trimestral } },
                 cuentas: financeProCuentas().map(function (k) { return { id: k, nombre: String(nombreCuenta(k)) }; }),
                 categorias: financePro.categories.map(function (x) { return { id: String(x.id), nombre: String(x.name || x.id), tipo: x.type || '', icono: x.icon || 'other', color: x.color || '' }; })
@@ -828,6 +862,7 @@
         fondoDatos: function (id) { return JSON.stringify(saludFichaFondo(id)); },
         saludAccion: function (nombre, datos) {
             var d = JSON.parse(datos || '{}');
+            if (nombre === 'fechaTraspaso') return JSON.stringify(enCopia(function () { return ponerFechaTraspaso(d.ids || null); }));
             return JSON.stringify(enCopia(function () { return saludAccion(nombre, d); }));
         },
         // La foto de antes de importar (financeFotoFinanzas), para «deshacer importación.».

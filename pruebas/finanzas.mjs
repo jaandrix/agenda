@@ -820,3 +820,13 @@ test('con regla de traspaso: la recarga unida a su mitad de Ibercaja lleva la fe
     assert.equal(otra.nuevos, 0, 'reimportar Ibercaja no la repite');
     assert.equal(otra.cuadre.cuadra, true);
 });
+
+test('si Bitácora ya cuadra con el extracto, lo que solo se parece sale desmarcado y no se duplica', () => {
+    const { run } = cargarApp();
+    // Como en el Revolut del 22-11: el cargo se renombró a mano («Claude» → «Anthropic») y el saldo ya cuadraba.
+    run(`__vaciar({ online: 100 }); financePro.transactions.push({ id: 'a', date: '2026-09-08', account: 'online', type: 'expense', amount: 21.78, note: 'Anthropic', bankNote: 'Anthropic' })`);
+    const csv = `Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance\nCard Payment,Current,2026-09-08 15:26:34,2026-09-09 03:09:43,Claude,-21.78,0.00,EUR,COMPLETED,78.22`;
+    const r = JSON.parse(run(`(() => { const imp = financeProPrepararImport(${JSON.stringify(csv)}, 'online'); renderFinanceProImportFilas(imp);
+        return JSON.stringify({ cuadraAntes: imp.cuadraAntes, posible: imp.posibles.has(0), desmarcada: imp.excluidas.has(0) }); })()`));
+    assert.deepEqual(r, { cuadraAntes: true, posible: true, desmarcada: true });
+});
