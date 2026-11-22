@@ -140,7 +140,7 @@
             }
             const cajas = listasDatos();
             return `<section class="lst" id="pano-listas" aria-label="listas">
-                <div class="lst-cab"><b>listas.</b><small>${cajas.length ? 'Enter añade, Tab y Mayús+Tab cambian de nivel.' : 'Cajas de tareas con subtareas, para organizarte.'}</small><button type="button" class="vista-btn lst-nueva-caja" onclick="listaCrearCaja()"><i class="ico ico-mas" aria-hidden="true"></i>nueva lista.</button></div>
+                <div class="lst-cab"><b>listas.</b><small>${cajas.length ? '<span class="lst-ayuda-teclado">Enter añade, Tab y Mayús+Tab cambian de nivel.</span><span class="lst-ayuda-tactil">Toca una tarea para editarla, moverla o darle subtareas.</span>' : 'Cajas de tareas con subtareas, para organizarte.'}</small><button type="button" class="vista-btn lst-nueva-caja" onclick="listaCrearCaja()"><i class="ico ico-mas" aria-hidden="true"></i>nueva lista.</button></div>
                 ${cajas.length ? `<div class="lst-rejilla">${cajas.map(renderListaCaja).join('')}</div>` : ''}
             </section>`;
         }
@@ -181,6 +181,15 @@
                 ${n.hecha ? '' : enHoy.has(n.id) ? '<span class="lst-en-hoy">en hoy.</span>' : '<button type="button" class="lst-boton lst-hoy" title="llevar a hoy en el planificador" onclick="listaAHoy(this)">→ hoy</button>'}
                 ${nivel < LISTAS_NIVELES - 1 ? '<button type="button" class="lst-boton lst-sub" aria-label="añadir subtarea" title="añadir subtarea" onclick="listaNuevaSubtarea(this)"><i class="ico ico-mas" aria-hidden="true"></i></button>' : ''}
                 <button type="button" class="lst-boton lst-borrar" aria-label="borrar tarea" onclick="listaBorrarTarea(this)"><i class="ico ico-x" aria-hidden="true"></i></button>
+                <span class="lst-herr" onpointerdown="event.preventDefault()">
+                    ${nivel ? `<button type="button" onclick="listaHerr(this, 'sacar')"><i class="ico ico-izq" aria-hidden="true"></i>sacar.</button>` : ''}
+                    <button type="button" onclick="listaHerr(this, 'meter')"><i class="ico ico-der" aria-hidden="true"></i>meter.</button>
+                    <button type="button" onclick="listaHerr(this, 'subir')">subir.</button>
+                    <button type="button" onclick="listaHerr(this, 'bajar')">bajar.</button>
+                    ${nivel < LISTAS_NIVELES - 1 ? '<button type="button" onclick="listaNuevaSubtarea(this)">+ subtarea.</button>' : ''}
+                    ${n.hecha || enHoy.has(n.id) ? '' : '<button type="button" onclick="listaAHoy(this)">→ hoy.</button>'}
+                    <button type="button" class="peligro" onclick="listaBorrarTarea(this)">borrar.</button>
+                </span>
             </div>`;
         }
 
@@ -465,6 +474,21 @@
             if (e.key === 'Escape') { e.preventDefault(); el.blur(); }
         }
 
+        // En pantallas táctiles no hay Tab ni arrastre: la tarea que editas enseña debajo una barra con lo mismo.
+        // pointerdown sin efecto para que el texto no pierda el foco (ni se esconda el teclado) al tocar un botón.
+        function listaHerr(boton, accion) {
+            const { caja, id, fila } = listaDe(boton);
+            const f = listaBuscar(caja, id);
+            if (!f) return;
+            f.nodo.texto = fila.querySelector('.lst-texto').textContent.replace(/\s+/g, ' ');
+            if (accion === 'meter') return listaSangrar(caja, id);
+            if (accion === 'sacar') return listaQuitarSangria(caja, id);
+            const j = f.indice + (accion === 'subir' ? -1 : 1);
+            if (j < 0 || j >= f.hermanos.length) return;
+            [f.hermanos[f.indice], f.hermanos[j]] = [f.hermanos[j], f.hermanos[f.indice]];
+            listaRepintarCaja(caja.id, [id]);
+            listasGuardar();
+        }
         function listaAvisoNiveles() { showToast(`Como mucho, ${LISTAS_NIVELES} niveles.`); }
         function listaSangrar(caja, id) {
             const f = listaBuscar(caja, id);

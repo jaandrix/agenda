@@ -10809,3 +10809,21 @@ body:not(.papel) .lst-caja-titulo.tinta, body:not(.papel) .lst-color-muestra { -
 .planner-sub-nueva:focus { border-bottom-color:var(--text-primary); }
 .planner-sub-nueva::placeholder { color:var(--text-secondary); }
 @media (prefers-reduced-motion: reduce) { .planner-sub-check { transition:none; } }
+
+/* 22-11: listas en pantallas táctiles (el móvil las ve en Panorama). Sin ratón no hay Tab, arrastre ni botones al pasar
+   por encima: la tarea que editas enseña debajo una barra con todo eso, y los círculos pequeños tienen más zona de toque. */
+.lst-herr, .lst-ayuda-tactil { display:none; }
+/* .m-generico da 38 px de alto a todo botón: los círculos se estiraban en óvalos. */
+.m-generico .lst :is(.lst-check, .lst-plegar, .lst-boton, .lst-ocultas), .m-generico .planner-sub-check { min-height:0; }
+@media (hover: none) {
+    .lst-fila { flex-wrap:wrap; }
+    .lst-ayuda-teclado { display:none; }
+    .lst-ayuda-tactil { display:inline; }
+    .lst-fila > .lst-hoy, .lst-fila > .lst-sub, .lst-fila > .lst-borrar { display:none; }
+    .lst-fila:focus-within > .lst-herr { display:flex; flex-wrap:wrap; gap:6px; flex-basis:100%; margin:6px 0 4px 38px; }
+    .lst-herr button { display:inline-flex; align-items:center; gap:5px; min-height:34px; padding:0 10px; border:1px solid var(--border); border-radius:10px; background:var(--bg-card); color:var(--text-primary); font:600 12.5px var(--font-family); cursor:pointer; }
+    .lst-herr button .ico { width:9px; height:9px; }
+    .lst-herr button.peligro { color:#b44d58; }
+    .lst-check, .planner-sub-check { position:relative; }
+    .lst-check::after, .planner-sub-check::after { content:''; position:absolute; inset:-11px; }
+}
