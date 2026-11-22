@@ -3559,7 +3559,9 @@
             // Lo de Bitácora posterior al final del extracto (el CSV acaba el 30 a mediodía y el café del 30 se completó el 1)
             // no entra en el saldo que da el extracto: se aparta antes de comparar.
             // El extracto se corta por la fecha de completado: lo del último día que no está en él se completó después.
-            const posteriores = [...libres].filter(x => x.t.date >= hasta && !retenidos.includes(x));
+            // Un ajuste de saldo no es una operación del banco que se complete después: apartarlo escondía el que se hizo el
+            // mismo día del extracto (+27,08 € el 22-11) y el cuadre daba por buena una cuenta que seguía mal.
+            const posteriores = [...libres].filter(x => x.t.date >= hasta && !retenidos.includes(x) && !financeProEsAjuste(x.t));
             if (posteriores.length) {
                 posteriores.forEach(x => libres.delete(x));
                 actual = Math.round((actual - posteriores.reduce((a, x) => a + x.val, 0)) * 100) / 100;
@@ -3569,7 +3571,14 @@
             // Lo retenido (salidas recientes a otra cuenta que el banco aún no enseña) no es un sobrante: al fijar el saldo
             // de partida se descuenta, o Ibercaja quedaba con la transferencia a Revolut contada como si no hubiera salido.
             retenidos.forEach(x => libres.delete(x));
-            return { cuadra: false, esperado, actual, diff: Math.round((esperado - retenido - actual) * 100) / 100, retenido, cuenta, desde: lleno, hasta, apartados: posteriores.length,
+            // Lo que el extracto marca como anulado y Bitácora tiene como hecho (A2e Ai 13,54 € del 13-11, que entró como
+            // definitivo con el importador anterior): se señala para quitarlo primero.
+            const anuladas = imp.rows.slice(1).filter(r => financeProFilaFuera(imp, r).estado === 'anulado')
+                .map(r => ({ val: Math.round(pe(r[m.amount]) * 100) / 100, fechas: r.map(pf).filter(Boolean), desc: financeProNormalizar(r[m.description] || '') }));
+            const anulados = new Set([...libres].filter(x => anuladas.some(a => Math.abs(a.val - x.val) < 0.005
+                && a.fechas.some(d => Math.abs((new Date(d) - new Date(x.t.date)) / 86400000) <= 2)
+                && [x.t.bankNote, x.t.note].some(n => financeProNormalizar(n || '') === a.desc))).map(x => x.t.id));
+            return { cuadra: false, anulados, esperado, actual, diff: Math.round((esperado - retenido - actual) * 100) / 100, retenido, cuenta, desde: lleno, hasta, apartados: posteriores.length,
                 sobran: [...libres].map(x => x.t), faltan: [...libresFilas],
                 duplicados: [...libres].map(x => ({ t: x.t, val: x.val, gemelo: gemelo(x)?.t })) };
         }
@@ -3595,8 +3604,33 @@
             return fuera.size;
         }
 
+        // Qué quitar para que cuadre: solo un grupo de sobrantes que sume la diferencia exacta, empezando por lo anulado en el
+        // banco y los ajustes a mano. Antes salían todos marcados, también un traspaso de Ibercaja con la fecha de Ibercaja
+        // (150 € del 2-9, recarga de finales de agosto) que no sobraba: quitarlo descuadraba la otra cuenta.
+        function financeProSobrantesQueCuadran(c) {
+            const efecto = t => Math.round((t.type === 'transfer' ? (t.account === c.cuenta ? 1 : -1) : t.type === 'income' ? -1 : 1) * Number(t.amount || 0) * 100);
+            const objetivo = Math.round(c.diff * 100);
+            const prioridad = t => (c.anulados?.has(t.id) ? 0 : financeProEsAjuste(t) ? 1 : t.type === 'transfer' ? 3 : 2);
+            const lista = [...c.sobran].sort((a, b) => prioridad(a) - prioridad(b)).slice(0, 18);
+            let mejor = null;
+            const n = lista.length;
+            for (let mask = 1; mask < (1 << n); mask++) {
+                let s = 0, peso = 0, k = 0;
+                for (let i = 0; i < n; i++) if (mask & (1 << i)) { s += efecto(lista[i]); peso += prioridad(lista[i]) * 10 + 1; k++; }
+                if (s === objetivo && (!mejor || peso < mejor.peso)) mejor = { mask, peso };
+            }
+            return new Set(mejor ? lista.filter((_, i) => mejor.mask & (1 << i)).map(t => t.id) : []);
+        }
+        function financeProPorQueSobra(t, c) {
+            if (c?.anulados?.has(t.id)) return 'el banco lo anuló.';
+            if (financeProEsAjuste(t)) return 'ajuste de saldo a mano.';
+            if (t.type === 'transfer') return 'traspaso con la fecha de la otra cuenta: casi nunca sobra.';
+            return '';
+        }
+
         function openFinanceProCuadre(c) {
             window._financeProCuadre = c;
+            const marcados = financeProSobrantesQueCuadran(c);
             const sobranSuma = c.sobran.reduce((x, t) => x + Math.abs(Number(t.amount) || 0), 0);
             const nombre = financePro.accounts[c.cuenta]?.name || c.cuenta;
             showModal(`
@@ -3608,16 +3642,17 @@
                 </div>
                 <p class="finance-modal-note">Saldo de ${escapeHtml(nombre)} a ${financeDateLabelShort(c.hasta)}, ya descontados los cargos pendientes. He cruzado uno a uno los movimientos del ${financeDateLabelShort(c.desde)} al ${financeDateLabelShort(c.hasta)} con el extracto.</p>
                 ${c.sobran.length ? `<div class="modal-label">sobran en bitácora (no están en el extracto)</div>
-                <div class="finance-viaje-lista">${c.sobran.map(t => `<label class="finance-viaje-fila"><input type="checkbox" checked data-cuadre="${t.id}"><span>${financeDateLabelShort(t.date)}</span><b>${escapeHtml(t.note || t.bankNote || financeProCategoryById(t.category)?.name || 'movimiento')}</b><i>${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}</i></label>`).join('')}</div>` : ''}
+                <div class="finance-modal-note" style="margin:4px 0 8px"><b>marcado = se borra de bitácora.</b> ${marcados.size ? `Ya he marcado lo justo para que cuadre: pulsa «borrar los marcados.» y listo.` : 'Ninguna combinación cuadra sola: marca solo lo que sepas que no pasó.'}</div>
+                <div class="finance-viaje-lista">${c.sobran.map(t => `<label class="finance-viaje-fila"><input type="checkbox" ${marcados.has(t.id) ? 'checked' : ''} data-cuadre="${t.id}"><span>${financeDateLabelShort(t.date)}</span><b>${escapeHtml(t.note || t.bankNote || financeProCategoryById(t.category)?.name || 'movimiento')}${financeProPorQueSobra(t, c) ? `<small>${financeProPorQueSobra(t, c)}</small>` : ''}</b><i>${t.type === 'income' ? '+' : '-'}${financeMoney(t.amount)}</i></label>`).join('')}</div>` : ''}
                 ${c.faltan.length ? `<div class="modal-label">faltan en bitácora (están en el extracto)</div>
                 <div class="finance-viaje-lista">${c.faltan.map(f => `<div class="finance-viaje-fila"><span></span><span>${financeDateLabelShort(f.fechas[0])}</span><b>${escapeHtml(f.desc)}</b><i>${f.val > 0 ? '+' : ''}${financeMoney(f.val)}</i></div>`).join('')}</div>` : ''}
-                ${c.sobran.length ? `<button class="btn-modal-primary" onclick="financeProQuitarSobrantes()">quitar los marcados.</button>` : ''}
+                ${c.sobran.length ? `<button class="btn-modal-primary" onclick="financeProQuitarSobrantes()">borrar los marcados.</button>` : ''}
                 ${c.retenido ? `<p class="finance-modal-note">${financeMoney(c.retenido)} ${c.retenido === 1 ? 'está retenido' : 'están retenidos'}: los pasaste a otra cuenta y el banco aún no lo enseña. Ya está descontado de la diferencia.</p>` : ''}
                 ${c.apartados ? `<p class="finance-modal-note">${c.apartados} ${c.apartados === 1 ? 'movimiento del último día se da' : 'movimientos del último día se dan'} por posteriores al extracto y no entran en la comparación.</p>` : ''}
                 <button class="btn-secondary" style="margin-top:8px" onclick="financeProAjustarAlExtracto()">ajustar el saldo a ${financeMoney(Math.round((c.actual + financeProDiferenciaCuadre(c)) * 100) / 100)}.</button>
                 <button class="btn-secondary" style="margin-top:8px" onclick="financeProFijarSaldoInicial()">fijar el saldo de partida.</button>
                 <div class="finance-modal-note">Fijar el saldo de partida no añade ningún movimiento: cambia con cuánto empezaba la cuenta para que coincida con el extracto. Es lo que toca al importar el historial de meses atrás. Antes, quita lo que sobra si son ajustes de saldo antiguos.</div>
-                <div class="finance-modal-note">${c.sobran.length && Math.abs(sobranSuma - Math.abs(c.diff)) < 0.005 ? 'Lo que sobra explica justo la diferencia: quitándolo, cuadra.' : c.sobran.length || c.faltan.length ? 'Revisa la lista: si la diferencia viene de antes de estas fechas, el ajuste la deja a cero sin tocar nada más.' : 'Los movimientos de estas fechas coinciden: la diferencia viene de antes. El ajuste la deja a cero sin tocar tu histórico.'}</div>
+                <div class="finance-modal-note">${marcados.size ? 'Lo marcado explica justo la diferencia: quitándolo, cuadra. Lo demás no lo toques salvo que sepas que sobra.' : c.sobran.length && Math.abs(sobranSuma - Math.abs(c.diff)) < 0.005 ? 'Lo que sobra explica justo la diferencia: quitándolo, cuadra.' : c.sobran.length || c.faltan.length ? 'Revisa la lista: si la diferencia viene de antes de estas fechas, el ajuste la deja a cero sin tocar nada más.' : 'Los movimientos de estas fechas coinciden: la diferencia viene de antes. El ajuste la deja a cero sin tocar tu histórico.'}</div>
             `);
         }
 
@@ -4465,7 +4500,7 @@ function renderFinanceProImportFilas(imp) {
     return `<div class="fin-imp-resumen"><b>${n ? `${n} ${n === 1 ? 'nueva' : 'nuevas'}` : 'nada nuevo'}</b><span>${nYa > 0 ? `${nYa} ya ${nYa === 1 ? 'estaba' : 'estaban'} en ${escapeHtml(financePro.accounts[imp.mapping.account]?.name || imp.mapping.account)}` : 'ninguna estaba ya'}${nFuera ? `, ${nFuera} ${nFuera === 1 ? 'no cuenta' : 'no cuentan'} (anuladas, de una hucha o con un estado que no conozco)` : ''}${nPosibles ? `, ${nPosibles} por revisar` : ''}, de ${filas.length} filas.</span></div>
         <details class="fin-imp-lista" ${filas.length <= 25 || nPosibles ? 'open' : ''}><summary>ver las filas.</summary>
         ${imp.cuadraAntes ? `<div class="finance-modal-note" style="margin:6px 0"><b>tu saldo ya cuadra con el del extracto.</b> No falta nada, así que lo que solo se parece («¿ya está?») sale desmarcado: márcalo solo si sabes que falta.</div>` : ''}
-        <div class="finance-modal-note" style="margin:6px 0">Salen desmarcadas las que ya están (mismo importe y concepto, o dos que suman un traspaso ya apuntado). Las que solo se parecen por el importe siguen marcadas, con un aviso: míralas. Las anuladas y las de una hucha no cuentan nunca.</div>
+        <div class="finance-modal-note" style="margin:6px 0"><b>marcada = se importa.</b> Salen desmarcadas las que ya están (mismo importe y concepto, o dos que suman un traspaso ya apuntado). Las que solo se parecen por el importe siguen marcadas, con un aviso: míralas. Las anuladas y las de una hucha no cuentan nunca.</div>
         <div class="fin-imp-filas">${filas.map(f => `<label class="fin-imp-fila ${imp.yaApuntadas.has(f.fila) ? 'ya' : ''}">
             <input type="checkbox" ${imp.excluidas.has(f.fila) ? '' : 'checked'} ${f.bloqueada ? 'disabled' : ''} onchange="financeProImportFila(${f.fila}, this.checked)">
             <span>${f.date ? financeDateLabelShort(f.date) : 'sin fecha'}</span>

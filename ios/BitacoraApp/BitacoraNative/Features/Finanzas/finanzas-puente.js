@@ -1053,9 +1053,10 @@
                 var quitados = cuadre ? financeProResolverDuplicados(cuadre) : 0;
                 if (quitados) { invalidar(); cuadre = financeProCuadreExtracto(imp); }
                 ultimoCuadre = cuadre && !cuadre.cuadra ? JSON.parse(JSON.stringify(cuadre)) : null;
+                var marcadosCuadre = cuadre && !cuadre.cuadra ? financeProSobrantesQueCuadran(cuadre) : new Set();
                 var detalle = ultimoCuadre ? {
                     desde: financeDateLabelShort(cuadre.desde), hasta: financeDateLabelShort(cuadre.hasta),
-                    sobran: (cuadre.sobran || []).map(function (t) { return { id: String(t.id), dia: financeDateLabelShort(t.date), concepto: String(t.note || t.bankNote || (financeProCategoryById(t.category) || {}).name || 'movimiento'), tipo: t.type, importe: Number(t.amount) || 0 }; }),
+                    sobran: (cuadre.sobran || []).map(function (t) { return { id: String(t.id), dia: financeDateLabelShort(t.date), concepto: String(t.note || t.bankNote || (financeProCategoryById(t.category) || {}).name || 'movimiento'), tipo: t.type, importe: Number(t.amount) || 0, marcado: marcadosCuadre.has(t.id), motivo: financeProPorQueSobra(t, cuadre) }; }),
                     faltan: (cuadre.faltan || []).map(function (f) { return { dia: financeDateLabelShort(f.fechas[0]), concepto: String(f.desc || ''), importe: Number(f.val) || 0 }; })
                 } : null;
                 return { nuevos: financePro.transactions.length - antes, texto: financeProResumenImport(x), quitados: quitados || 0,

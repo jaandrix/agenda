@@ -830,3 +830,23 @@ test('si Bitácora ya cuadra con el extracto, lo que solo se parece sale desmarc
         return JSON.stringify({ cuadraAntes: imp.cuadraAntes, posible: imp.posibles.has(0), desmarcada: imp.excluidas.has(0) }); })()`));
     assert.deepEqual(r, { cuadraAntes: true, posible: true, desmarcada: true });
 });
+
+test('cuadre: marca solo lo que explica la diferencia (anulado y ajustes) y no aparta un ajuste del último día', () => {
+    const { run } = cargarApp();
+    // Revolut del 22-11: A2e Ai anulado en el banco pero apuntado, dos ajustes a mano y un traspaso con la fecha de Ibercaja.
+    run(`__vaciar({ bancos: 1000, online: 100 }); financePro.transactions.push(
+        { id: 'tr', date: '2026-11-02', account: 'bancos', transferTo: 'online', type: 'transfer', amount: 50, note: 'Revolut**0000*' },
+        { id: 'a2e', date: '2026-11-13', account: 'online', type: 'expense', amount: 13.54, note: 'A2e Ai', bankNote: 'A2e Ai' },
+        { id: 'aj1', date: '2026-11-19', account: 'online', type: 'expense', amount: 4.55, note: 'Ajuste de saldo', ajuste: true },
+        { id: 'aj2', date: '2026-11-22', account: 'online', type: 'income', amount: 27.08, note: 'Ajuste de saldo', ajuste: true },
+        { id: 'pk', date: '2026-11-22', account: 'online', type: 'expense', amount: 4.2, note: 'Parking', bankNote: 'Parking' })`);
+    const csv = ['Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance',
+        'Topup,Current,2026-11-02 10:00:00,2026-11-02 10:00:01,Top-up by *0000,50.00,0.00,EUR,COMPLETED,150.00',
+        'Card Payment,Current,2026-11-13 07:46:02,,A2e Ai,-13.54,0.00,EUR,REVERTED,',
+        'Card Payment,Current,2026-11-22 09:00:00,2026-11-22 09:00:44,Parking,-4.20,0.00,EUR,COMPLETED,145.80'].join('\n');
+    const r = JSON.parse(run(`(() => { const imp = financeProPrepararImport(${JSON.stringify(csv)}, 'online'); renderFinanceProImportFilas(imp);
+        const c = financeProCuadreExtracto(imp); return JSON.stringify({ cuadra: c.cuadra, diff: c.diff, marcados: [...financeProSobrantesQueCuadran(c)].sort() }); })()`));
+    assert.equal(r.cuadra, false);
+    assert.ok(r.marcados.includes('a2e') && r.marcados.includes('aj2'), 'lo anulado y el ajuste del último día se marcan');
+    assert.ok(!r.marcados.includes('tr'), 'el traspaso con la fecha de Ibercaja no se marca');
+});

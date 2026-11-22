@@ -312,15 +312,19 @@ struct ImportarExtractoView: View {
             Section { Text(arreglado).foregroundStyle(Paleta.positivo) }
         } else if let d = q.detalle {
             if !d.sobran.isEmpty {
-                Section("sobran en bitácora (no están en el extracto).") {
+                Section {
+                    Text(d.sobran.contains { $0.marcado == true }
+                         ? "marcado = se borra de bitácora. Ya he marcado lo justo para que cuadre: pulsa «borrar los marcados.» y listo."
+                         : "marcado = se borra de bitácora. Ninguna combinación cuadra sola: marca solo lo que sepas que no pasó.")
+                        .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
                     ForEach(d.sobran) { t in
                         Toggle(isOn: Binding(get: { sobranMarcados.contains(t.id) }, set: { if $0 { sobranMarcados.insert(t.id) } else { sobranMarcados.remove(t.id) } })) {
-                            HStack { Text(t.dia).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(width: 52, alignment: .leading); Text(t.concepto).lineLimit(1); Spacer(); Text((t.tipo == "income" ? "+" : "-") + FormatoFin.dinero(t.importe)).monospacedDigit() }
+                            HStack { Text(t.dia).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(width: 52, alignment: .leading); VStack(alignment: .leading, spacing: 1) { Text(t.concepto).lineLimit(1); if let m = t.motivo, !m.isEmpty { Text(m).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) } }; Spacer(); Text((t.tipo == "income" ? "+" : "-") + FormatoFin.dinero(t.importe)).monospacedDigit() }
                         }
                     }
-                    Button("quitar los marcados.") { Task { await arreglar("cuadreQuitar", ["ids": Array(sobranMarcados)]) } }.disabled(sobranMarcados.isEmpty)
-                }
-                .onAppear { if sobranMarcados.isEmpty { sobranMarcados = Set(d.sobran.map(\.id)) } }
+                    Button("borrar los marcados.") { Task { await arreglar("cuadreQuitar", ["ids": Array(sobranMarcados)]) } }.disabled(sobranMarcados.isEmpty)
+                } header: { Text("sobran en bitácora (no están en el extracto).") }
+                .onAppear { if sobranMarcados.isEmpty { sobranMarcados = Set(d.sobran.filter { $0.marcado == true }.map(\.id)) } }
             }
             if !d.faltan.isEmpty {
                 Section("faltan en bitácora (están en el extracto).") {
@@ -618,6 +622,7 @@ struct GestorSuscripcionesView: View {
             Text(t).font(Tipo.poppins(13, .medium, estilo: .footnote)).foregroundStyle(rojo ? Paleta.error : Paleta.texto)
                 .padding(.horizontal, 10).frame(minHeight: 32)
                 .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+                .frame(minHeight: 44).contentShape(Rectangle())
         }.buttonStyle(.plain)
     }
 }
