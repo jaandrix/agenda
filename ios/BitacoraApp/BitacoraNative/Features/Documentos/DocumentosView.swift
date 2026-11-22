@@ -1,10 +1,12 @@
 import SwiftUI
 import QuickLook
+import UniformTypeIdentifiers
 
 // Documentos, en lectura (js/documentos.js): las fichas (`entries` type document, con caducidad en `date`) ordenadas como
 // renderFichasDocumentos, y los archivos de Storage (bucket `documents`, carpeta del usuario, sin backups ni viewer), que
-// se abren con Vista Rápida. Desde la 0.21 las fichas se crean, editan y borran aquí (`FichaDocumentoOp`); subir, renombrar
-// y borrar archivos sigue en la web («gestionar en la web.»).
+// se abren con Vista Rápida. Desde la 0.21 las fichas se crean, editan y borran aquí (`FichaDocumentoOp`); desde la 0.27,
+// los PDF también se suben, renombran y borran aquí (handleDocUpload, renameDocument y deleteDocument en js/documentos.js).
+// Los HTML del visor y las copias siguen en la web («html y copias, en la web.»).
 
 struct FichaDocumento: Sendable, Identifiable, Equatable { let id, titulo, tipo, caduca, url, notas: String }
 struct ArchivoDocumento: Sendable, Identifiable, Equatable { let nombre: String; let bytes: Int?; var id: String { nombre } }
@@ -42,6 +44,11 @@ struct DocumentosView: View {
     @State private var bajando: String?
     @State private var vista: URL?
     @State private var editando: FichaEditando?
+    @State private var importando = false
+    @State private var subiendo = false
+    @State private var renombrando: ArchivoDocumento?
+    @State private var nuevoNombre = ""
+    @State private var borrando: ArchivoDocumento?
 
     private var hoy: LocalDay { CalendarioBitacora.madrid.dia(de: Date()) }
 
@@ -62,22 +69,38 @@ struct DocumentosView: View {
                         if fichas.isEmpty { Text("garantías, contratos, seguros, el dni... con su caducidad.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s) }
                         ForEach(fichas) { fila($0) }
                     } else { ProgressView().frame(maxWidth: .infinity).padding(.vertical, Espacio.l) }
-                    CabeceraSeccion(titulo: "archivos.", detalle: archivos.map { "\($0.count)" }).padding(.top, Espacio.l)
+                    HStack {
+                        CabeceraSeccion(titulo: "archivos.", detalle: archivos.map { "\($0.count)" })
+                        Spacer()
+                        if subiendo { ProgressView() } else { AccionTexto(texto: "+ pdf.") { importando = true } }
+                    }
+                    .padding(.top, Espacio.l)
                     if let errorArchivos { Text(errorArchivos).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s) }
                     if let archivos {
                         if archivos.isEmpty && errorArchivos == nil { Text("no hay archivos subidos.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s) }
                         ForEach(archivos) { a in
-                            Button { Task { await ver(a) } } label: {
-                                HStack {
-                                    Text(a.nombre).font(Tipo.cuerpo).foregroundStyle(Paleta.texto).lineLimit(2)
-                                    Spacer()
-                                    if bajando == a.nombre { ProgressView() }
-                                    else if let b = a.bytes { Text(ByteCountFormatter.string(fromByteCount: Int64(b), countStyle: .file)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-                                }.frame(minHeight: 48).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                            }.buttonStyle(.plain).accessibilityHint("abre el archivo")
+                            HStack(spacing: 0) {
+                                Button { Task { await ver(a) } } label: {
+                                    HStack {
+                                        Text(a.nombre).font(Tipo.cuerpo).foregroundStyle(Paleta.texto).lineLimit(2)
+                                        Spacer()
+                                        if bajando == a.nombre { ProgressView() }
+                                        else if let b = a.bytes { Text(ByteCountFormatter.string(fromByteCount: Int64(b), countStyle: .file)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+                                    }
+                                    .frame(minHeight: 48).contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain).accessibilityHint("abre el archivo")
+                                Menu { menuArchivo(a) } label: {
+                                    Image(systemName: "ellipsis").font(.system(size: 15, weight: .semibold)).foregroundStyle(Paleta.textoSecundario)
+                                        .frame(width: 44, height: 48).contentShape(Rectangle())
+                                }
+                                .accessibilityLabel("opciones de «\(a.nombre)»")
+                            }
+                            .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+                            .contextMenu { menuArchivo(a) }
                         }
                     } else if errorArchivos == nil { ProgressView().frame(maxWidth: .infinity).padding(.vertical, Espacio.l) }
-                    AccionTexto(texto: "gestionar en la web.") { c.web = Apartados.webURL("documents") }.padding(.top, Espacio.l)
+                    AccionTexto(texto: "html y copias, en la web.") { c.web = Apartados.webURL("documents") }.padding(.top, Espacio.l)
                 }.modifier(HojaContenido())
             }
         }
@@ -88,6 +111,98 @@ struct DocumentosView: View {
         .quickLookPreview($vista)
         .onChange(of: vista) { antes, ahora in if ahora == nil { ArchivosTemporales.borrar(antes) } }
         .hoja(item: $editando) { e in EditorFichaDocumento(editando: e) }
+        .fileImporter(isPresented: $importando, allowedContentTypes: [.pdf]) { r in
+            if case let .success(url) = r { Task { await subir(url) } }
+        }
+        .alert("renombrar.", isPresented: Binding(get: { renombrando != nil }, set: { if !$0 { renombrando = nil } })) {
+            TextField("nombre.", text: $nuevoNombre)
+            Button("cancelar.", role: .cancel) { renombrando = nil }
+            Button("guardar.") { if let a = renombrando { Task { await renombrar(a, nuevoNombre) } } }
+        } message: { Text("La extensión se conserva.") }
+        .confirmarBorrado($borrando, titulo: Self.preguntaBorrar) { a in Task { await borrar(a) } }
+    }
+
+    static func preguntaBorrar(_ a: ArchivoDocumento) -> String { "¿borrar «\(a.nombre)»? no se puede deshacer." }
+
+    @ViewBuilder private func menuArchivo(_ a: ArchivoDocumento) -> some View {
+        Button("renombrar.") {
+            nuevoNombre = Self.partes(a.nombre).0
+            renombrando = a
+        }
+        Button("borrar.", role: .destructive) { borrando = a }
+    }
+
+    // sanitizeStorageFilename: sin tildes, lo raro a «_» y la extensión en minúscula.
+    static func nombreLimpio(_ nombre: String) -> String {
+        let (base, ext) = partes(nombre)
+        let limpio = base.folding(options: .diacriticInsensitive, locale: nil)
+            .replacingOccurrences(of: "[^a-zA-Z0-9._-]+", with: "_", options: .regularExpression)
+            .replacingOccurrences(of: "_+", with: "_", options: .regularExpression)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+        return (limpio.isEmpty ? "archivo" : limpio) + ext.lowercased()
+    }
+
+    static func partes(_ nombre: String) -> (String, String) {
+        guard let punto = nombre.lastIndex(of: "."), punto > nombre.startIndex else { return (nombre, "") }
+        return (String(nombre[..<punto]), String(nombre[punto...]))
+    }
+
+    private func subir(_ url: URL) async {
+        let acceso = url.startAccessingSecurityScopedResource()
+        defer { if acceso { url.stopAccessingSecurityScopedResource() } }
+        let nombreOriginal = url.lastPathComponent
+        guard let datos = try? Data(contentsOf: url) else { errorArchivos = "no se pudo leer «\(nombreOriginal)»."; return }
+        guard datos.count <= Self.maxBytes else { errorArchivos = "«\(nombreOriginal)» pesa demasiado (máximo 50 MB)."; return }
+        subiendo = true
+        defer { subiendo = false }
+        do {
+            let s = try await c.entorno.auth.sesionValida()
+            let cliente = c.entorno.cliente
+            let nombre = String(Int64(Date().timeIntervalSince1970 * 1000)) + "_" + Self.nombreLimpio(nombreOriginal)
+            var r = cliente.peticion("storage/v1/object/documents/\(s.userId)/\(nombre)", metodo: "POST", token: s.accessToken, cuerpo: datos, tiempo: 120)
+            r.setValue("application/pdf", forHTTPHeaderField: "Content-Type")
+            r.setValue("false", forHTTPHeaderField: "x-upsert")
+            let (_, codigo) = try await cliente.enviar(r)
+            guard codigo == 200 else { errorArchivos = "no se pudo subir «\(nombreOriginal)»."; return }
+            c.avisar("documento subido.")
+            await cargarArchivos()
+        } catch {
+            errorArchivos = "sin conexión: no se pudo subir."
+        }
+    }
+
+    private func renombrar(_ a: ArchivoDocumento, _ texto: String) async {
+        renombrando = nil
+        let base = texto.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !base.isEmpty else { return }
+        let nuevo = Self.nombreLimpio(base + Self.partes(a.nombre).1)
+        guard nuevo != a.nombre else { return }
+        let viejo = a.nombre
+        await storage("storage/v1/object/move", metodo: "POST", hecho: "nombre cambiado.", fallo: "no se pudo renombrar: ¿ya hay un archivo con ese nombre?") { uid in
+            ["bucketId": "documents", "sourceKey": uid + "/" + viejo, "destinationKey": uid + "/" + nuevo]
+        }
+    }
+
+    private func borrar(_ a: ArchivoDocumento) async {
+        let nombre = a.nombre
+        await storage("storage/v1/object/documents", metodo: "DELETE", hecho: "documento borrado.", fallo: "no se pudo borrar «\(nombre)».") { uid in
+            ["prefixes": [uid + "/" + nombre]]
+        }
+    }
+
+    private func storage(_ ruta: String, metodo: String, hecho: String, fallo: String, cuerpo: (String) -> [String: Any]) async {
+        do {
+            let s = try await c.entorno.auth.sesionValida()
+            let cliente = c.entorno.cliente
+            let datos = try JSONSerialization.data(withJSONObject: cuerpo(s.userId))
+            let (_, codigo) = try await cliente.enviar(cliente.peticion(ruta, metodo: metodo, token: s.accessToken, cuerpo: datos, tiempo: 20))
+            guard codigo == 200 else { errorArchivos = fallo; return }
+            errorArchivos = nil
+            c.avisar(hecho)
+            await cargarArchivos()
+        } catch {
+            errorArchivos = "sin conexión: inténtalo cuando vuelva la red."
+        }
     }
 
     private func fila(_ f: FichaDocumento) -> some View {

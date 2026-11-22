@@ -109,6 +109,8 @@ struct ModeloSalud: Decodable, Equatable {
         let avisos: Avisos
     }
     struct Opcion: Decodable, Equatable, Identifiable { let id, nombre: String; let tipo: String? }
+    // 0.27: traspasos con la fecha del banco que los asienta (traspasosConFechaDelBanco en finanzas-puente.js).
+    struct FechaTraspaso: Decodable, Equatable, Identifiable { let id, titulo, meta, dia, nuevoDia: String; let importe: Double }
 
     let avisos: [Aviso]
     let propuestas: [FilaSalud]
@@ -126,6 +128,8 @@ struct ModeloSalud: Decodable, Equatable {
     let ajustes: Ajustes
     let cuentas: [Opcion]
     let categorias: [Opcion]
+    // Opcional: una copia del motor anterior a la 0.27 no lo trae.
+    let fechasTraspaso: [FechaTraspaso]?
 }
 
 // MARK: - estado
@@ -247,6 +251,11 @@ struct SaludFinanzasView: View {
             }
             NavigationLink { PorRevisarSaludView(e: e, oculto: oculto) } label: {
                 FilaLibro(etiqueta: "por revisar", valor: String(m.porRevisar.count))
+            }
+            if let f = m.fechasTraspaso, !f.isEmpty {
+                NavigationLink { FechasTraspasoSaludView(e: e, oculto: oculto) } label: {
+                    FilaLibro(etiqueta: "traspasos con otra fecha", valor: String(f.count))
+                }
             }
         } header: { Text("clasificación.") } footer: {
             Text("Ahorro, traspasos, inversión y devoluciones no son ingreso ni gasto. Bitácora propone; nada cambia hasta que lo aceptas.")
@@ -441,6 +450,48 @@ private struct FilaMovSalud: View {
             Spacer()
             Text(oculto ? "•••" : signo + FormatoFin.dinero(f.importe)).monospacedDigit()
         }
+    }
+}
+
+// MARK: - fechas de traspasos
+
+// Lo pendiente de la 0.26: los traspasos de antes del importador nuevo llevan la fecha en que el banco de origen los
+// asienta. Se propone la de la recarga; nada cambia hasta que se acepta.
+struct FechasTraspasoSaludView: View {
+    @Environment(AppCoordinator.self) private var c
+    let e: EstadoSalud
+    let oculto: Bool
+
+    var body: some View {
+        let lista = e.m?.fechasTraspaso ?? []
+        FormCasa {
+            if lista.isEmpty {
+                Text("todos tus traspasos llevan ya la fecha de la recarga.").foregroundStyle(Paleta.textoSecundario)
+            } else {
+                Section {
+                    ForEach(lista) { t in
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(alignment: .firstTextBaseline) {
+                                Text(t.titulo).font(Tipo.cuerpo).lineLimit(1)
+                                Spacer()
+                                Text(oculto ? "•••" : FormatoFin.dinero(t.importe)).monospacedDigit()
+                            }
+                            Text("del \(t.dia) al \(t.nuevoDia)" + (t.meta.isEmpty ? "." : ", \(t.meta).")).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                            Button("sí.") { Task { await e.accion(c, "fechaTraspaso", ["ids": [t.id]], callado: true) } }
+                                .buttonStyle(.borderless).font(Tipo.pie).frame(minHeight: 44).disabled(e.trabajando)
+                        }
+                    }
+                    Button("aceptar \(lista.count == 1 ? "este" : "los \(lista.count)").") {
+                        Task { await e.accion(c, "fechaTraspaso", [:]) }
+                    }
+                    .disabled(e.trabajando)
+                } header: { Text("traspasos con la fecha del banco.") } footer: {
+                    Text("Llevan el día en que tu banco asentó la recarga, no el día en que la hiciste, y el extracto de la otra cuenta no cuadra a fin de mes. Al aceptar, pasan al día de la recarga y tu banco los sigue reconociendo al volver a importar.")
+                }
+            }
+        }
+        .navigationTitle("fechas de traspasos.")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

@@ -23,6 +23,7 @@ struct EditorTareaView: View {
     @State private var recordarAntes: JSONValue?
     @State private var subtareas: [Subtarea] = []
     @State private var nuevaSubtarea = ""
+    @FocusState private var focoSubtarea: Bool
     @FocusState private var enfocado: Bool
 
     // El id viene decidido al abrir: si «guardar.» llega dos veces, las dos llevan el mismo y la tarea sale una vez.
@@ -86,23 +87,36 @@ struct EditorTareaView: View {
                 }
                 .disabled(inicial.deTrabajo)
                 if !inicial.nueva {
-                    Section("subtareas.") {
+                    Section {
                         ForEach(subtareas) { s in
                             Button { marcarSubtarea(s.id, !s.hecha) } label: {
                                 HStack(spacing: 12) {
-                                    Image(systemName: s.hecha ? "checkmark.circle.fill" : "circle").foregroundStyle(s.hecha ? Paleta.acento : Paleta.aro)
+                                    // 0.27: el mismo círculo que el plan y las listas (planner-sub-check en la web).
+                                    CirculoCheck(hecho: s.hecha)
                                     Text(s.texto).foregroundStyle(s.hecha ? Paleta.textoSecundario : Paleta.texto).strikethrough(s.hecha)
                                 }
-                                .frame(minHeight: 36)
+                                .frame(minHeight: 44)
+                                .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .swipeActions { Button("quitar.", role: .destructive) { quitarSubtarea(s.id) } }
                             .accessibilityValue(s.hecha ? "hecha" : "pendiente")
                         }
                         HStack {
-                            TextField("+ subtarea.", text: $nuevaSubtarea).submitLabel(.done).onSubmit { anadirSubtarea() }
+                            // Return añade y deja el campo abierto para la siguiente, como en la web.
+                            TextField("+ subtarea.", text: $nuevaSubtarea).submitLabel(.next).focused($focoSubtarea)
+                                .onSubmit { let habia = !nuevaSubtarea.trimmingCharacters(in: .whitespaces).isEmpty; anadirSubtarea(); focoSubtarea = habia }
                             if !nuevaSubtarea.trimmingCharacters(in: .whitespaces).isEmpty {
                                 Button("añadir.") { anadirSubtarea() }.foregroundStyle(Paleta.acento)
+                            }
+                        }
+                    } header: {
+                        HStack {
+                            Text("subtareas.")
+                            Spacer()
+                            if !subtareas.isEmpty {
+                                let hechas = subtareas.filter(\.hecha).count
+                                Text("\(hechas)/\(subtareas.count)").monospacedDigit().fontWeight(hechas == subtareas.count ? .bold : .regular)
                             }
                         }
                     }

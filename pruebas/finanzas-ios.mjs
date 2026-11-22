@@ -294,6 +294,25 @@ test('salud de Finanzas en el iPhone: una lectura y escrituras como cambios', ()
     assert.throws(() => run(`__fin.saludAccion('resolver', '{"id":"nada","como":"bien"}')`), /ya no está/);
 });
 
+test('0.27: «salud.» propone la fecha de la recarga en los traspasos viejos y solo la cambia al aceptar', () => {
+    const run = cargarMotor();
+    const pro = { transactions: [
+        // Emparejado antes de acb8a46: fecha de Ibercaja (3 días después) y la clave de Revolut en claveImport.
+        { id: 'v', date: '2026-09-30', account: 'bancos', type: 'transfer', transferTo: 'online', amount: 50, note: 'Revolut**1185*', bankNote: 'Revolut**1185*', claveImport: 'online|2026-09-27|50|Top-up by *1185' },
+        // Ya con la fecha buena (claveImport2 ocupada): no se toca.
+        { id: 'n', date: '2026-10-02', account: 'bancos', type: 'transfer', transferTo: 'online', amount: 20, note: 'x', claveImport: 'online|2026-10-02|20|Top-up', claveImport2: 'bancos|2026-10-04|20|x' },
+        // Demasiado lejos: no es la misma operación.
+        { id: 'l', date: '2026-10-20', account: 'bancos', type: 'transfer', transferTo: 'online', amount: 10, note: 'y', claveImport: 'online|2026-10-01|10|Top-up' }] };
+    run(`__fin.cargar(${JSON.stringify(JSON.stringify(pro))}, '[]', '{}', null)`);
+    const s = JSON.parse(run(`__fin.salud('{}')`));
+    assert.deepEqual(s.fechasTraspaso.map(x => x.id), ['v']);
+    const r = JSON.parse(run(`__fin.saludAccion('fechaTraspaso', '{"ids":["v"]}')`));
+    const c = r.cambios.movimientos.cambiar.find(x => x.id === 'v');
+    assert.equal(c.poner.date, '2026-09-27');
+    assert.equal(c.poner.claveImport2, 'bancos|2026-09-30|50|Revolut**1185*');
+    assert.equal(JSON.parse(run(`__fin.salud('{}')`)).fechasTraspaso.length, 0);
+});
+
 test('F-07: en el iPhone, una fila que se unió a un apunte borrado en otro dispositivo entra igual, y un traspaso no se duplica por la otra cuenta', () => {
     const run = cargarMotor();
     const estado = { financePro: { enabled: true, accounts: { efectivo: { name: 'Efectivo', balance0: 0 }, bancos: { name: 'Ibercaja', balance0: 0 }, online: { name: 'Revolut', balance0: 0 } }, categories: [], transactions: [{ id: 'm1', date: '2026-11-10', account: 'bancos', type: 'expense', amount: 5, note: 'parking', manual: true }], categoryBudgets: {}, rules: [], programados: [] }, financeProfile: {}, entries: [] };

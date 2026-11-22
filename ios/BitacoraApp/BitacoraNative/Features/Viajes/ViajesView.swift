@@ -3,9 +3,14 @@ import SwiftUI
 // Viajes (js/viajes.js): entradas `type: travel` en `entries`, con `itinerario` (por día) y `places`. Los gastos son los
 // movimientos de Finanzas marcados `viaje` (financeProGastosDelViaje) más los apuntados a mano en el viaje (`expenses`).
 // 0.24: también reservas (`transportes`, `alojamientos`), `listas` y la pestaña Destino (DestinoViaje.swift). Los
-// documentos del viaje y el mapa siguen en la web: PLAN-0.24.md.
+// documentos del viaje siguen en la web: PLAN-0.24.md. El mapa es nativo desde la 0.27 (MapaViaje.swift).
 
-struct ItemItinerario: Sendable, Identifiable, Equatable { let id, dia, hora, titulo, lugar, notas: String }
+struct ItemItinerario: Sendable, Identifiable, Equatable {
+    let id, dia, hora, titulo, lugar, notas: String
+    // Lo que puso la web al geocodificar el lugar (o el iPhone desde la 0.27); nil sin lugar localizado.
+    var lat: Double? = nil
+    var lon: Double? = nil
+}
 struct LugarViaje: Sendable, Identifiable, Equatable { let id, nombre: String; let visitado: Bool }
 struct GastoViaje: Sendable, Identifiable, Equatable { let id, fecha, nota: String; let importe: Decimal }
 struct ReservaViaje: Sendable, Identifiable, Equatable {
@@ -52,7 +57,9 @@ enum LecturaViajes {
             let itinerario = (o["itinerario"]?.lista ?? []).compactMap { i -> ItemItinerario? in
                 guard let io = i.objeto, let iid = io["id"]?.comoId else { return nil }
                 let t = { (k: String) in io[k]?.texto ?? "" }
-                return ItemItinerario(id: iid, dia: t("dia"), hora: t("hora"), titulo: t("titulo"), lugar: t("lugar"), notas: t("notas"))
+                return ItemItinerario(id: iid, dia: t("dia"), hora: t("hora"), titulo: t("titulo"), lugar: t("lugar"), notas: t("notas"),
+                                      lat: io["lat"].flatMap { Dinero.decimal($0) }.map { NSDecimalNumber(decimal: $0).doubleValue },
+                                      lon: io["lon"].flatMap { Dinero.decimal($0) }.map { NSDecimalNumber(decimal: $0).doubleValue })
             }
             let lugares = (o["places"]?.lista ?? []).compactMap { p -> LugarViaje? in
                 guard let po = p.objeto, let pid = po["id"]?.comoId else { return nil }
@@ -249,6 +256,11 @@ private struct FichaViaje: View {
                         LabeledContent("fechas.", value: v.inicio.isEmpty ? "sin fecha" : (v.fin.isEmpty || v.fin == v.inicio ? v.inicio : "\(v.inicio) → \(v.fin)"))
                         if !v.companeros.isEmpty { LabeledContent("con.", value: v.companeros) }
                         if !v.notas.isEmpty { Text(v.notas).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+                    }
+                    if !MapaViaje.puntos(v.itinerario).isEmpty {
+                        Section {
+                            MapaViaje(puntos: MapaViaje.puntos(v.itinerario)).frame(height: 240).listRowInsets(EdgeInsets())
+                        } header: { Text("mapa.") } footer: { Text("Lo del itinerario con lugar, en orden.") }
                     }
                     Section("itinerario.") {
                         ForEach(LecturaViajes.porDia(v.itinerario), id: \.0) { grupo in
@@ -577,7 +589,14 @@ private struct EditorItinerario: View {
                                                            titulo: titulo.trimmingCharacters(in: .whitespacesAndNewlines),
                                                            lugar: lugar.trimmingCharacters(in: .whitespacesAndNewlines),
                                                            notas: notas.trimmingCharacters(in: .whitespacesAndNewlines))
-                        Task { if await c.guardar(.cambiarViaje(viajeId: viajeId, cambio: cambio)) { cerrar() } }
+                        let sitio = lugar.trimmingCharacters(in: .whitespacesAndNewlines)
+                        let localizar = !sitio.isEmpty && (item?.lugar != sitio || item?.lat == nil)
+                        let coordinador = c, vid = viajeId, iid = id
+                        Task {
+                            guard await coordinador.guardar(.cambiarViaje(viajeId: vid, cambio: cambio)) else { return }
+                            cerrar()
+                            if localizar { await MapaViaje.localizar(coordinador, viajeId: vid, itemId: iid, lugar: sitio) }
+                        }
                     }.disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }

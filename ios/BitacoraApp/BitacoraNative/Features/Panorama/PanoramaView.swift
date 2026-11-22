@@ -1,11 +1,13 @@
 import SwiftUI
 
-// Panorama nativo, primera pieza: puntualidad mensual de las tareas del plan (completadas en su día previsto).
-// Las tarjetas elegibles de la PWA (apartadosConfig.panorama) siguen en la web: «ver el panorama completo.».
+// Panorama nativo: puntualidad mensual de las tareas del plan (completadas en su día previsto) y, desde la 0.27, las
+// listas (js/listas.js), debajo como en la web. Las tarjetas elegibles de la PWA (apartadosConfig.panorama) siguen en la
+// web: «ver el panorama completo.».
 struct PanoramaView: View {
     @Environment(AppCoordinator.self) private var c
     @State private var p: Puntualidad?
     @State private var mes: String?
+    @State private var deshacer: DeshacerListas?
 
     var body: some View {
         ScrollView {
@@ -47,6 +49,7 @@ struct PanoramaView: View {
                         Text("cuentan las tareas del plan con día. no entran las sin día, las rutinas, los eventos ni las entregas; lo marcado antes del registro tampoco.")
                             .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.top, Espacio.m)
                     }
+                    ListasSeccion(deshacer: $deshacer)
                     Button { c.web = Apartados.webURL("home") } label: { FilaLibro(etiqueta: "ver el panorama completo.", flecha: true) }
                         .buttonStyle(.plain).padding(.top, Espacio.l)
                 }
@@ -54,7 +57,9 @@ struct PanoramaView: View {
             }
         }
         .scrollIndicators(.hidden)
+        .scrollDismissesKeyboard(.interactively)
         .background(Paleta.fondo.ignoresSafeArea())
+        .safeAreaInset(edge: .bottom) { BarraDeshacerListas(deshacer: $deshacer) }
         .task(id: c.revision) {
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { Puntualidad.desde($0) } }) else { return }

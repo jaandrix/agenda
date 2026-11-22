@@ -403,6 +403,15 @@ struct Icono: View {
         case "borrar":
             t { p in p.move(to: .init(x: 4.5, y: 7)); p.addLine(to: .init(x: 19.5, y: 7)); p.move(to: .init(x: 9.5, y: 7)); p.addLine(to: .init(x: 10, y: 4.5)); p.addLine(to: .init(x: 14, y: 4.5)); p.addLine(to: .init(x: 14.5, y: 7)) }
             t { p in p.move(to: .init(x: 6.5, y: 7)); p.addLine(to: .init(x: 7.5, y: 19.5)); p.addLine(to: .init(x: 16.5, y: 19.5)); p.addLine(to: .init(x: 17.5, y: 7)) }
+        // 0.27: las listas de Panorama, una caja con tareas en árbol.
+        case "listas":
+            caja(CGRect(x: 3.5, y: 3.5, width: 17, height: 17), 5)
+            t { p in
+                p.move(to: .init(x: 7.5, y: 9)); p.addLine(to: .init(x: 16.5, y: 9))
+                p.move(to: .init(x: 10.5, y: 13)); p.addLine(to: .init(x: 16.5, y: 13))
+                p.move(to: .init(x: 10.5, y: 17)); p.addLine(to: .init(x: 14.5, y: 17))
+            }
+            punto(7.5, 13, 2.6)
         case "apartados":
             caja(CGRect(x: 4, y: 4, width: 7, height: 7), 2.5)
             caja(CGRect(x: 13, y: 4, width: 7, height: 7), 2.5)

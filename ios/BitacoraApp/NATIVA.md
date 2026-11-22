@@ -240,7 +240,7 @@ Pendiente del plan: capturas a 375 y 430, hoja de edición, Calendario, Finanzas
 - `merge_bitacora_data` sustituye el bloque entero (ver «Escrituras»): la operación atómica del servidor es el destino.
 - Comprobar `updated_at` antes de bajar la fila no es fiable: no consta que la función del servidor lo actualice
   (su definición no está en el repo). Hace falta una revisión del servidor para ahorrar descargas.
-- Símbolos de Release sin recortar a propósito mientras es beta (ayudan a diagnosticar); recortarlos antes de TestFlight.
+- Símbolos: desde la 0.27 la IPA va recortada (`strip -S -x` al empaquetar) y el dSYM sale como artefacto `simbolos-dsym`.
 - Se instala con **Sideloadly**. Con Apple ID gratuito la firma dura 7 días y se renueva desde el ordenador o con Sideloadly Daemon
   (mismo Wi-Fi o USB); la misma IPA se puede volver a firmar si el código no cambia. Instalar encima con el mismo Apple ID y bundle
   ID conserva los datos: no borrar la app antes. Cupo de 3 apps activas por cuenta gratuita.
@@ -259,8 +259,10 @@ Pendiente del plan: capturas a 375 y 430, hoja de edición, Calendario, Finanzas
 
 ## Pendiente
 
+Lo de cada versión, en su `PLAN-0.xx.md` (la última, `PLAN-0.27.md`: listas de Panorama, subtareas, «en este día.»).
+
 - Paridad: calendario con trabajo, pagos y servicios; Estudios con notas, pesos, horario y borrar; Proyectos con crear,
-  fases y diario; planificador con eventos del día, subtareas, prioridad
+  fases y diario; planificador con eventos del día, prioridad
   y orden; finanzas con editar/borrar, traspasos, revisión e inversiones (y el valor de la cartera cuando `invested` es 0).
 - Portada «ahora» y cuatro pestañas (inicio, plan, calendario, más), como propone la auditoría.
 - Revisión monotónica del servidor para no bajar la fila entera en cada vuelta.

@@ -506,6 +506,7 @@ private struct PestanaCuentas: View {
                         Text(b.0).font(Tipo.poppins(14, .medium, estilo: .footnote)).foregroundStyle(Paleta.texto)
                             .padding(.horizontal, 12).frame(minHeight: 36)
                             .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+                            .frame(minHeight: 44).contentShape(Rectangle())
                     }.buttonStyle(.plain)
                 }
             }

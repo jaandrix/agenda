@@ -159,6 +159,13 @@ jobs:
           done
           echo "Build: $(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")"
           if [ -d "$APP/PlugIns" ]; then echo "La app no debe llevar extensiones (SideStore no las instala)"; exit 1; fi
+          # A16 (auditoría de la 0.21, 0.27): la IPA va sin información de depuración ni símbolos locales; el dSYM, para
+          # simbolicar un fallo, queda como artefacto aparte. Se recorta aquí y no con STRIP_STYLE porque las pruebas de
+          # rendimiento compilan también en Release y necesitan los símbolos.
+          if [ -d "$APP.dSYM" ]; then cp -R "$APP.dSYM" BitacoraNativa.app.dSYM; else dsymutil "$APP/BitacoraNative" -o BitacoraNativa.app.dSYM || true; fi
+          ANTES=$(stat -f%z "$APP/BitacoraNative")
+          xcrun strip -S -x "$APP/BitacoraNative" || echo "::warning::no se pudo recortar el binario"
+          echo "Binario: $ANTES -> $(stat -f%z "$APP/BitacoraNative") bytes"
           mkdir -p Payload
           cp -R "$APP" Payload/
           zip -qr -y BitacoraNativa-unsigned.ipa Payload
@@ -174,6 +181,8 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP/Info.plist")" = "com.bitacora.app"
           test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleURLTypes:0:CFBundleURLSchemes:0' "$APP/Info.plist")" = "bitacora"
           if [ -d "$APP/PlugIns" ]; then echo "La app definitiva no debe llevar extensiones"; exit 1; fi
+          if [ -d "$APP.dSYM" ]; then cp -R "$APP.dSYM" BitacoraDefinitiva.app.dSYM; else dsymutil "$APP/BitacoraNative" -o BitacoraDefinitiva.app.dSYM || true; fi
+          xcrun strip -S -x "$APP/BitacoraNative" || echo "::warning::no se pudo recortar el binario"
           mkdir -p Payload && cp -R "$APP" Payload/ && zip -qr -y BitacoraDefinitiva-unsigned.ipa Payload && rm -rf Payload
 
       - name: Crear manifiesto verificable de las IPA
@@ -210,6 +219,16 @@ jobs:
             ios/BitacoraApp/BitacoraNativa-unsigned.ipa
             ios/BitacoraApp/build-info.txt
             ios/BitacoraApp/SHA256SUMS.txt
+          retention-days: 30
+
+      - name: Subir los símbolos (dSYM)
+        uses: actions/upload-artifact@v4
+        with:
+          name: simbolos-dsym
+          path: |
+            ios/BitacoraApp/BitacoraNativa.app.dSYM
+            ios/BitacoraApp/BitacoraDefinitiva.app.dSYM
+          if-no-files-found: warn
           retention-days: 30
 
       # Los errores como anotaciones: se leen sin descargar el registro entero.

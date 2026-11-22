@@ -18,13 +18,14 @@ enum OperacionesExtra {
 
     static func claves(_ tipo: String) -> [String] {
         switch tipo {
-        case entradaQR, quitarEntradaQR, FichaDocumentoOp.tipo, FichaEmpleoOp.tipo: return ["entries"]
+        case entradaQR, quitarEntradaQR, FichaDocumentoOp.tipo, FichaEmpleoOp.tipo, CoordsItinerarioOp.tipo: return ["entries"]
         case quitarConector, conector, descartarConector: return clavesConector
         case CambioFinanzas.tipo: return CambioFinanzas.claves
         case MetodoOp.kaizen, MetodoOp.quitarKaizen, MetodoOp.pilar, MetodoOp.estado: return MetodoOp.claves(tipo)
         case ValorarOcio.tipo: return ValorarOcio.claves
         case RecetaALista.tipo, OperacionesDespensa.marcar, OperacionesDespensa.editar: return ["listaCompra"]
         case OperacionesAjustes.aviso, OperacionesAjustes.feed, OperacionesAjustes.token: return OperacionesAjustes.claves(tipo)
+        case ListasOp.tipo, ListasOp.aHoy: return ListasOp.claves(tipo)
         default: return ["dayPlanner"]
         }
     }
@@ -105,6 +106,12 @@ enum OperacionesExtra {
             r = MetodoOp.aplicar(tipo, d, r)
         case OperacionesAjustes.aviso, OperacionesAjustes.feed, OperacionesAjustes.token:
             r = OperacionesAjustes.aplicar(tipo, d, r)
+        case CoordsItinerarioOp.tipo:
+            r = CoordsItinerarioOp.aplicar(d, r)
+        case ListasOp.tipo:
+            r = ListasOp.aplicar(d, r)
+        case ListasOp.aHoy:
+            r = ListasOp.aplicarAHoy(d, r)
         default:
             break
         }

@@ -17,6 +17,7 @@ struct MenuMas: Sendable, Equatable {
         let hoy = CalendarioBitacora.madrid.dia(de: Date()).iso
         m.cuentas["habits"] = (((try? doc.valor(de: "habits")) ?? nil)?.lista ?? []).filter {
             $0["activo"]?.booleano != false && $0["completadas"]?[hoy]?.booleano != true }.count
+        m.cuentas["listas"] = VistaListas.desde(doc).pendientes
         m.cuentas["actualizaciones"] = (((try? doc.valor(de: "pedidos")) ?? nil)?.lista ?? []).filter { $0["estado"]?.texto != "entregado" }.count
         return m
     }
@@ -28,7 +29,7 @@ struct MasView: View {
 
     // Lo que ya es nativo: o una pestaña de la barra, o una página dentro de «más.».
     static let pestanas: [String: Pestana] = ["calendar": .calendario, "planner": .plan, "finances": .finanzas]
-    static let paginas: Set<String> = ["habits", "notes", "studies", "projects", "settings", "events", "transporte", "home", "compra", "culture", "travels", "work", "goals", "links", "actualizaciones", "documents", "bandeja"]
+    static let paginas: Set<String> = ["listas", "habits", "notes", "studies", "projects", "settings", "events", "transporte", "home", "compra", "culture", "travels", "work", "goals", "links", "actualizaciones", "documents", "bandeja"]
 
     var body: some View {
         ScrollViewReader { lector in
@@ -120,6 +121,7 @@ struct MasView: View {
         case "estado": EstadoView()
         case "buscar": BuscarView()
         case "home": PanoramaView()
+        case "listas": ListasView()
         default: Color.clear.onAppear { c.rutaMas = []; c.web = Apartados.webURL(vista) }
         }
     }

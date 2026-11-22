@@ -284,6 +284,7 @@ struct ProyectoDetalleView: View {
                             .foregroundStyle(activa ? Paleta.sobreAcento : Paleta.texto)
                             .padding(.horizontal, 12).frame(minHeight: 36)
                             .background(activa ? Paleta.acento : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control))
+                            .frame(minHeight: 44).contentShape(Rectangle())
                     }
                 }
             }
@@ -295,7 +296,8 @@ struct ProyectoDetalleView: View {
             HStack(spacing: Espacio.m) {
                 Image(systemName: t.estado == "hecha" ? "checkmark.circle.fill" : t.estado == "curso" ? "circle.lefthalf.filled" : "circle")
                     .font(.system(size: 24))
-                    .foregroundStyle(t.estado == "hecha" ? Paleta.textoSecundario : t.estado == "curso" ? Paleta.acento : Paleta.bordeFuerte)
+                    // 0.27: el aro pendiente en `aro` (≥ 3:1, como el círculo de marcar); con bordeFuerte apenas se veía.
+                    .foregroundStyle(t.estado == "hecha" ? Paleta.textoSecundario : t.estado == "curso" ? Paleta.acento : Paleta.aro)
                     .contentTransition(.symbolEffect(.replace))
                     .frame(width: 44, height: 44)
                 VStack(alignment: .leading, spacing: 2) {

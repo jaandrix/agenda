@@ -264,7 +264,7 @@ struct TableroObjetivos: View {
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }.buttonStyle(.plain)
             if let siguiente {
-                Button { mover(g, siguiente) } label: { Image(systemName: "arrow.right").frame(width: 32, height: 32) }
+                Button { mover(g, siguiente) } label: { Image(systemName: "arrow.right").frame(width: 44, height: 44).contentShape(Rectangle()) }
                     .buttonStyle(.plain).foregroundStyle(Paleta.acento)
                     .accessibilityLabel("pasar a " + siguiente.lowercased())
             }

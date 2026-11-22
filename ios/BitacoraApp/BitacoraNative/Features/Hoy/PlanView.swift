@@ -96,7 +96,8 @@ struct PlanView: View {
                     prioridad: { t, p in Task { await modelo.guardar(.parcharTarea(id: t.id, campos: ["prioridad": p ?? ""]), c) } },
                     nueva: { dia in
                         c.modal = .tarea(EditorTarea(id: OperacionBitacora.nuevoIdTarea(sinDia: dia == nil), nueva: true, dia: dia))
-                    }
+                    },
+                    abrirApartado: { c.abrirApartado($0) }
                 )
             )
             .equatable()
@@ -133,6 +134,7 @@ struct PlanCuerpo: View {
         var borrar: (TareaPlan) -> Void = { _ in }
         var prioridad: (TareaPlan, String?) -> Void = { _, _ in }
         var nueva: (LocalDay?) -> Void = { _ in }
+        var abrirApartado: (String) -> Void = { _ in }
     }
 
     let carga: Carga<VistaPlan>
@@ -143,6 +145,7 @@ struct PlanCuerpo: View {
     var acciones = Acciones()
     @State var verTodasSinDia = false
     @State var moviendo: TareaPlan?
+    @State var verRecuerdos = false
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 0) {
@@ -167,9 +170,27 @@ struct PlanCuerpo: View {
                 agenda(v)
                 if !v.recurrentes.isEmpty { recurrentes(v) }
                 sinDia(v)
+                // renderEnEsteDiaBoton: discreto, al final del plan de hoy y solo si hay algo.
+                if desplazamiento == 0 && !v.recuerdos.isEmpty {
+                    Button { verRecuerdos = true } label: {
+                        Text("en este día, " + (v.recuerdos.count == 1 ? "un recuerdo." : "\(v.recuerdos.count) recuerdos."))
+                            .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).underline(color: Paleta.bordeFuerte)
+                            .frame(minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, Espacio.m)
+                }
             }
         }
         .hoja(item: $moviendo) { t in MoverAFecha(tarea: t) { d in acciones.mover(t, d) } }
+        .hoja(isPresented: $verRecuerdos) {
+            if case .lista(let v) = carga {
+                EnEsteDiaHoja(recuerdos: v.recuerdos, hoy: v.hoyCivil) { vista in
+                    verRecuerdos = false
+                    acciones.abrirApartado(vista)
+                }
+            }
+        }
     }
 
     // hoy. / mañana. / pasado.: texto, la activa en tinta con la raya del acento debajo; nada de control segmentado.
@@ -202,7 +223,8 @@ struct PlanCuerpo: View {
                 Text("nada todavía.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
             }
             ForEach(v.tareas) { t in
-                FilaAgenda(hora: t.hora, titulo: t.titulo, notas: t.notas, hecho: t.hecha, acento: t.arrastrada, prioridad: t.prioridad) {
+                FilaAgenda(hora: t.hora, titulo: t.titulo, notas: t.notas, hecho: t.hecha, acento: t.arrastrada, prioridad: t.prioridad,
+                           subtareas: t.subtareas, subHechas: t.subHechas) {
                     acciones.marcar(t, false)
                 } abrir: { acciones.abrir(t, v.dia) }
                 .contextMenu { menu(t, v, enSinDia: false) }
@@ -226,7 +248,8 @@ struct PlanCuerpo: View {
         return VStack(alignment: .leading, spacing: 0) {
             CabeceraSeccion(titulo: "pendientes sin día.", detalle: v.sinDia.isEmpty ? nil : "\(v.sinDia.count)")
             ForEach(visibles) { t in
-                FilaAgenda(hora: nil, titulo: t.titulo, notas: t.notas, hecho: t.hecha, mostrarHora: false, prioridad: t.prioridad) {
+                FilaAgenda(hora: nil, titulo: t.titulo, notas: t.notas, hecho: t.hecha, mostrarHora: false, prioridad: t.prioridad,
+                           subtareas: t.subtareas, subHechas: t.subHechas) {
                     acciones.marcar(t, true)
                 } abrir: { acciones.abrir(t, nil) }
                 .contextMenu { menu(t, v, enSinDia: true) }
@@ -320,5 +343,54 @@ struct PlanCuerpo: View {
 
     private func textoCompartir(_ v: VistaPlan) -> String {
         ([fecha + "."] + v.tareas.map { ($0.hecha ? "[x] " : "[ ] ") + ($0.hora.map { $0 + " " } ?? "") + $0.titulo }).joined(separator: "\n")
+    }
+}
+
+// openEnEsteDia: lo de otros años en un día como hoy; cada fila lleva a su apartado.
+struct EnEsteDiaHoja: View {
+    let recuerdos: [Recuerdo]
+    let hoy: LocalDay
+    let abrir: (String) -> Void
+    @Environment(\.dismiss) private var cerrar
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("lo que pasó un \(hoy.day) de \(PanoramaView.meses[hoy.month - 1]) de otros años.")
+                        .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.bottom, Espacio.s)
+                    ForEach(recuerdos) { r in
+                        Button { abrir(r.vista) } label: { fila(r) }.buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 20).padding(.bottom, Espacio.xl)
+            }
+            .background(Paleta.fondo)
+            .navigationTitle("en este día.")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } } }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private func fila(_ r: Recuerdo) -> some View {
+        let anios = hoy.year - r.anio
+        return HStack(alignment: .firstTextBaseline, spacing: Espacio.m) {
+            Text(anios == 1 ? "hace un año" : "hace \(anios) años")
+                .font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario)
+                .frame(width: Tipo.tamano(92), alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(r.titulo).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).multilineTextAlignment(.leading)
+                Text("\(r.tipo), \(String(r.anio)).").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Paleta.textoSecundario)
+        }
+        .padding(.vertical, 10)
+        .frame(minHeight: 52)
+        .contentShape(Rectangle())
+        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("abre \(Apartados.nombre(r.vista))")
     }
 }

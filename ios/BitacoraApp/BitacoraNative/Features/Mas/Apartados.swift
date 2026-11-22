@@ -10,7 +10,7 @@ struct Apartado: Sendable, Identifiable, Equatable {
 
 enum Apartados {
     static let secciones: [(String, [Apartado])] = [
-        ("general", [a("calendar", "calendario"), a("home", "panorama"), a("planner", "planificador"), a("compra", "despensa"),
+        ("general", [a("calendar", "calendario"), a("home", "panorama"), a("listas", "listas"), a("planner", "planificador"), a("compra", "despensa"),
                      a("habits", "rutinas"), a("notes", "notas")]),
         ("desarrollo", [a("events", "eventos"), a("finances", "finanzas"), a("work", "empleo"), a("studies", "estudios"),
                         a("profesorado", "profesorado"), a("documents", "documentos"), a("goals", "objetivos"),
@@ -23,8 +23,9 @@ enum Apartados {
 
     static func webURL(_ vista: String) -> URL { URL(string: "https://appbitacora.es/#\(vista)")! }
 
-    // Lo que no se puede ocultar (inicio, plan, menú y ajustes).
-    static let fijos: Set<String> = ["planner", "settings", "calendar", "home"]
+    // Lo que no se puede ocultar (inicio, plan, menú y ajustes). «listas» (0.27) solo existe en el iPhone como página: en la
+    // web son parte de Panorama, así que no tiene interruptor en apartados.
+    static let fijos: Set<String> = ["planner", "settings", "calendar", "home", "listas"]
 
     static func nombre(_ vista: String) -> String {
         secciones.flatMap(\.1).first { $0.vista == vista }?.nombre ?? vista

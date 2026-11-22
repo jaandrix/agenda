@@ -12,7 +12,6 @@ struct BitacoraCheck: View {
     var colorMarca: Color = Paleta.sobreAcento
     let accion: () -> Void
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
-    @Environment(\.colorSchemeContrast) private var contraste
     @State private var sello = false
 
     var body: some View {
@@ -23,17 +22,7 @@ struct BitacoraCheck: View {
             }
             accion()
         } label: {
-            ZStack {
-                // Con «aumentar contraste», el aro pendiente pasa a la tinta secundaria.
-                Circle().strokeBorder(hecho || acento ? colorActivo : (contraste == .increased ? Paleta.textoSecundario : colorBorde), lineWidth: 2)
-                if hecho {
-                    Circle().fill(colorActivo)
-                    Image(systemName: "checkmark").font(.system(size: Tipo.tamano(10), weight: .heavy)).foregroundStyle(colorMarca)
-                }
-            }
-            // 0.20: de 32 a 22 pt (un 31 % menos) a petición de Alejandro; el aro conserva su trazo de 2 y su color, así
-            // que el contraste en asfalto no baja, y el toque sigue siendo de 44.
-            .frame(width: Tipo.tamano(22), height: Tipo.tamano(22))
+            CirculoCheck(hecho: hecho, acento: acento, colorActivo: colorActivo, colorBorde: colorBorde, colorMarca: colorMarca)
             .scaleEffect(sello ? 1.1 : 1)
             .animation(sinMovimiento ? nil : .easeOut(duration: Duracion.sello), value: sello)
             .frame(width: max(44, Tipo.tamano(22)), height: max(44, Tipo.tamano(22)))
@@ -41,6 +30,31 @@ struct BitacoraCheck: View {
         }
         .buttonStyle(.plain)
         .sensoryFeedback(.success, trigger: hecho) { antes, ahora in !antes && ahora }
+    }
+}
+
+// El dibujo del círculo, sin botón: lo comparten BitacoraCheck y las filas que ya son un botón (subtareas del editor).
+struct CirculoCheck: View {
+    let hecho: Bool
+    var acento = false
+    var colorActivo: Color = Paleta.acento
+    var colorBorde: Color = Paleta.aro
+    var colorMarca: Color = Paleta.sobreAcento
+    @Environment(\.colorSchemeContrast) private var contraste
+
+    var body: some View {
+        ZStack {
+            // Con «aumentar contraste», el aro pendiente pasa a la tinta secundaria.
+            Circle().strokeBorder(hecho || acento ? colorActivo : (contraste == .increased ? Paleta.textoSecundario : colorBorde), lineWidth: 2)
+            if hecho {
+                Circle().fill(colorActivo)
+                Image(systemName: "checkmark").font(.system(size: Tipo.tamano(10), weight: .heavy)).foregroundStyle(colorMarca)
+            }
+        }
+        // 0.20: de 32 a 22 pt (un 31 % menos) a petición de Alejandro; el aro conserva su trazo de 2 y su color, así
+        // que el contraste en asfalto no baja, y el toque sigue siendo de 44.
+        .frame(width: Tipo.tamano(22), height: Tipo.tamano(22))
+        .accessibilityHidden(true)
     }
 }
 
@@ -194,8 +208,27 @@ struct FilaAgenda: View {
     var colorAro: Color = Paleta.aro
     // «alta», «media» o «baja»: delante del nombre y en su color, como en la web (prioEtiqueta).
     var prioridad: String? = nil
+    // 0.27: «hechas/total» de las subtareas detrás del nombre, como plannerSubCuenta (en tinta fuerte al completarse).
+    var subtareas = 0
+    var subHechas = 0
     let marcar: () -> Void
     var abrir: (() -> Void)?
+
+    private var etiquetaAccesible: String {
+        var partes: [String] = []
+        if let hora { partes.append(hora) }
+        if let prioridad { partes.append("prioridad " + prioridad) }
+        partes.append(titulo)
+        if subtareas > 0 { partes.append("\(subHechas) de \(subtareas) subtareas") }
+        return partes.joined(separator: ", ")
+    }
+
+    private var cuentaTexto: Text {
+        guard subtareas > 0 else { return Text("") }
+        let lleno = subHechas == subtareas
+        return Text("  \(subHechas)/\(subtareas)").font(Tipo.poppins(12.5, lleno ? .bold : .regular, estilo: .caption)).monospacedDigit()
+            .foregroundStyle(lleno ? colorTexto : colorSuave)
+    }
 
     var body: some View {
         FilaCirculo(hecho: hecho, acento: acento, colorAcento: colorAcento, colorAro: colorAro, colorSobreAcento: colorSobreAcento,
@@ -209,7 +242,7 @@ struct FilaAgenda: View {
             }
         } texto: {
             // En tinta, lo arrastrado o en curso no tiene un color que lo distinga: va en negrita (y su aro, entero).
-            (prioridadTexto + Text(titulo))
+            (prioridadTexto + Text(titulo) + cuentaTexto)
                 .font(Tipo.poppins(16.5, Paleta.mono && acento && !hecho ? .bold : .semibold, estilo: .body))
                 .foregroundStyle(hecho ? colorSuave : (acento ? colorAcento : colorTexto))
                 .strikethrough(hecho, color: colorSuave)
@@ -219,7 +252,7 @@ struct FilaAgenda: View {
         .padding(.vertical, 4)
         .overlay(alignment: .bottom) { Rectangle().fill(colorFilo).frame(height: 1) }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel([hora, prioridad.map { "prioridad " + $0 }, titulo].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityLabel(etiquetaAccesible)
         .accessibilityValue(hecho ? "hecha" : (acento ? "pendiente, de días anteriores" : "pendiente"))
         .accessibilityAction(named: hecho ? "desmarcar" : "marcar", marcar)
         .accessibilityAction(named: "abrir") { (abrir ?? marcar)() }

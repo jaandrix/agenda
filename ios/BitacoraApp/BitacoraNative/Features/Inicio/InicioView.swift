@@ -316,7 +316,8 @@ struct InicioCuerpo: View {
         ForEach(v.agenda) { cosa in
             if let t = cosa.tarea {
                 FilaAgenda(hora: cosa.hora, titulo: cosa.titulo, notas: cosa.notas, hecho: cosa.hecha, acento: cosa.acento,
-                           colorTexto: ct, colorSuave: cs, colorAcento: cp, colorFilo: cf, colorSobreAcento: Paleta.sobreProgreso) {
+                           colorTexto: ct, colorSuave: cs, colorAcento: cp, colorFilo: cf, colorSobreAcento: Paleta.sobreProgreso,
+                           subtareas: t.subtareas, subHechas: t.subHechas) {
                     marcar(t)
                 } abrir: { abrir(t) }
             } else if let e = cosa.evento {

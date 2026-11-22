@@ -112,7 +112,8 @@ enum OperacionBitacora: Codable, Sendable, Equatable {
         switch self {
         case .marcarRecurrente: return ["recurringTasks", "entries"]
         // Como togglePlannerItemDone: también el trabajo de Estudios, la tarea del proyecto y la marca «Completado».
-        case .marcarTarea: return ["dayPlanner", "entries", "studies"]
+        // 0.27: y la tarea de las listas de Panorama («→ hoy», listaTareaDesdePlanner).
+        case .marcarTarea: return ["dayPlanner", "entries", "studies", "listasPanorama"]
         case .parcharEvento: return ["entries"]
         case .guardarEvento, .guardarOcio: return ["entries"]
         case .borrarEntrada: return ["entries", "cultureLists"]
@@ -307,6 +308,10 @@ enum AplicarOperaciones {
                 _ = cambiarTareaProyecto(&lista, pid, tid) { pt, _ in pt["estado"] = .string(hecha ? "hecha" : "curso") }
             }
             r["entries"] = .some(.array(lista))
+            if let lid = t["listaId"]?.comoId, let ltid = t["listaTareaId"]?.comoId,
+               let listas = ListasOp.desdePlan(valores["listasPanorama"] ?? nil, lista: lid, id: ltid, hecha: hecha, cuando: ListasOp.iso(momento)) {
+                r["listasPanorama"] = .some(listas)
+            }
             // El trabajo de Estudios guarda si está hecho: es lo que sobrevive cuando la tarea del día se archiva.
             if let aid = t["linkedAssignmentId"]?.comoId, var st = (valores["studies"] ?? nil)?.objeto, var asig = st["subjects"]?.lista {
                 outer: for i in asig.indices {
