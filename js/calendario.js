@@ -375,6 +375,8 @@
             const items = [];
 
             (Array.isArray(entries) ? entries : []).forEach(e => {
+                // Los «Completado: ...» que deja marcar una tarea no son un recuerdo.
+                if (e.calendarLog || /^(planner_done_|recurring_done_)/.test(e.id || '')) return;
                 const raw = e.date || e.startDate || e.createdAt;
                 if (!raw) return;
                 const d = parseFechaSegura(raw);
@@ -410,27 +412,25 @@
             else if (kind === 'note' && typeof openReadNote === 'function') openReadNote(id);
         }
 
-        // Sin usar desde el 30-10: a Alejandro le molestaba en el calendario. La idea es llamarla desde un botón pequeño en el
-        // planificador.
-        function renderOnThisDayCard() {
+        // Quitado del calendario el 30-10 (a Alejandro le molestaba a la vista); desde el 22-11 vuelve como un botón
+        // discreto al final del planificador de hoy, como el de la luz, que abre los recuerdos en una hoja.
+        function renderEnEsteDiaBoton() {
+            const n = buildOnThisDayItems().length;
+            return n ? `<button class="luz-boton" onclick="openEnEsteDia()">en este día, ${n === 1 ? 'un recuerdo' : n + ' recuerdos'}.</button>` : '';
+        }
+        function openEnEsteDia() {
             const items = buildOnThisDayItems();
-            if (!items.length) return '';
             const anioActual = new Date().getFullYear();
-            return `<div class="card" style="margin-top:16px;padding:14px 16px">
-                <div class="card-title" style="margin-bottom:8px;font-size:12px">En este día, hace...</div>
-                <div style="display:flex;flex-direction:column;gap:8px">
-                    ${items.map(it => {
-                        const anios = anioActual - it.year;
-                        return `<div style="display:flex;align-items:baseline;gap:8px;cursor:pointer" onclick="openOnThisDayItem('${it.kind}','${it.id}')">
-                            <span style="font-size:10px;font-weight:700;color:var(--text-secondary);white-space:nowrap;min-width:48px">${anios} año${anios === 1 ? '' : 's'}</span>
-                            <div style="min-width:0">
-                                <div style="font-size:12px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(it.title)}</div>
-                                <div style="font-size:10px;color:var(--text-secondary)">${escapeHtml(it.type)}</div>
-                            </div>
-                        </div>`;
-                    }).join('')}
-                </div>
-            </div>`;
+            const fecha = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+            openSheet({ content: `<div class="modal-title">en este día.<button class="modal-close" onclick="closeModal()" aria-label="Cerrar"><i class='ico ico-x' aria-hidden=true></i></button></div>
+                <p class="finance-modal-note" style="margin-top:0">Lo que pasó un ${escapeHtml(fecha)} de otros años.</p>
+                <div class="este-dia">${items.map(it => {
+                    const anios = anioActual - it.year;
+                    return `<button type="button" class="este-dia-fila" onclick="closeModal(); openOnThisDayItem('${jsAttr(it.kind)}','${jsAttr(it.id)}')">
+                        <span class="este-dia-hace">hace ${anios === 1 ? 'un año' : anios + ' años'}</span>
+                        <span class="este-dia-txt"><b>${escapeHtml(it.title)}</b><small>${escapeHtml(String(it.type || '').toLowerCase())}, ${it.year}.</small></span>
+                    </button>`;
+                }).join('') || '<p class="finance-modal-note">Nada de otros años en un día como hoy.</p>'}</div>`, mode: 'detalle' });
         }
 
         // ============================================================

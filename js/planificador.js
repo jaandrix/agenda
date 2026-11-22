@@ -184,6 +184,7 @@
                         </div>
                         ${typeof renderSiguientesPasos === 'function' ? renderSiguientesPasos() : ''}
                         ${offset <= 1 ? renderLuzBoton(servMasDias(currentPlannerDayKey(), offset)) : ''}
+                        ${offset === 0 ? renderEnEsteDiaBoton() : ''}
                     </aside>
                 </div>
             </div>`;
