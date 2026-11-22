@@ -128,6 +128,28 @@ if (pruebasDineroIos.status !== 0) fallos.push(`las pruebas de Finanzas del iPho
 const pruebasNube = spawnSync(process.execPath, ['--test', join(raiz, 'pruebas', 'sincronizar.mjs')], { encoding: 'utf8' });
 if (pruebasNube.status !== 0) fallos.push(`las pruebas de sincronizar no pasan (node --test pruebas/sincronizar.mjs):\n${(pruebasNube.stdout || pruebasNube.stderr).trim().slice(-1500)}`);
 
+// La guía (js/bajo-demanda/guia.js) y las novedades (NOVEDADES en landing.js) se actualizan a mano y se quedaban atrás.
+// No es un fallo (un arreglo pequeño no cambia la guía), solo un aviso con la sección que quizá toque revisar.
+const SECCION_GUIA = {
+    'listas.js': 'resumen', 'resumen.js': 'resumen', 'planificador.js': 'planificador', 'calendario.js': 'home', 'compra.js': 'compra',
+    'notas-objetivos.js': 'notas y objetivos', 'metodo.js': 'objetivos', 'eventos.js': 'eventos', 'finanzas.js': 'finanzas',
+    'finanzas-pro.js': 'finanzas', 'finanzas-resumen.js': 'finanzas', 'finanzas-salud.js': 'finanzas', 'presupuesto.js': 'finanzas',
+    'suscripciones.js': 'finanzas', 'inversion.js': 'finanzas', 'trabajo-estudios.js': 'trabajo y estudios', 'agenda-laboral.js': 'trabajo',
+    'cv.js': 'trabajo', 'universidad.js': 'universidad', 'estudiar.js': 'estudiar', 'test.js': 'estudiar', 'profesorado.js': 'profesorado',
+    'profesorado-aula.js': 'profesorado', 'documentos.js': 'documentos', 'proyecto.js': 'proyectos', 'enlaces-proyectos.js': 'enlaces y proyectos',
+    'ocio.js': 'ocio', 'viajes.js': 'viajes', 'actualizaciones.js': 'actualizaciones', 'coleccionables.js': 'coleccionables',
+    'social.js': 'amigos', 'conexiones.js': 'conexiones', 'ajustes.js': 'ajustes', 'apuntar.js': 'crear', 'barra.js': 'crear',
+};
+const avisos = [];
+const tocadosJs = git('diff', '--name-only', 'origin/main', '--', 'js').stdout.trim().split('\n').filter(Boolean).map(f => f.split('/').pop());
+if (!tocadosJs.includes('guia.js')) {
+    const secciones = [...new Set(tocadosJs.map(f => SECCION_GUIA[f]).filter(Boolean))];
+    if (secciones.length) avisos.push(`cambia ${tocadosJs.filter(f => SECCION_GUIA[f]).join(', ')} y la guía no: mira si hay que tocar ${secciones.map(s => `«${s}»`).join(', ')} en GUIA (js/bajo-demanda/guia.js)`);
+}
+const nuevosJs = git('diff', '--name-only', '--diff-filter=A', 'origin/main', '--', 'js').stdout.trim();
+if (nuevosJs && !tocadosJs.includes('landing.js')) avisos.push(`archivos nuevos en js/ (${nuevosJs.split('\n').join(', ')}) sin tocar NOVEDADES en landing.js`);
+avisos.forEach(a => console.warn(`Aviso: ${a}.`));
+
 if (fallos.length) {
     console.error(`Comprobación fallida: ${fallos.length} problema(s).`);
     fallos.forEach(f => console.error(`- ${f}`));
