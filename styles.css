@@ -10652,7 +10652,6 @@ body.papel .pl-ed { --pl-granate:#a3243b; }
 .pl-ed .planner-item-notes { font-size:13.5px; margin-top:6px; line-height:1.45; }
 .pl-ed .planner-item-subtasks { margin-top:8px; }
 .pl-ed .planner-subtask-row { font-size:13px; color:var(--text-secondary); }
-.pl-ed .planner-subtask-row input { accent-color:var(--text-primary); }
 .pl-ed .planner-item-subtasks:not(:has(.planner-subtask-row)) { margin:0; }
 .pl-ed .planner-subtask-add { position:absolute; top:21px; right:44px; font-size:12.5px; }
 .pl-ed .planner-item-editar:hover { text-decoration:none; }
@@ -10798,3 +10797,15 @@ body:not(.papel) .lst-caja-titulo.tinta, body:not(.papel) .lst-color-muestra { -
 .lst-fila:hover .lst-hoy, .lst-fila:focus-within .lst-hoy { opacity:1; }
 .lst-en-hoy { flex:none; margin-top:3px; font-size:11px; font-weight:600; color:var(--text-secondary); white-space:nowrap; }
 @media (hover: none) { .lst-fila .lst-hoy { opacity:.6; } }
+
+/* 22-11: subtareas del planificador con el círculo y el contador de las listas de Panorama, y el campo para añadirlas
+   en la propia tarea. */
+.planner-sub-check { flex:none; box-sizing:border-box; width:14px; height:14px; margin:0; padding:0; border-radius:50%; border:2px solid var(--border-strong); background:none; cursor:pointer; transition:background .15s ease, border-color .15s ease; }
+.planner-sub-check:hover { border-color:var(--text-primary); }
+.planner-sub-check.on { background:var(--text-primary); border-color:var(--text-primary); }
+.planner-subtask-row { gap:8px; }
+.planner-sub-cuenta { margin-left:6px; vertical-align:1px; }
+.planner-sub-nueva { align-self:stretch; margin:2px 0 0 22px; padding:4px 0; border:0; border-bottom:1px solid var(--border); background:none; font:500 13px var(--font-family); color:var(--text-primary); outline:none; }
+.planner-sub-nueva:focus { border-bottom-color:var(--text-primary); }
+.planner-sub-nueva::placeholder { color:var(--text-secondary); }
+@media (prefers-reduced-motion: reduce) { .planner-sub-check { transition:none; } }

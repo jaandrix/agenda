@@ -160,7 +160,7 @@
                                     <i class="pl-punto" aria-hidden="true"></i>
                                     <input type="checkbox" class="planner-item-check" ${it.done ? 'checked' : ''} onchange="togglePlannerItemDone('${it.id}', ${offset})" aria-label="${escapeHtml(it.title)}: hecha">
                                     <div class="planner-item-body">
-                                        <div class="planner-item-title">${titulo}</div>
+                                        <div class="planner-item-title">${titulo}${plannerSubCuenta(it)}</div>
                                         ${it.notes ? `<div class="planner-item-notes">${escapeHtml(it.notes)}</div>` : ''}
                                         ${it.done ? '' : luzAviso(it.title, servMasDias(currentPlannerDayKey(), offset), it.time)}
                                         ${renderPlannerSubtasks(it, offset)}
@@ -304,29 +304,68 @@
         }
 
         // Subtareas de un elemento del planificador: mismo patrón que las
-        // tareas de un proyecto, pero por ítem del día.
+        // tareas de un proyecto, pero por ítem del día. Desde el 22-11 con el círculo y el contador de las listas de
+        // Panorama, y «+ subtarea» abre un campo en la propia tarea en vez de un prompt().
+        let plannerSubNueva = null;
+        function plannerSubCuenta(it) {
+            const subs = Array.isArray(it.subtasks) ? it.subtasks : [];
+            if (!subs.length) return '';
+            const hechas = subs.filter(x => x.done).length;
+            return ` <span class="lst-cuenta planner-sub-cuenta${hechas === subs.length ? ' lleno' : ''}" title="subtareas hechas">${hechas}/${subs.length}</span>`;
+        }
         function renderPlannerSubtasks(it, offset) {
             const subtasks = Array.isArray(it.subtasks) ? it.subtasks : [];
+            const abierta = plannerSubNueva && plannerSubNueva.id === it.id && plannerSubNueva.offset === offset;
             return `
                 <div class="planner-item-subtasks">
                     ${subtasks.map(st => `
                         <label class="planner-subtask-row">
-                            <input type="checkbox" ${st.done ? 'checked' : ''} onchange="togglePlannerSubtaskDone('${it.id}','${st.id}',${offset})">
+                            <button type="button" class="planner-sub-check${st.done ? ' on' : ''}" role="checkbox" aria-checked="${!!st.done}" aria-label="${escapeHtml(st.text)}: hecha" onclick="togglePlannerSubtaskDone('${it.id}','${st.id}',${offset})"></button>
                             <span class="${st.done ? 'done' : ''}">${escapeHtml(st.text)}</span>
                         </label>`).join('')}
+                    ${abierta ? `<input type="text" class="planner-sub-nueva" placeholder="nueva subtarea." aria-label="nueva subtarea" onkeydown="plannerSubTecla(event, '${it.id}', ${offset})" onblur="plannerSubSoltar(this, '${it.id}', ${offset})">` : ''}
                     <button type="button" class="planner-subtask-add" onclick="addPlannerSubtask('${it.id}',${offset})">+ subtarea</button>
                 </div>`;
         }
 
-        async function addPlannerSubtask(itemId, offset) {
-            const text = prompt('Nueva subtarea');
-            if (!text || !text.trim()) return;
-            const item = plannerItemsForOffset(offset).find(it => it.id === itemId);
-            if (!item) return;
-            item.subtasks = Array.isArray(item.subtasks) ? item.subtasks : [];
-            item.subtasks.push({ id: 'sub_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), text: text.trim(), done: false });
+        function addPlannerSubtask(itemId, offset) {
+            // El móvil la añade desde la hoja de la tarea, sin la vista de escritorio a la vista: ahí sigue el prompt().
+            if (currentView !== 'planner' || (typeof isMobileStandaloneMode === 'function' && isMobileStandaloneMode())) {
+                const texto = prompt('Nueva subtarea');
+                if (texto && texto.trim()) plannerSubGuardar(itemId, offset, texto).then(() => render());
+                return;
+            }
+            plannerSubNueva = { id: itemId, offset };
             if (currentView === 'planner') render();
+            requestAnimationFrame(() => document.querySelector('.planner-sub-nueva')?.focus());
+        }
+        async function plannerSubGuardar(itemId, offset, texto) {
+            const item = plannerItemsForOffset(offset).find(it => it.id === itemId);
+            if (!item || !texto.trim()) return false;
+            item.subtasks = Array.isArray(item.subtasks) ? item.subtasks : [];
+            item.subtasks.push({ id: 'sub_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), text: texto.trim(), done: false });
             try { await saveData(); } catch (e) { console.error(e); showToast('No se pudo guardar en la nube', true); }
+            return true;
+        }
+        function plannerSubTecla(e, itemId, offset) {
+            if (e.isComposing) return;
+            if (e.key === 'Escape') { e.preventDefault(); plannerSubNueva = null; e.target.value = ''; e.target.blur(); return; }
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            const texto = e.target.value;
+            e.target.value = '';
+            // Enter deja el campo abierto para la siguiente, como en las listas.
+            plannerSubGuardar(itemId, offset, texto);
+            if (currentView === 'planner') render();
+            requestAnimationFrame(() => document.querySelector('.planner-sub-nueva')?.focus());
+        }
+        function plannerSubSoltar(input, itemId, offset) {
+            if (!input.isConnected || document.activeElement === input) return;
+            const texto = input.value;
+            plannerSubNueva = null;
+            input.value = '';
+            plannerSubGuardar(itemId, offset, texto);
+            setTimeout(() => { if (currentView === 'planner' && !document.querySelector('.planner-sub-nueva:focus')) render(); }, 0);
         }
 
         async function togglePlannerSubtaskDone(itemId, subtaskId, offset) {

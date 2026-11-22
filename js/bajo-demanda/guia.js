@@ -195,7 +195,7 @@ const GUIA = [
             [guiaBoton('2 de 5 hechas.'), 'Bajo la fecha, una raya por tarea del día; se rellenan al completarlas.'],
             [guiaBoton('pendientes sin día. → + añadir.'), 'A la derecha, cosas sin día ni hora. <b>→ hoy</b> las pasa a la línea de tiempo de hoy. Las que marcas hechas se esconden; <b>mostrar completadas.</b> las enseña otra vez.'],
             [guiaBoton('recurrentes de hoy.'), 'A la derecha, lo que se repite hoy, para marcarlo.'],
-            [guiaBoton('+ subtarea'), 'Aparece al pasar el ratón por una tarea: la divide en pasos.'],
+            [guiaBoton('+ subtarea'), 'Aparece al pasar el ratón por una tarea: abre un campo en la propia tarea para dividirla en pasos (Enter añade y deja el campo para la siguiente, Escape lo cierra). Junto al título, «2/5» dice cuántas van.'],
         ],
         trucos: ['Pulsa una tarea para editarla; el círculo solo la marca.', 'Los trabajos de Estudios aparecen solos aquí el día de su entrega.', 'Al completar una tarea queda constancia en el calendario.'],
     },
