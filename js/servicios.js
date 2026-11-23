@@ -698,6 +698,7 @@
             return `
                 <div class="serv-ajustes">
                     <div class="serv-ajustes-fila"><div><b>siri.</b><span>${siri ? 'Conectado. Di «Apunta en Bitácora» y dicta lo que sea.' : 'Dile a Siri qué apuntar sin abrir la app: «cena con Marta el viernes a las 9».'}</span></div><button class="btn-secondary" style="width:auto" onclick="openAtajoSiri()">${siri ? 'ver pasos.' : 'conectar.'}</button></div>
+                    <div class="serv-ajustes-fila"><div><b>bibliotec.</b><span>${servicios.bibliotecToken ? 'Conectada. Tus libros y cartas pasan a tu biblioteca 3D.' : 'Pasa tus libros y cartas a BiblioTec, tu biblioteca en 3D. Solo lee: no cambia nada aquí.'}</span></div><button class="btn-secondary" style="width:auto" onclick="openAtajoBibliotec()">${servicios.bibliotecToken ? 'ver código.' : 'conectar.'}</button></div>
                     <div class="serv-ajustes-fila"><div><b>tu correo.</b><span>${correo ? 'Reenvía aquí tus reservas y pedidos.' : 'Reenvía la confirmación de un vuelo, un hotel, unas entradas o un pedido y se apunta sola.'}</span></div><button class="btn-secondary" style="width:auto" onclick="openAtajoCorreo()">${correo ? 'ver dirección.' : 'crear dirección.'}</button></div>
                 </div>`;
         }
@@ -709,7 +710,7 @@
             const hash = async t => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)))].map(b => b.toString(16).padStart(2, '0')).join('');
             const { error } = await sb.from('conector_tokens').insert({ token_hash: await hash(token), user_id: user.id, nombre });
             if (error) { console.error(error); showToast('No se ha podido crear', true); return null; }
-            const clave = nombre === 'siri' ? 'siriToken' : 'correoToken';
+            const clave = nombre === 'siri' ? 'siriToken' : nombre === 'bibliotec' ? 'bibliotecToken' : 'correoToken';
             if (servicios[clave]) await sb.from('conector_tokens').delete().eq('token_hash', await hash(servicios[clave]));
             servicios[clave] = token;
             await servGuardarDatos();
@@ -743,6 +744,21 @@
                     <span>«dentista el martes a las 10»</span><span>«25 euros de gasolina»</span><span>«comprar leche y huevos»</span><span>«cumple de Lucía el 3 de mayo»</span>
                 </div>
                 <p class="finance-modal-note">Lo dictado pasa por el mismo intérprete que el + de la app: entra como tarea, evento, gasto, compra o lo que toque, y se puede deshacer desde «lo que has apuntado.». Este enlace solo sirve para apuntar; si lo pierdes o lo compartes por error, <a href="#" onclick="event.preventDefault();if(confirm('¿Cambiar el enlace? El atajo actual dejará de funcionar hasta que pegues el nuevo.'))openAtajoSiri(true)">cámbialo</a>.</p>
+            `);
+        }
+
+        // BiblioTec (biblioteca 3D, otra web): el código solo sirve para leer
+        // Ocio y Coleccionables desde la función `biblioteca`.
+        const BIBLIOTEC_URL = 'https://jaandrix.github.io/BiblioTec/';
+        async function openAtajoBibliotec(nuevo) {
+            if (!servicios.bibliotecToken || nuevo) { if (!(await atajoToken('bibliotec'))) return; atajoRepintarAjustes(); }
+            const codigo = servicios.bibliotecToken;
+            showModal(`
+                <div class="modal-title">bibliotec.</div>
+                <p class="finance-modal-note" style="margin-top:0">Tu biblioteca en 3D. Pega este código en BiblioTec (en el ordenador de la entrada o al crear tu cuenta) y tus libros y cartas aparecerán en la mesa de la entrada para ordenarlos.</p>
+                <div class="conector-url"><code>${escapeHtml(codigo)}</code></div>
+                <button class="btn-modal-primary" style="margin:10px 0 16px" onclick="atajoCopiar('${codigo}', 'Código copiado')">copiar código.</button>
+                <p class="finance-modal-note">Solo lee tu Ocio y tus Coleccionables: no puede apuntar ni cambiar nada en Bitácora. <a href="${BIBLIOTEC_URL}" target="_blank" rel="noopener">abrir BiblioTec.</a> Si lo compartes por error, <a href="#" onclick="event.preventDefault();if(confirm('¿Cambiar el código? BiblioTec dejará de leer tus datos hasta que pegues el nuevo.'))openAtajoBibliotec(true)">cámbialo</a>.</p>
             `);
         }
 

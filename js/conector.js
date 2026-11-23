@@ -1146,7 +1146,7 @@
             const fecha = iso => iso ? new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
             body.innerHTML = `
                 <div style="line-height:1.5;margin-bottom:12px">Conecta Bitácora a Claude o a ChatGPT para preguntarle por tu agenda, tus gastos o cualquier apartado, y pedirle que apunte cosas (un evento a partir de una entrada, un gasto a partir de un ticket...). Usa tu propia suscripción de Claude o ChatGPT.</div>
-                ${(data || []).filter(t => t.nombre !== 'siri' && t.nombre !== 'correo').map(t => `
+                ${(data || []).filter(t => t.nombre !== 'siri' && t.nombre !== 'correo' && t.nombre !== 'bibliotec').map(t => `
                     <div class="conector-fila">
                         <div><b>${escapeHtml(t.nombre)}.</b><small>creado el ${fecha(t.creado)}${t.ultimo_uso ? `, usado por última vez el ${fecha(t.ultimo_uso)}` : ', sin usar todavía'}</small></div>
                         <button class="finance-oneoff-btn" onclick="revocarConector('${t.token_hash}')">revocar.</button>

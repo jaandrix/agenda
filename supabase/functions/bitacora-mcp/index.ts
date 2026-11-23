@@ -2054,8 +2054,9 @@ async function usuarioDelToken(token: string): Promise<string | null> {
     if (!/^[a-f0-9]{48,128}$/.test(token)) return null;
     const hash = await sha256(token);
     const { data } = await sbAdmin.from('conector_tokens').select('user_id, nombre').eq('token_hash', hash).maybeSingle();
-    // Los enlaces de Siri y del correo solo sirven para apuntar (función entrada).
-    if (!data || data.nombre === 'siri' || data.nombre === 'correo') return null;
+    // Los enlaces de Siri y del correo solo sirven para apuntar (función entrada),
+    // y el de BiblioTec solo para leer (función biblioteca).
+    if (!data || data.nombre === 'siri' || data.nombre === 'correo' || data.nombre === 'bibliotec') return null;
     sbAdmin.from('conector_tokens').update({ ultimo_uso: new Date().toISOString() }).eq('token_hash', hash).then(() => {});
     return data.user_id;
 }

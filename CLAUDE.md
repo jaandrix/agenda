@@ -26,7 +26,7 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   `calendario-feed`, el calendario suscribible .ics para Google/iPhone/Outlook con enlace firmado por HMAC
   (secreto `CALENDARIO_SECRET`, `calendarioFeedVersion` sincronizado para anularlo), `calendario-ics`, que
   descarga un .ics de otra web para importarlo, `portadas` (Ocio; secreto `TMDB_KEY`), `deportes` (partidos de
-  tus equipos: ESPN y TheSportsDB), `entrada` (Siri y el correo) y `compartir` (enlaces sin registro), ver
+  tus equipos: ESPN y TheSportsDB), `entrada` (Siri y el correo), `biblioteca` (solo lectura de Ocio y Coleccionables para BiblioTec, la biblioteca 3D del repo `jaandrix/BiblioTec`; token «bibliotec» en conector_tokens, que bitacora-mcp rechaza) y `compartir` (enlaces sin registro), ver
   «Servicios públicos» en el mapa, y
   `avisos-diarios`, avisos push automáticos vía pg_cron cada 5 minutos: resumen del
   día a las 9:00 y cada evento con hora una hora antes, salvo `sinAviso` en el
