@@ -445,6 +445,7 @@
             apariencia: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 6a44 44 0 1 1 0 88 44 44 0 0 1 0-88zm0 12v64a32 32 0 0 0 0-64z"/></svg>',
             bitacora: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 6a44 44 0 1 1 0 88 44 44 0 0 1 0-88zM44 42v32h12V42zm6-20a8 8 0 1 0 0 16 8 8 0 0 0 0-16z"/></svg>',
             prompts: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M10 22l34 28-34 28V62l15-12-15-12zM50 70h40v12H50z"/></svg>',
+            solucionador: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M62 8a26 26 0 0 0-24 36L8 74l18 18 30-30a26 26 0 0 0 36-24l-16 16-16-4-4-16z"/></svg>',
             avanzado: '<svg viewBox="0 0 100 100" fill="currentColor"><path d="M34 14L6 50l28 36 10-8-22-28 22-28zm32 0l-10 8 22 28-22 28 10 8 28-36z"/></svg>',
             riesgo: '<svg viewBox="0 0 100 100" fill="currentColor" fill-rule="evenodd"><path d="M50 6l46 84H4zM44 36v28h12V36zm6 34a7 7 0 1 0 0 14 7 7 0 0 0 0-14z"/></svg>',
             apartados: '<svg viewBox="0 0 100 100" fill="currentColor"><rect x="8" y="8" width="38" height="38" rx="10"/><rect x="54" y="8" width="38" height="38" rx="19"/><rect x="8" y="54" width="38" height="38" rx="19"/><rect x="54" y="54" width="38" height="38" rx="10"/></svg>',
@@ -534,6 +535,7 @@
             'semana de ejemplo.': 'ejemplo demo prueba datos inventados empezar',
             'qué es bitácora.': 'instalar app legal privacidad condiciones cookies aviso',
             'prompts guardados.': 'ia textos copiar',
+            'solucionador de errores.': 'corregir arreglar fallo títulos inglés ocio exportar archivo corrección',
             'modo desarrollador.': 'vault oculto desarrollador',
             'zona de riesgo.': 'borrar eliminar cuenta cerrar sesión dispositivos',
         };
@@ -654,6 +656,13 @@
                                         <span class="prompt-title">${escapeHtml(p.title)}</span>
                                     </div>`).join('') : '<div class="ajuste-texto">Sin prompts guardados.</div>'}
                             </div>`)}
+                        ${bloqueAjuste('settings-solucionador', 'solucionador', 'solucionador de errores.', 'Para arreglar un error de tus datos: exporta lo que te pida Claude, mándaselo y aplica aquí el archivo de corrección que te devuelva. Antes de cambiar nada verás cada cambio, y se puede deshacer.', `
+                            <div class="ajuste-botones">
+                                <button class="btn-secondary" style="width:auto" onclick="exportarOcioParaCorregir()">exportar ocio.</button>
+                                <button class="btn-secondary" style="width:auto" onclick="document.getElementById('archivo-correccion').click()">aplicar una corrección.</button>
+                                ${correccionDeshacible() ? `<button class="btn-secondary" style="width:auto" onclick="deshacerUltimaCorreccion()">deshacer la última corrección.</button>` : ''}
+                            </div>
+                            <input type="file" id="archivo-correccion" accept=".json,.bitfix,application/json" style="display:none" onchange="leerCorreccion(event)">`)}
                         ${bloqueAjuste('settings-advanced-section', 'avanzado', 'modo desarrollador.', 'Enseña funciones ocultas, como Vault.', `
                             <button class="finance-pro-switch ${devModeActive ? 'on' : ''}" onclick="toggleDeveloperMode()" aria-label="Modo desarrollador"><span class="finance-pro-switch-knob"></span></button>
                             ${devModeActive ? `<div class="ajuste-botones" style="margin-top:12px"><button class="btn-secondary" style="width:auto" onclick="openAjustesAdmin()">más ajustes.</button><button class="btn-secondary" style="width:auto" onclick="openMedidasModales()">medidas de los modales.</button><button class="btn-secondary" style="width:auto" onclick="alternarFranjaEstable()">${franjaEstable() ? 'quitar la franja estable.' : 'probar la franja estable.'}</button><button class="btn-secondary" style="width:auto" onclick="alternarBordeABorde()">${bordeABordeActivo() ? 'quitar la prueba de pantalla completa.' : 'probar pantalla completa en el iPhone.'}</button></div>` : ''}`)}
@@ -1023,4 +1032,100 @@ async function canjearCodigoBeta() {
                 else localStorage.setItem('bitacora-borde-a-borde', '1');
             } catch (_) { showToast('No se pudo guardar en este dispositivo.', true); return; }
             location.reload();
+        }
+
+
+        // Solucionador de errores (23-11): una corrección a medida para la cuenta de Alejandro sin tocar el código. Claude
+        // genera un archivo .bitfix con cambios campo a campo; cada uno lleva el valor de antes y solo se aplica si sigue
+        // igual, así que reaplicarlo o aplicarlo tarde no pisa nada. Nació de un problema real: títulos de Ocio en inglés.
+        const CORRECCION_CAMPOS = ['title', 'author', 'tituloOriginal'];
+        const CORRECCION_TIPOS_OCIO = ['movie', 'series', 'book', 'game'];
+        let correccionPendiente = null;
+
+        function exportarOcioParaCorregir() {
+            const ocio = entries.filter(e => CORRECCION_TIPOS_OCIO.includes(e.type)).map(e => ({
+                id: e.id, tipo: e.type, title: e.title || '', tituloOriginal: e.tituloOriginal || undefined, author: e.author || undefined,
+                anio: e.year || e.anio || undefined, inicio: e.startDate || e.date || undefined, fin: e.endDate || undefined, estado: e.status || undefined
+            }));
+            const datos = { bitacora: 'ocio', exportado: new Date().toISOString(), total: ocio.length, ocio };
+            const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `bitacora_ocio_${todayISO()}.json`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+            showToast(`Exportado: ${ocio.length} de ocio`);
+        }
+
+        function leerCorreccion(event) {
+            const file = event.target.files?.[0];
+            event.target.value = '';
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                let c;
+                try { c = JSON.parse(reader.result); } catch (_) { showToast('Ese archivo no es una corrección de Bitácora', true); return; }
+                if (c?.bitacora !== 'correccion' || !Array.isArray(c.cambios)) { showToast('Ese archivo no es una corrección de Bitácora', true); return; }
+                const porId = new Map(entries.map(e => [String(e.id), e]));
+                const aplicables = [], yaEstaban = [], noEncontrados = [];
+                c.cambios.forEach(x => {
+                    if (x?.coleccion !== 'entries' || !CORRECCION_CAMPOS.includes(x.campo)) return;
+                    const e = porId.get(String(x.id));
+                    if (!e) { noEncontrados.push(x); return; }
+                    const actual = e[x.campo] ?? '';
+                    if (actual === (x.despues ?? '')) { yaEstaban.push(x); return; }
+                    if (x.antes !== undefined && actual !== (x.antes ?? '')) { yaEstaban.push(x); return; }
+                    aplicables.push({ ...x, entrada: e, actual });
+                });
+                correccionPendiente = { nombre: String(c.nombre || 'corrección'), aplicables };
+                const fila = x => `<div class="finance-viaje-fila"><span></span><b>${escapeHtml(String(x.actual || 'vacío'))}<small style="display:block;font-weight:400;opacity:.75">→ ${escapeHtml(String(x.despues ?? 'vacío'))}</small></b><i>${escapeHtml(x.campo === 'title' ? 'título' : x.campo === 'author' ? 'autor' : 'título original')}</i></div>`;
+                showModal(`
+                    <div class="modal-title">${escapeHtml(correccionPendiente.nombre)}.</div>
+                    ${c.descripcion ? `<p class="finance-modal-note">${escapeHtml(String(c.descripcion))}</p>` : ''}
+                    <p class="finance-modal-note"><b>${aplicables.length} ${aplicables.length === 1 ? 'cambio' : 'cambios'} por aplicar.</b>${yaEstaban.length ? ` ${yaEstaban.length} ya estaban hechos o los cambiaste tú después: no se tocan.` : ''}${noEncontrados.length ? ` ${noEncontrados.length} ${noEncontrados.length === 1 ? 'ya no existe (borrado): se ignora' : 'ya no existen (borrados): se ignoran'}.` : ''}</p>
+                    ${aplicables.length ? `<div class="finance-viaje-lista">${aplicables.slice(0, 200).map(fila).join('')}</div>` : ''}
+                    ${aplicables.length > 200 ? `<p class="finance-modal-note">y ${aplicables.length - 200} más.</p>` : ''}
+                    ${aplicables.length ? `<button class="btn-modal-primary" onclick="aplicarCorreccion()">aplicar ${aplicables.length} ${aplicables.length === 1 ? 'cambio' : 'cambios'}.</button>` : `<button class="btn-modal-primary" onclick="closeModal()">cerrar.</button>`}
+                    <p class="finance-modal-note">Se puede deshacer desde Ajustes → solucionador de errores.</p>`);
+            };
+            reader.readAsText(file);
+        }
+
+        async function aplicarCorreccion() {
+            const c = correccionPendiente;
+            if (!c?.aplicables.length) return;
+            const deshacer = c.aplicables.map(x => ({ id: x.entrada.id, campo: x.campo, antes: x.actual, despues: x.despues ?? '' }));
+            c.aplicables.forEach(x => {
+                if (x.despues === undefined || x.despues === null || x.despues === '') delete x.entrada[x.campo];
+                else x.entrada[x.campo] = x.despues;
+            });
+            try { localStorage.setItem('bitacora-ultima-correccion', JSON.stringify({ nombre: c.nombre, fecha: new Date().toISOString(), cambios: deshacer })); } catch (_) { /* sin almacenamiento: no se podrá deshacer */ }
+            correccionPendiente = null;
+            closeModal();
+            render();
+            showToast(`${deshacer.length} ${deshacer.length === 1 ? 'cambio aplicado' : 'cambios aplicados'}`);
+            try { await saveData(); } catch (err) { console.error('Error guardando la corrección:', err); showToast('No se pudo guardar en la nube', true); }
+        }
+
+        function correccionDeshacible() {
+            try { return !!JSON.parse(localStorage.getItem('bitacora-ultima-correccion') || 'null')?.cambios?.length; } catch (_) { return false; }
+        }
+
+        async function deshacerUltimaCorreccion() {
+            let u = null;
+            try { u = JSON.parse(localStorage.getItem('bitacora-ultima-correccion') || 'null'); } catch (_) { /* nada que deshacer */ }
+            if (!u?.cambios?.length) return;
+            if (!confirm(`¿Deshacer «${u.nombre}» (${u.cambios.length} cambios)? Lo que hayas cambiado a mano después se respeta.`)) return;
+            const porId = new Map(entries.map(e => [String(e.id), e]));
+            let n = 0;
+            u.cambios.forEach(x => {
+                const e = porId.get(String(x.id));
+                if (!e || (e[x.campo] ?? '') !== (x.despues ?? '')) return;
+                if (x.antes === '' || x.antes === undefined) delete e[x.campo]; else e[x.campo] = x.antes;
+                n++;
+            });
+            try { localStorage.removeItem('bitacora-ultima-correccion'); } catch (_) { /* nada */ }
+            render();
+            showToast(`${n} ${n === 1 ? 'cambio deshecho' : 'cambios deshechos'}`);
+            try { await saveData(); } catch (err) { console.error('Error guardando:', err); showToast('No se pudo guardar en la nube', true); }
         }
