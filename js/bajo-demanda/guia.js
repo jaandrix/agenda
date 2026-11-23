@@ -584,7 +584,7 @@ const GUIA = [
             [guiaBoton('tareas con claude.'), 'Botones que abren Claude con una tarea ya escrita (por ahora, revisar el correo mensual de tu banco de inversión y apuntar los meses que falten). Claude usa tus conectores de Gmail y de Bitácora; tú solo envías el mensaje.'],
             [guiaBoton('tema y letra.'), 'Tema, tipografía y modo ancho; se guardan en cada dispositivo.'],
             [guiaBoton('prompts guardados.'), 'Textos que usas a menudo con una IA.'],
-            [guiaBoton('solucionador de errores.'), 'Para arreglar un error de tus datos: exporta lo que te pidan (por ahora, Ocio), y aplica el archivo de corrección que te devuelvan. Enseña cada cambio antes de hacerlo y la última corrección se puede deshacer.'],
+            [guiaBoton('solucionador de errores.'), 'Para arreglar un error de tus datos: exporta lo que te pidan (por ahora, Ocio), y aplica el archivo de corrección que te devuelvan. Enseña cada cambio antes de hacerlo y la última corrección se puede deshacer. «películas en español.» pone el título de España a las películas que Letterboxd trajo en inglés.'],
             [guiaBoton('modo desarrollador.'), 'Enseña funciones ocultas, como Vault.'],
             [guiaBoton('cerrar sesión en todas partes.'), 'Cierra tu sesión en todos los dispositivos.'],
         ],

@@ -659,6 +659,7 @@
                         ${bloqueAjuste('settings-solucionador', 'solucionador', 'solucionador de errores.', 'Para arreglar un error de tus datos: exporta lo que te pida Claude, mándaselo y aplica aquí el archivo de corrección que te devuelva. Antes de cambiar nada verás cada cambio, y se puede deshacer.', `
                             <div class="ajuste-botones">
                                 <button class="btn-secondary" style="width:auto" onclick="exportarOcioParaCorregir()">exportar ocio.</button>
+                                <button class="btn-secondary" style="width:auto" onclick="proponerTitulosEspanol()">películas en español.</button>
                                 <button class="btn-secondary" style="width:auto" onclick="document.getElementById('archivo-correccion').click()">aplicar una corrección.</button>
                                 ${correccionDeshacible() ? `<button class="btn-secondary" style="width:auto" onclick="deshacerUltimaCorreccion()">deshacer la última corrección.</button>` : ''}
                             </div>
@@ -1066,6 +1067,13 @@ async function canjearCodigoBeta() {
                 let c;
                 try { c = JSON.parse(reader.result); } catch (_) { showToast('Ese archivo no es una corrección de Bitácora', true); return; }
                 if (c?.bitacora !== 'correccion' || !Array.isArray(c.cambios)) { showToast('Ese archivo no es una corrección de Bitácora', true); return; }
+                mostrarCorreccion(c);
+            };
+            reader.readAsText(file);
+        }
+
+        function mostrarCorreccion(c) {
+            {
                 const porId = new Map(entries.map(e => [String(e.id), e]));
                 const aplicables = [], yaEstaban = [], noEncontrados = [];
                 c.cambios.forEach(x => {
@@ -1087,8 +1095,7 @@ async function canjearCodigoBeta() {
                     ${aplicables.length > 200 ? `<p class="finance-modal-note">y ${aplicables.length - 200} más.</p>` : ''}
                     ${aplicables.length ? `<button class="btn-modal-primary" onclick="aplicarCorreccion()">aplicar ${aplicables.length} ${aplicables.length === 1 ? 'cambio' : 'cambios'}.</button>` : `<button class="btn-modal-primary" onclick="closeModal()">cerrar.</button>`}
                     <p class="finance-modal-note">Se puede deshacer desde Ajustes → solucionador de errores.</p>`);
-            };
-            reader.readAsText(file);
+            }
         }
 
         async function aplicarCorreccion() {

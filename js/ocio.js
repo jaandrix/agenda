@@ -435,7 +435,7 @@
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
                 body: JSON.stringify({ tipo, q, anio }),
             });
-            return res.ok ? res.json() : { resultados: [] };
+            return res.ok ? res.json() : { resultados: [], error: res.status === 429 ? 'demasiadas peticiones' : 'fallo' };
         }
 
         function portadaConsulta(e) {
@@ -788,14 +788,17 @@
                         const uri = iUri !== -1 ? (row[iUri] || '').trim() : '';
 
                         const normTitle = stripAccents(title.toLowerCase());
-                        const isDup = entries.some(en => en.type === 'movie' &&
-                            stripAccents((en.title || '').toLowerCase()) === normTitle && en.date === date);
+                        // También contra el título original: una vez en español, reimportar el mismo diario no la duplica.
+                        const isDup = entries.some(en => en.type === 'movie' && en.date === date &&
+                            [en.title, en.tituloOriginal].some(t => stripAccents((t || '').toLowerCase()) === normTitle));
                         if (isDup) { duplicates++; continue; }
 
                         entries.push({
                             id: 'movie_lb_' + Date.now() + '_' + r,
                             type: 'movie',
                             title,
+                            tituloOriginal: title,
+                            year: /^\d{4}$/.test(year) ? year : undefined,
                             date,
                             rating,
                             notes: [listName ? `Lista Letterboxd: ${listName}` : '', year ? `Año: ${year}` : '', uri].filter(Boolean).join(', ')
@@ -809,6 +812,7 @@
                         (duplicates ? `, ${duplicates} ya existían` : '') +
                         (errors ? `, ${errors} fila${errors === 1 ? '' : 's'} con error` : ''));
                     try { await saveData(); } catch (err) { console.error('Error guardando la importación de Letterboxd:', err); showToast('No se pudo guardar en la nube', true); }
+                    if (added && typeof proponerTitulosEspanol === 'function') proponerTitulosEspanol();
                 } catch (err) {
                     console.error('Error importando CSV de Letterboxd:', err);
                     showToast('Error al leer el archivo CSV', true);
@@ -1511,3 +1515,42 @@
             `;
         }
 
+
+
+        // Letterboxd exporta el título original o el inglés aunque su web se vea en español (el 15-09-2026 entraron así
+        // 150 películas). Se busca cada una en TMDB en español de España con su año y se propone el cambio en la misma
+        // vista que el solucionador de errores: nada cambia sin verlo antes, y se puede deshacer.
+        let traduciendoTitulos = false;
+        function anioDePelicula(e) {
+            if (/^\d{4}$/.test(String(e.year || ''))) return String(e.year);
+            const m = String(e.notes || '').match(/Año:\s*(\d{4})/);
+            return m ? m[1] : '';
+        }
+        async function proponerTitulosEspanol() {
+            if (traduciendoTitulos) return;
+            const pendientes = entries.filter(e => e.type === 'movie' && anioDePelicula(e)
+                && (e.tituloOriginal ? e.title === e.tituloOriginal : String(e.id || '').startsWith('movie_lb_')));
+            if (!pendientes.length) { showToast('No hay películas en inglés pendientes'); return; }
+            traduciendoTitulos = true;
+            showToast(`Buscando el título en español de ${pendientes.length} ${pendientes.length === 1 ? 'película' : 'películas'}…`);
+            const cambios = [];
+            const espera = ms => new Promise(r => setTimeout(r, ms));
+            try {
+                for (const e of pendientes) {
+                    const original = e.tituloOriginal || e.title;
+                    let r = await buscarPortadas('movie', original, anioDePelicula(e)).catch(() => ({ resultados: [] }));
+                    if (r?.error && /demasiadas/i.test(r.error)) { await espera(61000); r = await buscarPortadas('movie', original, anioDePelicula(e)).catch(() => ({ resultados: [] })); }
+                    const delAnio = (r?.resultados || []).filter(x => x.anio === anioDePelicula(e));
+                    const es = delAnio.length === 1 ? delAnio[0].titulo : '';
+                    if (es && es.trim() && es.trim() !== e.title) {
+                        cambios.push({ coleccion: 'entries', id: e.id, campo: 'title', antes: e.title, despues: es.trim() });
+                        if (!e.tituloOriginal) cambios.push({ coleccion: 'entries', id: e.id, campo: 'tituloOriginal', antes: '', despues: original });
+                    }
+                    await espera(1100);
+                }
+            } finally { traduciendoTitulos = false; }
+            if (!cambios.length) { showToast('Todas tienen ya su título en España'); return; }
+            mostrarCorreccion({ bitacora: 'correccion', nombre: 'películas en español',
+                descripcion: 'Título con el que se estrenó cada película en España (TMDB, con su año). El que traía Letterboxd queda como título original. Las que no se encuentran con seguridad se quedan como están.',
+                cambios });
+        }
