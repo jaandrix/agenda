@@ -2,7 +2,8 @@ name: iOS - Bitácora nativa (tests y .ipa sin firmar)
 
 on:
   push:
-    branches: [main]
+    # rediseno/**: la rama de integración del rediseño 2.0 compila y saca su .ipa sin tocar main.
+    branches: [main, 'rediseno/**']
     paths:
       - 'ios/**'
       - '.github/workflows/ios-nativa.yml'
