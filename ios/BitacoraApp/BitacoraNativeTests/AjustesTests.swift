@@ -61,6 +61,27 @@ final class AjustesTests: XCTestCase {
         XCTAssertEqual(ServidorAjustes.tokenNuevo(bytes: 24).count, 48)
     }
 
+    // 2.0: Ajustes ya no elige tema (solo informa de «bitácora.») y «restablecer apariencia.» solo toca la letra. Lo que
+    // pintan Menú, Ajustes y Buscar sobre el tema único también cumple: texto que informa y «web» en tintaSecundaria
+    // sobre tarjeta, lienzo y segmentos; lo peligroso en rojo sobre blanco; la píldora negra con su texto.
+    func testTemaUnicoYContrasteDeMenuYAjustes() {
+        XCTAssertEqual(TemaElegido.unico, .bitacora)
+        XCTAssertEqual(TemaElegido.unico.nombre, "bitácora.")
+        func lum(_ v: UInt32) -> Double {
+            let f = { (c: Double) -> Double in c <= 0.03928 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4) }
+            return 0.2126 * f(Double((v >> 16) & 0xFF) / 255) + 0.7152 * f(Double((v >> 8) & 0xFF) / 255) + 0.0722 * f(Double(v & 0xFF) / 255)
+        }
+        func cr(_ a: UInt32, _ b: UInt32) -> Double { let x = lum(a), y = lum(b); return (max(x, y) + 0.05) / (min(x, y) + 0.05) }
+        typealias H = Lienzo.Hex
+        XCTAssertGreaterThanOrEqual(cr(H.tinta, H.tarjeta), 4.5, "título de fila")
+        XCTAssertGreaterThanOrEqual(cr(H.tintaSecundaria, H.tarjeta), 4.5, "detalle y «web» en tarjeta")
+        XCTAssertGreaterThanOrEqual(cr(H.tintaSecundaria, H.fondo), 4.5, "pie de grupo en el lienzo")
+        XCTAssertGreaterThanOrEqual(cr(H.tintaSecundaria, H.sutil), 4.5, "opción sin elegir del segmento")
+        XCTAssertGreaterThanOrEqual(cr(H.sobreOscuro, H.oscuro), 4.5, "opción elegida en la píldora negra")
+        XCTAssertGreaterThanOrEqual(cr(H.rojo, H.tarjeta), 4.5, "eliminar mi cuenta")
+        XCTAssertGreaterThanOrEqual(cr(H.oscuro, H.naranja), 4.5, "cifra en el contador naranja")
+    }
+
     func testTodosLosTemasCumplenContraste() {
         func lum(_ v: UInt32) -> Double {
             let f = { (c: Double) -> Double in c <= 0.03928 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4) }
