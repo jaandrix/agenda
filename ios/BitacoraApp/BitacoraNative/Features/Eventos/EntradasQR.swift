@@ -47,10 +47,11 @@ enum LectorQR {
 struct CodigoQR: View {
     let datos: Data
     var body: some View {
-        if let img = QRMarcado.imagen(datos, placa: QRMarcado.colorPlaca(), letra: QRMarcado.colorLetra(), punto: UIColor(rgb: Paleta.mono ? 0x000000 : 0xE5532B)) ?? LectorQR.imagen(datos) {
+        if let img = QRMarcado.imagen(datos, placa: QRMarcado.colorPlaca(), letra: QRMarcado.colorLetra(), punto: UIColor(Lienzo.naranja)) ?? LectorQR.imagen(datos) {
             Image(uiImage: img).interpolation(.none).resizable().scaledToFit()
-                .padding(6)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: Radio.control))
+                .padding(Medida.xxs)
+                .background(Lienzo.tarjeta, in: RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous).strokeBorder(Lienzo.filo))
                 .accessibilityLabel("código qr de la entrada")
         }
     }
@@ -66,40 +67,41 @@ struct EntradaPantallaCompleta: View {
     @State private var brilloAntes: CGFloat?
 
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
+        VStack(spacing: Medida.m) {
+            HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("entrada.").font(Tipo.pie).foregroundStyle(.black.opacity(0.55))
-                    Text(titulo).font(Tipo.poppins(22, .bold, estilo: .title2)).foregroundStyle(.black).lineLimit(2)
-                    if !detalle.isEmpty { Text(detalle).font(Tipo.pie).foregroundStyle(.black.opacity(0.6)) }
+                    Text("ENTRADA").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.tintaTerciaria)
+                    Text(titulo).font(Letra.titulo).kerning(-0.4).foregroundStyle(Lienzo.tinta).lineLimit(2)
+                    if !detalle.isEmpty { Text(detalle).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
                 }
                 Spacer()
-                Button { cerrar() } label: { Image(systemName: "xmark").font(.system(size: 17, weight: .semibold)).frame(width: 44, height: 44) }
-                    .foregroundStyle(.black).accessibilityLabel("cerrar")
+                BotonRedondo(sistema: "xmark", tono: .sutil, tamano: 36, etiqueta: "cerrar") { cerrar() }
             }
             TabView(selection: $indice) {
                 ForEach(Array(entradas.enumerated()), id: \.element.id) { i, e in
-                    VStack(spacing: 12) {
+                    VStack(spacing: Medida.s) {
                         CodigoQR(datos: e.datos)
-                        if !e.etiqueta.isEmpty { Text(e.etiqueta).font(Tipo.cuerpoFuerte).foregroundStyle(.black) }
+                        if !e.etiqueta.isEmpty { Text(e.etiqueta).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta) }
                     }
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, Medida.xs)
                     .tag(i)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: entradas.count > 1 ? .always : .never))
             .indexViewStyle(.page(backgroundDisplayMode: .always))
+            .onChange(of: indice) { _, _ in Haptica.seleccion() }
             if entradas.count > 1 {
-                Text("\(indice + 1) de \(entradas.count)").font(Tipo.pie).foregroundStyle(.black.opacity(0.6))
+                Text("\(indice + 1) de \(entradas.count)").font(Letra.hora).foregroundStyle(Lienzo.tintaSecundaria)
+                    .contentTransition(.numericText())
             }
         }
-        .padding(20)
+        .padding(Medida.l)
         // La marca de agua, sutil: «bitácora.» grande abajo, casi del color del papel. No toca el QR.
         .background(alignment: .bottom) {
             ZStack(alignment: .bottom) {
-                Color.white.ignoresSafeArea()
-                Text("bitácora.").font(Tipo.poppins(64, .bold, estilo: .largeTitle)).kerning(-2.5)
-                .foregroundStyle(.black.opacity(0.035))
+                Lienzo.tarjeta.ignoresSafeArea()
+                Text("bitácora.").font(LetraEventos.marcaAgua).kerning(-2.5)
+                .foregroundStyle(Lienzo.tinta.opacity(0.035))
                 .lineLimit(1).minimumScaleFactor(0.5)
                 .padding(.bottom, 28)
                 .accessibilityHidden(true)
@@ -124,18 +126,25 @@ struct AnadirEntradaQR: View {
     @State private var error: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: Espacio.m) {
+        VStack(alignment: .leading, spacing: Medida.xs) {
+            HStack(spacing: Medida.xs) {
                 PhotosPicker(selection: $foto, matching: .images) {
-                    Text(leyendo ? "leyendo…" : "+ añadir entrada.").font(Tipo.cuerpoFuerte).frame(minHeight: 44)
+                    Label(leyendo ? "leyendo…" : "añadir entrada.", systemImage: leyendo ? "ellipsis" : "qrcode.viewfinder")
+                        .contentTransition(.opacity)
                 }
+                .buttonStyle(.capsula(.claro, ancho: true))
                 .disabled(leyendo)
-                Button("pegar.") { pegar() }.font(Tipo.cuerpoFuerte).frame(minHeight: 44)
+                Button("pegar.") { pegar() }
+                    .buttonStyle(.capsula(.claro))
                     .disabled(leyendo || !UIPasteboard.general.hasImages && !UIPasteboard.general.hasStrings)
             }
-            .foregroundStyle(Paleta.acento)
-            if let error { Text(error).font(Tipo.pie).foregroundStyle(Paleta.error) }
+            if let error {
+                Text(error).font(Letra.pie).foregroundStyle(Lienzo.negativo).padding(.horizontal, Medida.xxs)
+                    .transition(.opacity)
+            }
         }
+        .animation(Muelle.rapido, value: error)
+        .animation(Muelle.rapido, value: leyendo)
         .onChange(of: foto) { _, item in
             guard let item else { return }
             leyendo = true

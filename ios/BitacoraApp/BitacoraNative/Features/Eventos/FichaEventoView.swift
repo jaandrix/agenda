@@ -7,52 +7,186 @@ import CoreImage.CIFilterBuiltins
 struct FichaEventoView: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.dismiss) private var cerrar
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     let evento: EventoDia
     let dia: LocalDay
     @State private var entradas: [EntradaQR] = []
     @State private var indice = 0
     @State private var pantallaCompleta = false
     @State private var entradaABorrar: EntradaQR?
+    @State private var borrando: EventoDia?
+    @State private var entradaAbierta = false
+    @State private var hoy = CalendarioBitacora.madrid.dia(de: Date())
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(evento.titulo).font(Tipo.poppins(26, .bold, estilo: .title)).kerning(-0.5).foregroundStyle(Paleta.texto)
-                        .padding(.top, Espacio.s)
-                    FilaLibro(etiqueta: "día.", valor: Self.fecha(dia))
-                    if let h = evento.hora { FilaLibro(etiqueta: "hora.", valor: evento.fin.map { "de \(h) a \($0)" } ?? h) }
-                    if !evento.lugar.isEmpty { FilaLibro(etiqueta: "dónde.", valor: evento.lugar) }
-                    if !evento.meta.isEmpty && evento.meta != evento.lugar { FilaLibro(etiqueta: "más.", valor: evento.meta) }
-                    if !evento.notas.isEmpty {
-                        Text(evento.notas).font(Tipo.cuerpo).foregroundStyle(Paleta.texto).textSelection(.enabled).padding(.vertical, Espacio.m)
-                    }
-                    if !entradas.isEmpty { entrada }
-                    if evento.tipo == "event" {
-                        AnadirEntradaQR(eventoId: evento.id) { Task { await cargarEntradas(forzar: true) } }
-                            .padding(.top, Espacio.m)
-                    }
-                    if evento.editable {
-                        Button("editar.") {
-                            c.modal = .evento(EditorEvento(id: evento.id, nuevo: false, fecha: dia, hora: evento.hora, titulo: evento.titulo,
-                                                           lugar: evento.lugar, notas: evento.notas))
-                        }
-                        .buttonStyle(BotonPrincipal()).padding(.top, Espacio.l)
-                    } else {
-                        Text(origen).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.top, Espacio.m)
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                cabecera.entradaEscalonada(0)
+                filas.entradaEscalonada(1)
+                if !entradas.isEmpty { tarjetaEntradas.entradaEscalonada(2) }
+                if evento.tipo == "event" {
+                    AnadirEntradaQR(eventoId: evento.id) { Task { await cargarEntradas(forzar: true) } }
+                        .entradaEscalonada(3)
                 }
-                .padding(.horizontal, 20).padding(.bottom, Espacio.xl)
+                acciones.padding(.top, Medida.xs).entradaEscalonada(4)
+                if !evento.editable && !origen.isEmpty {
+                    Text(origen).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).padding(.horizontal, Medida.xxs)
+                }
             }
-            .background(Paleta.fondo)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } } }
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.xl)
         }
+        .scrollIndicators(.hidden)
+        .fondoLienzo()
         .presentationDetents(entradas.isEmpty ? [.medium, .large] : [.large])
-        .task { await cargarEntradas() }
+        .presentationDragIndicator(.visible)
+        .task { await cargarEntradas(); if dia == hoy && !entradas.isEmpty { entradaAbierta = true } }
         .fullScreenCover(isPresented: $pantallaCompleta) {
             EntradaPantallaCompleta(titulo: evento.titulo, detalle: [evento.lugar, evento.hora ?? ""].filter { !$0.isEmpty }.joined(separator: ", "),
                                     entradas: entradas, indice: min(indice, max(entradas.count - 1, 0)))
         }
+        .confirmarBorrado($borrando, titulo: { _ in "¿borrar este evento?" }) { e in
+            Task { @MainActor in if await c.guardar(.borrarEntrada(id: e.id), fallo: "no se pudo borrar en este iPhone.") { Haptica.exito(); cerrar() } }
+        }
+    }
+
+    // Bloque de fecha grande, el título y la cuenta atrás; cerrar a la derecha.
+    private var cabecera: some View {
+        VStack(alignment: .leading, spacing: Medida.s) {
+            HStack(alignment: .top) {
+                BloqueFechaEvento(dia: dia, tono: dia >= hoy ? .naranja : .apagado, grande: true)
+                Spacer()
+                BotonRedondo(sistema: "xmark", tono: .blanco, tamano: 36, etiqueta: "cerrar") { cerrar() }
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(evento.titulo).font(Letra.titulo).kerning(-0.4).foregroundStyle(Lienzo.tinta)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                HStack(spacing: Medida.xs) {
+                    Text(Self.fecha(dia) + ".").font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+                    TimelineView(.periodic(from: .now, by: 60)) { t in
+                        Chip(texto: TextoEventos.cuentaAtras(dia, hora: evento.hora, hoy: hoy, ahora: t.date), tono: dia >= hoy ? .naranja : .sutil)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, Medida.xxs)
+    }
+
+    // Lo que hay que saber, en filas: hora, lugar, lo de debajo del título y las notas.
+    private var filas: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            FilaTarjeta(icono: "calendario", titulo: TextoEventos.horario(evento) ?? "todo el día.", detalle: "hora.")
+            if !evento.lugar.isEmpty {
+                SeparadorFila()
+                FilaTarjeta(icono: "viajes", titulo: evento.lugar, detalle: "dónde.")
+            }
+            if !evento.meta.isEmpty && evento.meta != evento.lugar {
+                SeparadorFila()
+                FilaTarjeta(icono: "eventos", titulo: evento.meta, detalle: "más.")
+            }
+            if !evento.notas.isEmpty {
+                SeparadorFila()
+                HStack(alignment: .top, spacing: Medida.s) {
+                    IconoCuadrado(id: "notas")
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("notas.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        Text(evento.notas).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta).textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.vertical, Medida.s)
+            }
+        }
+        .tarjeta(relleno: Medida.s)
+    }
+
+    // .entrada-ticket: recogida, una miniatura del QR; abierta, el QR grande. Tocar el grande lo pone a pantalla entera.
+    private var tarjetaEntradas: some View {
+        let e = entradas[min(indice, entradas.count - 1)]
+        return VStack(spacing: Medida.s) {
+            Button {
+                Haptica.ligera()
+                withAnimation(Muelle.o(Muelle.expandir, reducido: sinMovimiento)) { entradaAbierta.toggle() }
+            } label: {
+                HStack(spacing: Medida.s) {
+                    if !entradaAbierta {
+                        CodigoQR(datos: e.datos).frame(width: MedidaEventos.qrMiniatura, height: MedidaEventos.qrMiniatura)
+                            .transition(.scale(scale: 0.6).combined(with: .opacity))
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(entradas.count == 1 ? "entrada." : "\(entradas.count) entradas.").font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta)
+                        Text(entradaAbierta ? "toca el qr para verlo a pantalla completa." : (e.etiqueta.isEmpty ? "toca para enseñarla." : e.etiqueta))
+                            .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(2)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.down").font(.system(size: 12, weight: .bold)).foregroundStyle(Lienzo.tintaTerciaria)
+                        .rotationEffect(.degrees(entradaAbierta ? 180 : 0))
+                }
+                .frame(minHeight: Medida.toque)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.pulsable(0.98))
+            .accessibilityValue(entradaAbierta ? "abierta" : "recogida")
+            if entradaAbierta {
+                VStack(spacing: Medida.s) {
+                    Button { pantallaCompleta = true } label: { CodigoQR(datos: e.datos) }
+                        .buttonStyle(.pulsable(0.97))
+                        .accessibilityHint("abre la entrada a pantalla completa con el brillo al máximo")
+                        .contextMenu {
+                            Button("abrir a pantalla completa.") { pantallaCompleta = true }
+                            Button("quitar esta entrada.", role: .destructive) { entradaABorrar = e }
+                        }
+                        .confirmarBorrado($entradaABorrar, titulo: { _ in "¿quitar esta entrada? el qr no se puede recuperar." }, boton: "quitar.") { quitar($0) }
+                        .id(e.id)
+                        .transition(.opacity)
+                    if !e.etiqueta.isEmpty { Text(e.etiqueta).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta) }
+                    if entradas.count > 1 {
+                        HStack(spacing: Medida.s) {
+                            BotonRedondo(sistema: "chevron.left", tono: .sutil, tamano: 36, etiqueta: "entrada anterior") { pasar(-1) }
+                            Text("\(indice + 1) de \(entradas.count)").font(Letra.hora).foregroundStyle(Lienzo.tintaSecundaria)
+                                .contentTransition(.numericText())
+                            BotonRedondo(sistema: "chevron.right", tono: .sutil, tamano: 36, etiqueta: "entrada siguiente") { pasar(1) }
+                        }
+                    }
+                    Button("ver a pantalla completa.") { pantallaCompleta = true }.buttonStyle(.capsula(.oscuro, ancho: true))
+                    Text("mantén pulsado el qr para quitarlo.").font(Letra.pie).foregroundStyle(Lienzo.tintaTerciaria)
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
+            }
+        }
+        .tarjeta(relleno: Medida.s)
+    }
+
+    // Editar, compartir y borrar, en cápsulas.
+    private var acciones: some View {
+        HStack(spacing: Medida.xs) {
+            if evento.editable {
+                Button("editar.") {
+                    c.modal = .evento(EditorEvento(id: evento.id, nuevo: false, fecha: dia, hora: evento.hora, titulo: evento.titulo,
+                                                   lugar: evento.lugar, notas: evento.notas))
+                }
+                .buttonStyle(.capsula(.oscuro, ancho: true))
+            }
+            ShareLink(item: textoCompartir) { Text("compartir.") }
+                .buttonStyle(.capsula(.blanco, ancho: true))
+            if evento.editable {
+                Button { borrando = evento } label: { Text("borrar.").foregroundStyle(Lienzo.negativo) }
+                    .buttonStyle(.capsula(.blanco))
+            }
+        }
+    }
+
+    private var textoCompartir: String {
+        let cuando = [Self.fecha(dia), TextoEventos.horario(evento)].compactMap { $0 }.joined(separator: ", ")
+        return [evento.titulo, cuando, evento.lugar].filter { !$0.isEmpty }.joined(separator: "\n")
+    }
+
+    private func pasar(_ paso: Int) {
+        Haptica.ligera()
+        withAnimation(Muelle.o(Muelle.rapido, reducido: sinMovimiento)) { indice = (indice + entradas.count + paso) % entradas.count }
     }
 
     private var origen: String {
@@ -64,36 +198,6 @@ struct FichaEventoView: View {
         case "partido": return "lo añade bitácora porque sigues a este equipo."
         default: return evento.id.hasPrefix("evt_") ? "lo mantiene estudios: se cambia allí." : ""
         }
-    }
-
-    // .entrada-ticket: el QR grande sobre blanco, «n de m» si hay varias. Tocarlo lo abre a pantalla entera.
-    private var entrada: some View {
-        let e = entradas[min(indice, entradas.count - 1)]
-        return VStack(spacing: Espacio.s) {
-            Button { pantallaCompleta = true } label: { CodigoQR(datos: e.datos) }
-                .buttonStyle(.plain)
-                .accessibilityHint("abre la entrada a pantalla completa con el brillo al máximo")
-                .contextMenu {
-                    Button("abrir a pantalla completa.") { pantallaCompleta = true }
-                    Button("quitar esta entrada.", role: .destructive) { entradaABorrar = e }
-                }
-                .confirmarBorrado($entradaABorrar, titulo: { _ in "¿quitar esta entrada? el qr no se puede recuperar." }, boton: "quitar.") { quitar($0) }
-            if !e.etiqueta.isEmpty { Text(e.etiqueta).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto) }
-            if entradas.count > 1 {
-                HStack {
-                    Button { indice = (indice + entradas.count - 1) % entradas.count } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
-                        .accessibilityLabel("entrada anterior")
-                    Text("\(indice + 1) de \(entradas.count)").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                    Button { indice = (indice + 1) % entradas.count } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }
-                        .accessibilityLabel("entrada siguiente")
-                }
-                .foregroundStyle(Paleta.texto)
-            }
-            Button("ver a pantalla completa.") { pantallaCompleta = true }.buttonStyle(BotonPrincipal())
-            Text("con la pantalla completa el brillo sube solo. mantén pulsado el qr para quitarlo.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, Espacio.l)
     }
 
     private func quitar(_ e: EntradaQR) {

@@ -34,46 +34,45 @@ struct EventosView: View {
     @State private var hayEquipos = false
     @State private var partidosCargados = false
     @State private var hoy = CalendarioBitacora.madrid.dia(de: Date())
+    @State private var tramo = Tramo.proximos
     @Environment(\.scenePhase) private var fase
+
+    enum Tramo: Hashable { case proximos, pasados }
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                CabeceraApartado(titulo: "eventos", contexto: contexto) { EmptyView() }
-                Button("+ evento.") {
-                    c.modal = .evento(EditorEvento(id: OperacionBitacora.nuevoIdEntrada(), nuevo: true, fecha: hoy))
-                }
-                .buttonStyle(BotonPrincipal()).padding(.top, Espacio.m).padding(.bottom, 14)
-                if hayEquipos {
-                    Etiqueta(texto: "tus equipos.")
-                    if partidos.isEmpty {
-                        Text(partidosCargados ? "sin partidos en los próximos 30 días." : "cargando sus partidos…")
-                            .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                CabeceraPagina(titulo: "eventos.", subtitulo: subtitulo) {
+                    BotonRedondo(sistema: "plus", tono: .oscuro, etiqueta: "nuevo evento") {
+                        c.modal = .evento(EditorEvento(id: OperacionBitacora.nuevoIdEntrada(), nuevo: true, fecha: hoy))
                     }
-                    ForEach(partidos.prefix(6)) { fila($0) }
+                }
+                .padding(.bottom, Medida.xxs)
+                if let v = vista, !v.pasados.isEmpty {
+                    SegmentoCapsula(opciones: [.init(valor: Tramo.proximos, titulo: "próximos"), .init(valor: Tramo.pasados, titulo: "pasados")],
+                                    elegido: $tramo, sobreBlanco: false)
                 }
                 if let v = vista {
-                    if v.proximos.isEmpty { Text("ningún evento por venir.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.m) }
-                    ForEach(Array(v.proximos.enumerated()), id: \.element.id) { n, f in
-                        if n == 0 || Self.mes(v.proximos[n - 1].dia, hoy) != Self.mes(f.dia, hoy) { Etiqueta(texto: Self.mes(f.dia, hoy)) }
-                        fila(f)
+                    Group {
+                        if tramo == .pasados && !v.pasados.isEmpty { pasados(v) } else { proximos(v) }
                     }
-                    if !v.pasados.isEmpty {
-                        Etiqueta(texto: "pasados.")
-                        ForEach(v.pasados) { fila($0).opacity(0.7) }
-                    }
+                    .id(tramo)
+                    .transition(.opacity)
                 }
             }
-            .padding(.horizontal, 20).padding(.bottom, Espacio.xl)
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.xl)
         }
         .scrollIndicators(.hidden)
-        .background(Paleta.fondo.ignoresSafeArea())
+        .fondoLienzo()
         .refreshable { await c.sincronizar() }
         .onChange(of: fase) { _, f in if f == .active { hoy = CalendarioBitacora.madrid.dia(de: Date()) } }
         .task(id: "\(c.revision)-\(hoy.iso)") {
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { VistaEventos.desde($0) } }) else { return }
             vista = nuevo
+            if nuevo.pasados.isEmpty { tramo = .proximos }
             guard let doc else { return }
             hayEquipos = !((((try? doc.valor(de: "servicios")) ?? nil)?["equipos"]?.lista ?? []).isEmpty)
             if hayEquipos {
@@ -85,42 +84,130 @@ struct EventosView: View {
         }
     }
 
-    // eventCountdownLabel.
-    private var contexto: String {
-        guard let p = vista?.proximos.first else { return vista == nil ? "" : "nada a la vista." }
-        let n = hoy.dias(hasta: p.dia)
-        return "el próximo, " + (n <= 0 ? "hoy." : n == 1 ? "mañana." : "en \(n) días.")
+    private var subtitulo: String {
+        guard let v = vista else { return "" }
+        let n = v.proximos.count
+        return n == 0 ? "nada a la vista." : n == 1 ? "1 próximo." : "\(n) próximos."
     }
 
-    // .m-evento: el día a 30 en negrita con el día de la semana debajo, título y «hora, lugar»; QR si hay entrada.
-    private func fila(_ f: VistaEventos.Fila) -> some View {
-        Button { c.modal = .ficha(f.evento, dia: f.dia) } label: {
-            HStack(spacing: 14) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("\(f.dia.day)").font(Tipo.poppins(30, .bold, estilo: .title)).kerning(-1.5).foregroundStyle(Paleta.texto).monospacedDigit()
-                    Text(Self.diaSemana(f.dia) + ".").font(Tipo.poppins(11, .semibold, estilo: .caption2)).foregroundStyle(Paleta.textoSecundario)
+    // El más cercano, destacado en negro con su cuenta atrás; el resto, por meses.
+    @ViewBuilder private func proximos(_ v: VistaEventos) -> some View {
+        if let primero = v.proximos.first {
+            destacado(primero).entradaEscalonada(0)
+            let resto = Array(v.proximos.dropFirst())
+            ForEach(Array(resto.enumerated()), id: \.element.id) { n, f in
+                VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                    if n == 0 || Self.mes(resto[n - 1].dia, hoy) != Self.mes(f.dia, hoy) {
+                        EtiquetaSeccion(texto: Self.mesSinPunto(f.dia, hoy)).padding(.top, Medida.s)
+                    }
+                    tarjeta(f, tono: f.dia == hoy ? .naranja : .claro)
                 }
-                .frame(width: 46, alignment: .leading)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(f.evento.titulo).font(Tipo.poppins(16, .semibold, estilo: .body)).foregroundStyle(Paleta.texto).multilineTextAlignment(.leading)
-                    let meta = [f.evento.hora ?? "", f.evento.lugar.isEmpty ? f.evento.notas : f.evento.lugar].filter { !$0.isEmpty }.joined(separator: ", ")
-                    if !meta.isEmpty { Text(meta).font(Tipo.poppins(13.5, .regular, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario).lineLimit(2) }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                if f.evento.entradas > 0 {
-                    Label("qr.", systemImage: "qrcode").font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(Paleta.texto)
-                        .padding(.horizontal, 10).frame(minHeight: 32).background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control))
-                } else if f.evento.tipo == "partido" {
-                    Text("auto.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                .entradaEscalonada(n + 1)
+            }
+        } else {
+            TarjetaInvitacion(frase: "ningún evento por venir.", destacado: "apunta tu próximo plan.", boton: "apuntar.") { c.abrirApuntar() }
+                .entradaEscalonada(0)
+        }
+        if hayEquipos {
+            EtiquetaSeccion(texto: "tus equipos").padding(.top, Medida.s)
+            if partidos.isEmpty {
+                EstadoVacio(texto: partidosCargados ? "sin partidos en los próximos 30 días." : "cargando sus partidos…")
+                    .tarjeta(relleno: Medida.xs)
+            }
+            ForEach(Array(partidos.prefix(6).enumerated()), id: \.element.id) { n, f in
+                tarjeta(f, tono: f.dia == hoy ? .naranja : .claro).entradaEscalonada(n + v.proximos.count)
+            }
+        }
+    }
+
+    @ViewBuilder private func pasados(_ v: VistaEventos) -> some View {
+        ForEach(Array(v.pasados.enumerated()), id: \.element.id) { n, f in
+            tarjeta(f, tono: .apagado).entradaEscalonada(n)
+        }
+    }
+
+    // eventCountdownLabel, en grande: el próximo con su bloque de fecha en naranja.
+    private func destacado(_ f: VistaEventos.Fila) -> some View {
+        Button { abrir(f) } label: {
+            TarjetaOscura {
+                VStack(alignment: .leading, spacing: Medida.s) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("EL PRÓXIMO").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.sobreOscuroSuave)
+                        Spacer()
+                        TimelineView(.periodic(from: .now, by: 60)) { t in
+                            Text(TextoEventos.cuentaAtras(f.dia, hora: f.evento.hora, hoy: hoy, ahora: t.date))
+                                .font(LetraEventos.cuentaAtras).foregroundStyle(Lienzo.naranja)
+                                .contentTransition(.numericText())
+                        }
+                    }
+                    HStack(spacing: Medida.s) {
+                        BloqueFechaEvento(dia: f.dia, tono: .naranja)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(f.evento.titulo).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.sobreOscuro)
+                                .lineLimit(2).multilineTextAlignment(.leading)
+                            Text(([Self.diaSemana(f.dia) + "."] + [meta(f)].compactMap { $0 }).joined(separator: " "))
+                                .font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave).lineLimit(2)
+                        }
+                        Spacer(minLength: 0)
+                        if f.evento.entradas > 0 { Chip(texto: "qr.", tono: .blanco, icono: "qrcode") }
+                    }
                 }
             }
-            .padding(.vertical, 14)
-            .contentShape(Rectangle())
+            .contentShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
         }
-        .buttonStyle(.plain)
-        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+        .buttonStyle(.pulsable(0.97))
         .accessibilityElement(children: .combine)
+        .accessibilityHint("abre la ficha del evento")
     }
+
+    // .m-evento: bloque de fecha, título y «día, hora, lugar»; QR si hay entrada.
+    private func tarjeta(_ f: VistaEventos.Fila, tono: BloqueFechaEvento.Tono) -> some View {
+        Button { abrir(f) } label: {
+            HStack(spacing: Medida.s) {
+                BloqueFechaEvento(dia: f.dia, tono: tono)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(f.evento.titulo).font(Letra.tituloTarjeta)
+                        .foregroundStyle(tono == .apagado ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                        .lineLimit(2).multilineTextAlignment(.leading)
+                    HStack(spacing: Medida.xs) {
+                        Text(Self.diaSemana(f.dia) + ".").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        if let h = f.evento.hora { Text(h).font(Letra.hora).foregroundStyle(Lienzo.tinta) }
+                        if let lugar = lugar(f) {
+                            Text(lugar).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
+                        }
+                    }
+                }
+                Spacer(minLength: Medida.xxs)
+                if f.evento.entradas > 0 {
+                    Chip(texto: "qr.", tono: tono == .apagado ? .sutil : .oscuro, icono: "qrcode")
+                } else if f.evento.tipo == "partido" {
+                    Chip(texto: "auto.")
+                }
+            }
+            .tarjeta(relleno: Medida.s)
+            .contentShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+        }
+        .buttonStyle(.pulsable(0.97))
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("abre la ficha del evento")
+    }
+
+    private func abrir(_ f: VistaEventos.Fila) {
+        Haptica.ligera()
+        c.modal = .ficha(f.evento, dia: f.dia)
+    }
+
+    private func lugar(_ f: VistaEventos.Fila) -> String? {
+        let l = f.evento.lugar.isEmpty ? f.evento.notas : f.evento.lugar
+        return l.isEmpty ? nil : l
+    }
+
+    private func meta(_ f: VistaEventos.Fila) -> String? {
+        let m = [f.evento.hora ?? "", lugar(f) ?? ""].filter { !$0.isEmpty }.joined(separator: ", ")
+        return m.isEmpty ? nil : m
+    }
+
+    static func mesSinPunto(_ d: LocalDay, _ hoy: LocalDay) -> String { String(mes(d, hoy).dropLast()) }
 
     static func mes(_ d: LocalDay, _ hoy: LocalDay) -> String {
         let nombres = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
