@@ -315,6 +315,7 @@ struct SelectorTema: View {
         case .oliva: return "oliva: marfil, verde oliva y ciruela."
         case .fundador: return "fundador: carbón y dorado, para los socios."
         case .tinta: return "tinta: blanco, negro y grises. sigue el día y la noche de tu iphone; lo importante, en tinta plena."
+        case .bitacora: return "bitácora: blanco, carbón y naranja coral."
         }
     }
 }

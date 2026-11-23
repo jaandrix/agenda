@@ -70,11 +70,11 @@ struct CabeceraApartado<Accion: View>: View {
             VStack(alignment: .leading, spacing: 2) {
                 (Text(titulo).foregroundColor(Paleta.titulo) + Text(".").foregroundColor(Paleta.progreso))
                     .font(Tipo.tituloApartado)
-                    .kerning(-2.1)
+                    .kerning(-0.8)
                     .lineLimit(1).minimumScaleFactor(0.6)
                     .accessibilityAddTraits(.isHeader)
                 if let contexto, !contexto.isEmpty {
-                    Text(contexto).font(Tipo.poppins(22, .bold, estilo: .title3)).kerning(-0.77).foregroundStyle(Paleta.textoSecundario)
+                    Text(contexto).font(Tipo.poppins(15, .semibold, estilo: .title3)).kerning(-0.2).foregroundStyle(Paleta.textoSecundario)
                         .padding(.top, 2)
                 }
             }

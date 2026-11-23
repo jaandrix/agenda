@@ -6,15 +6,19 @@ import UIKit
 // modo del iPhone como «sistema». Se guarda en este iPhone, nunca en la nube, así que la PWA no lo ve (Monocromo.swift).
 // En asfalto y papel la interfaz usa la arcilla del plan de la 0.12
 // (#C96A5A / #A64235) en lugar del naranja de la PWA: el #E5532B queda solo para el punto del logo (`Paleta.marca`).
+// 2.0 (23-11-2026): la app usa un único tema, «bitácora.» (blanco, carbón y naranja coral; DesignSystem/V2/Lienzo.swift).
+// Los demás se conservan para las pruebas y para volver a ofrecerlos cuando el nuevo esté pulido; el coordinador fuerza
+// `.bitacora` (`TemaElegido.unico`).
 enum TemaElegido: String, CaseIterable, Identifiable {
-    case sistema, asfalto, papel, acuarela, pizarra, oliva, fundador, tinta
+    case sistema, asfalto, papel, acuarela, pizarra, oliva, fundador, tinta, bitacora
+    static let unico: TemaElegido = .bitacora
     var id: String { rawValue }
-    var nombre: String { self == .acuarela ? "teja." : rawValue + "." }
+    var nombre: String { self == .acuarela ? "teja." : self == .bitacora ? "bitácora." : rawValue + "." }
     var esquema: ColorScheme? {
         switch self {
         case .sistema, .tinta: return nil
         case .asfalto, .fundador: return .dark
-        default: return .light
+        default: return .light   // bitácora 2.0 es solo claro, por ahora
         }
     }
 
@@ -66,6 +70,14 @@ struct TemaTokens {
         switch t {
         case .sistema: return de(sistemaOscuro ? .asfalto : .papel, sistemaOscuro: sistemaOscuro)
         case .tinta: return sistemaOscuro ? Grises.noche : Grises.dia
+        // 2.0: el tema único. Mismos valores que Lienzo (Lienzo.Hex); el acento de los controles heredados es el naranja
+        // profundo (sobre él, texto carbón: 5:1) y el lienzo se separa de las tarjetas blancas (1,11).
+        case .bitacora:
+            return TemaTokens(fondo: Lienzo.Hex.fondo, superficie: Lienzo.Hex.tarjeta, texto: Lienzo.Hex.tinta,
+                              secundario: Lienzo.Hex.tintaSecundaria, acento: Lienzo.Hex.naranjaProfundo,
+                              sobreAcento: Lienzo.Hex.oscuro, punto: Lienzo.Hex.sutil, oscuro: false)
+                .con(Lienzo.Hex.fondo, Lienzo.Hex.tinta, Lienzo.Hex.naranjaProfundo, Lienzo.Hex.oscuro, Lienzo.Hex.rojo)
+                .estilo(titulo: Lienzo.Hex.tinta, barra: Lienzo.Hex.tarjeta, filo: Lienzo.Hex.oscuro, bordeAlfa: 0.07, aroAlfa: 0.5)
         // Retoque de la 0.20 (pedido de Alejandro: «que tengan un poco más de personalidad, que se diferencien más»).
         // Texto y secundario cumplen AA (4,5:1) sobre fondo y superficie en todos.
         // 0.22: el aro de marcar llega a 3:1 en todos (en los claros no llegaba), las superficies se separan del fondo
@@ -223,12 +235,13 @@ enum Tipo {
     }
 
     // --m-fs-titulo (42) para la cabecera de un apartado; --m-fs-sub (22) para su subtítulo.
-    static var tituloApartado: Font { poppins(42, .bold, estilo: .largeTitle) }
-    static var titulo: Font { poppins(34, .bold, estilo: .largeTitle) }
-    static var subtitulo: Font { poppins(20, .semibold, estilo: .title3) }
-    static var cuerpo: Font { poppins(16, .regular, estilo: .body) }
-    static var cuerpoFuerte: Font { poppins(16, .medium, estilo: .body) }
-    static var pie: Font { poppins(13, .regular, estilo: .footnote) }
+    // 2.0: escala más pequeña y curada (antes 42/34/20/16/13). Las pantallas nuevas usan `Letra` (V2/Lienzo.swift).
+    static var tituloApartado: Font { poppins(28, .bold, estilo: .largeTitle) }
+    static var titulo: Font { poppins(26, .bold, estilo: .largeTitle) }
+    static var subtitulo: Font { poppins(16, .semibold, estilo: .title3) }
+    static var cuerpo: Font { poppins(14.5, .regular, estilo: .body) }
+    static var cuerpoFuerte: Font { poppins(14.5, .medium, estilo: .body) }
+    static var pie: Font { poppins(12, .regular, estilo: .footnote) }
     static let mono = Font.system(.footnote, design: .monospaced)
 }
 
