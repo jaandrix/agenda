@@ -31,13 +31,13 @@ struct AjustesView: View {
                     }
                     .padding(Medida.rellenoTarjeta)
                     SeparadorMenu()
-                    NavigationLink { AjustesApartadosView() } label: {
+                    NavigationLink { AjustesApartadosView().huecoDeBarra() } label: {
                         FilaAjuste(icono: "apartados", titulo: "apartados opcionales.", detalle: "qué sale en el menú.")
                     }.buttonStyle(EstiloFila())
                 }
                 .entradaEscalonada(2)
                 GrupoMenu(titulo: "avisos.") {
-                    NavigationLink { AjustesAvisosView() } label: {
+                    NavigationLink { AjustesAvisosView().huecoDeBarra() } label: {
                         FilaAjuste(icono: "avisos", titulo: "avisos automáticos.", detalle: detalleAvisos)
                     }.buttonStyle(EstiloFila())
                     SeparadorMenu()
@@ -117,19 +117,19 @@ struct AjustesView: View {
 
     private var conexiones: some View {
         GrupoMenu(titulo: "conexiones.") {
-            NavigationLink { AjustesConectorView() } label: {
+            NavigationLink { AjustesConectorView().huecoDeBarra() } label: {
                 FilaAjuste(icono: "conexiones", titulo: "claude y chatgpt.", detalle: "tu bitácora en tu ia.")
             }.buttonStyle(EstiloFila())
             SeparadorMenu()
-            NavigationLink { AjustesAtajoView(tipo: .siri, token: lectura.siriToken) } label: {
+            NavigationLink { AjustesAtajoView(tipo: .siri, token: lectura.siriToken).huecoDeBarra() } label: {
                 FilaAjuste(icono: "voz", titulo: "siri.", detalle: lectura.siriToken == nil ? "apunta sin abrir la app." : "conectado.")
             }.buttonStyle(EstiloFila())
             SeparadorMenu()
-            NavigationLink { AjustesAtajoView(tipo: .correo, token: lectura.correoToken) } label: {
+            NavigationLink { AjustesAtajoView(tipo: .correo, token: lectura.correoToken).huecoDeBarra() } label: {
                 FilaAjuste(icono: "correo", titulo: "tu correo.", detalle: lectura.correoToken == nil ? "reenvía reservas y pedidos." : "dirección creada.")
             }.buttonStyle(EstiloFila())
             SeparadorMenu()
-            NavigationLink { AjustesCalendarioView(version: lectura.feedVersion) } label: {
+            NavigationLink { AjustesCalendarioView(version: lectura.feedVersion).huecoDeBarra() } label: {
                 FilaAjuste(icono: "calendario", titulo: "calendario en otras apps.", detalle: "google, iphone u outlook (.ics).")
             }.buttonStyle(EstiloFila())
             SeparadorMenu()
@@ -139,11 +139,11 @@ struct AjustesView: View {
 
     private var cuenta: some View {
         GrupoMenu(titulo: "cuenta.") {
-            NavigationLink { AjustesCuentaView(suscripcion: suscripcion) } label: {
+            NavigationLink { AjustesCuentaView(suscripcion: suscripcion).huecoDeBarra() } label: {
                 FilaAjuste(icono: "suscripcion", titulo: "suscripción.", detalle: resumenCuenta)
             }.buttonStyle(EstiloFila())
             SeparadorMenu()
-            NavigationLink { AjustesInvitarView() } label: {
+            NavigationLink { AjustesInvitarView().huecoDeBarra() } label: {
                 FilaAjuste(icono: "invitar", titulo: "invitar a un amigo.", detalle: "tu código y tu enlace.")
             }.buttonStyle(EstiloFila())
             SeparadorMenu()
@@ -151,7 +151,7 @@ struct AjustesView: View {
                 FilaAjuste(icono: "salir", titulo: "cerrar sesión.", detalle: c.sesion?.email) { EmptyView() }
             }.buttonStyle(EstiloFila())
             SeparadorMenu()
-            NavigationLink { AjustesEliminarView(exportar: exportar) } label: {
+            NavigationLink { AjustesEliminarView(exportar: exportar).huecoDeBarra() } label: {
                 FilaAjuste(icono: "borrar", titulo: "eliminar mi cuenta.", peligro: true)
             }.buttonStyle(EstiloFila())
         }
@@ -173,7 +173,7 @@ struct AjustesView: View {
 
     private var avanzado: some View {
         GrupoMenu(titulo: "avanzado.") {
-            NavigationLink { MedidasView() } label: {
+            NavigationLink { MedidasView().huecoDeBarra() } label: {
                 FilaAjuste(icono: "estado", titulo: "medidas.", detalle: "lo que tarda la app en este iphone, para copiarlo.")
             }.buttonStyle(EstiloFila())
         }

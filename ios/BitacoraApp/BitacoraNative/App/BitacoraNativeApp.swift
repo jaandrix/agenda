@@ -129,8 +129,8 @@ struct PrincipalView: View {
         // abajo lo que ocupa (safeAreaInset en cada NavigationStack), así su último elemento sube por encima de ella.
         GeometryReader { g in
             let abajo = g.safeAreaInsets.bottom
-            let margen = max(Medida.separacionInferior, abajo - 20)
-            let reserva = teclado ? 0 : max(0, margen + Medida.alturaBarra + 12 - abajo)
+            let margen = max(Medida.separacionInferior, abajo - 26)
+            let reserva = teclado ? 0 : max(0, margen + Medida.alturaBarra + 20 - abajo)
             ZStack(alignment: .bottom) {
                 pantallas(reserva: reserva)
                 if !teclado {
@@ -210,11 +210,11 @@ struct PrincipalView: View {
     private func pantallas(reserva: CGFloat) -> some View {
         @Bindable var c = c
         return TabView(selection: $c.pestana) {
-            NavigationStack { InicioView() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.inicio).transition(transicionPestana)
-            NavigationStack { PlanView() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.plan).transition(transicionPestana)
-            NavigationStack { CalendarioView() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.calendario).transition(transicionPestana)
-            NavigationStack { FinanzasView() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.finanzas).transition(transicionPestana)
-            NavigationStack(path: $c.rutaMas) { MasView() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.mas).transition(transicionPestana)
+            NavigationStack { InicioView().huecoDeBarra() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.inicio).transition(transicionPestana)
+            NavigationStack { PlanView().huecoDeBarra() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.plan).transition(transicionPestana)
+            NavigationStack { CalendarioView().huecoDeBarra() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.calendario).transition(transicionPestana)
+            NavigationStack { FinanzasView().huecoDeBarra() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.finanzas).transition(transicionPestana)
+            NavigationStack(path: $c.rutaMas) { MasView().huecoDeBarra() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.mas).transition(transicionPestana)
         }
         .animation(sinMovimiento ? nil : Muelle.rapido, value: c.pestana)
     }
@@ -268,9 +268,36 @@ extension PrincipalView {
 }
 
 extension View {
-    // Lo que una pestaña deja libre abajo para la barra flotante (también en las páginas que apila).
+    // 3.0.1: el alto que ocupa la barra flotante viaja por el entorno y cada pantalla de la pila lo reserva con
+    // `huecoDeBarra()`. Un safeAreaInset sobre el NavigationStack no llegaba a los scrolls de dentro del TabView (lo
+    // último de Ajustes, del menú o del Calendario quedaba bajo la barra), y contentMargins para todo el árbol también
+    // metía margen en los scrolls horizontales de alto fijo (la semana, los carruseles).
     func reservaBarra(_ alto: CGFloat) -> some View {
-        safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: alto).allowsHitTesting(false) }
+        environment(\.reservaBarra, alto)
+    }
+
+    /// Reserva abajo el hueco de la barra flotante. Va en la raíz de cada pestaña y en cada pantalla que se apila.
+    func huecoDeBarra() -> some View { modifier(HuecoDeBarra()) }
+}
+
+private struct ReservaBarraClave: EnvironmentKey {
+    static let defaultValue: CGFloat = 0
+}
+
+extension EnvironmentValues {
+    var reservaBarra: CGFloat {
+        get { self[ReservaBarraClave.self] }
+        set { self[ReservaBarraClave.self] = newValue }
+    }
+}
+
+private struct HuecoDeBarra: ViewModifier {
+    @Environment(\.reservaBarra) private var alto
+
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .bottom, spacing: 0) {
+            Color.clear.frame(height: alto).allowsHitTesting(false).accessibilityHidden(true)
+        }
     }
 }
 

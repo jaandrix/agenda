@@ -48,10 +48,15 @@ struct ModalFlotante<Estado: View, Contenido: View>: View {
         .frame(height: 48)
         .frame(maxWidth: .infinity)
         .background {
-            UnevenRoundedRectangle(topLeadingRadius: Medida.radioModal, bottomLeadingRadius: 18, bottomTrailingRadius: 18,
-                                   topTrailingRadius: Medida.radioModal, style: .continuous)
-                .fill(Lienzo.naranja)
-                .shadow(color: Lienzo.naranjaBrillo, radius: 14, x: 0, y: 6)
+            // 3.0.1: la banda es un tramo de la propia tarjeta (recta por abajo). Con esquinas inferiores redondeadas
+            // asomaba el negro por los lados y parecía una pieza pegada encima. Debajo, el naranja se funde con lo oscuro.
+            Lienzo.naranja
+                .overlay(alignment: .bottom) {
+                    LinearGradient(colors: [Lienzo.naranja, Lienzo.naranja.opacity(0)], startPoint: .top, endPoint: .bottom)
+                        .frame(height: 16)
+                        .offset(y: 16)
+                        .opacity(0.55)
+                }
         }
         .overlay(alignment: .top) {
             Capsule().fill(Lienzo.sobreNaranja.opacity(0.22)).frame(width: 34, height: 4).padding(.top, 6)

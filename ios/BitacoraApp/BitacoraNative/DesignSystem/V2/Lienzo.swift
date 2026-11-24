@@ -80,6 +80,10 @@ enum Lienzo {
     }
 
     // Degradado de bienvenida (fotos 1 y 2): naranja arriba que se funde con el lienzo. Solo cabeceras de portada.
+    // Lo que asoma por encima de la portada al tirar hacia abajo: del naranja más hondo al del arranque del degradado.
+    static let degradadoSobrePortada = LinearGradient(
+        colors: [c(Hex.naranjaProfundo), c(Hex.naranja, 0.95)], startPoint: .top, endPoint: .bottom)
+
     static let degradadoCabecera = LinearGradient(
         stops: [.init(color: c(Hex.naranja, 0.95), location: 0),
                 .init(color: c(Hex.naranjaClaro, 0.55), location: 0.38),
@@ -122,8 +126,9 @@ enum Medida {
 
     // Barra flotante y botón de apuntar
     static let alturaBarra: CGFloat = 60
-    static let anchoApuntar: CGFloat = 78
-    static let separacionInferior: CGFloat = 10  // de la barra al borde de abajo, además del indicador de inicio
+    static let anchoApuntar: CGFloat = 70
+    static let separacionInferior: CGFloat = 8  // de la barra al borde de abajo, además del indicador de inicio
+    static let sobreTirar: CGFloat = 900          // tramo de color por encima de la portada (tirar para actualizar)
     // Lo que las pantallas reservan abajo para que su último elemento suba por encima de la barra.
     static let reservaBarra: CGFloat = 74
 
@@ -205,9 +210,13 @@ extension View {
     /// estado (para tirar hacia abajo sin ver su borde); `aSangre` lo lleva hasta el borde de la pantalla.
     func cabeceraPortada(alto: CGFloat = Medida.portada, sobreBorde: CGFloat = 0, aSangre: Bool = false) -> some View {
         background(alignment: .top) {
-            Lienzo.degradadoCabecera
-                .frame(height: alto)
-                .offset(y: -sobreBorde)
+            // 3.0.1: al tirar hacia abajo para actualizar se veía el lienzo blanco por encima del degradado. Encima va un
+            // tramo que sigue subiendo de intensidad: cuanto más se tira, más naranja (el propio gesto hace la animación).
+            VStack(spacing: 0) {
+                Lienzo.degradadoSobrePortada.frame(height: Medida.sobreTirar)
+                Lienzo.degradadoCabecera.frame(height: alto)
+            }
+                .offset(y: -sobreBorde - Medida.sobreTirar)
                 .ignoresSafeArea(aSangre ? .all : [])
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)

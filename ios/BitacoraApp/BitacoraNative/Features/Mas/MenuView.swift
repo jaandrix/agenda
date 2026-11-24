@@ -95,7 +95,7 @@ struct MasView: View {
         // Toda pantalla que se abre desde el menú lleva la barra del sistema (transparente): su botón de volver, con
         // «menú» de título, y el gesto de volver desde el borde. Ocultarla quitaba las dos cosas (Documentos, 0.17).
         .navigationTitle("menú")
-        .navigationDestination(for: String.self) { destino($0).toolbar(.visible, for: .navigationBar).navigationBarTitleDisplayMode(.inline) }
+        .navigationDestination(for: String.self) { destino($0).huecoDeBarra().toolbar(.visible, for: .navigationBar).navigationBarTitleDisplayMode(.inline) }
         .onChange(of: c.rutaMas) { if !c.rutaMas.isEmpty { focoFiltro = false } }
         .task(id: c.revision) {
             let t0 = Medidas.ahora

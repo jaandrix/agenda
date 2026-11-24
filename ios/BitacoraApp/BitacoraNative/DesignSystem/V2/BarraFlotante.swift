@@ -49,20 +49,22 @@ struct BarraFlotante: View {
             if largo == p.id { largo = nil; return }
             elegir(p.id)
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: 5) {
                 Icono(id: p.icono, activo: on, detalle: Lienzo.naranja)
                     .scaleEffect(0.82)
                     .frame(width: 20, height: 20)
                 if on {
-                    Text(p.titulo).font(Letra.pestana).lineLimit(1).fixedSize()
+                    // 3.0.1: «calendario» se cortaba. La activa tiene prioridad de ancho y, si aun así no cabe (iPhone
+                    // estrecho), la letra encoge un poco antes que cortarse.
+                    Text(p.titulo).font(Letra.pestana).lineLimit(1).minimumScaleFactor(0.78)
                         .transition(.asymmetric(insertion: .opacity.combined(with: .scale(scale: 0.6, anchor: .leading)),
                                                 removal: .opacity))
                 }
             }
             .foregroundStyle(on ? Lienzo.tinta : Lienzo.tintaSecundaria)
-            .padding(.horizontal, on ? 16 : 0)
+            .padding(.horizontal, on ? 13 : 0)
             .frame(maxWidth: on ? nil : .infinity, maxHeight: .infinity)
-            .frame(minWidth: 50)
+            .frame(minWidth: 44)
             .background {
                 if on {
                     Capsule().fill(Lienzo.tarjeta)
@@ -73,6 +75,7 @@ struct BarraFlotante: View {
             .contentShape(Capsule())
         }
         .buttonStyle(Pulsable(escala: 0.9, haptica: false))
+        .layoutPriority(on ? 1 : 0)
         .accessibilityLabel(p.titulo)
         .accessibilityAddTraits(on ? .isSelected : [])
         .simultaneousGesture(LongPressGesture(minimumDuration: 0.36).onEnded { _ in

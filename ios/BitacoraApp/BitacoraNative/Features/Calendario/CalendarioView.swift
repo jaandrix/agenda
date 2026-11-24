@@ -54,6 +54,8 @@ struct CalendarioView: View {
     // Lo ya leído de otros meses, para que sus puntitos estén al volver deslizando sin esperar a la lectura.
     @State private var vistas: [YearMonth: VistaMes] = [:]
     @State private var haciaDelante = true
+    // 3.0.1: las tareas del día elegido (solo para verlas: se marcan en Plan e Inicio).
+    @State private var tareasDia: [TareaPlan] = []
     @AppStorage("bitacora.calendario.semana") private var enSemana = false
 
     @State private var hoy = CalendarioBitacora.madrid.dia(de: Date())
@@ -98,6 +100,7 @@ struct CalendarioView: View {
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
         .task(id: "\(c.revision)-\(modelo.mes.iso)-\(hoy.iso)") { await modelo.cargar(c) }
+        .task(id: "\(c.revision)-\(modelo.elegido.iso)") { await cargarTareas(modelo.elegido) }
         .onChange(of: modelo.vista) { _, v in if let v { vistas[v.mes] = v } }
         .onChange(of: c.revision) { _, _ in vistas = vistas.filter { $0.key == modelo.mes } }
         .onChange(of: fase) { _, f in if f == .active { hoy = CalendarioBitacora.madrid.dia(de: Date()) } }
@@ -161,35 +164,42 @@ struct CalendarioView: View {
         let lista = eventos(d)
         let todoElDia = lista.filter { $0.hora == nil && $0.tipo == "birthday" } + lista.filter { $0.hora == nil && $0.tipo != "birthday" }
         let conHora = lista.filter { $0.hora != nil }
+        let tareas = tareasSinRepetir(lista)
+        let total = lista.count + tareas.count
         VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
             HStack(alignment: .firstTextBaseline) {
                 Text(nombreDia(d) + ".").font(Letra.seccion).foregroundStyle(Lienzo.tinta)
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
-                if !lista.isEmpty {
-                    Text(lista.count == 1 ? "1 cosa" : "\(lista.count) cosas").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                if total > 0 {
+                    Text(total == 1 ? "1 cosa" : "\(total) cosas").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                         .monospacedDigit()
                 }
             }
             .padding(.horizontal, Medida.xxs)
             if vista(d.yearMonth) == nil {
                 Color.clear.frame(height: 120)
-            } else if lista.isEmpty {
+            } else if total == 0 {
                 TarjetaInvitacion(frase: d == hoy ? "hoy no tienes nada apuntado." : "este día está libre.",
                                   destacado: "¿apuntas algo?", boton: "apuntar.") { c.abrirApuntar(dia: d) }
             } else {
                 if !todoElDia.isEmpty {
                     EtiquetaSeccion(texto: "todo el día").padding(.top, Medida.xxs)
-                    ForEach(Array(todoElDia.enumerated()), id: \.element.id) { i, e in tarjeta(e, dia: d).entradaEscalonada(i) }
-                }
-                if !conHora.isEmpty {
-                    if !todoElDia.isEmpty { EtiquetaSeccion(texto: "con hora").padding(.top, Medida.xs) }
-                    ForEach(Array(conHora.enumerated()), id: \.element.id) { i, e in
-                        tarjeta(e, dia: d).entradaEscalonada(todoElDia.count + i)
+                    HiloAgenda {
+                        ForEach(Array(todoElDia.enumerated()), id: \.element.id) { i, e in tarjeta(e, dia: d).entradaEscalonada(i) }
                     }
                 }
+                let delDia = ordenadas(conHora, tareas)
+                if !delDia.isEmpty {
+                    if !todoElDia.isEmpty { EtiquetaSeccion(texto: "con hora").padding(.top, Medida.xs) }
+                    HiloAgenda {
+                        ForEach(Array(delDia.enumerated()), id: \.element.id) { i, cosa in
+                            fila(cosa, dia: d).entradaEscalonada(todoElDia.count + i)
+                        }
+                    }
+                }
+                // 3.0.1: «apuntar.» repetía el + de la barra; aquí solo queda crear un evento en este día.
                 HStack(spacing: Medida.xs) {
-                    Button("apuntar.") { c.abrirApuntar(dia: d) }.buttonStyle(.capsula(.blanco))
                     Button("nuevo evento.") {
                         c.modal = .evento(EditorEvento(id: OperacionBitacora.nuevoIdEntrada(), nuevo: true, fecha: d))
                     }
@@ -207,7 +217,7 @@ struct CalendarioView: View {
         return Button { c.modal = .ficha(e, dia: d) } label: {
             HStack(spacing: Medida.s) {
                 if let hora = e.hora {
-                    BloqueHoraCalendario(hora: hora, fin: e.fin)
+                    BloqueHoraCalendario(hora: hora, fin: e.fin, tinte: Self.punto(e.tipo))
                 } else {
                     IconoCuadrado(id: Self.icono(e.tipo), tono: e.tipo == "birthday" ? .suave : .claro)
                 }
@@ -232,6 +242,88 @@ struct CalendarioView: View {
         .contextMenu {
             if e.editable { Button("borrar.", role: .destructive) { borrando = e } }
         }
+    }
+
+    @ViewBuilder private func fila(_ cosa: CosaDia, dia d: LocalDay) -> some View {
+        switch cosa {
+        case .evento(let e): tarjeta(e, dia: d)
+        case .tarea(let t): tarjetaTarea(t, dia: d)
+        }
+    }
+
+    // Una tarea del planificador: se ve, no se marca. Borde discontinuo y sin sombra (no es una tarjeta de evento), su
+    // hora sobre el tinte de las tareas y «tarea» como detalle. Tocarla abre su editor, como en Inicio.
+    private func tarjetaTarea(_ t: TareaPlan, dia d: LocalDay) -> some View {
+        let forma = RoundedRectangle(cornerRadius: Medida.radioFila + 4, style: .continuous)
+        return Button {
+            c.modal = .tarea(EditorTarea(id: t.id, nueva: false, dia: d, titulo: t.titulo, hora: t.hora, notas: t.notas,
+                                         deTrabajo: t.deTrabajo, prioridad: t.prioridad))
+        } label: {
+            HStack(spacing: Medida.s) {
+                if let hora = t.hora {
+                    BloqueHoraCalendario(hora: hora, tinte: TipoPunto.tarea.color)
+                } else {
+                    IconoCuadrado(id: "plan", tono: .claro)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(t.titulo).font(Letra.tituloTarjeta)
+                        .foregroundStyle(t.hecha ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                        .strikethrough(t.hecha, color: Lienzo.tintaTerciaria)
+                        .lineLimit(2).multilineTextAlignment(.leading)
+                    Text(t.hecha ? "tarea, hecha" : "tarea").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                }
+                Spacer(minLength: Medida.xs)
+                if t.hora != nil { IconoCuadrado(id: "plan", tono: .claro, tamano: Medida.iconoPequeno) }
+            }
+            .frame(minHeight: Medida.toque)
+            .padding(Medida.s)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Lienzo.fondo, in: forma)
+            .overlay(forma.strokeBorder(Lienzo.filoFuerte, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+            .contentShape(forma)
+        }
+        .buttonStyle(.pulsable(0.97))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel([t.hora ?? "", "tarea", t.titulo, t.hecha ? "hecha" : ""].filter { !$0.isEmpty }.joined(separator: ", "))
+    }
+
+    fileprivate enum CosaDia: Identifiable {
+        case evento(EventoDia), tarea(TareaPlan)
+        var id: String {
+            switch self {
+            case .evento(let e): return "e" + e.id
+            case .tarea(let t): return "t" + t.id
+            }
+        }
+        var hora: String {
+            switch self {
+            case .evento(let e): return e.hora ?? ""
+            case .tarea(let t): return t.hora ?? "~"
+            }
+        }
+    }
+
+    // Eventos con hora y tareas, por hora; las tareas sin hora, al final.
+    private func ordenadas(_ eventos: [EventoDia], _ tareas: [TareaPlan]) -> [CosaDia] {
+        let todas = eventos.map { CosaDia.evento($0) } + tareas.map { CosaDia.tarea($0) }
+        return todas.enumerated()
+            .sorted { $0.element.hora == $1.element.hora ? $0.offset < $1.offset : $0.element.hora < $1.element.hora }
+            .map { $0.element }
+    }
+
+    // Como Inicio (renderMobileDiaPanel): lo apuntado como evento y como tarea a la misma hora sale una sola vez.
+    private func tareasSinRepetir(_ eventos: [EventoDia]) -> [TareaPlan] {
+        let clave = { (t: String, h: String?) -> String in "\(t.trimmingCharacters(in: .whitespaces).lowercased())|\(h ?? "")" }
+        let ya = Set(eventos.map { clave($0.titulo, $0.hora) })
+        return tareasDia.filter { !ya.contains(clave($0.titulo, $0.hora)) }
+    }
+
+    private func cargarTareas(_ d: LocalDay) async {
+        let doc = await c.documentoVisible()
+        let desplazamiento = CalendarioBitacora.madrid.diaLogico(Date()).dias(hasta: d)
+        guard let nuevas = await ultimaGana({ doc.map { LecturaPlanificador.vista($0, desplazamiento: desplazamiento).tareas } }) else { return }
+        guard d == modelo.elegido else { return }
+        tareasDia = nuevas ?? []
     }
 
     // Tipos de EventoDia (LecturaCalendario y los partidos de ServiciosRemotos) → icono del catálogo y puntito.
@@ -275,6 +367,8 @@ struct CalendarioView: View {
 struct BloqueHoraCalendario: View {
     let hora: String
     var fin: String?
+    // 3.0.1: un tinte muy suave del color de su tipo, para distinguir de un vistazo eventos, cumples, estudios, tareas…
+    var tinte: Color = Lienzo.tintaTerciaria
 
     var body: some View {
         VStack(spacing: 1) {
@@ -282,8 +376,24 @@ struct BloqueHoraCalendario: View {
             if let fin { Text(fin).font(Letra.etiqueta).foregroundStyle(Lienzo.tintaTerciaria).monospacedDigit() }
         }
         .frame(width: 52, height: Medida.icono + 6)
-        .background(Lienzo.sutil, in: RoundedRectangle(cornerRadius: Medida.radioIcono, style: .continuous))
+        .background(tinte.opacity(0.13), in: RoundedRectangle(cornerRadius: Medida.radioIcono, style: .continuous))
+        .background(Lienzo.tarjeta, in: RoundedRectangle(cornerRadius: Medida.radioIcono, style: .continuous))
         .accessibilityHidden(true)
     }
 }
 
+
+// 3.0.1: el hilo conductor de la agenda: una raya fina que baja por el centro, por detrás de las tarjetas, y solo se ve en
+// los huecos entre una y otra.
+struct HiloAgenda<Contenido: View>: View {
+    @ViewBuilder var contenido: () -> Contenido
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Medida.entreTarjetas) { contenido() }
+            .background {
+                Rectangle().fill(Lienzo.filoFuerte).frame(width: 1.5)
+                    .padding(.vertical, Medida.l)
+                    .accessibilityHidden(true)
+            }
+    }
+}

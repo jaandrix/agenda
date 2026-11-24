@@ -257,9 +257,10 @@ struct ApuntarView: View {
                     Image(systemName: "arrow.up").font(.system(size: 13, weight: .heavy))
                 }
                 .font(Letra.boton)
-                .foregroundStyle(Lienzo.sobreNaranja)
+                // 3.0.1: vacío, gris translúcido en vez de un naranja apagado (se veía turbio sobre el negro).
+                .foregroundStyle(vacio ? Lienzo.sobreOscuroTenue : Lienzo.sobreNaranja)
                 .padding(.horizontal, 18).frame(height: 40)
-                .background(Lienzo.naranja, in: Capsule())
+                .background(vacio ? Color.white.opacity(0.08) : Lienzo.naranja, in: Capsule())
                 .shadow(color: Lienzo.naranjaBrillo, radius: vacio ? 0 : 10, x: 0, y: 4)
             }
             .buttonStyle(.pulsable(0.92))

@@ -147,7 +147,7 @@ struct ProyectosView: View {
 
     private func tarjeta(_ p: ProyectoVista) -> some View {
         let hecho = p.estado == "Completado"
-        return NavigationLink { ProyectoDetalleView(id: p.id) } label: {
+        return NavigationLink { ProyectoDetalleView(id: p.id).huecoDeBarra() } label: {
             VStack(alignment: .leading, spacing: Medida.s) {
                 HStack(alignment: .center, spacing: Medida.s) {
                     IconoCuadrado(id: "projects", tono: hecho ? .claro : .oscuro, tamano: Medida.icono)

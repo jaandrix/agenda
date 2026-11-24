@@ -246,14 +246,14 @@ struct SaludFinanzasView: View {
 
     private func seccionClasificacion(_ m: ModeloSalud) -> some View {
         Section {
-            NavigationLink { PropuestasSaludView(e: e, oculto: oculto) } label: {
+            NavigationLink { PropuestasSaludView(e: e, oculto: oculto).huecoDeBarra() } label: {
                 FilaDato(etiqueta: "propuestas", valor: String(m.propuestas.count))
             }
-            NavigationLink { PorRevisarSaludView(e: e, oculto: oculto) } label: {
+            NavigationLink { PorRevisarSaludView(e: e, oculto: oculto).huecoDeBarra() } label: {
                 FilaDato(etiqueta: "por revisar", valor: String(m.porRevisar.count))
             }
             if let f = m.fechasTraspaso, !f.isEmpty {
-                NavigationLink { FechasTraspasoSaludView(e: e, oculto: oculto) } label: {
+                NavigationLink { FechasTraspasoSaludView(e: e, oculto: oculto).huecoDeBarra() } label: {
                     FilaDato(etiqueta: "traspasos con otra fecha", valor: String(f.count))
                 }
             }
