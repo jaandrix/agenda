@@ -81,6 +81,7 @@ private struct EdicionPedido: Identifiable { let pedido: Pedido?; var id: String
 struct EnviosView: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.openURL) private var abrir
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var pedidos: [Pedido]?
     @State private var verEntregados = false
     @State private var edicion: EdicionPedido?
@@ -92,89 +93,170 @@ struct EnviosView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                CabeceraContexto(titulo: "envíos", detalle: pedidos.map { "\($0.filter { $0.estado != "entregado" }.count) en camino." }) {
-                    Text("tus pedidos.").font(Tipo.poppins(24, .bold, estilo: .title3)).foregroundStyle(Paleta.sobreContexto)
-                    Text("dónde está cada paquete.").font(Tipo.pie).foregroundStyle(Paleta.sobreContextoSuave)
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                CabeceraPagina(titulo: "envíos.", subtitulo: subtitulo) {
+                    BotonRedondo(sistema: "plus", tono: .oscuro, etiqueta: "nuevo pedido") { nuevo() }
                 }
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack { Spacer(); AccionTexto(texto: "+ pedido.") { edicion = EdicionPedido(pedido: nil) } }.padding(.vertical, Espacio.xs)
-                    if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.bottom, Espacio.xs) }
-                    if let pedidos {
-                        let activos = pedidos.filter { $0.estado != "entregado" }
-                        let entregados = pedidos.filter { $0.estado == "entregado" }
-                        if activos.isEmpty { Text("no esperas nada ahora mismo.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l) }
-                        ForEach(activos) { tarjeta($0) }
-                        if !entregados.isEmpty {
-                            AccionTexto(texto: verEntregados ? "ocultar los entregados." : "ver los entregados (\(entregados.count)).") { verEntregados.toggle() }.padding(.top, Espacio.m)
-                            if verEntregados { ForEach(entregados.reversed()) { tarjeta($0) } }
-                        }
-                    } else { ProgressView().frame(maxWidth: .infinity).padding(.top, Espacio.xl) }
-                }.modifier(HojaContenido())
+                .padding(.bottom, Medida.xxs)
+                if let aviso {
+                    Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        .padding(.horizontal, Medida.xxs)
+                        .transition(.opacity.combined(with: .offset(y: -4)))
+                }
+                if let pedidos { lista(pedidos) }
+                else { ProgressView().tint(Lienzo.tintaTerciaria).frame(maxWidth: .infinity).padding(.top, Medida.xl) }
             }
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.xl)
+            .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: aviso)
         }
-        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
+        .scrollIndicators(.hidden)
+        .fondoLienzo()
         .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
         .hoja(item: $edicion) { e in EditorPedido(pedido: e.pedido).environment(c) }
         .confirmarBorrado($pedidoABorrar, titulo: { "¿borrar el pedido «\($0.titulo)»?" }) { p in Task { await c.guardar(.borrarPedido(id: p.id)) } }
     }
 
-    private func tarjeta(_ p: Pedido) -> some View {
-        let retraso = p.estado != "entregado" && (LocalDay(iso: p.fechaEstimada).map { LecturaEnvios.dias(desde: hoy, hasta: $0) < 0 } ?? false)
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text((p.tienda.isEmpty ? "otra" : p.tienda).lowercased() + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                Spacer()
-                if let precio = p.precio { Text(Dinero.formato(precio)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-            }
-            Text(p.titulo).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-            Text(LecturaEnvios.llegada(p, hoy: hoy)).font(Tipo.pie).foregroundStyle(retraso ? Paleta.error : (p.estado == "entregado" ? Paleta.textoSecundario : Paleta.acento))
-            HStack(spacing: 4) {
-                ForEach(0..<LecturaEnvios.estados.count, id: \.self) { i in
-                    let e = LecturaEnvios.estados[i]
-                    VStack(spacing: 3) {
-                        Capsule().fill(i <= p.paso ? Paleta.acento : Paleta.borde).frame(height: 4)
-                        Text(e.2).font(Tipo.poppins(10.5, i == p.paso ? .semibold : .regular, estilo: .caption2))
-                            .foregroundStyle(i == p.paso ? Paleta.texto : Paleta.textoSecundario)
-                    }
-                }
-            }.accessibilityElement(children: .ignore).accessibilityLabel("estado").accessibilityValue(LecturaEnvios.estados[p.paso].1)
-            if !p.ultimaNota.isEmpty { Text(p.ultimaNota).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-            if !p.movimientos.isEmpty {
-                DisclosureGroup("movimientos. \(p.movimientos.count)") {
-                    ForEach(p.movimientos) { m in
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(m.fecha.replacingOccurrences(of: "T", with: " ").prefix(16)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                            Text(m.texto).font(Tipo.pie).foregroundStyle(Paleta.texto)
-                        }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 2)
-                    }
-                }.font(Tipo.pie).tint(Paleta.textoSecundario)
-            }
-            if !p.seguimiento.isEmpty {
-                HStack {
-                    Text(p.seguimiento).font(.system(.footnote, design: .monospaced)).foregroundStyle(Paleta.textoSecundario).textSelection(.enabled)
-                    AccionTexto(texto: "copiar.") { UIPasteboard.general.string = p.seguimiento; aviso = "número copiado." }
-                }
-            }
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Espacio.m) {
-                    if p.estado != "entregado" {
-                        let siguiente = LecturaEnvios.estados[min(p.paso + 1, LecturaEnvios.estados.count - 1)]
-                        AccionTexto(texto: "→ " + siguiente.1) { Task { await c.guardar(.estadoPedido(id: p.id, estado: siguiente.0, hoy: hoy.iso)) } }
-                    }
-                    if !p.seguimiento.isEmpty && p.estado != "entregado" {
-                        AccionTexto(texto: consultando == p.id ? "consultando..." : "actualizar.") { Task { await actualizar(p) } }
-                    }
-                    if !p.seguimiento.isEmpty, let u = LecturaEnvios.urlSeguimiento(p) { AccionTexto(texto: "seguir envío.") { abrir(u) } }
-                    if !p.url.isEmpty, !LecturaEnvios.esPaginaSeguimiento(p.url), let u = URL(string: p.url) { AccionTexto(texto: "ver pedido.") { abrir(u) } }
-                    AccionTexto(texto: "editar.") { edicion = EdicionPedido(pedido: p) }
-                }
-            }
-        }
-        .padding(.vertical, Espacio.m).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-        .contextMenu { Button("borrar pedido.", role: .destructive) { pedidoABorrar = p } }
+    private var subtitulo: String? {
+        guard let pedidos else { return nil }
+        let n = pedidos.filter { $0.estado != "entregado" }.count
+        return n == 0 ? "nada en camino." : "\(n) en camino."
     }
 
+    private func nuevo() {
+        Haptica.ligera()
+        edicion = EdicionPedido(pedido: nil)
+    }
+
+    // El más cercano a llegar: el que va más avanzado y, a igualdad, el que antes se espera.
+    static func masCercano(_ activos: [Pedido]) -> Pedido? {
+        activos.min { a, b in
+            if a.paso != b.paso { return a.paso > b.paso }
+            return (a.fechaEstimada.isEmpty ? "9999" : a.fechaEstimada) < (b.fechaEstimada.isEmpty ? "9999" : b.fechaEstimada)
+        }
+    }
+
+    @ViewBuilder private func lista(_ pedidos: [Pedido]) -> some View {
+        let activos = pedidos.filter { $0.estado != "entregado" }
+        let entregados = pedidos.filter { $0.estado == "entregado" }
+        let primero = Self.masCercano(activos)
+        let resto = activos.filter { $0.id != primero?.id }
+        if let primero {
+            EtiquetaSeccion(texto: "lo próximo")
+            TarjetaOscura { contenido(primero, oscuro: true) }
+                .contextMenu { Button("borrar pedido.", role: .destructive) { pedidoABorrar = primero } }
+                .entradaEscalonada(0)
+                .transition(.opacity.combined(with: .scale(scale: 0.97)))
+        } else {
+            TarjetaInvitacion(frase: "no esperas nada", destacado: "ahora mismo.", boton: "+ pedido.") { nuevo() }
+                .transition(.opacity)
+        }
+        if !resto.isEmpty {
+            EtiquetaSeccion(texto: "en camino").padding(.top, Medida.xs)
+            ForEach(Array(resto.enumerated()), id: \.element.id) { i, p in
+                tarjeta(p)
+                    .entradaEscalonada(i + 1)
+                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
+            }
+        }
+        if !entregados.isEmpty {
+            SeccionPlegable(titulo: "entregados.", detalle: "\(entregados.count)", abierta: $verEntregados) {
+                VStack(spacing: Medida.entreTarjetas) {
+                    ForEach(Array(entregados.reversed().enumerated()), id: \.element.id) { i, p in
+                        tarjeta(p).entradaEscalonada(i)
+                    }
+                }
+                .padding(.top, Medida.xs)
+            }
+            .padding(.top, Medida.s)
+        }
+    }
+
+    private func tarjeta(_ p: Pedido) -> some View {
+        contenido(p, oscuro: false)
+            .tarjeta()
+            .contextMenu { Button("borrar pedido.", role: .destructive) { pedidoABorrar = p } }
+    }
+
+    private func contenido(_ p: Pedido, oscuro: Bool) -> some View {
+        let retraso = p.estado != "entregado" && (LocalDay(iso: p.fechaEstimada).map { LecturaEnvios.dias(desde: hoy, hasta: $0) < 0 } ?? false)
+        let entregado = p.estado == "entregado"
+        let principal = oscuro ? Lienzo.sobreOscuro : Lienzo.tinta
+        let secundaria = oscuro ? Lienzo.sobreOscuroSuave : Lienzo.tintaSecundaria
+        let llegada: Color = retraso ? Lienzo.negativo : (entregado ? secundaria : (oscuro ? Lienzo.naranja : Lienzo.naranjaProfundo))
+        let tienda = (p.tienda.isEmpty ? "otra" : p.tienda).lowercased() + "."
+        return VStack(alignment: .leading, spacing: Medida.s) {
+            HStack(alignment: .top, spacing: Medida.s) {
+                IconoCuadrado(id: "envios", tono: oscuro ? .translucido : (entregado ? .claro : .suave))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(p.titulo).font(Letra.tituloTarjeta).foregroundStyle(principal).lineLimit(2)
+                    Text(p.precio.map { tienda + " " + Dinero.formato($0) } ?? tienda)
+                        .font(Letra.pie).foregroundStyle(secundaria).monospacedDigit()
+                }
+                Spacer(minLength: 0)
+                menu(p, oscuro: oscuro)
+            }
+            Text(LecturaEnvios.llegada(p, hoy: hoy)).font(Letra.pieFuerte).foregroundStyle(llegada)
+            PasosEnvio(paso: p.paso, oscuro: oscuro)
+            if !p.ultimaNota.isEmpty {
+                Text(p.ultimaNota).font(Letra.pie).foregroundStyle(secundaria)
+            }
+            if !p.seguimiento.isEmpty {
+                HStack(spacing: Medida.xs) {
+                    Text(p.seguimiento).font(Letra.hora).foregroundStyle(secundaria).textSelection(.enabled).lineLimit(1)
+                    Button { copiar(p) } label: {
+                        Image(systemName: "doc.on.doc").font(.system(size: 12, weight: .semibold)).foregroundStyle(secundaria)
+                            .frame(width: 32, height: 32).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.pulsable(0.85))
+                    .accessibilityLabel("copiar el número de seguimiento")
+                }
+            }
+            if !p.movimientos.isEmpty { MovimientosEnvio(movimientos: p.movimientos, oscuro: oscuro) }
+            if !entregado { acciones(p, oscuro: oscuro) }
+        }
+    }
+
+    // Una acción principal a la vista (pasar al siguiente estado) y «actualizar.» si hay número; lo demás, en «···».
+    private func acciones(_ p: Pedido, oscuro: Bool) -> some View {
+        let siguiente = LecturaEnvios.estados[min(p.paso + 1, LecturaEnvios.estados.count - 1)]
+        return HStack(spacing: Medida.xs) {
+            Button("→ " + siguiente.1) {
+                if siguiente.0 == "entregado" { Haptica.exito() } else { Haptica.media() }
+                Task { await c.guardar(.estadoPedido(id: p.id, estado: siguiente.0, hoy: hoy.iso)) }
+            }
+            .buttonStyle(.capsula(oscuro ? .naranja : .oscuro))
+            if !p.seguimiento.isEmpty {
+                Button(consultando == p.id ? "consultando..." : "actualizar.") { Task { await actualizar(p) } }
+                    .buttonStyle(.capsula(oscuro ? .blanco : .claro))
+                    .disabled(consultando != nil)
+            }
+        }
+        .padding(.top, Medida.xxs)
+    }
+
+    private func menu(_ p: Pedido, oscuro: Bool) -> some View {
+        Menu {
+            Button("editar.") { edicion = EdicionPedido(pedido: p) }
+            if !p.seguimiento.isEmpty, let u = LecturaEnvios.urlSeguimiento(p) { Button("seguir envío.") { abrir(u) } }
+            if !p.url.isEmpty, !LecturaEnvios.esPaginaSeguimiento(p.url), let u = URL(string: p.url) { Button("ver pedido.") { abrir(u) } }
+            if !p.seguimiento.isEmpty { Button("copiar el número.") { copiar(p) } }
+            Button("borrar pedido.", role: .destructive) { pedidoABorrar = p }
+        } label: {
+            Image(systemName: "ellipsis").font(.system(size: 14, weight: .bold))
+                .foregroundStyle(oscuro ? Lienzo.sobreOscuroSuave : Lienzo.tintaSecundaria)
+                .frame(width: Medida.toque, height: Medida.toque).contentShape(Rectangle())
+        }
+        .padding(.top, -10).padding(.trailing, -10)
+        .accessibilityLabel("opciones de «\(p.titulo)»")
+    }
+
+    private func copiar(_ p: Pedido) {
+        UIPasteboard.general.string = p.seguimiento
+        Haptica.ligera()
+        aviso = "número copiado."
+    }
     // actualizarPedido: la función consulta el transportista y guarda el resultado en la nube; luego se trae.
     private func actualizar(_ p: Pedido) async {
         guard consultando == nil else { return }
@@ -280,5 +362,101 @@ private struct EditorPedido: View {
                 Button("cancelar.", role: .cancel) {}
             }
         }
+    }
+}
+
+// Los cinco pasos de un pedido como segmentos que se llenan de izquierda a derecha con un muelle, uno tras otro.
+struct PasosEnvio: View {
+    let paso: Int
+    var oscuro = false
+    @State private var lleno = -1
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
+
+    var body: some View {
+        let estados = LecturaEnvios.estados
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                ForEach(0..<estados.count, id: \.self) { i in
+                    Capsule().fill(oscuro ? Lienzo.filoOscuro : Lienzo.sutil)
+                        .overlay(alignment: .leading) {
+                            Capsule().fill(Lienzo.naranja)
+                                .scaleEffect(x: i <= lleno ? 1 : 0.001, anchor: .leading)
+                                .animation(Muelle.o(Muelle.expandir, reducido: sinMovimiento).delay(sinMovimiento ? 0 : Double(i) * 0.07), value: lleno)
+                        }
+                        .frame(height: 5)
+                }
+            }
+            HStack(spacing: 4) {
+                ForEach(0..<estados.count, id: \.self) { i in
+                    Text(estados[i].2)
+                        .font(i == paso ? Letra.pieFuerte : Letra.pie)
+                        .foregroundStyle(color(i))
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+        .onAppear { lleno = paso }
+        .onChange(of: paso) { _, nuevo in lleno = nuevo }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("estado")
+        .accessibilityValue(estados[min(max(paso, 0), estados.count - 1)].1)
+    }
+
+    private func color(_ i: Int) -> Color {
+        if i == paso { return oscuro ? Lienzo.sobreOscuro : Lienzo.tinta }
+        if i < paso { return oscuro ? Lienzo.sobreOscuroSuave : Lienzo.tintaSecundaria }
+        return oscuro ? Lienzo.sobreOscuroTenue : Lienzo.tintaTerciaria
+    }
+}
+
+// Los movimientos del transportista, plegados; se abren con un muelle. Vale sobre blanco y sobre la tarjeta oscura.
+struct MovimientosEnvio: View {
+    let movimientos: [MovimientoPedido]
+    var oscuro = false
+    @State private var abierto = false
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
+
+    var body: some View {
+        let principal = oscuro ? Lienzo.sobreOscuro : Lienzo.tinta
+        let secundaria = oscuro ? Lienzo.sobreOscuroSuave : Lienzo.tintaSecundaria
+        VStack(alignment: .leading, spacing: Medida.xs) {
+            Button {
+                Haptica.ligera()
+                withAnimation(Muelle.o(Muelle.expandir, reducido: sinMovimiento)) { abierto.toggle() }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold))
+                        .rotationEffect(.degrees(abierto ? 90 : 0))
+                    Text("movimientos.").font(Letra.pieFuerte)
+                    Text("\(movimientos.count)").font(Letra.pie).monospacedDigit()
+                    Spacer(minLength: 0)
+                }
+                .foregroundStyle(secundaria)
+                .frame(minHeight: Medida.toque)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(Pulsable(escala: 0.98, haptica: false))
+            .accessibilityValue(abierto ? "abiertos" : "plegados")
+            if abierto {
+                VStack(alignment: .leading, spacing: Medida.s) {
+                    ForEach(Array(movimientos.enumerated()), id: \.offset) { i, m in
+                        HStack(alignment: .top, spacing: Medida.xs) {
+                            Puntito(color: i == 0 ? Lienzo.naranja : (oscuro ? Lienzo.sobreOscuroTenue : Lienzo.tintaTerciaria), tamano: 6)
+                                .padding(.top, 5)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(m.texto).font(Letra.pie).foregroundStyle(principal)
+                                Text(String(m.fecha.replacingOccurrences(of: "T", with: " ").prefix(16)))
+                                    .font(Letra.hora).foregroundStyle(secundaria)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                    }
+                }
+                .padding(.bottom, Medida.xs)
+                .transition(.opacity.combined(with: .offset(y: -6)))
+            }
+        }
+        .clipped()
     }
 }
