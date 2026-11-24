@@ -1,24 +1,52 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-private enum PestanaOcio: String, CaseIterable, Identifiable {
+private enum PestanaOcio: String, CaseIterable, Identifiable, Hashable {
     case book, series, movie, game, lists
     var id: String { rawValue }
     var titulo: String {
         switch self { case .book: return "libros"; case .series: return "series"; case .movie: return "películas"; case .game: return "videojuegos"; case .lists: return "listas" }
     }
-}
-
-private enum ModalOcio: Identifiable {
-    case entrada(EntradaOcio?, String)
-    case lista(ListaOcio?)
-    var id: String {
-        switch self { case .entrada(let e, let tipo): return "entrada-\(e?.id ?? tipo)"; case .lista(let l): return "lista-\(l?.id ?? "nueva")" }
+    // En el segmento: cinco opciones en el ancho de un iPhone.
+    var corto: String {
+        switch self { case .book: return "libros"; case .series: return "series"; case .movie: return "pelis"; case .game: return "juegos"; case .lists: return "listas" }
+    }
+    var importador: FuenteImportacionOcio? {
+        switch self { case .book: return .goodreads; case .movie: return .letterboxd; case .series: return .imdb; default: return nil }
+    }
+    var nombreImportador: String {
+        switch self { case .book: return "goodreads"; case .movie: return "letterboxd"; case .series: return "imdb"; default: return "" }
+    }
+    var invitacion: String {
+        switch self {
+        case .book: return "apunta lo que estás leyendo."
+        case .series: return "apunta lo que estás viendo."
+        case .movie: return "apunta la última que viste."
+        case .game: return "apunta a qué estás jugando."
+        case .lists: return ""
+        }
     }
 }
 
+private enum ModalOcio: Identifiable {
+    case ficha(EntradaOcio)
+    case entrada(EntradaOcio?, String)
+    case lista(ListaOcio?)
+    var id: String {
+        switch self {
+        case .ficha(let e): return "ficha-\(e.id)"
+        case .entrada(let e, let tipo): return "entrada-\(e?.id ?? tipo)"
+        case .lista(let l): return "lista-\(l?.id ?? "nueva")"
+        }
+    }
+}
+
+// Ocio 3.0: «ocio.», el segmento por tipo con la píldora negra y el buscador en cápsula; lo que estás leyendo, viendo o
+// jugando en tarjetas oscuras que se deslizan en horizontal, y el resto en una rejilla de tarjetas blancas con portada.
+// Tocar una abre su ficha (portada grande, nota y acciones); el editor y las listas siguen en hojas.
 struct OcioView: View {
     @Environment(AppCoordinator.self) private var c
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var vista: VistaOcio?
     @State private var pestana: PestanaOcio = .book
     @State private var modal: ModalOcio?
@@ -26,27 +54,54 @@ struct OcioView: View {
     @State private var fuenteImportacion: FuenteImportacionOcio?
     @State private var mostrarImportador = false
     @State private var aviso: String?
+    @State private var primeraCarga = true
+
+    private let columnas = Array(repeating: GridItem(.flexible(), spacing: Medida.s, alignment: .top), count: 3)
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                CabeceraContexto(titulo: "ocio", detalle: detalle) {
-                    Text("tu biblioteca.").font(Tipo.poppins(24, .bold, estilo: .title3)).foregroundStyle(Paleta.sobreContexto)
-                    Text("libros, series, películas y videojuegos.").font(Tipo.pie).foregroundStyle(Paleta.sobreContextoSuave)
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                CabeceraPagina(titulo: "ocio.", subtitulo: subtitulo) { acciones }
+                    .padding(.bottom, Medida.xxs)
+                SegmentoCapsula(opciones: PestanaOcio.allCases.map { SegmentoCapsula<PestanaOcio>.Opcion(valor: $0, titulo: $0.corto) },
+                                elegido: $pestana, sobreBlanco: false)
+                if pestana != .lists {
+                    BuscadorCapsula(texto: $busqueda, placeholder: "buscar \(pestana.titulo)")
                 }
-                VStack(alignment: .leading, spacing: 0) {
-                    selector
-                    if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.xs) }
-                    if let vista {
+                if let aviso {
+                    Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        .padding(.horizontal, Medida.xxs)
+                        .transition(.opacity)
+                }
+                if let vista {
+                    Group {
                         if pestana == .lists { listas(vista) } else { biblioteca(vista) }
-                    } else { ProgressView().frame(maxWidth: .infinity).padding(.top, Espacio.xl) }
-                }.modifier(HojaContenido())
+                    }
+                    .id(pestana)
+                    .transition(.opacity)
+                } else {
+                    ProgressView().tint(Lienzo.tintaTerciaria).frame(maxWidth: .infinity).padding(.top, Medida.xl)
+                }
             }
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.xl)
+            .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: pestana)
+            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: aviso)
         }
-        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
-        .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
+        .scrollIndicators(.hidden)
+        .scrollDismissesKeyboard(.interactively)
+        .fondoLienzo()
+        .refreshable { await c.sincronizar() }
+        .task(id: c.revision) { await cargar() }
+        .onChange(of: pestana) { _, _ in busqueda = "" }
         .hoja(item: $modal) { m in
             switch m {
+            case .ficha(let entrada):
+                FichaOcio(entrada: entrada,
+                          valorar: { v in Task { await guardar(Self.datos(entrada, valoracion: v), previo: entrada) } },
+                          editar: { modal = .entrada(entrada, entrada.tipo) },
+                          eliminar: { Task { await c.guardar(.borrarEntrada(id: entrada.id)) } })
             case .entrada(let entrada, let tipo):
                 EditorOcio(entrada: entrada, tipo: tipo) { datos in Task { await guardar(datos, previo: entrada) } }
                     .environment(c)
@@ -61,70 +116,161 @@ struct OcioView: View {
         }
     }
 
-    private var detalle: String? { vista.map { "\($0.entradas.count) elementos. \($0.listas.count) listas." } }
+    // MARK: - Cabecera
 
-    private var selector: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Espacio.xs) {
-                ForEach(PestanaOcio.allCases) { p in
-                    Button { pestana = p; busqueda = "" } label: {
-                        Text(p.titulo + ".").font(Tipo.poppins(14, pestana == p ? .semibold : .medium, estilo: .footnote))
-                            .padding(.horizontal, 11).padding(.vertical, 8)
-                            .foregroundStyle(pestana == p ? Paleta.sobreAcento : Paleta.textoSecundario)
-                            .background(pestana == p ? Paleta.acento : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    }.buttonStyle(.plain)
+    private var acciones: some View {
+        HStack(spacing: Medida.xxs) {
+            if let fuente = pestana.importador {
+                BotonRedondo(sistema: "square.and.arrow.down", tono: .blanco, etiqueta: "importar de \(pestana.nombreImportador)") {
+                    abrirImportador(fuente)
                 }
-            }.padding(.vertical, Espacio.xs)
+            }
+            BotonRedondo(sistema: "plus", tono: .oscuro,
+                         etiqueta: pestana == .lists ? "nueva lista" : "añadir \(LecturaOcio.nombre(pestana.rawValue))") {
+                modal = pestana == .lists ? .lista(nil) : .entrada(nil, pestana.rawValue)
+            }
         }
     }
 
-    private func biblioteca(_ v: VistaOcio) -> some View {
+    private var subtitulo: String? {
+        guard let v = vista else { return nil }
+        if pestana == .lists { return v.listas.count == 1 ? "1 lista." : "\(v.listas.count) listas." }
+        let delTipo = v.entradas.filter { $0.tipo == pestana.rawValue }
+        let n = delTipo.count, enCurso = delTipo.filter(Self.enCurso).count
+        if n == 0 { return "nada todavía." }
+        let total = n == 1 ? "1 \(LecturaOcio.nombre(pestana.rawValue))." : "\(n) \(pestana.titulo)."
+        return enCurso == 0 ? total : total + " \(enCurso) en curso."
+    }
+
+    // MARK: - Biblioteca
+
+    // «ahora mismo»: lo empezado y sin terminar (las películas no tienen estado en curso).
+    static func enCurso(_ e: EntradaOcio) -> Bool {
+        e.fechaFin.isEmpty && ["Leyendo", "Viendo", "Jugando"].contains(e.estado)
+    }
+
+    @ViewBuilder private func biblioteca(_ v: VistaOcio) -> some View {
         let tipo = pestana.rawValue
         let q = LecturaOcio.normalizar(busqueda)
-        let filtradas = v.entradas.filter { $0.tipo == tipo && (q.isEmpty || $0.buscable.contains(q)) }
-        return VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: Espacio.s) {
-                BuscadorOcio(texto: $busqueda, placeholder: "buscar \(pestana.titulo).")
-                Button { modal = .entrada(nil, tipo) } label: {
-                    Text("+ añadir.").font(Tipo.poppins(15, .semibold, estilo: .subheadline)).foregroundStyle(Paleta.sobreAcento)
-                        .padding(.horizontal, 14).frame(minHeight: 48)
-                        .background(Paleta.acento, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }.buttonStyle(.plain)
-            }.padding(.vertical, Espacio.s)
-            HStack(spacing: Espacio.s) {
-                if pestana == .book { Button("importar goodreads.") { abrirImportador(.goodreads) }.buttonStyle(.plain) }
-                if pestana == .movie { Button("importar letterboxd.") { abrirImportador(.letterboxd) }.buttonStyle(.plain) }
-                if pestana == .series { Button("importar imdb.") { abrirImportador(.imdb) }.buttonStyle(.plain) }
-            }.font(Tipo.pie).foregroundStyle(Paleta.acento).padding(.bottom, Espacio.xs)
-            if filtradas.isEmpty {
-                Text(busqueda.isEmpty ? "todavía no hay nada aquí." : "no hay resultados.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l)
+        let delTipo = v.entradas.filter { $0.tipo == tipo }
+        let filtradas = q.isEmpty ? delTipo : delTipo.filter { $0.buscable.contains(q) }
+        let ahora = q.isEmpty ? delTipo.filter(Self.enCurso) : []
+        let resto = ahora.isEmpty ? filtradas : filtradas.filter { !Self.enCurso($0) }
+        if delTipo.isEmpty {
+            TarjetaInvitacion(frase: "aún no hay \(pestana.titulo) aquí.", destacado: pestana.invitacion, boton: "añadir.") {
+                modal = .entrada(nil, tipo)
             }
-            LazyVStack(spacing: 0) { ForEach(filtradas) { entrada in fila(entrada) } }
+            .entradaEscalonada(0)
+            if let fuente = pestana.importador {
+                Button("o importa tu \(pestana.nombreImportador).") { abrirImportador(fuente) }
+                    .buttonStyle(.capsula(.claro))
+                    .frame(maxWidth: .infinity)
+                    .entradaEscalonada(1)
+            }
+        } else if filtradas.isEmpty {
+            TarjetaInvitacion(frase: "nada coincide con", destacado: "«\(busqueda.trimmingCharacters(in: .whitespaces))».",
+                              boton: "borrar búsqueda.") {
+                Haptica.ligera()
+                busqueda = ""
+            }
+            .transition(.opacity.combined(with: .scale(scale: 0.98)))
+        } else {
+            if !ahora.isEmpty {
+                EtiquetaSeccion(texto: "ahora mismo").padding(.top, Medida.xxs)
+                filaAhora(ahora)
+            }
+            if !resto.isEmpty {
+                EtiquetaSeccion(texto: ahora.isEmpty ? "tu biblioteca" : "el resto")
+                    .padding(.top, ahora.isEmpty ? Medida.xxs : Medida.s)
+                LazyVGrid(columns: columnas, alignment: .leading, spacing: Medida.s) {
+                    ForEach(Array(resto.enumerated()), id: \.element.id) { i, e in
+                        celda(e).modifier(AparicionOcio(indice: i, activa: primeraCarga && i < 12))
+                    }
+                }
+            }
         }
     }
 
-    private func fila(_ entrada: EntradaOcio) -> some View {
-        HStack(spacing: Espacio.m) {
-            PortadaOcio(url: entrada.portada, titulo: entrada.titulo)
-            Button { modal = .entrada(entrada, entrada.tipo) } label: {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(entrada.titulo.lowercased() + ".").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).lineLimit(2)
-                    let meta = [entrada.autor, entrada.anio, entrada.estado.lowercased(), Self.cuando(entrada)].filter { !$0.isEmpty }.joined(separator: ", ")
-                    if !meta.isEmpty { Text(meta + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(2) }
-                    if entrada.valoracion > 0 {
-                        EstrellasOcio(valor: entrada.valoracion, tamano: 13).accessibilityLabel(LecturaOcio.textoNota(entrada.valoracion))
+    // Con una sola, la tarjeta ocupa el ancho; con varias, se deslizan y encajan una a una.
+    @ViewBuilder private func filaAhora(_ lista: [EntradaOcio]) -> some View {
+        if lista.count == 1, let e = lista.first {
+            tarjetaAhora(e).entradaEscalonada(0)
+        } else {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Medida.s) {
+                    ForEach(Array(lista.enumerated()), id: \.element.id) { i, e in
+                        tarjetaAhora(e).frame(width: 290).entradaEscalonada(i)
                     }
-                }.frame(maxWidth: .infinity, alignment: .leading)
-            }.buttonStyle(.plain)
-            if let url = URL(string: entrada.enlace), !entrada.enlace.isEmpty {
-                Link(destination: url) { Image(systemName: "arrow.up.right").font(.system(size: 13, weight: .semibold)) }.foregroundStyle(Paleta.textoSecundario)
+                }
+                .scrollTargetLayout()
+                .padding(.vertical, Medida.xs)
             }
-            Menu {
-                Button("editar.") { modal = .entrada(entrada, entrada.tipo) }
-                Button("eliminar.", role: .destructive) { Task { await c.guardar(.borrarEntrada(id: entrada.id)) } }
-            } label: { Image(systemName: "ellipsis").foregroundStyle(Paleta.textoSecundario).frame(width: 32, height: 40) }
-        }.padding(.vertical, 10).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-            .swipeActions { Button("borrar", role: .destructive) { Task { await c.guardar(.borrarEntrada(id: entrada.id)) } } }
+            .contentMargins(.horizontal, Medida.margen, for: .scrollContent)
+            .scrollTargetBehavior(.viewAligned)
+            .scrollClipDisabled()
+            .padding(.horizontal, -Medida.margen)
+            .padding(.vertical, -Medida.xs)
+        }
+    }
+
+    private func tarjetaAhora(_ e: EntradaOcio) -> some View {
+        let anchoPortada: CGFloat = 62
+        let dias = Self.diasDesde(e)
+        return Button { modal = .ficha(e) } label: {
+            TarjetaOscura {
+                HStack(alignment: .top, spacing: Medida.s) {
+                    PortadaOcio(url: e.portada, titulo: e.titulo, ancho: anchoPortada, radio: Medida.radioIcono)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(e.estado.uppercased()).font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.naranja)
+                        Text(e.titulo.lowercased()).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.sobreOscuro)
+                            .lineLimit(2).multilineTextAlignment(.leading)
+                        if !e.autor.isEmpty {
+                            Text(e.autor.lowercased()).font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave).lineLimit(1)
+                        }
+                        Spacer(minLength: Medida.xs)
+                        if let dias {
+                            BarraCursoOcio(fraccion: Double(dias) / 30)
+                            Text(Self.textoDias(dias)).font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave).monospacedDigit()
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(height: anchoPortada * PortadaOcio.proporcion)
+            }
+        }
+        .buttonStyle(.pulsable(0.97))
+        .contextMenu { menuEntrada(e) }
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("abre su ficha")
+    }
+
+    private func celda(_ e: EntradaOcio) -> some View {
+        let meta = e.tipo == "book" && !e.autor.isEmpty ? e.autor.lowercased() : e.anio
+        return Button { modal = .ficha(e) } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                PortadaOcio(url: e.portada, titulo: e.titulo, ancho: nil,
+                            radio: Medida.concentrico(Medida.radioFila, relleno: Medida.xs))
+                Text(e.titulo.lowercased()).font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta)
+                    .lineLimit(2, reservesSpace: true).multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: Medida.xxs) {
+                    Text(meta).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
+                    Spacer(minLength: 0)
+                    if e.valoracion > 0 { NotaDiscretaOcio(valor: e.valoracion) }
+                }
+            }
+            .tarjeta(relleno: Medida.xs, radio: Medida.radioFila)
+        }
+        .buttonStyle(.pulsable(0.96))
+        .contextMenu { menuEntrada(e) }
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("abre su ficha")
+    }
+
+    @ViewBuilder private func menuEntrada(_ e: EntradaOcio) -> some View {
+        Button("editar.") { modal = .entrada(e, e.tipo) }
+        if let url = URL(string: e.enlace), !e.enlace.isEmpty { Link("abrir enlace.", destination: url) }
+        Button("eliminar.", role: .destructive) { Task { await c.guardar(.borrarEntrada(id: e.id)) } }
     }
 
     // «visto el 12 nov.» / «terminado el …»: cuándo, de un vistazo.
@@ -136,23 +282,92 @@ struct OcioView: View {
         return "\(verbo) el \(d.day) \(mes)" + (d.year == CalendarioBitacora.madrid.dia(de: Date()).year ? "" : " \(d.year)")
     }
 
-    private func listas(_ v: VistaOcio) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack { CabeceraSeccion(titulo: "tus listas.", detalle: "\(v.listas.count)"); Spacer(); AccionTexto(texto: "+ lista.") { modal = .lista(nil) } }
-            if v.listas.isEmpty { Text("agrupa aquí favoritos, pendientes o cualquier selección.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l) }
-            ForEach(v.listas) { lista in
-                Button { modal = .lista(lista) } label: {
-                    HStack { VStack(alignment: .leading, spacing: 2) { Text(lista.nombre.lowercased() + ".").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto); Text("\(lista.entryIds.count) elementos.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }; Spacer(); Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(Paleta.textoApagado) }
-                        .frame(minHeight: 56).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                }.buttonStyle(.plain).contextMenu { Button("eliminar lista.", role: .destructive) { Task { await c.guardar(.borrarListaOcio(id: lista.id)) } } }
+    // Días desde que se empezó (en UTC, sin cambios de hora). Nil si no hay fecha de inicio.
+    static func diasDesde(_ e: EntradaOcio) -> Int? {
+        guard let d = LocalDay(iso: e.fechaInicio) else { return nil }
+        let hoy = CalendarioBitacora.madrid.dia(de: Date())
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC") ?? .current
+        guard let a = cal.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12)),
+              let b = cal.date(from: DateComponents(year: hoy.year, month: hoy.month, day: hoy.day, hour: 12)),
+              let n = cal.dateComponents([.day], from: a, to: b).day else { return nil }
+        return max(0, n)
+    }
+
+    static func textoDias(_ n: Int) -> String {
+        n == 0 ? "empezado hoy." : n == 1 ? "desde ayer." : "\(n) días."
+    }
+
+    // MARK: - Listas
+
+    @ViewBuilder private func listas(_ v: VistaOcio) -> some View {
+        if v.listas.isEmpty {
+            TarjetaInvitacion(frase: "agrupa favoritos, pendientes", destacado: "o cualquier selección.", boton: "crear lista.") {
+                modal = .lista(nil)
             }
+            .entradaEscalonada(0)
+        } else {
+            let porId = Dictionary(v.entradas.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+            VStack(spacing: 0) {
+                ForEach(Array(v.listas.enumerated()), id: \.element.id) { i, lista in
+                    if i > 0 { SeparadorFila(sangria: 52 + Medida.s) }
+                    filaLista(lista, portadas: lista.entryIds.compactMap { porId[$0] }.prefix(3).map { $0 })
+                        .entradaEscalonada(i)
+                }
+            }
+            .tarjeta(relleno: Medida.xs)
         }
     }
+
+    private func filaLista(_ lista: ListaOcio, portadas: [EntradaOcio]) -> some View {
+        Button { modal = .lista(lista) } label: {
+            HStack(spacing: Medida.s) {
+                ZStack(alignment: .leading) {
+                    if portadas.isEmpty {
+                        IconoCuadrado(id: "culture", tono: .claro, tamano: Medida.icono)
+                    }
+                    ForEach(Array(portadas.enumerated().reversed()), id: \.element.id) { n, e in
+                        PortadaOcio(url: e.portada, titulo: e.titulo, ancho: 26, radio: 6)
+                            .offset(x: CGFloat(n) * 13)
+                    }
+                }
+                .frame(width: 52, alignment: .leading)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(lista.nombre.lowercased() + ".").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                    Text(lista.entryIds.count == 1 ? "1 elemento." : "\(lista.entryIds.count) elementos.")
+                        .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                }
+                Spacer(minLength: Medida.xs)
+                FlechaFila()
+            }
+            .padding(.horizontal, Medida.xs)
+            .frame(minHeight: 60)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.pulsable(0.98))
+        .contextMenu { Button("eliminar lista.", role: .destructive) { Task { await c.guardar(.borrarListaOcio(id: lista.id)) } } }
+    }
+
+    // MARK: - Datos
 
     private func cargar() async {
         let doc = await c.documentoVisible()
         guard let nuevo = await ultimaGana({ doc.map { LecturaOcio.vista($0) } }) else { return }
-        vista = nuevo
+        if vista == nil {
+            vista = nuevo
+            Task {
+                try? await Task.sleep(for: .seconds(1))
+                primeraCarga = false
+            }
+        } else if vista != nuevo {
+            withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento)) { vista = nuevo }
+        }
+    }
+
+    // La misma entrada con otra nota: valorar desde la ficha guarda igual que el editor.
+    fileprivate static func datos(_ e: EntradaOcio, valoracion: Double) -> DatosEditorOcio {
+        DatosEditorOcio(tipo: e.tipo, titulo: e.titulo, autor: e.autor, estado: e.estado, fechaInicio: e.fechaInicio,
+                        fechaFin: e.fechaFin, anio: e.anio, valoracion: valoracion, notas: e.notas, enlace: e.enlace, portada: e.portada)
     }
 
     private func guardar(_ d: DatosEditorOcio, previo: EntradaOcio?) async {
@@ -198,7 +413,8 @@ struct OcioView: View {
                 anadidas += 1
             }
             aviso = "\(anadidas) importados. \(salida.omitidas + salida.entradas.count - anadidas) omitidos."
-        } catch { aviso = "no se pudo leer ese archivo." }
+            Haptica.exito()
+        } catch { aviso = "no se pudo leer ese archivo."; Haptica.error() }
     }
 }
 
@@ -206,6 +422,123 @@ private struct DatosEditorOcio {
     let tipo: String; let titulo: String; let autor: String; let estado: String; let fechaInicio: String; let fechaFin: String
     let anio: String; let valoracion: Double; let notas: String; let enlace: String; let portada: String
 }
+
+// MARK: - Ficha
+
+// La ficha de una entrada: portada grande que entra con un muelle, título, datos en chips, la nota con estrellas (se
+// guarda con «guardar nota.» si cambia) y las acciones en cápsulas.
+private struct FichaOcio: View {
+    @Environment(\.dismiss) private var cerrar
+    @Environment(\.openURL) private var abrirURL
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
+    let entrada: EntradaOcio
+    let valorar: (Double) -> Void
+    let editar: () -> Void
+    let eliminar: () -> Void
+    @State private var nota: Double
+    @State private var dentro = false
+    @State private var confirmarBorrar = false
+
+    init(entrada: EntradaOcio, valorar: @escaping (Double) -> Void, editar: @escaping () -> Void, eliminar: @escaping () -> Void) {
+        self.entrada = entrada; self.valorar = valorar; self.editar = editar; self.eliminar = eliminar
+        _nota = State(initialValue: entrada.valoracion)
+    }
+
+    private var meta: String { [entrada.autor.lowercased(), entrada.anio].filter { !$0.isEmpty }.joined(separator: ", ") }
+    private var enlace: URL? { entrada.enlace.isEmpty ? nil : URL(string: entrada.enlace) }
+    private var cambiada: Bool { nota != entrada.valoracion }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: Medida.l) {
+                HStack {
+                    Spacer()
+                    BotonRedondo(sistema: "xmark", tono: .sutil, etiqueta: "cerrar") { cerrar() }
+                }
+                PortadaOcio(url: entrada.portada, titulo: entrada.titulo, ancho: 164, radio: Medida.radioControl)
+                    .sombra(.flotante)
+                    .scaleEffect(dentro || sinMovimiento ? 1 : 0.9)
+                    .opacity(dentro ? 1 : 0)
+                VStack(spacing: Medida.xxs) {
+                    Text(entrada.titulo.lowercased() + ".").font(Letra.titulo).foregroundStyle(Lienzo.tinta).kerning(-0.4)
+                        .multilineTextAlignment(.center)
+                        .accessibilityAddTraits(.isHeader)
+                    if !meta.isEmpty { Text(meta).font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria) }
+                }
+                chips
+                valoracion
+                if !entrada.notas.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    VStack(alignment: .leading, spacing: Medida.xs) {
+                        EtiquetaSeccion(texto: "notas").padding(.horizontal, -Medida.xxs)
+                        Text(entrada.notas).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .tarjeta()
+                }
+                acciones
+            }
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.xl)
+            .animation(Muelle.o(Muelle.expandir, reducido: sinMovimiento), value: cambiada)
+        }
+        .scrollIndicators(.hidden)
+        .fondoLienzo()
+        .confirmationDialog("¿eliminar «\(entrada.titulo.lowercased())»?", isPresented: $confirmarBorrar, titleVisibility: .visible) {
+            Button("eliminar.", role: .destructive) { Haptica.media(); eliminar(); cerrar() }
+            Button("cancelar.", role: .cancel) {}
+        }
+        .onAppear {
+            withAnimation(Muelle.o(Muelle.modal, reducido: sinMovimiento).delay(0.06)) { dentro = true }
+        }
+    }
+
+    private var chips: some View {
+        HStack(spacing: Medida.xxs + 2) {
+            Chip(texto: LecturaOcio.nombre(entrada.tipo))
+            if !entrada.estado.isEmpty {
+                Chip(texto: entrada.estado.lowercased(), tono: OcioView.enCurso(entrada) ? .naranja : .sutil)
+            }
+            let cuando = OcioView.cuando(entrada)
+            if !cuando.isEmpty { Chip(texto: cuando, tono: .blanco) }
+        }
+    }
+
+    private var valoracion: some View {
+        VStack(spacing: Medida.xs) {
+            EstrellasOcio(valor: nota, tamano: 30) { nota = $0 }
+            Text(nota == 0 ? "sin valorar. toca una estrella, o su mitad para media." : LecturaOcio.textoNota(nota))
+                .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).monospacedDigit()
+                .contentTransition(.numericText())
+                .animation(Muelle.rapido, value: nota)
+            if cambiada {
+                Button("guardar nota.") {
+                    Haptica.exito()
+                    valorar(nota)
+                    cerrar()
+                }
+                .buttonStyle(.capsula(.naranja))
+                .transition(.scale(scale: 0.85).combined(with: .opacity))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .tarjeta()
+    }
+
+    private var acciones: some View {
+        VStack(spacing: Medida.xs) {
+            HStack(spacing: Medida.xs) {
+                Button("editar.") { editar() }.buttonStyle(.capsula(.oscuro, ancho: true))
+                if let enlace {
+                    Button("abrir enlace.") { abrirURL(enlace) }.buttonStyle(.capsula(.blanco, ancho: true))
+                }
+            }
+            Button("eliminar.") { confirmarBorrar = true }.buttonStyle(.capsula(.claro, ancho: true))
+        }
+    }
+}
+
+// MARK: - Editor
 
 // Editor de una película, serie, libro o juego: portada buscada en la función `portadas`, cuándo la viste (o
 // empezaste y terminaste) con fechas de verdad, y nota con medias estrellas.
@@ -256,8 +589,8 @@ private struct EditorOcio: View {
                     TextField("título.", text: $titulo)
                     if tipo == "book" { TextField("autor.", text: $autor) }
                     TextField("año.", text: $anio).keyboardType(.numberPad)
-                }.listRowBackground(Paleta.superficie)
-                seccionPortada.listRowBackground(Paleta.superficie)
+                }
+                seccionPortada
                 Section("cuándo.") {
                     if tipo == "movie" {
                         Toggle("la he visto.", isOn: $conInicio)
@@ -272,7 +605,6 @@ private struct EditorOcio: View {
                         }
                     }
                 }
-                .listRowBackground(Paleta.superficie)
                 .environment(\.locale, Locale(identifier: "es_ES"))
                 .onChange(of: estado) { _, e in if e.hasPrefix("Complet") && !conFin { conFin = true; fin = Date() } }
                 .onChange(of: conFin) { _, si in if si, let completo = estados.first(where: { $0.hasPrefix("Complet") }), !estado.hasPrefix("Abandon") { estado = completo } }
@@ -280,17 +612,19 @@ private struct EditorOcio: View {
                     HStack {
                         EstrellasOcio(valor: valoracion, tamano: 30) { valoracion = $0 }
                         Spacer()
-                        if valoracion > 0 { Button("quitar.") { valoracion = 0 }.font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).buttonStyle(.plain) }
+                        if valoracion > 0 {
+                            Button("quitar.") { valoracion = 0 }
+                                .font(Letra.pieFuerte).foregroundStyle(Lienzo.tintaSecundaria)
+                                .buttonStyle(.pulsable(0.92))
+                        }
                     }
                 } header: { Text("tu nota.") } footer: {
                     Text(valoracion == 0 ? "sin valorar. toca la mitad de una estrella para media." : LecturaOcio.textoNota(valoracion))
                 }
-                .listRowBackground(Paleta.superficie)
-                Section("notas.") { TextEditor(text: $notas).editorCasa(alto: 90) }.listRowBackground(Paleta.superficie)
-                Section { TextField("enlace.", text: $enlace).keyboardType(.URL).textInputAutocapitalization(.never) }.listRowBackground(Paleta.superficie)
+                Section("notas.") { TextEditor(text: $notas).editorCasa(alto: 90) }
+                Section { TextField("enlace.", text: $enlace).keyboardType(.URL).textInputAutocapitalization(.never) }
             }
-            .font(Tipo.cuerpo)
-            .formularioCasa()
+            .font(Letra.cuerpo)
             .navigationTitle(LecturaOcio.nombre(tipo) + ".")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -309,43 +643,51 @@ private struct EditorOcio: View {
 
     private var seccionPortada: some View {
         Section {
-            HStack(alignment: .top, spacing: Espacio.m) {
-                PortadaOcio(url: portada, titulo: titulo.isEmpty ? "?" : titulo, ancho: 64)
-                VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: Medida.m) {
+                PortadaOcio(url: portada, titulo: titulo.isEmpty ? "?" : titulo, ancho: 64, radio: Medida.radioIcono)
+                VStack(alignment: .leading, spacing: Medida.xs) {
                     Button(buscando ? "buscando…" : "buscar portada.") { Task { await buscar() } }
-                        .font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.acento)
+                        .buttonStyle(.capsula(.claro))
                         .disabled(buscando || titulo.trimmingCharacters(in: .whitespaces).isEmpty)
-                    if !portada.isEmpty { Button("quitar.") { portada = "" }.font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-                    if sinResultados { Text("no he encontrado portadas con ese título.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+                    if !portada.isEmpty {
+                        Button("quitar.") { portada = "" }
+                            .font(Letra.pieFuerte).foregroundStyle(Lienzo.tintaSecundaria)
+                            .buttonStyle(.pulsable(0.92))
+                    }
+                    if sinResultados { Text("no he encontrado portadas con ese título.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
                 }
-                .buttonStyle(.plain)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             if !candidatas.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHStack(spacing: 10) {
                         ForEach(candidatas) { k in
+                            let elegida = portada == k.imagen
                             Button {
+                                Haptica.seleccion()
                                 portada = k.imagen
                                 if anio.isEmpty { anio = String(k.anio.prefix(4)) }
                                 if tipo == "book", autor.isEmpty { autor = k.autor }
                             } label: {
                                 VStack(alignment: .leading, spacing: 4) {
                                     PortadaOcio(url: k.imagen, titulo: k.titulo, ancho: 70)
-                                        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(portada == k.imagen ? Paleta.acento : .clear, lineWidth: 3))
-                                    Text(k.titulo.lowercased()).font(Tipo.poppins(11, .medium, estilo: .caption2)).foregroundStyle(Paleta.texto).lineLimit(2)
-                                    if !k.anio.isEmpty { Text(k.anio).font(Tipo.poppins(11, .regular, estilo: .caption2)).foregroundStyle(Paleta.textoSecundario) }
+                                        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .strokeBorder(elegida ? Lienzo.naranja : .clear, lineWidth: 2.5))
+                                        .scaleEffect(elegida ? 1 : 0.96)
+                                        .animation(Muelle.toque, value: elegida)
+                                    Text(k.titulo.lowercased()).font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta).lineLimit(2)
+                                    if !k.anio.isEmpty { Text(k.anio).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
                                 }
                                 .frame(width: 70, alignment: .leading)
                             }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("portada de \(k.titulo)" + (k.anio.isEmpty ? "" : ", \(k.anio)") + (portada == k.imagen ? ", elegida" : ""))
+                            .buttonStyle(.pulsable(0.95))
+                            .accessibilityLabel("portada de \(k.titulo)" + (k.anio.isEmpty ? "" : ", \(k.anio)") + (elegida ? ", elegida" : ""))
                         }
                     }
                     .padding(.vertical, 4)
                 }
             }
-            TextField("o pega la url de una imagen.", text: $portada).keyboardType(.URL).textInputAutocapitalization(.never).font(Tipo.pie)
+            TextField("o pega la url de una imagen.", text: $portada).keyboardType(.URL).textInputAutocapitalization(.never).font(Letra.pie)
         } header: { Text("portada.") }
     }
 
@@ -363,6 +705,8 @@ private struct EditorOcio: View {
     }
 }
 
+// MARK: - Lista
+
 private struct EditorListaOcio: View {
     @Environment(\.dismiss) private var cerrar
     let entradas: [EntradaOcio]
@@ -377,17 +721,48 @@ private struct EditorListaOcio: View {
     }
 
     var body: some View {
-        NavigationStack { List {
-            TextField("nombre.", text: $nombre)
-            TextField("buscar en la biblioteca.", text: $busqueda)
-            ForEach(entradas.filter { busqueda.isEmpty || LecturaOcio.normalizar($0.titulo).contains(LecturaOcio.normalizar(busqueda)) }) { e in
-                Button { if seleccion.contains(e.id) { seleccion.remove(e.id) } else { seleccion.insert(e.id) } } label: {
-                    HStack { Image(systemName: seleccion.contains(e.id) ? "checkmark.circle.fill" : "circle"); VStack(alignment: .leading) { Text(e.titulo); Text(LecturaOcio.nombre(e.tipo) + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) } }
-                }.foregroundStyle(Paleta.texto)
+        NavigationStack {
+            FormCasa {
+                Section {
+                    TextField("nombre.", text: $nombre)
+                    TextField("buscar en la biblioteca.", text: $busqueda).autocorrectionDisabled()
+                }
+                Section {
+                    ForEach(entradas.filter { busqueda.isEmpty || LecturaOcio.normalizar($0.titulo).contains(LecturaOcio.normalizar(busqueda)) }) { e in
+                        let dentro = seleccion.contains(e.id)
+                        Button {
+                            Haptica.seleccion()
+                            if dentro { seleccion.remove(e.id) } else { seleccion.insert(e.id) }
+                        } label: {
+                            HStack(spacing: Medida.s) {
+                                PortadaOcio(url: e.portada, titulo: e.titulo, ancho: 28, radio: 6)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(e.titulo.lowercased()).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                                    Text(LecturaOcio.nombre(e.tipo) + ".").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                                }
+                                Spacer(minLength: Medida.xs)
+                                Image(systemName: dentro ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundStyle(dentro ? Lienzo.tinta : Lienzo.tintaTerciaria)
+                                    .contentTransition(.symbolEffect(.replace))
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.pulsable(0.98))
+                        .accessibilityAddTraits(dentro ? .isSelected : [])
+                    }
+                } header: { Text(seleccion.count == 1 ? "1 elegido." : "\(seleccion.count) elegidos.") }
             }
-        }.navigationTitle("lista.").toolbar {
-            ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
-            ToolbarItem(placement: .confirmationAction) { Button("guardar.") { guardar(nombre, Array(seleccion)); cerrar() }.disabled(nombre.trimmingCharacters(in: .whitespaces).isEmpty) }
-        } }
+            .font(Letra.cuerpo)
+            .navigationTitle("lista.")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("guardar.") { guardar(nombre, Array(seleccion)); cerrar() }
+                        .disabled(nombre.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
     }
 }
