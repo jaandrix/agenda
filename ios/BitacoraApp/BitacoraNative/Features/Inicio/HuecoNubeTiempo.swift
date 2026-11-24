@@ -27,15 +27,14 @@ struct TiempoBarra: View, Equatable {
     static func == (a: TiempoBarra, b: TiempoBarra) -> Bool { a.temp == b.temp && a.tipo == b.tipo && a.ciudad == b.ciudad && a.color == b.color }
 
     var body: some View {
+        // 2.0: el tiempo en un chip blanco sobre el degradado de la cabecera.
         Button(action: abrir) {
-            HStack(spacing: 6) {
-                Image(systemName: Tiempo.simbolo[tipo] ?? "cloud.fill").font(.system(size: Tipo.tamano(15)))
-                Text("\(temp)°").font(Tipo.poppins(15, .semibold)).monospacedDigit()
-            }
-            .foregroundStyle(color)
-            .frame(minWidth: 44, minHeight: 44, alignment: .trailing)
+            Chip(texto: "\(temp)°", tono: .blanco, icono: Tiempo.simbolo[tipo] ?? "cloud.fill")
+                .sombra(.suave)
+                .frame(minWidth: Medida.toque, minHeight: Medida.toque, alignment: .trailing)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pulsable(0.92))
         .accessibilityLabel("\(ciudad): \(Tiempo.texto[tipo] ?? ""), \(temp) grados")
     }
 }
@@ -66,7 +65,7 @@ struct HuecoNubeTiempo: View {
                 .opacity(nube ? 1 : 0)
                 .accessibilityHidden(!nube)
         }
-        .animation(sinMovimiento ? nil : .easeOut(duration: 0.18), value: nube)
+        .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: nube)
         .task(id: estado) { await seguir(estado) }
     }
 
