@@ -1,13 +1,17 @@
 import SwiftUI
 
-private enum PestanaDespensa: String, CaseIterable, Identifiable { case lista, historial, recetas, plan; var id: String { rawValue } }
+private enum PestanaDespensa: Hashable { case lista, recetas, plan }
 private enum ModalDespensa: Identifiable {
     case item(ItemDespensa?), receta(RecetaDespensa?), terminar, plato(String), pasar(RecetaDespensa)
     var id: String { switch self { case .item(let x): return "item-\(x?.id ?? "nuevo")"; case .receta(let x): return "receta-\(x?.id ?? "nueva")"; case .terminar: return "terminar"; case .plato(let d): return "plato-\(d)"; case .pasar(let r): return "pasar-\(r.id)" } }
 }
 
+// Despensa 2.0 (foto 4: secciones plegables y casillas cuadradas): «despensa.» con el recuento, los segmentos
+// lista / recetas / planificación, el campo para añadir arriba, «lo de siempre» en chips y cada sección del súper en su
+// tarjeta blanca. Lo marcado baja con un muelle a «en la cesta.», tachado en gris.
 struct DespensaView: View {
     @Environment(AppCoordinator.self) private var c
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var vista: VistaDespensa?
     @State private var pestana: PestanaDespensa = .lista
     @State private var modal: ModalDespensa?
@@ -18,6 +22,7 @@ struct DespensaView: View {
     // Agrupado al cargar y al marcar, no en cada pintado: cambiar de hoja no recalcula la lista.
     @State private var grupos: [GrupoDespensa] = []
     @State private var enCarro: [ItemDespensa] = []
+    @State private var listaPintada: String?
     // Lo marcado aquí que la lista recargada aún no trae (MarcasDespensa) y la cadena que manda las marcas en orden.
     @State private var marcas = MarcasDespensa()
     @State private var cadena: Task<Void, Never>?
@@ -30,50 +35,44 @@ struct DespensaView: View {
     @State private var quitado: (item: ItemDespensa, listaId: String)?
     @State private var listaABorrar: ListaDespensa?
     @State private var recetaABorrar: RecetaDespensa?
+    @State private var plegadas: Set<String> = []
+    @State private var verHistorial = false
+
+    private static let claveCesta = "__cesta"
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                CabeceraContexto(titulo: "despensa", detalle: detalleCabecera) {
-                    if let l = vista?.listaActual {
-                        Text(l.nombre.lowercased() + ".").font(Tipo.poppins(24, .bold, estilo: .title3)).foregroundStyle(Paleta.sobreContexto)
-                        Text("\(grupos.reduce(0) { $0 + $1.items.count }) por comprar. aprox. \(Dinero.formato(LecturaDespensa.estimado(l)))")
-                            .font(Tipo.pie).foregroundStyle(Paleta.sobreContextoSuave).padding(.top, 2)
-                    }
-                }
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    selector
-                    if let hecho {
-                        Text(hecho).font(Tipo.pie).foregroundStyle(Paleta.texto)
-                            .padding(.horizontal, 14).padding(.vertical, 10)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Paleta.tinteAcento, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .padding(.bottom, Espacio.s)
-                            .accessibilityAddTraits(.updatesFrequently)
-                    }
-                    if let q = quitado {
-                        HStack {
-                            Text("quitado «\(q.item.texto.lowercased())».").font(Tipo.pie).foregroundStyle(Paleta.texto)
-                            Spacer()
-                            Button("deshacer.") { reponer() }.font(Tipo.poppins(14, .semibold, estilo: .footnote))
-                                .foregroundStyle(Paleta.acento).buttonStyle(.plain).frame(minHeight: 44)
-                        }
-                        .padding(.horizontal, 14)
-                        .background(Paleta.tinteAcento, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .padding(.bottom, Espacio.s)
-                    }
-                    if let v = vista {
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                CabeceraPagina(titulo: "despensa.", subtitulo: subtitulo) { menuListas }
+                    .padding(.bottom, Medida.xxs)
+                SegmentoCapsula(opciones: [.init(valor: PestanaDespensa.lista, titulo: "lista"),
+                                           .init(valor: PestanaDespensa.recetas, titulo: "recetas"),
+                                           .init(valor: PestanaDespensa.plan, titulo: "planificación")],
+                                elegido: $pestana, sobreBlanco: false)
+                avisos
+                if let v = vista {
+                    Group {
                         switch pestana {
                         case .lista: lista(v)
-                        case .historial: historial(v)
                         case .recetas: recetas(v)
                         case .plan: plan(v)
                         }
-                    } else { ProgressView().frame(maxWidth: .infinity).padding(.top, Espacio.xl) }
-                }.modifier(HojaContenido())
+                    }
+                    .id(pestana)
+                    .transition(.opacity)
+                } else {
+                    ProgressView().tint(Lienzo.tintaTerciaria).frame(maxWidth: .infinity).padding(.top, Medida.xl)
+                }
             }
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.xl)
+            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: hecho)
+            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: quitado?.item.id)
         }
-        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
+        .scrollIndicators(.hidden)
+        .scrollDismissesKeyboard(.interactively)
+        .fondoLienzo()
         .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
         .alert(listaEditando == nil ? "nueva lista." : "editar lista.", isPresented: $mostrarNuevaLista) {
             TextField("nombre.", text: $nombreLista)
@@ -104,125 +103,206 @@ struct DespensaView: View {
             }
             case .pasar(let r):
                 if let l = vista?.listaActual { PasarRecetaView(receta: r, lista: l) { elegidos in Task { await pasarReceta(r, elegidos, a: l) } } }
-        }
-        }
-    }
-
-    private var detalleCabecera: String? { vista.map { "\($0.listas.count) listas. \($0.recetas.count) recetas." } }
-    // Las cuatro hojas a todo el ancho, de 44 pt y sin animación: el cambio es inmediato.
-    private var selector: some View {
-        HStack(spacing: 4) {
-            ForEach(PestanaDespensa.allCases) { p in
-                Button { var t = Transaction(); t.disablesAnimations = true; withTransaction(t) { pestana = p } } label: {
-                    Text(p.rawValue + ".").font(Tipo.poppins(14, pestana == p ? .semibold : .medium, estilo: .footnote))
-                        .lineLimit(1).minimumScaleFactor(0.8)
-                        .foregroundStyle(pestana == p ? Paleta.sobreAcento : Paleta.texto)
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                        .background(pestana == p ? Paleta.acento : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(pestana == p ? [.isSelected] : [])
             }
         }
-        .padding(4)
-        .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .padding(.vertical, Espacio.s)
     }
 
-    // VStack y no LazyVStack: va dentro de otra pila perezosa, y anidadas pueden dejar una fila con los datos de antes al
-    // pasar un producto de su sección al carro y vuelta.
+    // MARK: - Cabecera
+
+    private var porComprar: Int { grupos.reduce(0) { $0 + $1.items.count } }
+
+    private var subtitulo: String? {
+        guard let v = vista, let l = v.listaActual else { return vista == nil ? nil : "sin lista todavía." }
+        let n = porComprar, k = enCarro.count
+        if n == 0 && k == 0 { return "la lista está vacía." }
+        var t = (n == 1 ? "1 cosa" : "\(n) cosas") + ", \(k) en la cesta."
+        let estimado = LecturaDespensa.estimado(l)
+        if estimado > 0 { t += " unos \(Dinero.formato(estimado))." }
+        return v.listas.count > 1 ? l.nombre.lowercased() + ". " + t : t
+    }
+
+    private var menuListas: some View {
+        MenuRedondoDespensa(etiqueta: "listas y acciones") {
+            Button("añadir con detalles.") { modal = .item(nil) }
+            Button("nueva lista.") { listaEditando = nil; nombreLista = ""; mostrarNuevaLista = true }
+            if let actual = vista?.listaActual {
+                Button("renombrar «\(actual.nombre.lowercased())».") { listaEditando = actual; nombreLista = actual.nombre; mostrarNuevaLista = true }
+                if (vista?.listas.count ?? 0) > 1 { Button("eliminar lista.", role: .destructive) { listaABorrar = actual } }
+            }
+        }
+    }
+
+    // Lo recién hecho y el deshacer, en una tarjeta oscura que entra y sale sola.
+    @ViewBuilder private var avisos: some View {
+        if let hecho {
+            TarjetaOscura {
+                Text(hecho).font(Letra.detalle).foregroundStyle(Lienzo.sobreOscuro)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .accessibilityAddTraits(.updatesFrequently)
+            .transition(.opacity.combined(with: .offset(y: -6)))
+        }
+        if let q = quitado {
+            TarjetaOscura {
+                HStack(spacing: Medida.xs) {
+                    Text("quitado «\(q.item.texto.lowercased())».").font(Letra.detalle).foregroundStyle(Lienzo.sobreOscuro).lineLimit(2)
+                    Spacer(minLength: Medida.xs)
+                    Button("deshacer.") { reponer() }
+                        .font(Letra.pieFuerte).foregroundStyle(Lienzo.naranja)
+                        .frame(minHeight: Medida.toque)
+                        .buttonStyle(.pulsable(0.94))
+                }
+            }
+            .transition(.opacity.combined(with: .offset(y: -6)))
+        }
+    }
+
+    // MARK: - Lista
+
     private func lista(_ v: VistaDespensa) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: Espacio.xs) {
-                ForEach(v.listas) { l in Button { Task { await c.guardar(.elegirListaCompra(id: l.id)) } } label: {
-                    Text(l.nombre.lowercased() + ".").font(Tipo.pie).padding(.horizontal, 12).frame(minHeight: 44)
-                        .foregroundStyle(v.listaActual?.id == l.id ? Paleta.texto : Paleta.textoSecundario)
-                        .background(v.listaActual?.id == l.id ? Paleta.tinteTexto : Color.clear, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .contentShape(Rectangle()) }.buttonStyle(.plain) }
-                Button("+ lista.") { listaEditando = nil; nombreLista = ""; mostrarNuevaLista = true }.font(Tipo.pie).buttonStyle(.plain).foregroundStyle(Paleta.acento).frame(minHeight: 44)
-                if let actual = v.listaActual {
-                    Menu("acciones.") {
-                        Button("renombrar.") { listaEditando = actual; nombreLista = actual.nombre; mostrarNuevaLista = true }
-                        if v.listas.count > 1 { Button("eliminar lista.", role: .destructive) { listaABorrar = actual } }
-                    }.font(Tipo.pie)
-                }
-            } }
-            HStack(spacing: Espacio.s) {
-                TextField("añadir a la lista.", text: $textoRapido, prompt: Text("añadir a la lista: leche, 2 tomates…").foregroundColor(Paleta.textoSecundario))
-                    .font(Tipo.cuerpo).foregroundStyle(Paleta.texto).submitLabel(.done).focused($escribiendo)
-                    // El tick del teclado añade y cierra el teclado (0.22: antes volvía a enfocar el campo y no se cerraba).
-                    .onSubmit { Task { await anadirRapido() } }
-                    .campoCasa(activo: escribiendo)
-                Button { Task { await anadirRapido() } } label: {
-                    Text("añadir.").font(Tipo.poppins(14, .semibold, estilo: .footnote)).foregroundStyle(Paleta.sobreAcento)
-                        .padding(.horizontal, 14).frame(minHeight: 48)
-                        .background(Paleta.acento, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .disabled(textoRapido.trimmingCharacters(in: .whitespaces).isEmpty)
-                .opacity(textoRapido.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 1)
-            }.padding(.vertical, Espacio.s)
-            if !v.frecuentes.isEmpty {
-                CabeceraSeccion(titulo: "lo de siempre.")
-                ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: Espacio.xs) { ForEach(v.frecuentes) { f in
-                    Button { textoRapido = f.texto; Task { await anadirRapido() } } label: {
-                        Text("+ " + f.texto.lowercased()).font(Tipo.pie).foregroundStyle(Paleta.texto)
-                            .padding(.horizontal, 12).frame(minHeight: 40)
-                            .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Paleta.borde, lineWidth: 1))
-                    }.buttonStyle(.plain).accessibilityLabel("añadir \(f.texto)")
-                } }.padding(.vertical, 2) }
-            }
+        VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+            if v.listas.count > 1 { selectorListas(v) }
             if let l = v.listaActual {
+                CampoAnadirDespensa(texto: $textoRapido, placeholder: "añadir: leche, 2 tomates…", foco: $escribiendo) {
+                    Task { await anadirRapido() }
+                }
+                siempre(v)
+                if l.items.isEmpty {
+                    TarjetaInvitacion(frase: "la lista está vacía.", destacado: "apunta lo que falta.", boton: "añadir.") { escribiendo = true }
+                        .transition(.opacity)
+                }
                 ForEach(grupos, id: \.seccion) { g in
-                    CabeceraSeccion(titulo: (LecturaDespensa.nombres[g.seccion] ?? g.seccion) + ".", detalle: g.items.count > 1 ? "\(g.items.count)" : nil)
-                    ForEach(g.items) { filaItem($0, lista: l) }
+                    tarjetaSeccion(titulo: (LecturaDespensa.nombres[g.seccion] ?? g.seccion) + ".", clave: g.seccion, items: g.items, lista: l)
+                        .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
                 }
-                let hechos = enCarro
-                if !hechos.isEmpty { CabeceraSeccion(titulo: "en el carro.", detalle: "\(hechos.count)")
-                    ForEach(hechos) { filaItem($0, lista: l) }
-                    Button("terminar la compra.") { modal = .terminar }.buttonStyle(BotonPrincipal()).padding(.top, Espacio.m)
+                if !enCarro.isEmpty { cesta(l).transition(.opacity.combined(with: .offset(y: 8))) }
+                if !v.historial.isEmpty { historial(v) }
+            } else {
+                TarjetaInvitacion(frase: "aún no tienes ninguna lista.", destacado: "empieza por la de casa.", boton: "crear lista.") {
+                    listaEditando = nil; nombreLista = "Casa"; mostrarNuevaLista = true
                 }
-                if l.items.isEmpty { Text("apunta lo que falta. se ordenará por secciones.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l) }
             }
         }
+    }
+
+    private func selectorListas(_ v: VistaDespensa) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Medida.xs) {
+                ForEach(v.listas) { l in
+                    let on = v.listaActual?.id == l.id
+                    Button {
+                        guard !on else { return }
+                        Haptica.ligera()
+                        Task { await c.guardar(.elegirListaCompra(id: l.id)) }
+                    } label: {
+                        Chip(texto: l.nombre.lowercased() + ".", tono: on ? .oscuro : .blanco)
+                            .frame(minHeight: Medida.toque).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.pulsable(0.94))
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
+        }
+    }
+
+    // «lo de siempre»: lo frecuente que no está ya por comprar. Un toque lo añade sin tocar lo que estés escribiendo.
+    @ViewBuilder private func siempre(_ v: VistaDespensa) -> some View {
+        let pendientes = Set(grupos.flatMap { $0.items.map { RecetaALista.clave($0.texto) } })
+        let chips = v.frecuentes.filter { !pendientes.contains(RecetaALista.clave($0.texto)) }
+        if !chips.isEmpty {
+            VStack(alignment: .leading, spacing: Medida.xxs) {
+                EtiquetaSeccion(texto: "lo de siempre")
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: Medida.xs) {
+                        ForEach(chips) { f in
+                            Button { Task { await anadir(f.texto) } } label: {
+                                Chip(texto: "+ " + f.texto.lowercased(), tono: .blanco)
+                                    .overlay(Capsule().strokeBorder(Lienzo.filo))
+                                    .frame(minHeight: Medida.toque).contentShape(Rectangle())
+                            }
+                            .buttonStyle(.pulsable(0.92))
+                            .accessibilityLabel("añadir \(f.texto)")
+                            .transition(.scale(scale: 0.6).combined(with: .opacity))
+                        }
+                    }
+                    .padding(.horizontal, Medida.xxs)
+                }
+                .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: chips.map(\.id))
+            }
+        }
+    }
+
+    private func abierta(_ clave: String) -> Binding<Bool> {
+        Binding(get: { !plegadas.contains(clave) }, set: { if $0 { plegadas.remove(clave) } else { plegadas.insert(clave) } })
+    }
+
+    private func tarjetaSeccion(titulo: String, clave: String, items: [ItemDespensa], lista: ListaDespensa) -> some View {
+        SeccionPlegable(titulo: titulo, detalle: "\(items.count)", abierta: abierta(clave)) {
+            filas(items, lista: lista)
+        }
+        .tarjeta(relleno: Medida.s)
+    }
+
+    private func filas(_ items: [ItemDespensa], lista: ListaDespensa) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(items.enumerated()), id: \.element.id) { k, i in
+                VStack(spacing: 0) {
+                    if k > 0 { SeparadorFila(sangria: Medida.toque) }
+                    filaItem(i, lista: lista)
+                }
+                .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: -10)), removal: .opacity.combined(with: .scale(scale: 0.96))))
+            }
+        }
+    }
+
+    private func cesta(_ l: ListaDespensa) -> some View {
+        VStack(alignment: .leading, spacing: Medida.xs) {
+            SeccionPlegable(titulo: "en la cesta.", detalle: "\(enCarro.count)", abierta: abierta(Self.claveCesta)) {
+                filas(enCarro, lista: l)
+            }
+            Button("terminar la compra.") { modal = .terminar }
+                .buttonStyle(.capsula(.oscuro, ancho: true))
+        }
+        .tarjeta(relleno: Medida.s)
     }
 
     private func filaItem(_ item: ItemDespensa, lista: ListaDespensa) -> some View {
         let hecho = marcas.hecho(item)
         let detalle = [item.cantidad, item.recetas.isEmpty ? "" : "para " + item.recetas.joined(separator: ", ")].filter { !$0.isEmpty }.joined(separator: ". ")
-        return FilaCirculo(hecho: hecho, marcar: { marcar(item, en: lista) }, abrir: { modal = .item(item) }) {
-            EmptyView()
-        } texto: {
-            Text(item.texto).font(Tipo.cuerpoFuerte).foregroundStyle(hecho ? Paleta.textoSecundario : Paleta.texto)
-                .strikethrough(hecho, color: Paleta.textoSecundario).multilineTextAlignment(.leading)
-            if !detalle.isEmpty { Text(detalle).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-        } cola: {
-            if let p = item.precio { Text("≈ " + Dinero.formato(p)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).monospacedDigit().enPrimeraLinea(13) }
-            Menu {
-                Button(hecho ? "sacar del carro." : "al carro.") { marcar(item, en: lista) }
-                Button("editar.") { modal = .item(item) }
-                Button("eliminar.", role: .destructive) { borrar(item, de: lista) }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Paleta.textoSecundario)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
+        return HStack(spacing: Medida.xxs) {
+            CasillaMarcar(hecha: hecho) { marcar(item, en: lista) }
+            Button { modal = .item(item) } label: {
+                HStack(alignment: .firstTextBaseline, spacing: Medida.xs) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.texto).font(Letra.cuerpo)
+                            .foregroundStyle(hecho ? Lienzo.tintaTerciaria : Lienzo.tinta)
+                            .strikethrough(hecho, color: Lienzo.tintaTerciaria)
+                            .multilineTextAlignment(.leading)
+                        if !detalle.isEmpty {
+                            Text(detalle).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(2)
+                                .opacity(hecho ? 0.6 : 1)
+                        }
+                    }
+                    Spacer(minLength: Medida.xs)
+                    if let p = item.precio {
+                        Text("≈ " + Dinero.formato(p)).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).monospacedDigit()
+                    }
+                }
+                .padding(.vertical, Medida.xs)
+                .frame(minHeight: Medida.toque)
+                .contentShape(Rectangle())
             }
-            .accessibilityLabel("acciones para \(item.texto)")
+            .buttonStyle(.pulsable(0.98))
         }
-        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
         .contextMenu {
-            Button(hecho ? "sacar del carro." : "al carro.") { marcar(item, en: lista) }
+            Button(hecho ? "sacar de la cesta." : "a la cesta.") { marcar(item, en: lista) }
             Button("editar.") { modal = .item(item) }
             Button("eliminar.", role: .destructive) { borrar(item, de: lista) }
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel([item.texto, detalle, item.precio.map { "unos " + Dinero.formato($0) } ?? ""].filter { !$0.isEmpty }.joined(separator: ", "))
-        .accessibilityValue(hecho ? "en el carro" : "por comprar")
-        .accessibilityAction(named: hecho ? "sacar del carro" : "al carro") { marcar(item, en: lista) }
+        .accessibilityValue(hecho ? "en la cesta" : "por comprar")
+        .accessibilityAction(named: hecho ? "sacar de la cesta" : "a la cesta") { marcar(item, en: lista) }
         .accessibilityAction(named: "editar") { modal = .item(item) }
         .accessibilityAction(named: "eliminar") { borrar(item, de: lista) }
     }
@@ -232,10 +312,10 @@ struct DespensaView: View {
         // El producto y su lista, frescos por id: la fila pudo pintarse con una foto anterior.
         let lista = vista?.listas.first { $0.items.contains { $0.id == visto.id } } ?? listaVista
         let item = lista.items.first { $0.id == visto.id } ?? visto
-        // Al sacar del carro también hay respuesta (marcar ya la tiene en BitacoraCheck).
-        if marcas.hecho(item) { UISelectionFeedbackGenerator().selectionChanged() }
+        // Al sacar de la cesta también hay respuesta (marcar ya la tiene en CasillaMarcar).
+        if marcas.hecho(item) { Haptica.seleccion() }
         let nuevo = marcas.tocar(item)
-        reagrupar()
+        reagrupar(animar: true)
         let op = OperacionesDespensa.marcarOp(listaId: lista.id, id: item.id, hecho: nuevo)
         let previa = cadena
         cadena = Task {
@@ -253,62 +333,152 @@ struct DespensaView: View {
         }
     }
 
-    private func reagrupar() {
-        let g = LecturaDespensa.agrupar(vista?.listaActual?.items ?? [], hecho: { marcas.hecho($0) })
-        var t = Transaction(); t.disablesAnimations = true
-        withTransaction(t) { grupos = g.secciones; enCarro = g.carro }
+    // Con un toque, o cuando llega un producto nuevo a la misma lista, el cambio va con muelle; al cargar o cambiar de
+    // lista, sin animación (las filas no deben bailar).
+    private func reagrupar(animar: Bool = false) {
+        let actual = vista?.listaActual
+        let g = LecturaDespensa.agrupar(actual?.items ?? [], hecho: { marcas.hecho($0) })
+        let antes = Set(grupos.flatMap { $0.items.map(\.id) } + enCarro.map(\.id))
+        let llegaAlgo = !antes.isEmpty && listaPintada == actual?.id && g.secciones.contains { $0.items.contains { !antes.contains($0.id) } }
+        var t = Transaction()
+        if animar || llegaAlgo { t.animation = Muelle.o(animar ? Muelle.expandir : Muelle.entrada, reducido: sinMovimiento) } else { t.disablesAnimations = true }
+        withTransaction(t) { grupos = g.secciones; enCarro = g.carro; listaPintada = actual?.id }
     }
 
-    private func historial(_ v: VistaDespensa) -> some View { LazyVStack(alignment: .leading, spacing: 0) {
-        CabeceraSeccion(titulo: "historial.", detalle: "\(v.historial.count)")
-        if v.historial.isEmpty { Text("aquí aparecerán las compras terminadas y los tickets.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l) }
-        ForEach(v.historial) { x in VStack(alignment: .leading, spacing: 3) { HStack { Text(x.tienda.isEmpty ? "compra." : x.tienda.lowercased() + ".").font(Tipo.cuerpoFuerte); Spacer(); Text(Dinero.formato(x.total)).font(Tipo.cuerpoFuerte).monospacedDigit() }
-            Text("\(Self.fechaCorta(x.fecha)), \(x.productos) productos, \(x.fuente == "ticket" ? "con ticket" : "a mano")" + (x.sinComprar.isEmpty ? "." : ", \(x.sinComprar.count) faltaron."))
-                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }.padding(.vertical, 10).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) } }
-    } }
-
-    private func recetas(_ v: VistaDespensa) -> some View { LazyVStack(alignment: .leading, spacing: 0) {
-        HStack { CabeceraSeccion(titulo: "recetas.", detalle: "\(v.recetas.count)"); Spacer(); AccionTexto(texto: "+ receta.") { modal = .receta(nil) } }
-        if v.recetas.isEmpty { Text("guarda tus recetas y pasa sus ingredientes a la cesta en un toque.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l) }
-        ForEach(v.recetas) { r in
-            let ya = RecetaALista.yaEsta(r, en: v.listaActual).count
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline) {
-                    Button { modal = .receta(r) } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(r.nombre.lowercased() + ".").font(Tipo.poppins(17, .semibold, estilo: .body)).foregroundStyle(Paleta.texto)
-                            Text("\(r.raciones) raciones, \(r.ingredientes.count) ingredientes" + (ya > 0 ? ", \(ya) ya en la lista." : "."))
-                                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                        }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
-                    }.buttonStyle(.plain)
-                    Menu {
-                        Button("editar.") { modal = .receta(r) }
-                        Button("eliminar receta.", role: .destructive) { recetaABorrar = r }
-                    } label: { Image(systemName: "ellipsis").font(.system(size: 17, weight: .semibold)).foregroundStyle(Paleta.textoSecundario).frame(width: 44, height: 44) }
-                    .accessibilityLabel("acciones para \(r.nombre)")
+    private func historial(_ v: VistaDespensa) -> some View {
+        SeccionPlegable(titulo: "compras pasadas.", detalle: "\(v.historial.count)", abierta: $verHistorial) {
+            VStack(spacing: 0) {
+                ForEach(Array(v.historial.enumerated()), id: \.element.id) { k, x in
+                    if k > 0 { SeparadorFila(sangria: 0) }
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(x.tienda.isEmpty ? "compra." : x.tienda.lowercased() + ".").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta)
+                            Spacer()
+                            Text(Dinero.formato(x.total)).font(Letra.numero).foregroundStyle(Lienzo.tinta)
+                        }
+                        Text("\(Self.fechaCorta(x.fecha)), \(x.productos) productos, \(x.fuente == "ticket" ? "con ticket" : "a mano")" + (x.sinComprar.isEmpty ? "." : ", \(x.sinComprar.count) faltaron."))
+                            .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                    }
+                    .padding(.vertical, Medida.s)
+                    .accessibilityElement(children: .combine)
                 }
-                Text(r.ingredientes.map { [$0.cantidad, $0.texto].filter { !$0.isEmpty }.joined(separator: " ") }.joined(separator: ", "))
-                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(3)
-                Button { modal = .pasar(r) } label: {
-                    Text("pasar a la cesta.").font(Tipo.poppins(14, .semibold, estilo: .footnote)).foregroundStyle(Paleta.acento)
-                        .padding(.horizontal, 12).frame(minHeight: 40)
-                        .background(Paleta.tinteAcento, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                }.buttonStyle(.plain).disabled(r.ingredientes.isEmpty || v.listaActual == nil)
             }
-            .padding(14)
-            .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Paleta.borde, lineWidth: 1))
-            .padding(.vertical, 5)
         }
-    } }
+        .tarjeta(relleno: Medida.s)
+    }
 
-    private func plan(_ v: VistaDespensa) -> some View { VStack(alignment: .leading, spacing: 0) {
-        CabeceraSeccion(titulo: "planificación.", detalle: "lunes a domingo")
-        ForEach(semanaActual(), id: \.self) { dia in VStack(alignment: .leading, spacing: 4) { HStack { Text(etiquetaDia(dia)).font(Tipo.cuerpoFuerte); Spacer(); Button("+ plato.") { modal = .plato(dia.iso) }.font(Tipo.pie).foregroundStyle(Paleta.acento).buttonStyle(.plain).frame(minHeight: 44) }
-            ForEach(v.plan[dia.iso] ?? []) { p in HStack { VStack(alignment: .leading) { Text(p.nombre).font(Tipo.cuerpo); if !p.momento.isEmpty { Text(p.momento).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) } }; Spacer(); Button(role: .destructive) { Task { await c.guardar(.borrarPlatoCompra(dia: dia.iso, id: p.id)) } } label: { Image(systemName: "trash").foregroundStyle(Paleta.textoSecundario).frame(width: 44, height: 44).contentShape(Rectangle()) }.buttonStyle(.plain).accessibilityLabel("quitar \(p.nombre)") } }
-        }.padding(.vertical, 8).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) } }
-        Button("pasar ingredientes que faltan a la lista.") { Task { await planALista(v) } }.buttonStyle(BotonPrincipal()).padding(.top, Espacio.m)
-    } }
+    // MARK: - Recetas
+
+    @ViewBuilder private func recetas(_ v: VistaDespensa) -> some View {
+        VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+            if v.recetas.isEmpty {
+                TarjetaInvitacion(frase: "aún no hay recetas.", destacado: "guárdalas y pasa sus ingredientes en un toque.", boton: "nueva receta.") { modal = .receta(nil) }
+            } else {
+                EtiquetaSeccion(texto: v.recetas.count == 1 ? "1 receta" : "\(v.recetas.count) recetas", accion: (titulo: "+ receta.", hacer: { modal = .receta(nil) }))
+                let precios = DespensaCoste.precios(v.listas)
+                ForEach(Array(v.recetas.enumerated()), id: \.element.id) { n, r in
+                    tarjetaReceta(r, v, precios: precios).entradaEscalonada(n)
+                }
+            }
+        }
+    }
+
+    private func tarjetaReceta(_ r: RecetaDespensa, _ v: VistaDespensa, precios: [String: Decimal]) -> some View {
+        let ya = RecetaALista.yaEsta(r, en: v.listaActual).count
+        let coste = DespensaCoste.receta(r, precios: precios)
+        let meta = "\(r.raciones) \(r.raciones == 1 ? "ración" : "raciones"), \(r.ingredientes.count) ingredientes" + (ya > 0 ? ", \(ya) ya en la lista." : ".")
+        return VStack(alignment: .leading, spacing: Medida.s) {
+            HStack(alignment: .top, spacing: Medida.xs) {
+                Button { modal = .receta(r) } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(r.nombre.lowercased() + ".").font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta).multilineTextAlignment(.leading)
+                        Text(meta).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: Medida.toque, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.pulsable(0.98))
+                MenuRedondoDespensa(etiqueta: "acciones para \(r.nombre)", suelto: true) {
+                    Button("editar.") { modal = .receta(r) }
+                    Button("eliminar receta.", role: .destructive) { recetaABorrar = r }
+                }
+            }
+            if !r.ingredientes.isEmpty {
+                Text(r.ingredientes.map { [$0.cantidad, $0.texto].filter { !$0.isEmpty }.joined(separator: " ") }.joined(separator: ", "))
+                    .font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(2)
+            }
+            HStack(alignment: .center, spacing: Medida.s) {
+                if let coste {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("COSTE").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.tintaTerciaria)
+                        Text("≈ " + Dinero.formato(coste.total)).font(Letra.numero).foregroundStyle(Lienzo.tinta)
+                        if coste.conPrecio < Set(r.ingredientes.map { RecetaALista.clave($0.texto) }).count {
+                            Text("con \(coste.conPrecio) precios apuntados.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        }
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+                Spacer(minLength: Medida.xs)
+                Button("a la lista.") { modal = .pasar(r) }
+                    .buttonStyle(.capsula)
+                    .disabled(r.ingredientes.isEmpty || v.listaActual == nil)
+            }
+        }
+        .tarjeta()
+    }
+
+    // MARK: - Planificación
+
+    private func plan(_ v: VistaDespensa) -> some View {
+        let hoy = CalendarioBitacora.madrid.dia(de: Date())
+        let semana = semanaActual()
+        let hayIngredientes = semana.contains { !(v.plan[$0.iso] ?? []).flatMap(\.ingredientes).isEmpty }
+        return VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+            EtiquetaSeccion(texto: "de lunes a domingo")
+            ForEach(Array(semana.enumerated()), id: \.element) { n, dia in
+                tarjetaDia(dia, platos: v.plan[dia.iso] ?? [], esHoy: dia == hoy).entradaEscalonada(n)
+            }
+            Button("pasar lo que falta a la lista.") { Task { await planALista(v) } }
+                .buttonStyle(.capsula(.oscuro, ancho: true))
+                .disabled(v.listaActual == nil || !hayIngredientes)
+                .padding(.top, Medida.xs)
+        }
+    }
+
+    private func tarjetaDia(_ dia: LocalDay, platos: [PlatoPlan], esHoy: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: Medida.xs) {
+                Text(etiquetaDia(dia)).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta)
+                if esHoy { Chip(texto: "hoy", tono: .naranja) }
+                Spacer()
+                Button("+ plato.") { modal = .plato(dia.iso) }
+                    .font(Letra.pieFuerte).foregroundStyle(Lienzo.tintaSecundaria)
+                    .frame(minHeight: Medida.toque)
+                    .buttonStyle(.pulsable(0.94))
+                    .accessibilityLabel("añadir plato el \(etiquetaDia(dia))")
+            }
+            ForEach(platos) { p in
+                SeparadorFila(sangria: 0)
+                HStack(spacing: Medida.xs) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(p.nombre).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
+                        if !p.momento.isEmpty { Text(p.momento + ".").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
+                    }
+                    Spacer()
+                    Button { Task { await c.guardar(.borrarPlatoCompra(dia: dia.iso, id: p.id)) } } label: {
+                        Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).foregroundStyle(Lienzo.tintaTerciaria)
+                            .frame(width: Medida.toque, height: Medida.toque).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.pulsable(0.85))
+                    .accessibilityLabel("quitar \(p.nombre)")
+                }
+                .padding(.vertical, Medida.xxs)
+            }
+        }
+        .tarjeta(relleno: Medida.s)
+    }
+
+    // MARK: - Datos (igual que antes)
 
     private func cargar() async {
         cargas += 1
@@ -323,7 +493,14 @@ struct DespensaView: View {
         reagrupar()
     }
     private func guardarLista() async { let n = nombreLista, previa = listaEditando; nombreLista = ""; listaEditando = nil; if !(await c.guardar(.guardarListaCompra(id: previa?.id ?? OperacionBitacora.nuevoIdProyecto("lista"), nombre: n))) { nombreLista = n; listaEditando = previa } }
-    private func anadirRapido() async { guard let l = vista?.listaActual else { return }; let t = textoRapido; textoRapido = ""; if !(await c.guardar(.anadirCompra(listaId: l.id, textos: [t], ids: [OperacionBitacora.nuevoIdProyecto("cmp")]))), textoRapido.isEmpty { textoRapido = t } }
+    @discardableResult private func anadir(_ t: String) async -> Bool {
+        guard let l = vista?.listaActual, !t.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
+        let ok = await c.guardar(.anadirCompra(listaId: l.id, textos: [t], ids: [OperacionBitacora.nuevoIdProyecto("cmp")]))
+        if ok { Haptica.ligera() }
+        return ok
+    }
+    // El tick del teclado añade y cierra el teclado (0.22: antes volvía a enfocar el campo y no se cerraba).
+    private func anadirRapido() async { let t = textoRapido; textoRapido = ""; if !(await anadir(t)), textoRapido.isEmpty { textoRapido = t } }
     private func guardarItem(_ previo: ItemDespensa?, _ texto: String, _ cantidad: String, _ seccion: String, _ precio: String) async { guard let l = vista?.listaActual else { return }; await c.guardar(OperacionesDespensa.editarOp(listaId: l.id, id: previo?.id ?? OperacionBitacora.nuevoIdProyecto("cmp"), texto: texto, cantidad: cantidad, seccion: seccion, precio: precio.isEmpty ? nil : precio)) }
     private func borrar(_ item: ItemDespensa, de lista: ListaDespensa) {
         quitado = (item, lista.id)
@@ -350,7 +527,7 @@ struct DespensaView: View {
             var t = nuevos.isEmpty ? "ya tenías todo en la lista." : "\(nuevos.count) \(nuevos.count == 1 ? "ingrediente" : "ingredientes") a «\(l.nombre.lowercased())»: \(nuevos.map { $0.texto.lowercased() }.joined(separator: ", "))."
             if !anotados.isEmpty && !nuevos.isEmpty { t += " ya estaban: \(anotados.map { $0.texto.lowercased() }.joined(separator: ", "))." }
             hecho = t
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            Haptica.exito()
             try? await Task.sleep(for: .seconds(5))
             if hecho == t { hecho = nil }
         } catch { hecho = "no se pudo guardar en este iPhone." }
