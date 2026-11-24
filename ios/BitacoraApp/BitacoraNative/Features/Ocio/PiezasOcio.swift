@@ -1,14 +1,17 @@
 import SwiftUI
+import UIKit
 
 // Estrellas con medios puntos (0.20). Tocar la mitad izquierda de una estrella deja media; arrastrar va recorriendo.
-// Con VoiceOver se ajusta de medio en medio.
+// Con VoiceOver se ajusta de medio en medio. 3.0: la estrella que se toca late con un muelle.
 struct EstrellasOcio: View {
     let valor: Double
     var tamano: CGFloat = 26
-    var color: Color = Paleta.acento
+    var color: Color = Lienzo.naranja
     var cambiar: ((Double) -> Void)?
     // La nota que había al apoyar el dedo: tocar otra vez la misma la quita (0.22; antes no había forma de volver a «sin valorar»).
     @State private var alApoyar: Double? = nil
+    @State private var latido: Int? = nil
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
     var body: some View {
         let lado = Tipo.tamano(tamano)
@@ -17,16 +20,18 @@ struct EstrellasOcio: View {
                 let resto = valor - Double(i)
                 Image(systemName: resto >= 1 ? "star.fill" : resto >= 0.5 ? "star.leadinghalf.filled" : "star")
                     .font(.system(size: lado * 0.82, weight: .semibold))
-                    .foregroundStyle(resto >= 0.5 ? color : Paleta.aro)
+                    .foregroundStyle(resto >= 0.5 ? color : Lienzo.tintaTerciaria)
                     .frame(width: lado, height: lado)
+                    .scaleEffect(latido == i && !sinMovimiento ? 1.28 : 1)
+                    .animation(latido == i ? Muelle.toque : Muelle.soltar, value: latido)
             }
         }
-        .frame(minHeight: cambiar == nil ? nil : 44)
+        .frame(minHeight: cambiar == nil ? nil : Medida.toque)
         .contentShape(Rectangle())
         .gesture(cambiar == nil ? nil : DragGesture(minimumDistance: 0).onChanged { g in
             if alApoyar == nil { alApoyar = valor }
             let v = Self.nota(g.location.x, lado: lado)
-            if v != valor { cambiar?(v) }
+            if v != valor { cambiar?(v); latir(v) }
         }.onEnded { g in
             if let antes = alApoyar, abs(g.translation.width) < 6, Self.nota(g.location.x, lado: lado) == antes { cambiar?(0) }
             alApoyar = nil
@@ -41,34 +46,35 @@ struct EstrellasOcio: View {
             cambiar(d == .increment ? min(5, valor + 0.5) : max(0, valor - 0.5))
         }
     }
+
+    private func latir(_ v: Double) {
+        let i = max(0, Int(v.rounded(.up)) - 1)
+        latido = i
+        Task {
+            try? await Task.sleep(for: .milliseconds(140))
+            if latido == i { latido = nil }
+        }
+    }
 }
 
 extension EstrellasOcio {
     static func nota(_ x: CGFloat, lado: CGFloat) -> Double { min(5, max(0.5, (Double(x / (lado * 1.18)) * 2).rounded(.up) / 2)) }
 }
 
-// Buscador de Ocio: superficie, filo del tema y lupa, como los campos de la casa (antes era un TextField sin fondo).
-struct BuscadorOcio: View {
-    @Binding var texto: String
-    let placeholder: String
-    @FocusState private var activo: Bool
+// Valoración discreta de las tarjetas: una estrella pequeña y la nota («4,5»).
+struct NotaDiscretaOcio: View {
+    let valor: Double
+    var sobreOscuro = false
 
     var body: some View {
-        HStack(spacing: Espacio.s) {
-            Image(systemName: "magnifyingglass").font(.system(size: Tipo.tamano(15), weight: .semibold)).foregroundStyle(Paleta.textoSecundario)
-            TextField(placeholder, text: $texto)
-                .font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
-                .textInputAutocapitalization(.never).autocorrectionDisabled().submitLabel(.search)
-                .focused($activo)
-            if !texto.isEmpty {
-                Button { texto = "" } label: {
-                    Image(systemName: "xmark.circle.fill").font(.system(size: Tipo.tamano(16))).foregroundStyle(Paleta.textoSecundario)
-                        .frame(width: 32, height: 44)
-                }
-                .buttonStyle(.plain).accessibilityLabel("borrar la búsqueda")
-            }
+        HStack(spacing: 3) {
+            Image(systemName: "star.fill").font(.system(size: 9, weight: .bold)).foregroundStyle(Lienzo.naranja)
+            Text(valor == valor.rounded() ? "\(Int(valor))" : String(format: "%.1f", valor).replacingOccurrences(of: ".", with: ","))
+                .font(Letra.pieFuerte).monospacedDigit()
+                .foregroundStyle(sobreOscuro ? Lienzo.sobreOscuroSuave : Lienzo.tintaSecundaria)
         }
-        .campoCasa(activo: activo)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(LecturaOcio.textoNota(valor))
     }
 }
 
@@ -110,27 +116,89 @@ enum BuscarPortadas {
     }
 }
 
-// La portada guardada o, sin ella, la inicial sobre el tinte del tema.
+// La portada guardada o, sin ella, la inicial sobre gris. Con `ancho` nil ocupa el ancho que le den (rejilla), en
+// proporción 2:3. 3.0: la que llega de la red entra fundida; la que ya estaba en la caché sale al momento, sin parpadeo.
+// Usa la caché de `Imagenes` (Core) directamente porque `ImagenRemota` no avisa de cuándo llega la imagen.
 struct PortadaOcio: View {
     let url: String
     let titulo: String
-    var ancho: CGFloat = 48
+    var ancho: CGFloat? = 48
+    var radio: CGFloat = 8
+
+    static let proporcion: CGFloat = 1.45
+
+    @State private var cargada: (url: URL, imagen: UIImage)? = nil
+    @State private var visible = false
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
+
+    private var direccion: URL? { url.isEmpty ? nil : URL(string: url) }
+    // Lado al que se decodifica: el alto de la portada (en la rejilla, unos 180 pt bastan para tres columnas).
+    private var lado: CGFloat { (ancho ?? 124) * Self.proporcion }
 
     var body: some View {
-        let alto = ancho * 1.45
-        Group {
-            if let u = URL(string: url), !url.isEmpty {
-                // Con caché en memoria y reducida al tamaño de la portada (AsyncImage la bajaba y decodificaba entera cada vez).
-                ImagenRemota(url: u, lado: alto) { inicial }
-            } else { inicial }
+        Color.clear
+            .aspectRatio(1 / Self.proporcion, contentMode: .fit)
+            .frame(width: ancho, height: ancho.map { $0 * Self.proporcion })
+            .frame(maxWidth: ancho == nil ? .infinity : nil)
+            .background(inicial)
+            .overlay { imagen }
+            .clipShape(RoundedRectangle(cornerRadius: radio, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: radio, style: .continuous).strokeBorder(Lienzo.filo))
+            .accessibilityHidden(true)
+            .task(id: url) {
+                guard let u = direccion, cargada?.url != u else { return }
+                if let ya = Imagenes.guardada(Imagenes.clave(u, lado: lado)) { cargada = (u, ya); visible = true; return }
+                visible = false
+                guard let img = await Imagenes.cargar(u, lado: lado) else { return }
+                cargada = (u, img)
+                withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento)) { visible = true }
+            }
+    }
+
+    @ViewBuilder private var imagen: some View {
+        if let u = direccion, let img = cargada.flatMap({ $0.url == u ? $0.imagen : nil }) {
+            Image(uiImage: img).resizable().scaledToFill()
+                .opacity(visible ? 1 : 0)
+                .scaleEffect(visible || sinMovimiento ? 1 : 1.04)
         }
-        .frame(width: ancho, height: alto)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Paleta.borde, lineWidth: 1))
-        .accessibilityHidden(true)
     }
 
     private var inicial: some View {
-        Paleta.tinteTexto.overlay(Text(String(titulo.prefix(1)).lowercased()).font(Tipo.poppins(20, .bold, estilo: .title3)).foregroundStyle(Paleta.textoSecundario))
+        Lienzo.sutil.overlay(
+            Text(String(titulo.prefix(1)).lowercased())
+                .font((ancho ?? 100) < 60 ? Letra.seccion : Letra.titulo)
+                .foregroundStyle(Lienzo.tintaTerciaria))
+    }
+}
+
+// Entrada escalonada solo para las primeras celdas de la primera carga: en una rejilla perezosa larga, cada celda que
+// aparece al hacer scroll volvería a animarse.
+struct AparicionOcio: ViewModifier {
+    let indice: Int
+    let activa: Bool
+
+    @ViewBuilder func body(content: Content) -> some View {
+        if activa { content.entradaEscalonada(indice) } else { content }
+    }
+}
+
+// Raya fina naranja de «ahora mismo». No hay progreso guardado (ni páginas ni capítulos): mide los días desde que
+// empezó, sobre un mes, y se dice en texto al lado.
+struct BarraCursoOcio: View {
+    let fraccion: Double
+    @State private var lleno = false
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
+
+    var body: some View {
+        GeometryReader { g in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Lienzo.filoOscuro)
+                Capsule().fill(Lienzo.naranja)
+                    .frame(width: max(4, g.size.width * (lleno ? min(1, max(0, fraccion)) : 0)))
+            }
+        }
+        .frame(height: 3)
+        .accessibilityHidden(true)
+        .onAppear { withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento).delay(0.12)) { lleno = true } }
     }
 }
