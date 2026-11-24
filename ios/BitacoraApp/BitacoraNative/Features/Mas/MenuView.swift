@@ -102,7 +102,7 @@ struct MasView: View {
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { MenuMas.desde($0) } }) else { return }
             menu = nuevo
-            usados = masUsados(nuevo)
+            if let nuevo { usados = masUsados(nuevo) }
             await Medidas.anotar("pestaña menú (cargar)", desde: t0)
         }
         .onAppear { if let menu { usados = masUsados(menu) } }

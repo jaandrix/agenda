@@ -72,7 +72,7 @@ struct EventosView: View {
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { VistaEventos.desde($0) } }) else { return }
             vista = nuevo
-            if nuevo.pasados.isEmpty { tramo = .proximos }
+            if nuevo?.pasados.isEmpty ?? true { tramo = .proximos }
             guard let doc else { return }
             hayEquipos = !((((try? doc.valor(de: "servicios")) ?? nil)?["equipos"]?.lista ?? []).isEmpty)
             if hayEquipos {
