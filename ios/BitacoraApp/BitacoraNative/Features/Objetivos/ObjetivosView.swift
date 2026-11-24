@@ -2,7 +2,7 @@ import SwiftUI
 
 // Objetivos (renderGoals en js/notas-objetivos.js, saveEntry type goal en js/entradas.js): entradas `type: goal` con plazo,
 // estado, hitos y, si son numéricos, valor actual, meta y unidad. Desde la 0.24, el mandala Harada, el paso kaizen y el
-// tablero por estado (MetodoObjetivos.swift); «para qué» y hansei siguen en la web.
+// tablero por estado (MetodoObjetivos.swift); «para qué» (`proposito`) solo se lee; escribirlo y el hansei siguen en la web.
 
 struct HitoObjetivo: Sendable, Identifiable, Equatable { let texto: String; let hecho: Bool; var id: String { texto } }
 
@@ -13,6 +13,7 @@ struct Objetivo: Sendable, Identifiable, Equatable {
     let hitos: [HitoObjetivo]
     var pilares: [PilarMandala] = []
     var kaizen: KaizenObjetivo?
+    var proposito = ""
 
     // goalProgressPct: solo los numéricos con meta.
     var porcentaje: Int? {
@@ -38,10 +39,12 @@ enum LecturaObjetivos {
                 guard let t = h["text"]?.texto, !t.isEmpty else { return nil }
                 return HitoObjetivo(texto: t, hecho: h["done"]?.booleano == true)
             }
-            return Objetivo(id: id, titulo: o["title"]?.texto ?? "", plazo: o["term"]?.texto ?? "short", estado: o["status"]?.texto ?? "Pendiente",
+            var g = Objetivo(id: id, titulo: o["title"]?.texto ?? "", plazo: o["term"]?.texto ?? "short", estado: o["status"]?.texto ?? "Pendiente",
                             unidad: o["unit"]?.texto ?? "", notas: o["notes"]?.texto ?? "", numerico: o["goalType"]?.texto == "numeric",
                             actual: Dinero.decimal(o["currentValue"]) ?? 0, meta: Dinero.decimal(o["targetValue"]) ?? 0, hitos: hitos,
                             pilares: LecturaMetodo.pilares(o), kaizen: LecturaMetodo.kaizen(o, habits: habits))
+            g.proposito = (o["proposito"]?.texto ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            return g
         }
     }
 
@@ -55,77 +58,242 @@ enum LecturaObjetivos {
 private struct ObjetivoAbierto: Identifiable { let id: String }
 private struct EdicionObjetivo: Identifiable { let objetivo: Objetivo?; var id: String { objetivo?.id ?? "nuevo" } }
 
+enum FiltroObjetivos: String { case enCurso, cumplidos, tablero }
+
+// Objetivos 3.0: el principal en negro con su barra y el siguiente hito; el resto, en tarjetas blancas por plazo con los
+// hitos marcables; «cumplidos.» y el tablero en el segmento.
 struct ObjetivosView: View {
     @Environment(AppCoordinator.self) private var c
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var objetivos: [Objetivo]?
     @State private var abierto: ObjetivoAbierto?
     @State private var edicion: EdicionObjetivo?
-    @AppStorage("bitacora.objetivos.tablero") private var tablero = false
+    @AppStorage("bitacora.objetivos.filtro") private var filtro: FiltroObjetivos = .enCurso
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                CabeceraContexto(titulo: "objetivos", detalle: objetivos.map { "\($0.filter { $0.estado == "Completado" }.count) de \($0.count) cumplidos." }) {
-                    Text("lo que persigues.").font(Tipo.poppins(24, .bold, estilo: .title3)).foregroundStyle(Paleta.sobreContexto)
-                    Text("hitos y progreso.").font(Tipo.pie).foregroundStyle(Paleta.sobreContextoSuave)
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                CabeceraPagina(titulo: "objetivos.", subtitulo: subtitulo) {
+                    BotonRedondo(sistema: "plus", tono: .oscuro, etiqueta: "nuevo objetivo") { nuevo() }
                 }
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: Espacio.xs) {
-                        pestana("lista.", !tablero) { tablero = false }
-                        pestana("tablero.", tablero) { tablero = true }
-                        Spacer()
-                        AccionTexto(texto: "+ objetivo.") { edicion = EdicionObjetivo(objetivo: nil) }
-                    }.padding(.vertical, Espacio.xs)
-                    if let objetivos, tablero, !objetivos.isEmpty {
-                        TableroObjetivos(objetivos: objetivos, abrir: { abierto = ObjetivoAbierto(id: $0.id) },
-                                         mover: { g, e in Task { await c.guardar(MetodoOp.opEstado(objetivo: g.id, estado: e)) } })
-                    } else if let objetivos {
-                        if objetivos.isEmpty { Text("ningún objetivo todavía.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l) }
-                        ForEach(LecturaObjetivos.plazos, id: \.0) { plazo in
-                            let grupo = objetivos.filter { $0.plazo == plazo.0 }
-                            if !grupo.isEmpty {
-                                CabeceraSeccion(titulo: plazo.1 + ".", detalle: "\(grupo.count)")
-                                ForEach(grupo) { fila($0) }
+                .padding(.bottom, Medida.xxs)
+                if let objetivos {
+                    if objetivos.isEmpty {
+                        TarjetaInvitacion(frase: "aún no persigues nada aquí.", destacado: "empieza por uno pequeño.", boton: "nuevo objetivo.") { nuevo() }
+                            .entradaEscalonada(0)
+                    } else {
+                        SegmentoCapsula(opciones: [.init(valor: FiltroObjetivos.enCurso, titulo: "en curso"),
+                                                   .init(valor: FiltroObjetivos.cumplidos, titulo: "cumplidos"),
+                                                   .init(valor: FiltroObjetivos.tablero, titulo: "tablero")],
+                                        elegido: $filtro, sobreBlanco: false)
+                        Group {
+                            switch filtro {
+                            case .enCurso: enCurso(objetivos)
+                            case .cumplidos: cumplidos(objetivos)
+                            case .tablero:
+                                TableroObjetivos(objetivos: objetivos, abrir: { abrir($0) },
+                                                 mover: { g, e in Task { await c.guardar(MetodoOp.opEstado(objetivo: g.id, estado: e)) } })
                             }
                         }
-                    } else { ProgressView().frame(maxWidth: .infinity).padding(.top, Espacio.xl) }
-                }.modifier(HojaContenido())
+                        .id(filtro)
+                        .transition(.opacity)
+                    }
+                } else {
+                    ProgressView().tint(Lienzo.tintaSecundaria).frame(maxWidth: .infinity).padding(.top, Medida.xl)
+                }
             }
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.xl)
+            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: objetivos)
         }
-        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
-        .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
+        .scrollIndicators(.hidden)
+        .fondoLienzo()
+        .refreshable { await c.sincronizar() }
+        .task(id: c.revision) { await cargar() }
         .hoja(item: $abierto) { a in FichaObjetivo(id: a.id).environment(c) }
         .hoja(item: $edicion) { e in EditorObjetivo(objetivo: e.objetivo).environment(c) }
     }
 
-    private func pestana(_ texto: String, _ activa: Bool, _ accion: @escaping () -> Void) -> some View {
-        Button(action: accion) {
-            Text(texto).font(Tipo.poppins(14, activa ? .semibold : .medium, estilo: .footnote))
-                .padding(.horizontal, 11).padding(.vertical, 8)
-                .foregroundStyle(activa ? Paleta.sobreAcento : Paleta.textoSecundario)
-                .background(activa ? Paleta.acento : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        }.buttonStyle(.plain).accessibilityAddTraits(activa ? .isSelected : [])
+    private var subtitulo: String? {
+        guard let objetivos else { return nil }
+        return objetivos.isEmpty ? "lo que persigues." : "\(objetivos.filter(\.cumplido).count) de \(objetivos.count) cumplidos."
     }
 
-    private func fila(_ g: Objetivo) -> some View {
-        Button { abierto = ObjetivoAbierto(id: g.id) } label: {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(g.titulo.lowercased() + ".").font(Tipo.cuerpoFuerte).foregroundStyle(g.estado == "Completado" ? Paleta.textoSecundario : Paleta.texto)
-                    .strikethrough(g.estado == "Completado", color: Paleta.textoSecundario)
-                Text(detalle(g)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                if let p = g.porcentaje { BarraObjetivo(porcentaje: p) }
-            }.frame(maxWidth: .infinity, minHeight: 56, alignment: .leading).padding(.vertical, 6)
-                .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-        }.buttonStyle(.plain)
-        .contextMenu {
-            Button("editar.") { edicion = EdicionObjetivo(objetivo: g) }
-            Button("eliminar.", role: .destructive) { Task { await c.guardar(.borrarEntrada(id: g.id)) } }
+    // MARK: - En curso
+
+    // El principal: el primero en progreso y, si no hay, el de plazo más corto.
+    private static func elegirPrincipal(_ vivos: [Objetivo]) -> Objetivo? {
+        let orden = LecturaObjetivos.plazos.map(\.0)
+        return vivos.first { $0.estado == "En progreso" }
+            ?? vivos.min { (orden.firstIndex(of: $0.plazo) ?? 9) < (orden.firstIndex(of: $1.plazo) ?? 9) }
+    }
+
+    @ViewBuilder private func enCurso(_ todos: [Objetivo]) -> some View {
+        let vivos = todos.filter { !$0.cumplido }
+        if let p = Self.elegirPrincipal(vivos) {
+            principal(p).entradaEscalonada(0)
+            let resto = vivos.filter { $0.id != p.id }
+            ForEach(LecturaObjetivos.plazos, id: \.0) { plazo in
+                let grupo = resto.filter { $0.plazo == plazo.0 }
+                if !grupo.isEmpty {
+                    EtiquetaSeccion(texto: plazo.1).padding(.top, Medida.s)
+                    ForEach(grupo) { g in
+                        tarjeta(g).entradaEscalonada((resto.firstIndex { $0.id == g.id } ?? 0) + 1)
+                    }
+                }
+            }
+        } else {
+            TarjetaInvitacion(frase: "todo lo que perseguías, cumplido.", destacado: "¿a por el siguiente?", boton: "nuevo objetivo.") { nuevo() }
+                .entradaEscalonada(0)
         }
     }
 
+    private func principal(_ g: Objetivo) -> some View {
+        TarjetaOscura {
+            VStack(alignment: .leading, spacing: Medida.s) {
+                Button { abrir(g) } label: {
+                    VStack(alignment: .leading, spacing: Medida.s) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("EL PRINCIPAL").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.sobreOscuroSuave)
+                            Spacer()
+                            Text(plazo(g)).font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave)
+                        }
+                        Text(g.titulo.lowercased() + ".").font(Letra.tituloTarjeta).foregroundStyle(Lienzo.sobreOscuro)
+                            .multilineTextAlignment(.leading)
+                        if let a = g.avance {
+                            HStack(spacing: Medida.s) {
+                                BarraFinaObjetivos(valor: a, sobreOscuro: true)
+                                if let t = g.avanceTexto { Text(t).font(Letra.hora).foregroundStyle(Lienzo.naranja) }
+                            }
+                        }
+                        if g.numerico {
+                            Text(cifras(g)).font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave)
+                        }
+                        if !g.proposito.isEmpty {
+                            Text("para qué. " + g.proposito).font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave).lineLimit(3)
+                                .multilineTextAlignment(.leading)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.pulsable(0.98))
+                .accessibilityHint("abre el objetivo")
+                if let h = g.siguienteHito {
+                    Rectangle().fill(Lienzo.filoOscuro).frame(height: 1)
+                    HStack(spacing: Medida.xxs) {
+                        CasillaMarcar(hecha: false) { marcarHito(g, h) }
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("siguiente hito.").font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave)
+                            Text(h.texto).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.sobreOscuro).lineLimit(2)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.leading, -Medida.s)
+                }
+            }
+        }
+        .contextMenu { menu(g) }
+    }
+
+    private func tarjeta(_ g: Objetivo) -> some View {
+        VStack(alignment: .leading, spacing: Medida.xxs) {
+            Button { abrir(g) } label: {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline, spacing: Medida.xs) {
+                        Text(g.titulo.lowercased() + ".").font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta)
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: Medida.xs)
+                        Chip(texto: g.estado.lowercased() + ".", tono: g.estado == "En progreso" ? .oscuro : .sutil)
+                    }
+                    Text(detalle(g)).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                    if let a = g.avance { BarraFinaObjetivos(valor: a).padding(.vertical, 2) }
+                    if !g.proposito.isEmpty {
+                        Text("para qué. " + g.proposito).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.pulsable(0.98))
+            .accessibilityHint("abre el objetivo")
+            let pendientes = Array(g.hitos.filter { !$0.hecho }.prefix(3))
+            if !pendientes.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(pendientes) { h in filaHito(g, h) }
+                }
+            }
+        }
+        .tarjeta()
+        .contextMenu { menu(g) }
+    }
+
+    private func filaHito(_ g: Objetivo, _ h: HitoObjetivo) -> some View {
+        HStack(spacing: Medida.xxs) {
+            CasillaMarcar(hecha: h.hecho) { marcarHito(g, h) }
+            Text(h.texto).font(Letra.cuerpo).foregroundStyle(h.hecho ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                .strikethrough(h.hecho, color: Lienzo.tintaTerciaria).lineLimit(2)
+            Spacer(minLength: 0)
+        }
+        .padding(.leading, -Medida.s)
+    }
+
+    // MARK: - Cumplidos
+
+    @ViewBuilder private func cumplidos(_ todos: [Objetivo]) -> some View {
+        let hechos = todos.filter(\.cumplido)
+        if hechos.isEmpty {
+            EstadoVacio(texto: "aún ninguno cumplido. el primero llegará.").tarjeta(relleno: Medida.xs).entradaEscalonada(0)
+        }
+        ForEach(Array(hechos.enumerated()), id: \.element.id) { n, g in
+            Button { abrir(g) } label: {
+                HStack(spacing: Medida.s) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(g.titulo.lowercased() + ".").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tintaSecundaria)
+                            .multilineTextAlignment(.leading)
+                        Text(plazo(g)).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                    }
+                    Spacer(minLength: Medida.xs)
+                    Chip(texto: "cumplido.", tono: .verde)
+                }
+                .tarjeta(relleno: Medida.s)
+                .contentShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+            }
+            .buttonStyle(.pulsable(0.97))
+            .contextMenu { menu(g) }
+            .entradaEscalonada(n)
+        }
+    }
+
+    // MARK: - Acciones
+
+    @ViewBuilder private func menu(_ g: Objetivo) -> some View {
+        Button("editar.") { edicion = EdicionObjetivo(objetivo: g) }
+        Button("eliminar.", role: .destructive) { Task { await c.guardar(.borrarEntrada(id: g.id)) } }
+    }
+
+    private func nuevo() { edicion = EdicionObjetivo(objetivo: nil) }
+
+    private func abrir(_ g: Objetivo) {
+        Haptica.ligera()
+        abierto = ObjetivoAbierto(id: g.id)
+    }
+
+    private func marcarHito(_ g: Objetivo, _ h: HitoObjetivo) {
+        Task { await c.guardar(.cambiarObjetivo(objetivoId: g.id, cambio: .hitoHecho(texto: h.texto, hecho: !h.hecho))) }
+    }
+
+    private func plazo(_ g: Objetivo) -> String { (LecturaObjetivos.plazos.first { $0.0 == g.plazo }?.1 ?? g.plazo) + "." }
+
+    private func cifras(_ g: Objetivo) -> String {
+        "\(LecturaObjetivos.cifra(g.actual)) de \(LecturaObjetivos.cifra(g.meta))\(g.unidad.isEmpty ? "" : " " + g.unidad)."
+    }
+
     private func detalle(_ g: Objetivo) -> String {
-        var partes = [g.estado.lowercased()]
-        if g.numerico { partes.append("\(LecturaObjetivos.cifra(g.actual)) de \(LecturaObjetivos.cifra(g.meta))\(g.unidad.isEmpty ? "" : " " + g.unidad)") }
+        var partes = [String(plazo(g).dropLast())]
+        if g.numerico { partes.append(String(cifras(g).dropLast())) }
         if !g.hitos.isEmpty { partes.append("\(g.hitos.filter(\.hecho).count) de \(g.hitos.count) hitos") }
         return partes.joined(separator: ", ") + "."
     }
@@ -137,22 +305,11 @@ struct ObjetivosView: View {
     }
 }
 
-private struct BarraObjetivo: View {
-    let porcentaje: Int
-    var body: some View {
-        GeometryReader { g in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Paleta.borde)
-                Capsule().fill(Paleta.acento).frame(width: g.size.width * CGFloat(porcentaje) / 100)
-            }
-        }.frame(height: 6)
-        .accessibilityElement().accessibilityLabel("progreso").accessibilityValue("\(porcentaje) %")
-    }
-}
-
+// La ficha: cabecera en negro, «para qué», el progreso, los hitos y el método.
 private struct FichaObjetivo: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.dismiss) private var cerrar
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     let id: String
     @State private var objetivo: Objetivo?
     @State private var nuevoHito = ""
@@ -161,48 +318,27 @@ private struct FichaObjetivo: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                if let g = objetivo {
-                    Section {
-                        LabeledContent("estado.", value: g.estado.lowercased())
-                        LabeledContent("plazo.", value: LecturaObjetivos.plazos.first { $0.0 == g.plazo }?.1 ?? g.plazo)
-                        if !g.notas.isEmpty { Text(g.notas).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+            ScrollView {
+                VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                    if let g = objetivo {
+                        cabecera(g).entradaEscalonada(0)
+                        if !g.proposito.isEmpty || !g.notas.isEmpty { texto(g).entradaEscalonada(1) }
+                        if g.numerico { progreso(g).entradaEscalonada(2) }
+                        hitos(g).entradaEscalonada(3)
+                        MetodoSecciones(objetivo: g).entradaEscalonada(4)
+                    } else {
+                        ProgressView().tint(Lienzo.tintaSecundaria).frame(maxWidth: .infinity).padding(.top, Medida.xl)
                     }
-                    if g.numerico {
-                        Section("progreso.") {
-                            LabeledContent("llevas.", value: "\(LecturaObjetivos.cifra(g.actual)) de \(LecturaObjetivos.cifra(g.meta))\(g.unidad.isEmpty ? "" : " " + g.unidad)")
-                            if let p = g.porcentaje { BarraObjetivo(porcentaje: p) }
-                            HStack {
-                                TextField("nuevo valor.", text: $actual).keyboardType(.decimalPad)
-                                Button("apuntar.") {
-                                    let v = actual.replacingOccurrences(of: ",", with: ".")
-                                    guard Dinero.decimal(texto: v) != nil else { return }
-                                    enviar(.progreso(actual: v)); actual = ""
-                                }.disabled(Dinero.decimal(texto: actual.replacingOccurrences(of: ",", with: ".")) == nil)
-                            }
-                        }
-                    }
-                    Section("hitos.") {
-                        ForEach(g.hitos) { h in
-                            let alternar = { enviar(.hitoHecho(texto: h.texto, hecho: !h.hecho)) }
-                            FilaCirculo(hecho: h.hecho, marcar: alternar, abrir: alternar) { EmptyView() } texto: {
-                                Text(h.texto).font(Tipo.cuerpo).foregroundStyle(h.hecho ? Paleta.textoSecundario : Paleta.texto).strikethrough(h.hecho)
-                            } cola: { EmptyView() }
-                            .accessibilityElement(children: .combine)
-                            .accessibilityValue(h.hecho ? "hecho" : "pendiente")
-                            .accessibilityAction { alternar() }
-                            .swipeActions { Button("borrar", role: .destructive) { enviar(.quitarHito(texto: h.texto)) } }
-                        }
-                        HStack {
-                            TextField("un hito.", text: $nuevoHito).submitLabel(.done).onSubmit(anadirHito)
-                            Button("añadir.", action: anadirHito).disabled(nuevoHito.trimmingCharacters(in: .whitespaces).isEmpty)
-                        }
-                    }
-                    MetodoSecciones(objetivo: g)
-                } else { ProgressView() }
+                }
+                .padding(.horizontal, Medida.margen)
+                .padding(.top, Medida.xs)
+                .padding(.bottom, Medida.xl)
+                .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: objetivo)
             }
-            .font(Tipo.cuerpo)
-            .navigationTitle((objetivo?.titulo ?? "objetivo").lowercased() + ".").navigationBarTitleDisplayMode(.inline)
+            .scrollIndicators(.hidden)
+            .scrollDismissesKeyboard(.interactively)
+            .fondoLienzo()
+            .navigationTitle("objetivo.").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } }
                 ToolbarItem(placement: .primaryAction) { Button("editar.") { editando = true }.disabled(objetivo == nil) }
@@ -210,6 +346,100 @@ private struct FichaObjetivo: View {
             .hoja(isPresented: $editando) { EditorObjetivo(objetivo: objetivo).environment(c) }
             .task(id: c.revision) { await cargar() }
         }
+    }
+
+    private func cabecera(_ g: Objetivo) -> some View {
+        TarjetaOscura {
+            VStack(alignment: .leading, spacing: Medida.s) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(g.estado.uppercased()).font(Letra.etiqueta).tracking(Letra.espaciado)
+                        .foregroundStyle(g.cumplido ? Lienzo.naranja : Lienzo.sobreOscuroSuave)
+                    Spacer()
+                    Text((LecturaObjetivos.plazos.first { $0.0 == g.plazo }?.1 ?? g.plazo) + ".").font(Letra.pie)
+                        .foregroundStyle(Lienzo.sobreOscuroSuave)
+                }
+                Text(g.titulo.lowercased() + ".").font(Letra.titulo).foregroundStyle(Lienzo.sobreOscuro).kerning(-0.4)
+                    .accessibilityAddTraits(.isHeader)
+                if let a = g.avance {
+                    HStack(spacing: Medida.s) {
+                        BarraFinaObjetivos(valor: a, sobreOscuro: true)
+                        if let t = g.avanceTexto { Text(t).font(Letra.hora).foregroundStyle(Lienzo.naranja) }
+                    }
+                }
+            }
+        }
+    }
+
+    private func texto(_ g: Objetivo) -> some View {
+        VStack(alignment: .leading, spacing: Medida.s) {
+            if !g.proposito.isEmpty {
+                VStack(alignment: .leading, spacing: Medida.xxs) {
+                    EtiquetaSeccion(texto: "para qué")
+                    Text(g.proposito).font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            if !g.notas.isEmpty {
+                VStack(alignment: .leading, spacing: Medida.xxs) {
+                    EtiquetaSeccion(texto: "notas")
+                    Text(g.notas).font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .tarjeta()
+    }
+
+    private func progreso(_ g: Objetivo) -> some View {
+        VStack(alignment: .leading, spacing: Medida.s) {
+            HStack(alignment: .firstTextBaseline) {
+                EtiquetaSeccion(texto: "progreso")
+                Text("\(LecturaObjetivos.cifra(g.actual)) de \(LecturaObjetivos.cifra(g.meta))\(g.unidad.isEmpty ? "" : " " + g.unidad).")
+                    .font(Letra.numero).foregroundStyle(Lienzo.tinta)
+            }
+            CampoObjetivos(texto: $actual, sugerencia: "nuevo valor.", boton: "apuntar.", decimal: true) {
+                let v = actual.replacingOccurrences(of: ",", with: ".")
+                guard Dinero.decimal(texto: v) != nil else { return }
+                enviar(.progreso(actual: v)); actual = ""
+            }
+        }
+        .tarjeta()
+    }
+
+    private func hitos(_ g: Objetivo) -> some View {
+        VStack(alignment: .leading, spacing: Medida.xs) {
+            HStack(alignment: .firstTextBaseline) {
+                EtiquetaSeccion(texto: "hitos")
+                if !g.hitos.isEmpty {
+                    Text("\(g.hitos.filter(\.hecho).count)/\(g.hitos.count)").font(Letra.hora).foregroundStyle(Lienzo.tintaSecundaria)
+                }
+            }
+            if g.hitos.isEmpty {
+                Text("los pasos que te dicen que vas bien.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                    .padding(.horizontal, Medida.xxs)
+            }
+            VStack(spacing: 0) {
+                ForEach(Array(g.hitos.enumerated()), id: \.element.id) { n, h in
+                    if n > 0 { SeparadorFila(sangria: Medida.toque - Medida.s) }
+                    let alternar = { enviar(.hitoHecho(texto: h.texto, hecho: !h.hecho)) }
+                    HStack(spacing: Medida.xxs) {
+                        CasillaMarcar(hecha: h.hecho, marcar: alternar)
+                        Text(h.texto).font(Letra.cuerpo).foregroundStyle(h.hecho ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                            .strikethrough(h.hecho, color: Lienzo.tintaTerciaria)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.leading, -Medida.s)
+                    .contentShape(Rectangle())
+                    .contextMenu { Button("borrar.", role: .destructive) { enviar(.quitarHito(texto: h.texto)) } }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityValue(h.hecho ? "hecho" : "pendiente")
+                    .accessibilityAction { alternar() }
+                    .accessibilityAction(named: "borrar") { enviar(.quitarHito(texto: h.texto)) }
+                }
+            }
+            CampoObjetivos(texto: $nuevoHito, sugerencia: "un hito.", boton: "añadir.", accion: anadirHito)
+        }
+        .tarjeta()
     }
 
     private func anadirHito() {
