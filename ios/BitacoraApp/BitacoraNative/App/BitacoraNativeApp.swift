@@ -22,8 +22,8 @@ struct BitacoraNativeApp: App {
         let tinta = delTema { UIColor(rgb: $0.texto) }
         let barra = UINavigationBarAppearance()
         barra.configureWithTransparentBackground()
-        barra.largeTitleTextAttributes = [.font: poppins("Poppins-Bold", 34, .largeTitle), .foregroundColor: delTema { UIColor(rgb: $0.titulo ?? $0.texto) }]
-        barra.titleTextAttributes = [.font: poppins("Poppins-SemiBold", 17, .headline), .foregroundColor: tinta]
+        barra.largeTitleTextAttributes = [.font: poppins("Poppins-Bold", 26, .largeTitle), .foregroundColor: delTema { UIColor(rgb: $0.titulo ?? $0.texto) }]
+        barra.titleTextAttributes = [.font: poppins("Poppins-SemiBold", 15, .headline), .foregroundColor: tinta]
         let conFondo = UINavigationBarAppearance()
         conFondo.configureWithOpaqueBackground()
         conFondo.backgroundColor = delTema { UIColor(rgb: $0.fondo) }
@@ -31,7 +31,7 @@ struct BitacoraNativeApp: App {
         conFondo.largeTitleTextAttributes = barra.largeTitleTextAttributes
         conFondo.titleTextAttributes = barra.titleTextAttributes
         let boton = UIBarButtonItemAppearance()
-        boton.normal.titleTextAttributes = [.font: poppins("Poppins-Medium", 17, .body)]
+        boton.normal.titleTextAttributes = [.font: poppins("Poppins-Medium", 15, .body)]
         conFondo.buttonAppearance = boton
         barra.buttonAppearance = boton
         UINavigationBar.appearance().scrollEdgeAppearance = barra
@@ -125,9 +125,27 @@ struct PrincipalView: View {
 
     var body: some View {
         @Bindable var c = c
-        VStack(spacing: 0) {
-            pantallas
-            if !teclado { barra }
+        // 2.0: la barra flota encima del contenido (no lo empuja) y se separa del borde de abajo. Cada pantalla reserva
+        // abajo lo que ocupa (safeAreaInset en cada NavigationStack), así su último elemento sube por encima de ella.
+        GeometryReader { g in
+            let abajo = g.safeAreaInsets.bottom
+            let margen = max(Medida.separacionInferior, abajo - 20)
+            let reserva = teclado ? 0 : max(0, margen + Medida.alturaBarra + 12 - abajo)
+            ZStack(alignment: .bottom) {
+                pantallas(reserva: reserva)
+                if !teclado {
+                    barra
+                        .padding(.bottom, margen)
+                        .ignoresSafeArea(.container, edges: .bottom)
+                        .ignoresSafeArea(.keyboard, edges: .bottom)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: teclado)
+        }
+        // «apuntar.» ya no es una hoja: es el modal flotante oscuro, que sube con el teclado.
+        .capaFlotante(presentado: apuntarActual != nil, cerrar: { c.modal = nil }) {
+            if let a = apuntarActual { ApuntarView(inicial: a).id(a.id) }
         }
         // Con el teclado abierto la barra se va (en todas las pantallas): si no, quedaba encima del teclado y tapaba el campo.
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in teclado = true; masUsados = nil }
@@ -173,11 +191,11 @@ struct PrincipalView: View {
             if p == .calendario || p == .finanzas { c.secundaria = p }
         }
         .fullScreenCover(item: Binding(get: { c.web.map(PaginaWeb.init) }, set: { c.web = $0?.url })) { NavegadorWeb(url: $0.url).ignoresSafeArea() }
-        .hoja(item: $c.modal) { m in
+        .hoja(item: hojaModal) { m in
             // Las hojas son las del sistema (detents, arrastrar para cerrar) con el fondo, la tinta y la letra de Bitácora.
             Group {
                 switch m {
-                case .apuntar(let a): ApuntarView(inicial: a)
+                case .apuntar: EmptyView()   // va en la capa flotante
                 case .tarea(let t): EditorTareaView(inicial: t)
                 case .evento(let e): EditorEventoView(inicial: e)
                 case .movimiento(let id, let tipo): EditorMovimientoView(id: id, tipoInicial: tipo)
@@ -189,29 +207,48 @@ struct PrincipalView: View {
         }
     }
 
-    private var pantallas: some View {
+    private func pantallas(reserva: CGFloat) -> some View {
         @Bindable var c = c
         return TabView(selection: $c.pestana) {
-            NavigationStack { InicioView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.inicio).transition(transicionPestana)
-            NavigationStack { PlanView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.plan).transition(transicionPestana)
-            NavigationStack { CalendarioView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.calendario).transition(transicionPestana)
-            NavigationStack { FinanzasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.finanzas).transition(transicionPestana)
-            NavigationStack(path: $c.rutaMas) { MasView() }.toolbar(.hidden, for: .tabBar).tag(Pestana.mas).transition(transicionPestana)
+            NavigationStack { InicioView() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.inicio).transition(transicionPestana)
+            NavigationStack { PlanView() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.plan).transition(transicionPestana)
+            NavigationStack { CalendarioView() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.calendario).transition(transicionPestana)
+            NavigationStack { FinanzasView() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.finanzas).transition(transicionPestana)
+            NavigationStack(path: $c.rutaMas) { MasView() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.mas).transition(transicionPestana)
         }
-        .animation(sinMovimiento ? nil : .easeInOut(duration: 0.18), value: c.pestana)
+        .animation(sinMovimiento ? nil : Muelle.rapido, value: c.pestana)
     }
 
     private var barra: some View {
-        BarraBitacora(pestanas: Self.pestanas(secundaria: c.secundaria),
-                      activa: Self.porId.first { $0.value == c.pestana }?.key ?? "inicio") { id in
-            masUsados = nil
-            if let p = Self.porId[id] { c.tocarPestana(p) }
-        } capturar: {
-            masUsados = nil
-            c.abrirApuntar()
-        } mantener: {
-            Task { await abrirMasUsados() }
-        }
+        BarraFlotante(pestanas: Self.pestanas(secundaria: c.secundaria).map { .init(id: $0.id, titulo: $0.titulo, icono: $0.icono) },
+                      activa: Self.porId.first { $0.value == c.pestana }?.key ?? "inicio",
+                      elegir: { id in
+                          masUsados = nil
+                          if let p = Self.porId[id] { c.tocarPestana(p) }
+                      },
+                      apuntar: {
+                          masUsados = nil
+                          c.abrirApuntar()
+                      },
+                      mantener: { id in
+                          if id == "mas" { Task { await abrirMasUsados() } }
+                      })
+    }
+
+    private var apuntarActual: ApuntarInicial? {
+        if case .apuntar(let a) = c.modal { return a }
+        return nil
+    }
+
+    // Las hojas del sistema para todo menos «apuntar.», que va en la capa flotante.
+    private var hojaModal: Binding<Modal?> {
+        Binding(get: {
+            if case .apuntar = c.modal { return nil }
+            return c.modal
+        }, set: { nuevo in
+            if nuevo == nil, case .apuntar = c.modal { return }
+            c.modal = nuevo
+        })
     }
 
     private var transicionPestana: AnyTransition {
@@ -227,6 +264,13 @@ extension PrincipalView {
         let cuarta = c.secundaria == .finanzas ? "finances" : "calendar"
         let ids = c.uso.ranking(candidatos: menu.map(\.vista), excluir: ["planner", cuarta])
         masUsados = ids.compactMap { id in menu.first { $0.vista == id } }
+    }
+}
+
+extension View {
+    // Lo que una pestaña deja libre abajo para la barra flotante (también en las páginas que apila).
+    func reservaBarra(_ alto: CGFloat) -> some View {
+        safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: alto).allowsHitTesting(false) }
     }
 }
 

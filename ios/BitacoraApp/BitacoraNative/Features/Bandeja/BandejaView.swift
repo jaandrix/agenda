@@ -153,8 +153,11 @@ enum BandejaConector {
     }
 }
 
+// Propuestas 2.0 (24-11): cada propuesta en su tarjeta blanca con el icono del tipo, el cambio resumido y «validar.» /
+// «descartar.» en cápsulas; al validarla o descartarla sale de la lista con un muelle. Lo último, en una tarjeta de filas.
 struct BandejaView: View {
     @Environment(AppCoordinator.self) private var c
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var estado = EstadoBandeja.shared
     @State private var registro: [[String: JSONValue]] = []
     @State private var verTodo = false
@@ -162,77 +165,144 @@ struct BandejaView: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                CabeceraApartado(titulo: "propuestas", contexto: estado.pendientes.isEmpty ? "nada esperando." : "\(estado.pendientes.count) esperan tu visto bueno.") { EmptyView() }
-                CabeceraSeccion(titulo: "esperan tu validación.", detalle: "")
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                CabeceraPagina(titulo: "propuestas.",
+                               subtitulo: estado.pendientes.isEmpty ? "nada esperando." : "\(estado.pendientes.count) esperan tu visto bueno.")
+                    .padding(.bottom, Medida.xs)
+
+                EtiquetaSeccion(texto: "esperan tu validación")
                 if estado.pendientes.isEmpty {
-                    Text("lo que proponga claude con dinero o para borrar aparecerá aquí.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.m)
+                    EstadoVacio(texto: "lo que proponga claude con dinero o para borrar aparecerá aquí.", icono: "propuestas")
+                        .tarjeta()
+                        .transition(.opacity)
                 } else {
                     if estado.pendientes.count > 1 {
-                        HStack(spacing: Espacio.l) {
-                            AccionTexto(texto: "aceptar todo.") { aceptar(estado.pendientes) }
-                            AccionTexto(texto: "rechazar todo.", color: Paleta.error) { rechazar(estado.pendientes) }
-                        }.padding(.vertical, Espacio.xs)
+                        HStack(spacing: Medida.xs) {
+                            Button("validar todo.") { aceptar(estado.pendientes) }.buttonStyle(.capsula(.oscuro, ancho: true))
+                            Button("descartar todo.") { rechazar(estado.pendientes) }.buttonStyle(.capsula(.claro, ancho: true))
+                        }
+                        .transition(.opacity)
                     }
-                    ForEach(estado.pendientes) { fila($0) }
+                    ForEach(Array(estado.pendientes.enumerated()), id: \.element.id) { i, f in
+                        tarjeta(f)
+                            .entradaEscalonada(i)
+                            .transition(sinMovimiento ? .opacity : .asymmetric(
+                                insertion: .opacity,
+                                removal: .move(edge: .trailing).combined(with: .scale(scale: 0.92)).combined(with: .opacity)))
+                    }
                 }
                 if estado.enLaWeb > 0 {
                     Text("\(estado.enLaWeb) \(estado.enLaWeb == 1 ? "cambio se aplicará" : "cambios se aplicarán") al abrir la web (ocio, despensa, estudios…).")
-                        .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.top, Espacio.s)
+                        .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        .padding(.horizontal, Medida.xxs)
                 }
-                CabeceraSeccion(titulo: "lo último.", detalle: "")
-                if registro.isEmpty {
-                    Text("aún no hay nada.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.m)
-                }
-                ForEach(Array((verTodo ? registro : Array(registro.prefix(8))).enumerated()), id: \.offset) { _, l in linea(l) }
-                if registro.count > 8 {
-                    AccionTexto(texto: verTodo ? "ver solo lo último." : "ver todo el historial (\(registro.count)).") { verTodo.toggle() }.padding(.top, Espacio.s)
-                }
+
+                EtiquetaSeccion(texto: "lo último")
+                    .padding(.top, Medida.entreSecciones - Medida.entreTarjetas)
+                ultimo
             }
-            .padding(.horizontal, 20).padding(.bottom, Espacio.xl)
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.xl)
+            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: estado.pendientes.map(\.id))
+            .animation(Muelle.o(Muelle.expandir, reducido: sinMovimiento), value: verTodo)
         }
-        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
+        .fondoLienzo().scrollIndicators(.hidden)
         .refreshable { await c.sincronizar(); await BandejaConector.revisar(c, forzar: true) }
         .task { await BandejaConector.revisar(c, forzar: true) }
         .task(id: c.revision) { await cargarRegistro() }
         .disabled(trabajando)
     }
 
-    private func fila(_ f: FilaBandeja) -> some View {
+    // MARK: - Propuesta
+
+    private func tarjeta(_ f: FilaBandeja) -> some View {
         let d = BandejaConector.describir(f.op)
         let sabe = OperacionesExtra.sabeAplicar(f.op)
-        return VStack(alignment: .leading, spacing: 4) {
-            Text(d.tipo + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            Text(d.texto).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-            if !d.meta.isEmpty { Text(d.meta).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-            HStack(spacing: Espacio.l) {
-                if sabe { AccionTexto(texto: "aceptar.") { aceptar([f]) } }
-                else { AccionTexto(texto: "validar en la web.") { c.web = Apartados.webURL("bandeja") } }
-                AccionTexto(texto: "rechazar.", color: Paleta.error) { rechazar([f]) }
+        return VStack(alignment: .leading, spacing: Medida.m) {
+            HStack(alignment: .top, spacing: Medida.s) {
+                IconoCuadrado(id: Self.icono(f.tipo), tono: f.tipo == "borrar" ? .oscuro : .claro)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(d.tipo.uppercased()).font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.tintaTerciaria)
+                    Text(d.texto).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if !d.meta.isEmpty {
+                        Text(d.meta).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .accessibilityElement(children: .combine)
+            HStack(spacing: Medida.xs) {
+                if sabe {
+                    Button("validar.") { aceptar([f]) }.buttonStyle(.capsula(.oscuro, ancho: true))
+                } else {
+                    Button("validar en la web.") { c.web = Apartados.webURL("bandeja") }.buttonStyle(.capsula(.oscuro, ancho: true))
+                }
+                Button("descartar.") { rechazar([f]) }.buttonStyle(.capsula(.claro, ancho: true))
             }
         }
-        .padding(.vertical, Espacio.s)
-        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+        .tarjeta()
         .accessibilityElement(children: .contain)
+    }
+
+    // El tipo de propuesta → el icono del catálogo común.
+    private static func icono(_ tipo: String) -> String {
+        switch tipo {
+        case "movimiento", "editar_movimiento", "importar", "inversion": return "finanzas"
+        case "borrar": return "borrar"
+        case "tarea", "editar_tarea", "tarea_recurrente": return "plan"
+        case "evento", "editar_evento": return "calendario"
+        case "nota": return "notas"
+        default: return "propuestas"
+        }
+    }
+
+    // MARK: - Lo último
+
+    @ViewBuilder private var ultimo: some View {
+        if registro.isEmpty {
+            EstadoVacio(texto: "aún no hay nada.").tarjeta()
+        } else {
+            let lineas = verTodo ? registro : Array(registro.prefix(8))
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(lineas.enumerated()), id: \.offset) { n, l in
+                    if n > 0 { SeparadorFila(sangria: 0) }
+                    linea(l)
+                }
+            }
+            .tarjeta(relleno: 0)
+            if registro.count > 8 {
+                Button(verTodo ? "ver solo lo último." : "ver todo el historial (\(registro.count)).") {
+                    Haptica.ligera()
+                    verTodo.toggle()
+                }
+                .buttonStyle(.capsula(.blanco, ancho: true))
+            }
+        }
     }
 
     private func linea(_ l: [String: JSONValue]) -> some View {
         let origen = l["origen"]?.texto ?? ""
         let deshecho = l["deshecho"]?.booleano == true
-        return HStack(alignment: .firstTextBaseline) {
+        return HStack(alignment: .center, spacing: Medida.s) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(l["resumen"]?.texto ?? "").font(Tipo.cuerpo).foregroundStyle(deshecho ? Paleta.textoSecundario : Paleta.texto).strikethrough(deshecho)
-                Text([origen == "auto" ? "aplicado solo" : origen == "validado" ? "aceptado" : origen == "descartado" ? "rechazado" : origen,
+                Text(l["resumen"]?.texto ?? "").font(Letra.cuerpo)
+                    .foregroundStyle(deshecho ? Lienzo.tintaTerciaria : Lienzo.tinta).strikethrough(deshecho)
+                Text([origen == "auto" ? "aplicado solo" : origen == "validado" ? "validado" : origen == "descartado" ? "descartado" : origen,
                       deshecho ? "deshecho" : ""].filter { !$0.isEmpty }.joined(separator: ", ") + ".")
-                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
             }
-            Spacer()
+            Spacer(minLength: Medida.xs)
             if OperacionesExtra.sePuedeDeshacer(l), let ref = l["id"]?.comoId {
-                AccionTexto(texto: "deshacer.") { deshacer(ref) }
+                Button("deshacer.") { deshacer(ref) }
+                    .font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta)
+                    .frame(minHeight: Medida.toque)
+                    .buttonStyle(.pulsable(0.92))
             }
         }
-        .padding(.vertical, 10)
-        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+        .padding(.horizontal, Medida.rellenoTarjeta)
+        .padding(.vertical, Medida.s)
     }
 
     private func cargarRegistro() async {
@@ -249,8 +319,11 @@ struct BandejaView: View {
             do {
                 try await c.encolar(sabe.map { BandejaConector.opConector($0, origen: "validado") })
                 await BandejaConector.borrar(sabe.map(\.id), c)
-                estado.pendientes.removeAll { f in sabe.contains { $0.id == f.id } }
-                c.avisar(sabe.count == 1 ? "cambio aceptado." : "\(sabe.count) cambios aceptados.")
+                Haptica.exito()
+                withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento)) {
+                    estado.pendientes.removeAll { f in sabe.contains { $0.id == f.id } }
+                }
+                c.avisar(sabe.count == 1 ? "cambio validado." : "\(sabe.count) cambios validados.")
                 await cargarRegistro()
             } catch { c.avisar("no se pudo guardar en este iphone.") }
         }
@@ -268,8 +341,11 @@ struct BandejaView: View {
             do {
                 try await c.encolar(ops)
                 await BandejaConector.borrar(filas.map(\.id), c)
-                estado.pendientes.removeAll { f in filas.contains { $0.id == f.id } }
-                c.avisar(filas.count == 1 ? "cambio rechazado." : "\(filas.count) cambios rechazados.")
+                Haptica.media()
+                withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento)) {
+                    estado.pendientes.removeAll { f in filas.contains { $0.id == f.id } }
+                }
+                c.avisar(filas.count == 1 ? "cambio descartado." : "\(filas.count) cambios descartados.")
                 await cargarRegistro()
             } catch { c.avisar("no se pudo guardar en este iphone.") }
         }
@@ -278,6 +354,7 @@ struct BandejaView: View {
     private func deshacer(_ ref: String) {
         Task {
             await c.guardar(OperacionesExtra.op(OperacionesExtra.quitarConector, ["ref": .string(ref)]))
+            Haptica.ligera()
             c.avisar("deshecho.")
             await cargarRegistro()
         }

@@ -159,7 +159,8 @@ final class AppCoordinator {
     init(entorno: AppEnvironment = .real()) {
         self.entorno = entorno
         bloqueoActivo = UserDefaults.standard.bool(forKey: "bitacora.bloqueo")
-        let t = TemaElegido(rawValue: UserDefaults.standard.string(forKey: "bitacora.tema") ?? "") ?? .sistema
+        // 2.0: un solo tema hasta que esté pulido; lo guardado se ignora (no se borra, por si vuelven los demás).
+        let t = TemaElegido.unico
         tema = t
         letra = .normal
         intenciones = ColaIntenciones().leer()
@@ -379,7 +380,8 @@ final class AppCoordinator {
     // El tema es de cada cuenta en este iPhone (la PWA lo guarda en el navegador: no se sincroniza). La primera vez se
     // hereda el que había para todo el iPhone. Un tema que esta cuenta no puede usar vuelve a «sistema».
     func ponerTema(_ t: TemaElegido) {
-        guard t.permitido(permisosTemas) else { return }
+        // 2.0: solo existe «bitácora.».
+        guard t == TemaElegido.unico, t.permitido(permisosTemas) else { return }
         TemaActivo.elegido = t
         tema = t
         UserDefaults.standard.set(t.rawValue, forKey: "bitacora.tema")
@@ -391,14 +393,13 @@ final class AppCoordinator {
         let l = UserDefaults.standard.string(forKey: "bitacora.letra.\(uid)").flatMap(EscalaLetra.init(rawValue:)) ?? .normal
         if l != letra { LetraActiva.elegida = l; letra = l }
         permisosTemas = PermisosTemasRemotos.guardados(uid)
-        let guardado = UserDefaults.standard.string(forKey: "bitacora.tema.\(uid)").flatMap(TemaElegido.init(rawValue:)) ?? tema
-        let t = guardado.permitido(permisosTemas) ? guardado : .sistema
+        let t = TemaElegido.unico
         if t != tema { TemaActivo.elegido = t; tema = t }
         let cliente = entorno.cliente, auth = entorno.auth
         Task { [weak self] in
             guard let p = await PermisosTemasRemotos.leer(uid, cliente: cliente, auth: auth), let self, self.sesion?.userId == uid else { return }
             self.permisosTemas = p
-            if !self.tema.permitido(p) { TemaActivo.elegido = .sistema; self.tema = .sistema }
+            _ = p
         }
     }
 

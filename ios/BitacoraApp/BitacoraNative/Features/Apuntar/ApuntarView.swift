@@ -1,6 +1,6 @@
 import SwiftUI
 
-// La hoja de «apuntar.» (openApuntar en js/apuntar.js): una línea que entiende varias cosas, la vista previa de cada
+// «apuntar.» (openApuntar en js/apuntar.js), desde la 2.0 en el modal flotante oscuro: una línea que entiende varias cosas, la vista previa de cada
 // una con su tipo, «apuntar.» y los accesos. Abre al 56 % y se puede ampliar. El botón central, Siri, los enlaces y
 // «Abrir en» llegan aquí con el texto puesto. Lo escrito queda como borrador en este iPhone (3 días, por cuenta) hasta
 // que se apunta o se descarta: cerrar la hoja no lo pierde.
@@ -37,10 +37,9 @@ struct ApuntarView: View {
     @State private var elegidos: [Int: String] = [:]
     @State private var contexto = ContextoApuntar()
     @State private var guardando = false
+    @State private var leyendo = false
     @State private var error: String?
-    // 0.23 (auditoría): se abre ya grande. Al 56 % el teclado obligaba a recolocar la hoja mientras subía (tirón).
-    @State private var detente: PresentationDetent = .large
-    @State private var ruta: [String] = []
+    @State private var verRecientes = false
     @State private var cargado = false
     @State private var hechos = 0
     @State private var hayRecientes = false
@@ -49,43 +48,46 @@ struct ApuntarView: View {
 
     private var uid: String { c.sesion?.userId ?? "" }
     private var hoy: LocalDay { CalendarioBitacora.madrid.dia(de: Date()) }
+    private var vacio: Bool { texto.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
+    // 2.0: el modal flotante oscuro (foto 1). Banda naranja con «apuntar.» y el estado vivo; debajo, el campo, lo que se
+    // va a apuntar y la acción. Sube con el teclado y se cierra arrastrando la banda hacia abajo.
     var body: some View {
-        NavigationStack(path: $ruta) {
-            VStack(spacing: 0) {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: Espacio.m) {
-                        cabecera
-                        campo
-                        if deBorrador {
-                            HStack(spacing: 6) {
-                                Text("lo que dejaste a medias.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                                Button("descartar.") { descartar() }.font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(Paleta.texto)
-                            }
-                        }
-                        vistaPrevia
-                        if let error { Text(error).font(Tipo.pie).foregroundStyle(Paleta.error) }
+        ModalFlotante(titulo: tituloBanda, cerrar: { c.modal = nil }) {
+            estadoBanda
+        } contenido: {
+            VStack(alignment: .leading, spacing: Medida.s) {
+                campo
+                if deBorrador && !vacio {
+                    HStack(spacing: 6) {
+                        Text("lo que dejaste a medias.").font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave)
+                        Button("descartar.") { withAnimation(Muelle.rapido) { descartar() } }
+                            .font(Letra.pieFuerte).foregroundStyle(Lienzo.sobreOscuro)
+                            .buttonStyle(.pulsable(0.92))
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, Espacio.m)
-                    .padding(.bottom, Espacio.l)
+                    .transition(.opacity)
                 }
-                .scrollDismissesKeyboard(.interactively)
-                Button { Task { await guardar() } } label: { Text(guardando ? "apuntando." : "apuntar.") }
-                    .buttonStyle(BotonPrincipal())
-                    .disabled(guardando || texto.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-                    .background(Paleta.fondo)
+                vistaPrevia
+                if let error {
+                    Text(error).font(Letra.pie).foregroundStyle(Lienzo.naranja)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .transition(.opacity)
+                }
+                acciones
             }
-            .background(Paleta.fondo)
-            .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: String.self) { _ in RecientesApuntarView(cambiar: { t in ruta = []; texto = t }) }
+            .padding(.horizontal, Medida.m)
+            .padding(.top, Medida.s)
+            .padding(.bottom, Medida.m)
+            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: items.count)
+            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: error)
         }
-        .presentationDetents([.fraction(0.56), .large], selection: $detente)
-        .presentationDragIndicator(.visible)
-        .presentationContentInteraction(.scrolls)
         .sensoryFeedback(.success, trigger: hechos)
+        .hoja(isPresented: $verRecientes) {
+            NavigationStack {
+                RecientesApuntarView(cambiar: { t in verRecientes = false; texto = t; escribiendo = true })
+            }
+            .presentationDetents([.medium, .large])
+        }
         .task {
             if !inicial.texto.isEmpty { texto = inicial.texto } else {
                 let b = BorradorApuntar.leer(uid)
@@ -93,8 +95,8 @@ struct ApuntarView: View {
             }
             cargado = true
             await Medidas.terminarAlPintar("apuntar: abrir la hoja")
-            // El teclado, cuando la hoja ya ha subido: así no compiten la presentación y el teclado en el mismo fotograma.
-            try? await Task.sleep(for: .milliseconds(160))
+            // El teclado cuando el modal ya ha subido: así no compiten la entrada y el teclado en el mismo fotograma.
+            try? await Task.sleep(for: .milliseconds(140))
             escribiendo = true
             if let doc = await c.documentoVisible() {
                 contexto = ContextoApuntar.desde(doc, uid: uid)
@@ -112,36 +114,48 @@ struct ApuntarView: View {
             guard !t.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { items = []; return }
             let base = inicial.fechaBase.flatMap { $0 == hoy ? nil : $0.iso }
             let t0 = Medidas.ahora
+            leyendo = true
+            defer { leyendo = false }
             let r = (try? await InterpreteApuntar.compartido.interpretar(t, fechaBase: base, contexto: contexto)) ?? []
             guard !Task.isCancelled else { return }
             await Medidas.anotar("apuntar: interpretar", desde: t0)
             items = r
-            if r.count > 3, detente != .large { detente = .large }
         }
     }
 
-    private var cabecera: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text("apuntar\(inicial.fechaBase.map { $0 == hoy ? "" : " para \($0.iso)" } ?? "").")
-                .font(Tipo.poppins(20, .bold, estilo: .title3)).foregroundStyle(Paleta.texto)
-                .accessibilityAddTraits(.isHeader)
-            Spacer()
-            if hayRecientes {
-                NavigationLink(value: "recientes") { Text("lo último.").font(Tipo.poppins(13, .semibold, estilo: .footnote)) }
-                    .foregroundStyle(Paleta.textoSecundario)
+    private var tituloBanda: String {
+        guard let d = inicial.fechaBase, d != hoy else { return "apuntar." }
+        return "apuntar para el \(d.day)/\(d.month)."
+    }
+
+    // A la derecha de la banda, el estado vivo: leyendo lo escrito, cuántas cosas saldrán o el borrador.
+    @ViewBuilder private var estadoBanda: some View {
+        HStack(spacing: 6) {
+            if guardando {
+                PuntoVivo()
+                Text("apuntando")
+            } else if leyendo {
+                PuntoVivo()
+                Text("leyendo")
+            } else if !items.isEmpty {
+                PuntoVivo(activo: false)
+                Text(items.count == 1 ? "1 cosa" : "\(items.count) cosas").contentTransition(.numericText())
+            } else if deBorrador {
+                Text("borrador")
             }
         }
+        .animation(Muelle.rapido, value: items.count)
     }
 
     private var campo: some View {
-        TextField("dentista mañana a las 5 y comprar pan...", text: $texto, axis: .vertical)
-            .lineLimit(2...4)
-            .font(Tipo.cuerpo)
-            .foregroundStyle(Paleta.texto)
+        TextField("", text: $texto, prompt: Text("¿qué quieres apuntar?").foregroundColor(Lienzo.sobreOscuroTenue), axis: .vertical)
+            .lineLimit(1...5)
+            .font(Tipo.poppins(15, .regular, estilo: .body))
+            .foregroundStyle(Lienzo.sobreOscuro)
+            .tint(Lienzo.naranja)
             .focused($escribiendo)
             .submitLabel(.done)
-            .padding(14)
-            .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.vertical, Medida.s)
             .accessibilityLabel("qué quieres apuntar")
     }
 
@@ -151,72 +165,122 @@ struct ApuntarView: View {
 
     @ViewBuilder private var vistaPrevia: some View {
         if items.isEmpty {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("escribe como hablas. por ejemplo:").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.bottom, 4)
-                ForEach(Self.pistas, id: \.0) { t, q in
-                    Button { texto = t; escribiendo = true } label: {
-                        HStack {
-                            Text(t).font(Tipo.cuerpo).foregroundStyle(Paleta.texto).multilineTextAlignment(.leading)
-                            Spacer(minLength: 8)
-                            Text(q + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+            if vacio {
+                ScrollView(.horizontal) {
+                    HStack(spacing: Medida.xs) {
+                        ForEach(Self.pistas, id: \.0) { t, q in
+                            Button {
+                                texto = t
+                                escribiendo = true
+                            } label: {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(q + ".").font(Letra.etiqueta).foregroundStyle(Lienzo.sobreOscuroSuave)
+                                    Text(t).font(Letra.pie).foregroundStyle(Lienzo.sobreOscuro).lineLimit(1)
+                                }
+                                .padding(.horizontal, 14).padding(.vertical, 9)
+                                .background(Lienzo.oscuroElevado, in: RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
+                            }
+                            .buttonStyle(.pulsable(0.95))
+                            .accessibilityLabel("ejemplo, \(q): \(t)")
                         }
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
-                    .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
                 }
+                .scrollIndicators(.hidden)
+                .transition(.opacity)
             }
         } else {
-            let faltan = items.indices.filter { !((items[$0].describir[elegidos[$0] ?? items[$0].tipo]?.falta) ?? "").isEmpty }.count
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(items.count > 1 ? "\(items.count) cosas." : "se apuntará.").font(Tipo.poppins(13, .bold, estilo: .footnote)).foregroundStyle(Paleta.texto)
-                    Spacer()
-                    Text(faltan > 0 ? "completa lo que falta o cambia el tipo." : "toca editar. para cambiar el tipo.")
-                        .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                }
-                .padding(.bottom, 6)
+            VStack(alignment: .leading, spacing: 6) {
                 ForEach(Array(items.enumerated()), id: \.offset) { k, it in
-                    if k > 0 { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                    fila(k, it)
+                    fila(k, it).entradaEscalonada(k)
                 }
             }
             .accessibilityElement(children: .contain)
             .accessibilityLabel(items.count == 1 ? "1 cosa interpretada" : "\(items.count) cosas interpretadas")
+            .transition(.opacity.combined(with: .offset(y: 6)))
         }
     }
 
     private func fila(_ k: Int, _ it: ApunteInterpretado) -> some View {
         let tipo = elegidos[k] ?? it.tipo
         let d = it.describir[tipo]
-        let nota = !(d?.falta ?? "").isEmpty ? (d?.falta ?? "") + "." : (elegidos[k] == nil && it.nada ? "sin fecha ni hora: irá como tarea para hoy." : "")
-        return HStack(alignment: .top, spacing: 12) {
-            IconoApunte(tipo: TipoApunte.icono(tipo)).frame(width: 20, height: 20).foregroundStyle(Paleta.textoSecundario).padding(.top, 2)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text((TipoApunte.nombre[tipo] ?? tipo) + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                Text(d?.texto ?? it.texto).font(Tipo.cuerpo).foregroundStyle(Paleta.texto).fixedSize(horizontal: false, vertical: true)
-                if !nota.isEmpty { Text(nota).font(Tipo.pie).foregroundStyle(!(d?.falta ?? "").isEmpty ? Paleta.error : Paleta.textoSecundario) }
+        let falta = !(d?.falta ?? "").isEmpty
+        let nota = falta ? (d?.falta ?? "") + "." : (elegidos[k] == nil && it.nada ? "sin fecha ni hora: irá como tarea para hoy." : "")
+        return HStack(alignment: .center, spacing: Medida.s) {
+            IconoCuadrado(id: Self.iconoCatalogo(tipo), tono: falta ? .naranja : .translucido, tamano: 32)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(d?.texto ?? it.texto).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.sobreOscuro)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(((TipoApunte.nombre[tipo] ?? tipo) + ".") + (nota.isEmpty ? "" : " " + nota))
+                    .font(Letra.pie).foregroundStyle(falta ? Lienzo.naranja : Lienzo.sobreOscuroSuave)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
             Menu {
                 Section("es un…") {
                     ForEach(TipoApunte.disponibles(contexto), id: \.0) { v, nombre in
-                        Button { elegidos[k] = v } label: { if v == tipo { Label(nombre, systemImage: "checkmark") } else { Text(nombre) } }
+                        Button { withAnimation(Muelle.rapido) { elegidos[k] = v } } label: {
+                            if v == tipo { Label(nombre, systemImage: "checkmark") } else { Text(nombre) }
+                        }
                     }
                 }
                 if items.count > 1 {
                     Button("quitar de lo que se apunta.", role: .destructive) { quitarTrozo(it.texto) }
                 }
             } label: {
-                Text("editar.").font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(Paleta.acento)
-                    .frame(minWidth: 44, minHeight: 44)
+                Text("cambiar").font(Letra.pieFuerte).foregroundStyle(Lienzo.sobreOscuro)
+                    .padding(.horizontal, 12).frame(height: 30)
+                    .background(Color.white.opacity(0.1), in: Capsule())
+                    .frame(minHeight: Medida.toque)
             }
-            .accessibilityLabel("editar: \(TipoApunte.nombre[tipo] ?? tipo). cambiar el tipo")
+            .accessibilityLabel("cambiar el tipo: \(TipoApunte.nombre[tipo] ?? tipo)")
         }
-        .padding(.vertical, 8)
+        .padding(.horizontal, 10).padding(.vertical, 6)
+        .background(Lienzo.oscuroElevado, in: RoundedRectangle(cornerRadius: Medida.radioFila, style: .continuous))
         .accessibilityElement(children: .combine)
+    }
+
+    // Abajo: «lo último.» a la izquierda y la acción naranja a la derecha.
+    private var acciones: some View {
+        HStack(spacing: Medida.xs) {
+            if hayRecientes {
+                Button { verRecientes = true } label: {
+                    Text("lo último").font(Letra.pieFuerte).foregroundStyle(Lienzo.sobreOscuroSuave)
+                        .padding(.horizontal, 14).frame(height: 36)
+                        .background(Color.white.opacity(0.08), in: Capsule())
+                }
+                .buttonStyle(.pulsable(0.93))
+            }
+            Spacer()
+            Button { Task { await guardar() } } label: {
+                HStack(spacing: 6) {
+                    Text(guardando ? "apuntando" : "apuntar")
+                    Image(systemName: "arrow.up").font(.system(size: 13, weight: .heavy))
+                }
+                .font(Letra.boton)
+                .foregroundStyle(Lienzo.sobreNaranja)
+                .padding(.horizontal, 18).frame(height: 40)
+                .background(Lienzo.naranja, in: Capsule())
+                .shadow(color: Lienzo.naranjaBrillo, radius: vacio ? 0 : 10, x: 0, y: 4)
+            }
+            .buttonStyle(.pulsable(0.92))
+            .disabled(guardando || vacio)
+            .animation(Muelle.rapido, value: vacio)
+        }
+        .padding(.top, 2)
+    }
+
+    // El tipo de apunte → el icono del catálogo común (mismos dibujos que el menú).
+    static func iconoCatalogo(_ tipo: String) -> String {
+        switch tipo {
+        case "evento", "cumple": return "calendario"
+        case "examen", "clase": return "estudios"
+        case "gasto", "ingreso": return "finanzas"
+        case "compra": return "despensa"
+        case "nota": return "notas"
+        case "viaje": return "viajes"
+        case "recurrente": return "rutinas"
+        default: return "plan"
+        }
     }
 
     private func quitarTrozo(_ trozo: String) {
@@ -271,28 +335,49 @@ struct ApuntarView: View {
 
 // lo que has apuntado. (openApuntesRecientes): deshacer quita solo lo que creó ese apunte; cambiar lo deshace y lo
 // devuelve a la hoja para elegir otro tipo.
+// «lo que has apuntado.» 2.0 (24-11): las cosas en una tarjeta blanca de filas, cada una con el icono de su tipo;
+// «cambiar.» y «deshacer.» en pequeño a la derecha. Deshacer sigue siendo .deshacerApunte.
 struct RecientesApuntarView: View {
     @Environment(AppCoordinator.self) private var c
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     let cambiar: (String) -> Void
     @State private var lista: [JSONValue] = []
     @State private var aviso: String?
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                Text("lo que has apuntado.").font(Tipo.poppins(20, .bold, estilo: .title3)).foregroundStyle(Paleta.texto).padding(.bottom, 4)
-                Text("en cualquier dispositivo. deshacer. lo borra de donde se guardó; cambiar. lo borra y te lo deja escrito.")
-                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.bottom, Espacio.m)
-                if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.texto).padding(.bottom, Espacio.s) }
-                if lista.isEmpty { Text("nada todavía.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario) }
-                ForEach(Array(lista.enumerated()), id: \.offset) { n, a in
-                    if n > 0 { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                    fila(a)
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                CabeceraPagina(titulo: "lo que has apuntado.",
+                               subtitulo: "en cualquier dispositivo. deshacer. lo borra de donde se guardó; cambiar. lo borra y te lo deja escrito.")
+                    .padding(.bottom, Medida.xs)
+                if let aviso {
+                    HStack(spacing: Medida.xs) {
+                        Puntito(color: Lienzo.naranja, tamano: 6)
+                        Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.tinta)
+                    }
+                    .padding(.horizontal, Medida.xxs)
+                    .transition(.opacity.combined(with: .offset(y: -4)))
+                }
+                if lista.isEmpty {
+                    EstadoVacio(texto: "nada todavía.", icono: "apuntar").tarjeta()
+                } else {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(lista.enumerated()), id: \.offset) { n, a in
+                            if n > 0 { SeparadorFila(sangria: Medida.rellenoTarjeta + Medida.icono + Medida.s) }
+                            fila(a)
+                        }
+                    }
+                    .padding(.vertical, Medida.xxs)
+                    .tarjeta(relleno: 0)
                 }
             }
-            .padding(20)
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.m)
+            .padding(.bottom, Medida.xl)
+            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: aviso)
         }
-        .background(Paleta.fondo)
+        .scrollIndicators(.hidden)
+        .fondoLienzo()
         .task(id: c.revision) { await leer() }
     }
 
@@ -304,23 +389,36 @@ struct RecientesApuntarView: View {
         let id = a["id"]?.comoId ?? ""
         let deshecho = a["deshecho"]?.booleano == true
         let deLaWeb = a["deshacer"]?["tipo"]?.texto == "conector"
-        let tipo = TipoApunte.nombre[a["tipo"]?.texto ?? ""] ?? (a["tipo"]?.texto ?? "")
-        return VStack(alignment: .leading, spacing: 6) {
-            Text(a["texto"]?.texto ?? "").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-            Text("\(tipo), \(cuando(a["cuando"]?.texto))\(deshecho ? ", deshecho" : "")").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            if !deshecho {
-                if deLaWeb {
-                    Text("se deshace desde la web.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                } else {
-                    HStack(spacing: Espacio.m) {
-                        Button("cambiar.") { Task { await deshacer(id, cambiando: a["texto"]?.texto) } }
-                        Button("deshacer.") { Task { await deshacer(id, cambiando: nil) } }
+        let tipoClave = a["tipo"]?.texto ?? ""
+        let tipo = TipoApunte.nombre[tipoClave] ?? tipoClave
+        return HStack(alignment: .top, spacing: Medida.s) {
+            IconoCuadrado(id: ApuntarView.iconoCatalogo(tipoClave), tono: .claro)
+                .opacity(deshecho ? 0.5 : 1)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(a["texto"]?.texto ?? "").font(Letra.cuerpoFuerte)
+                    .foregroundStyle(deshecho ? Lienzo.tintaTerciaria : Lienzo.tinta)
+                    .strikethrough(deshecho)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("\(tipo), \(cuando(a["cuando"]?.texto))\(deshecho ? ", deshecho" : "")").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                if !deshecho {
+                    if deLaWeb {
+                        Text("se deshace desde la web.").font(Letra.pie).foregroundStyle(Lienzo.tintaTerciaria)
+                    } else {
+                        HStack(spacing: Medida.l) {
+                            Button("cambiar.") { Task { await deshacer(id, cambiando: a["texto"]?.texto) } }
+                            Button("deshacer.") { Haptica.ligera(); Task { await deshacer(id, cambiando: nil) } }
+                        }
+                        .font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta)
+                        .buttonStyle(.pulsable(0.92))
+                        .frame(minHeight: Medida.toque)
+                        .contentShape(Rectangle())
                     }
-                    .font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(Paleta.texto)
                 }
             }
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, 12)
+        .padding(.horizontal, Medida.rellenoTarjeta)
+        .padding(.vertical, Medida.s)
     }
 
     private func cuando(_ iso: String?) -> String {

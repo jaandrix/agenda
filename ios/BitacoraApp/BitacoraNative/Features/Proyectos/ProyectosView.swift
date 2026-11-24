@@ -65,51 +65,121 @@ enum LecturaProyectos {
     }
 }
 
+enum FiltroProyectos: Hashable { case enCurso, hechos }
+
+enum TextoProyectos {
+    // PROYECTO_COLINA: el paso más cercano a donde está.
+    static func colina(_ v: Double?) -> String? {
+        guard let v else { return nil }
+        return ProyectoDetalleView.colina.min { abs((Double($0.0) ?? 0) - v) < abs((Double($1.0) ?? 0) - v) }?.1
+    }
+
+    // «24 nov. 2026» → «24 nov 2026.»
+    static func fecha(_ iso: String) -> String {
+        let madrid = TimeZone(identifier: "Europe/Madrid")
+        let entrada = DateFormatter()
+        entrada.locale = Locale(identifier: "es_ES"); entrada.timeZone = madrid; entrada.dateFormat = "yyyy-MM-dd"
+        guard let d = entrada.date(from: String(iso.prefix(10))) else { return iso }
+        let salida = DateFormatter()
+        salida.locale = Locale(identifier: "es_ES"); salida.timeZone = madrid; salida.dateFormat = "d MMM yyyy"
+        return salida.string(from: d).lowercased().replacingOccurrences(of: ".", with: "") + "."
+    }
+
+    static func tonoEstado(_ e: String) -> Chip.Tono { e == "Completado" ? .verde : e == "En progreso" ? .oscuro : .sutil }
+}
+
+// Proyectos 3.0: tarjetas blancas con su estado, el siguiente paso y la barra de lo hecho; «hechos.» en el segmento.
 struct ProyectosView: View {
     @Environment(AppCoordinator.self) private var c
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var proyectos: [ProyectoVista]?
     @State private var nuevo = ""
     @State private var idNuevo = OperacionBitacora.nuevoIdProyecto("proy")
     @State private var aviso: String?
+    @State private var filtro = FiltroProyectos.enCurso
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                let activos = (proyectos ?? []).filter { $0.estado != "Completado" }.count
-                CabeceraApartado(titulo: "proyectos", contexto: proyectos.map { $0.isEmpty ? "ninguno todavía." : "\(activos) en marcha." }) { EmptyView() }
-                if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, Espacio.s) }
-                CampoAlta(texto: $nuevo, sugerencia: "nuevo proyecto.") { crear() }.padding(.top, Espacio.m)
-                ForEach(proyectos ?? []) { p in
-                    NavigationLink { ProyectoDetalleView(id: p.id) } label: {
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack(alignment: .firstTextBaseline) {
-                                Text(p.titulo).font(Tipo.poppins(17, .semibold, estilo: .body)).foregroundStyle(p.estado == "Completado" ? Paleta.textoSecundario : Paleta.texto)
-                                    .multilineTextAlignment(.leading)
-                                Spacer()
-                                Text("\(p.hechas)/\(p.tareas.count)").font(Tipo.poppins(14, .semibold, estilo: .footnote)).monospacedDigit().foregroundStyle(Paleta.textoSecundario)
-                            }
-                            if let s = p.siguiente, let t = p.tareas.first(where: { $0.id == s }) {
-                                Text("siguiente, \(t.texto)").font(Tipo.poppins(13.5, .regular, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario).lineLimit(2)
-                            }
-                            BarraProgreso(valor: p.tareas.isEmpty ? 0 : Double(p.hechas) / Double(p.tareas.count))
-                        }
-                        .padding(.vertical, 14)
-                        .contentShape(Rectangle())
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                let todos = proyectos ?? []
+                let hechos = todos.filter { $0.estado == "Completado" }
+                let vivos = todos.filter { $0.estado != "Completado" }
+                CabeceraPagina(titulo: "proyectos.", subtitulo: proyectos.map { $0.isEmpty ? "ninguno todavía." : "\(vivos.count) en marcha." })
+                    .padding(.bottom, Medida.xxs)
+                if let aviso { Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.negativo).padding(.horizontal, Medida.xxs) }
+                if !hechos.isEmpty {
+                    SegmentoCapsula(opciones: [.init(valor: FiltroProyectos.enCurso, titulo: "en curso"),
+                                               .init(valor: FiltroProyectos.hechos, titulo: "hechos")],
+                                    elegido: $filtro, sobreBlanco: false)
+                }
+                if proyectos == nil {
+                    ProgressView().tint(Lienzo.tintaSecundaria).frame(maxWidth: .infinity).padding(.top, Medida.xl)
+                } else if filtro == .hechos && !hechos.isEmpty {
+                    ForEach(Array(hechos.enumerated()), id: \.element.id) { n, p in tarjeta(p).entradaEscalonada(n) }
+                } else {
+                    CampoObjetivos(texto: $nuevo, sugerencia: "nuevo proyecto.", boton: "crear.", accion: crear)
+                        .tarjeta(relleno: Medida.s)
+                    if vivos.isEmpty {
+                        TarjetaInvitacion(frase: todos.isEmpty ? "ningún proyecto todavía." : "nada en marcha ahora.",
+                                          destacado: "ponle nombre al siguiente.")
+                            .entradaEscalonada(0)
                     }
-                    .buttonStyle(.plain)
-                    .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+                    ForEach(Array(vivos.enumerated()), id: \.element.id) { n, p in tarjeta(p).entradaEscalonada(n) }
                 }
             }
-            .padding(.horizontal, 20).padding(.bottom, Espacio.xl)
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.xl)
+            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: proyectos)
+            .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: filtro)
         }
         .scrollIndicators(.hidden)
-        .background(Paleta.fondo.ignoresSafeArea())
+        .scrollDismissesKeyboard(.interactively)
+        .fondoLienzo()
         .refreshable { await c.sincronizar() }
         .task(id: c.revision) {
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { LecturaProyectos.vista($0) } }) else { return }
             proyectos = nuevo
+            if !(nuevo ?? []).contains(where: { $0.estado == "Completado" }) { filtro = .enCurso }
         }
+    }
+
+    private func tarjeta(_ p: ProyectoVista) -> some View {
+        let hecho = p.estado == "Completado"
+        return NavigationLink { ProyectoDetalleView(id: p.id) } label: {
+            VStack(alignment: .leading, spacing: Medida.s) {
+                HStack(alignment: .center, spacing: Medida.s) {
+                    IconoCuadrado(id: "projects", tono: hecho ? .claro : .oscuro, tamano: Medida.icono)
+                    Text(p.titulo).font(Letra.tituloTarjeta).foregroundStyle(hecho ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                        .multilineTextAlignment(.leading).lineLimit(2)
+                    Spacer(minLength: Medida.xs)
+                    if !p.estado.isEmpty { Chip(texto: p.estado.lowercased() + ".", tono: TextoProyectos.tonoEstado(p.estado)) }
+                }
+                if !hecho, let s = p.siguiente, let t = p.tareas.first(where: { $0.id == s }) {
+                    HStack(alignment: .top, spacing: Medida.xs) {
+                        Puntito(color: Lienzo.naranja, tamano: 6).padding(.top, 6)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("siguiente paso.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                            Text(t.texto).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).lineLimit(2).multilineTextAlignment(.leading)
+                        }
+                    }
+                    .padding(Medida.s)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Lienzo.sutilSuave, in: RoundedRectangle(cornerRadius: Medida.radioFila, style: .continuous))
+                }
+                HStack(spacing: Medida.s) {
+                    BarraFinaObjetivos(valor: p.tareas.isEmpty ? 0 : Double(p.hechas) / Double(p.tareas.count))
+                    Text("\(p.hechas)/\(p.tareas.count)").font(Letra.hora).foregroundStyle(Lienzo.tintaSecundaria)
+                }
+                if let fase = TextoProyectos.colina(p.colina), !hecho {
+                    Text("en la colina, " + fase).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                }
+            }
+            .tarjeta()
+            .contentShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+        }
+        .buttonStyle(.pulsable(0.97))
     }
 
     private func crear() {
@@ -127,42 +197,26 @@ struct ProyectosView: View {
     }
 }
 
-// Una raya fina de la tinta con lo hecho en el acento: el avance, no un adorno.
+// Una raya fina con lo hecho en naranja: el avance, no un adorno.
 struct BarraProgreso: View {
     let valor: Double
-
-    var body: some View {
-        GeometryReader { g in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Paleta.borde)
-                Capsule().fill(Paleta.acento).frame(width: g.size.width * min(max(valor, 0), 1))
-            }
-        }
-        .frame(height: 4)
-        .accessibilityHidden(true)
-    }
+    var body: some View { BarraFinaObjetivos(valor: valor).accessibilityHidden(true) }
 }
 
-// Un renglón para escribir y «añadir.»: sin caja, con el filete debajo.
+// Un renglón para escribir y «añadir.», en gris dentro de una tarjeta blanca.
 struct CampoAlta: View {
     @Binding var texto: String
     let sugerencia: String
     let alta: () -> Void
 
-    var body: some View {
-        HStack(alignment: .bottom) {
-            TextField(sugerencia, text: $texto, axis: .vertical).font(Tipo.cuerpo).foregroundStyle(Paleta.texto).padding(.vertical, 12)
-                .submitLabel(.done).onSubmit(alta)
-            AccionTexto(texto: "añadir.", accion: alta).disabled(texto.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        }
-        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-    }
+    var body: some View { CampoObjetivos(texto: $texto, sugerencia: sugerencia, boton: "añadir.", multilinea: true, accion: alta) }
 }
 
-// El gestor del proyecto (js/proyecto.js): siguiente paso, la colina, tareas por fases, fases y diario.
+// El gestor del proyecto (js/proyecto.js): siguiente paso en negro, la colina, tareas por fases plegables, fases y diario.
 struct ProyectoDetalleView: View {
     let id: String
     @Environment(AppCoordinator.self) private var c
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var p: ProyectoVista?
     @State private var aviso: String?
     @State private var marcadas = 0
@@ -171,84 +225,49 @@ struct ProyectoDetalleView: View {
     @State private var apunte = ""
     @State private var editando: TareaProyecto?
     @State private var textoEditado = ""
+    @State private var plegadas: Set<String> = []
+    @State private var apunteAbierto: String?
 
     // PROYECTO_COLINA.
     static let colina: [(String, String)] = [("0.08", "pensando."), ("0.28", "probando."), ("0.5", "decidido."), ("0.72", "haciendo."), ("0.93", "rematando.")]
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
                 if let p {
-                    CabeceraApartado(titulo: p.titulo.lowercased(), contexto: "\(p.hechas) de \(p.tareas.count) hechas.") { EmptyView() }
-                    if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, Espacio.s) }
+                    CabeceraPagina(titulo: p.titulo.lowercased() + ".", subtitulo: "\(p.hechas) de \(p.tareas.count) hechas.")
+                        .padding(.bottom, Medida.xxs)
+                    if let aviso { Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.negativo).padding(.horizontal, Medida.xxs) }
                     if let sid = p.siguiente, let s = p.tareas.first(where: { $0.id == sid }) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("siguiente paso.").font(Tipo.poppins(22, .bold, estilo: .title2)).kerning(-0.66).foregroundStyle(Paleta.texto)
-                            Text(s.texto).font(Tipo.poppins(17, .medium, estilo: .body)).foregroundStyle(Paleta.texto)
-                            HStack(spacing: Espacio.l) {
-                                AccionTexto(texto: "hecho.") { estado(s, "hecha") }
-                                if !s.enHoy { AccionTexto(texto: "→ hoy.") { aHoy(s) } }
-                            }
-                        }
-                        .modifier(BloqueAhora())
+                        siguiente(s).entradaEscalonada(0)
                     }
-                    colinaBloque(p)
-                    Etiqueta(texto: "tareas.")
-                    CampoAlta(texto: $tarea, sugerencia: "nueva tarea.") {
-                        let t = tarea.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard !t.isEmpty else { return }
-                        tarea = ""
-                        for linea in t.split(separator: "\n").map({ $0.trimmingCharacters(in: .whitespaces) }).filter({ !$0.isEmpty }) {
-                            cambiar(.anadirTarea(id: OperacionBitacora.nuevoIdProyecto("pt"), texto: String(linea.prefix(300)), faseId: nil))
-                        }
-                    }
-                    if p.tareas.isEmpty { Text("sin tareas.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s) }
-                    let sinFase = p.tareas.filter { t in t.faseId == nil || !p.fases.contains { $0.id == t.faseId } }
-                    ForEach(sinFase) { filaTarea($0, p) }
-                    ForEach(p.fases) { f in
-                        let suyas = p.tareas.filter { $0.faseId == f.id }
-                        if !suyas.isEmpty {
-                            Text(f.nombre.lowercased() + ".").font(Tipo.poppins(13, .bold, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario).padding(.top, Espacio.m)
-                            ForEach(suyas) { filaTarea($0, p) }
-                        }
-                    }
-                    Etiqueta(texto: "fases.")
-                    ForEach(p.fases) { f in
-                        FilaAgenda(hora: nil, titulo: f.nombre, notas: f.fecha, hecho: f.hecha, mostrarHora: false) {
-                            cambiar(.faseHecha(id: f.id, hecha: !f.hecha))
-                        }
-                    }
-                    CampoAlta(texto: $fase, sugerencia: "nueva fase.") {
-                        let n = fase.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard !n.isEmpty else { return }
-                        fase = ""
-                        cambiar(.anadirFase(id: OperacionBitacora.nuevoIdProyecto("pf"), nombre: String(n.prefix(200)), fecha: ""))
-                    }
-                    Etiqueta(texto: "diario.")
+                    colinaBloque(p).entradaEscalonada(1)
+                    EtiquetaSeccion(texto: "tareas").padding(.top, Medida.s)
+                    tareas(p).entradaEscalonada(2)
+                    EtiquetaSeccion(texto: "fases").padding(.top, Medida.s)
+                    fases(p).entradaEscalonada(3)
+                    EtiquetaSeccion(texto: "diario").padding(.top, Medida.s)
                     CampoAlta(texto: $apunte, sugerencia: "una decisión o un avance.") {
                         let t = apunte.trimmingCharacters(in: .whitespacesAndNewlines)
                         guard !t.isEmpty else { return }
                         apunte = ""
                         cambiar(.apuntar(id: OperacionBitacora.nuevoIdProyecto("pd"), fecha: CalendarioBitacora.madrid.dia(de: Date()).iso, texto: String(t.prefix(2000))))
                     }
-                    ForEach(p.diario) { d in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(d.texto).font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
-                            Text(d.fecha).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 10)
-                        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                        .contextMenu { Button("quitar.", role: .destructive) { cambiar(.quitarApunte(id: d.id)) } }
-                    }
+                    .tarjeta(relleno: Medida.s)
+                    .entradaEscalonada(4)
+                    ForEach(Array(p.diario.enumerated()), id: \.element.id) { n, d in apunteDiario(d).entradaEscalonada(n + 5) }
                 } else {
-                    ProgressView().tint(Paleta.textoSecundario).frame(maxWidth: .infinity).padding(.top, Espacio.xl)
+                    ProgressView().tint(Lienzo.tintaSecundaria).frame(maxWidth: .infinity).padding(.top, Medida.xl)
                 }
             }
-            .padding(.horizontal, 20).padding(.bottom, Espacio.xl)
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.xl)
+            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: p)
         }
         .scrollIndicators(.hidden)
-        .background(Paleta.fondo.ignoresSafeArea())
+        .scrollDismissesKeyboard(.interactively)
+        .fondoLienzo()
         .sensoryFeedback(.success, trigger: marcadas)
         .refreshable { await c.sincronizar() }
         .alert("tarea.", isPresented: Binding(get: { editando != nil }, set: { if !$0 { editando = nil } })) {
@@ -268,69 +287,185 @@ struct ProyectoDetalleView: View {
         }
     }
 
-    // proyectoColinaSvg simplificada: la frase de dónde está y los cinco pasos para ponerla.
+    // MARK: - Siguiente paso
+
+    private func siguiente(_ s: TareaProyecto) -> some View {
+        TarjetaOscura {
+            VStack(alignment: .leading, spacing: Medida.s) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("SIGUIENTE PASO").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.sobreOscuroSuave)
+                    Spacer()
+                    if s.estado == "curso" { Text("en marcha.").font(Letra.pieFuerte).foregroundStyle(Lienzo.naranja) }
+                    else if s.enHoy { Text("en el plan de hoy.").font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave) }
+                }
+                Text(s.texto).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.sobreOscuro).fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: Medida.xs) {
+                    Button("hecho.") { estado(s, "hecha", celebrar: true) }.buttonStyle(.capsula(.naranja))
+                    if !s.enHoy { Button("→ hoy.") { Haptica.ligera(); aHoy(s) }.buttonStyle(.capsula(.claro)) }
+                }
+                .padding(.top, Medida.xxs)
+            }
+        }
+    }
+
+    // MARK: - La colina
+
+    // proyectoColinaSvg simplificada: dónde está en una barra fina y los cinco pasos para ponerla.
     private func colinaBloque(_ p: ProyectoVista) -> some View {
         let frase = p.colina.map { $0 < 0.5 ? "cuesta arriba: aún decidiendo cómo." : $0 < 0.6 ? "en la cima: ya sabes cómo hacerlo." : "cuesta abajo: ya solo es hacer." } ?? "¿dónde está? elige abajo."
-        return VStack(alignment: .leading, spacing: 8) {
-            Etiqueta(texto: "la colina.")
-            Text(frase).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+        return VStack(alignment: .leading, spacing: Medida.s) {
+            HStack(alignment: .firstTextBaseline) {
+                EtiquetaSeccion(texto: "la colina")
+                if let t = TextoProyectos.colina(p.colina) { Text(t).font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta) }
+            }
+            BarraFinaObjetivos(valor: p.colina ?? 0)
+            Text(frase).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).padding(.horizontal, Medida.xxs)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: Medida.xxs + 2) {
                     ForEach(Self.colina, id: \.0) { par in
                         let v = par.0, t = par.1
                         let activa = p.colina.map { abs($0 - (Double(v) ?? 0)) < 0.05 } ?? false
-                        Button(t) { cambiar(.colina(v)) }
-                            .font(Tipo.poppins(14, .semibold, estilo: .footnote))
-                            .foregroundStyle(activa ? Paleta.sobreAcento : Paleta.texto)
-                            .padding(.horizontal, 12).frame(minHeight: 36)
-                            .background(activa ? Paleta.acento : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control))
-                            .frame(minHeight: 44).contentShape(Rectangle())
+                        Button {
+                            Haptica.seleccion()
+                            cambiar(.colina(v))
+                        } label: {
+                            Text(t).font(Letra.pestana)
+                                .foregroundStyle(activa ? Lienzo.sobreOscuro : Lienzo.tintaSecundaria)
+                                .padding(.horizontal, Medida.s).frame(height: 32)
+                                .background(activa ? Lienzo.oscuro : Lienzo.sutil, in: Capsule())
+                                .frame(minHeight: Medida.toque).contentShape(Rectangle())
+                        }
+                        .buttonStyle(Pulsable(escala: 0.94, haptica: false))
+                        .accessibilityAddTraits(activa ? .isSelected : [])
                     }
                 }
+            }
+            .scrollClipDisabled()
+        }
+        .tarjeta()
+    }
+
+    // MARK: - Tareas
+
+    private func tareas(_ p: ProyectoVista) -> some View {
+        let sinFase = p.tareas.filter { t in t.faseId == nil || !p.fases.contains { $0.id == t.faseId } }
+        return VStack(alignment: .leading, spacing: Medida.xs) {
+            CampoAlta(texto: $tarea, sugerencia: "nueva tarea.") {
+                let t = tarea.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !t.isEmpty else { return }
+                tarea = ""
+                for linea in t.split(separator: "\n").map({ $0.trimmingCharacters(in: .whitespaces) }).filter({ !$0.isEmpty }) {
+                    cambiar(.anadirTarea(id: OperacionBitacora.nuevoIdProyecto("pt"), texto: String(linea.prefix(300)), faseId: nil))
+                }
+            }
+            if p.tareas.isEmpty {
+                EstadoVacio(texto: "sin tareas. escribe la primera arriba.")
+            }
+            filas(sinFase, p)
+            ForEach(p.fases) { f in
+                let suyas = p.tareas.filter { $0.faseId == f.id }
+                if !suyas.isEmpty {
+                    SeparadorFila(sangria: 0)
+                    SeccionPlegable(titulo: f.nombre.lowercased() + ".", detalle: "\(suyas.filter { $0.estado == "hecha" }.count)/\(suyas.count)",
+                                    abierta: Binding(get: { !plegadas.contains(f.id) },
+                                                     set: { if $0 { plegadas.remove(f.id) } else { plegadas.insert(f.id) } })) {
+                        filas(suyas, p)
+                    }
+                }
+            }
+        }
+        .tarjeta()
+    }
+
+    private func filas(_ lista: [TareaProyecto], _ p: ProyectoVista) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(lista.enumerated()), id: \.element.id) { n, t in
+                if n > 0 { SeparadorFila(sangria: Medida.toque - Medida.s) }
+                filaTarea(t, p)
             }
         }
     }
 
     private func filaTarea(_ t: TareaProyecto, _ p: ProyectoVista) -> some View {
-        Button { ciclar(t) } label: {
-            HStack(spacing: Espacio.m) {
-                Image(systemName: t.estado == "hecha" ? "checkmark.circle.fill" : t.estado == "curso" ? "circle.lefthalf.filled" : "circle")
-                    .font(.system(size: 24))
-                    // 0.27: el aro pendiente en `aro` (≥ 3:1, como el círculo de marcar); con bordeFuerte apenas se veía.
-                    .foregroundStyle(t.estado == "hecha" ? Paleta.textoSecundario : t.estado == "curso" ? Paleta.acento : Paleta.aro)
-                    .contentTransition(.symbolEffect(.replace))
-                    .frame(width: 44, height: 44)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(t.texto).font(Tipo.poppins(16.5, .semibold, estilo: .body)).foregroundStyle(t.estado == "hecha" ? Paleta.textoSecundario : Paleta.texto)
-                        .strikethrough(t.estado == "hecha").multilineTextAlignment(.leading)
-                    Text(nombre(t.estado) + (t.id == p.siguiente ? " siguiente paso." : "") + (t.enHoy ? " en el plan de hoy." : ""))
-                        .font(Tipo.poppins(13.5, .regular, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+        let hecha = t.estado == "hecha"
+        let alternar = { estado(t, hecha ? "pendiente" : "hecha") }
+        return HStack(spacing: Medida.xxs) {
+            CasillaMarcar(hecha: hecha, marcar: alternar)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(t.texto).font(Letra.cuerpo).foregroundStyle(hecha ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                    .strikethrough(hecha, color: Lienzo.tintaTerciaria).multilineTextAlignment(.leading)
+                if t.enHoy && !hecha { Text("en el plan de hoy.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
             }
-            .padding(.vertical, 4)
-            .contentShape(Rectangle())
+            Spacer(minLength: Medida.xs)
+            if t.estado == "curso" { Chip(texto: "en marcha.", tono: .naranja) }
+            else if t.id == p.siguiente { Chip(texto: "siguiente.", tono: .oscuro) }
         }
-        .buttonStyle(.plain)
-        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-        .accessibilityHint("cambia el estado; mantén pulsado para más")
+        .padding(.leading, -Medida.s)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(nombre(t.estado))
+        .accessibilityAction { alternar() }
+        .accessibilityHint("mantén pulsado para más")
         .contextMenu {
-            if t.estado != "hecha" && !t.enHoy { Button("→ hoy.") { aHoy(t) } }
-            if t.estado != "hecha" { Button(t.id == p.siguiente ? "quitar de siguiente paso." : "siguiente paso.") { cambiar(.siguiente(id: t.id == p.siguiente ? nil : t.id)) } }
+            if t.estado == "pendiente" { Button("en marcha.") { estado(t, "curso") } }
+            if t.estado == "curso" { Button("pendiente.") { estado(t, "pendiente") } }
+            if !hecha && !t.enHoy { Button("→ hoy.") { aHoy(t) } }
+            if !hecha { Button(t.id == p.siguiente ? "quitar de siguiente paso." : "siguiente paso.") { cambiar(.siguiente(id: t.id == p.siguiente ? nil : t.id)) } }
             Button("editar.") { textoEditado = t.texto; editando = t }
             Button("borrar.", role: .destructive) { cambiar(.borrarTarea(id: t.id)) }
         }
     }
 
-    private func nombre(_ e: String) -> String { e == "hecha" ? "hecha." : e == "curso" ? "en marcha." : "pendiente." }
+    // MARK: - Fases
 
-    // El mismo ciclo que proyectoCambiarEstado, pero la operación lleva el estado final.
-    private func ciclar(_ t: TareaProyecto) {
-        estado(t, t.estado == "pendiente" ? "curso" : t.estado == "curso" ? "hecha" : "pendiente")
+    private func fases(_ p: ProyectoVista) -> some View {
+        VStack(alignment: .leading, spacing: Medida.xs) {
+            if !p.fases.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(Array(p.fases.enumerated()), id: \.element.id) { n, f in
+                        if n > 0 { SeparadorFila(sangria: Medida.toque - Medida.s) }
+                        HStack(spacing: Medida.xxs) {
+                            CasillaMarcar(hecha: f.hecha) { cambiar(.faseHecha(id: f.id, hecha: !f.hecha)) }
+                            Text(f.nombre).font(Letra.cuerpo).foregroundStyle(f.hecha ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                                .strikethrough(f.hecha, color: Lienzo.tintaTerciaria)
+                            Spacer(minLength: Medida.xs)
+                            if !f.fecha.isEmpty { Text(TextoProyectos.fecha(f.fecha)).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
+                        }
+                        .padding(.leading, -Medida.s)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityValue(f.hecha ? "hecha" : "pendiente")
+                        .accessibilityAction { cambiar(.faseHecha(id: f.id, hecha: !f.hecha)) }
+                    }
+                }
+            }
+            CampoAlta(texto: $fase, sugerencia: "nueva fase.") {
+                let n = fase.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !n.isEmpty else { return }
+                fase = ""
+                cambiar(.anadirFase(id: OperacionBitacora.nuevoIdProyecto("pf"), nombre: String(n.prefix(200)), fecha: ""))
+            }
+        }
+        .tarjeta()
     }
 
-    private func estado(_ t: TareaProyecto, _ e: String) {
-        if e == "hecha" { marcadas += 1 }
+    // MARK: - Diario
+
+    private func apunteDiario(_ d: ApunteProyecto) -> some View {
+        let lineas = d.texto.split(separator: "\n", maxSplits: 1).map(String.init)
+        let abierta = apunteAbierto == d.id
+        return TarjetaNota(titulo: lineas.first ?? d.texto, extracto: lineas.count > 1 ? lineas[1] : "",
+                           fecha: d.fecha.isEmpty ? nil : TextoProyectos.fecha(d.fecha), expandida: abierta) {
+            withAnimation(Muelle.o(Muelle.expandir, reducido: sinMovimiento)) { apunteAbierto = abierta ? nil : d.id }
+        }
+        .contextMenu { Button("quitar.", role: .destructive) { cambiar(.quitarApunte(id: d.id)) } }
+    }
+
+    // MARK: - Operaciones
+
+    private func nombre(_ e: String) -> String { e == "hecha" ? "hecha." : e == "curso" ? "en marcha." : "pendiente." }
+
+    private func estado(_ t: TareaProyecto, _ e: String, celebrar: Bool = false) {
+        if celebrar { marcadas += 1 }
         enviar(.estadoTareaProyecto(proyectoId: id, tareaId: t.id, estado: e))
     }
 

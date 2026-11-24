@@ -1,7 +1,7 @@
 import SwiftUI
 
 // renderMobileMenu: los apartados en cuatro grupos (general, desarrollo, otros, sistema) con la visibilidad de
-// `apartadosConfig`. Lo nativo se abre aquí; lo demás, en su página de la web, marcado con «web.».
+// `apartadosConfig`. Lo nativo se abre aquí; lo demás, en su página de la web, marcado con «web».
 struct MenuMas: Sendable, Equatable {
     var grupos: [Grupo] = []
     var cuentas: [String: Int] = [:]
@@ -21,11 +21,29 @@ struct MenuMas: Sendable, Equatable {
         m.cuentas["actualizaciones"] = (((try? doc.valor(de: "pedidos")) ?? nil)?.lista ?? []).filter { $0["estado"]?.texto != "entregado" }.count
         return m
     }
+
+    // Todos los apartados visibles en el orden del menú, con «estudios» ya apuntando a su primera pestaña encendida.
+    var todos: [Apartado] {
+        grupos.flatMap(\.apartados).map { $0.vista == "studies" ? Apartado(vista: estudios, nombre: $0.nombre) : $0 }
+    }
+
+    // Filtro del buscador del menú: por nombre, sin tildes ni mayúsculas.
+    func filtrados(_ texto: String) -> [Apartado] {
+        let q = LecturaBusqueda.plegar(texto.trimmingCharacters(in: .whitespacesAndNewlines))
+        guard !q.isEmpty else { return [] }
+        return todos.filter { LecturaBusqueda.plegar($0.nombre).contains(q) }
+    }
 }
 
+// Menú 2.0: la marca arriba, el buscador en cápsula (filtra apartados al escribir; con «buscar en todo.» lleva a la
+// búsqueda global), «más usados.» en una rejilla de squircles grandes y los grupos en tarjetas blancas.
 struct MasView: View {
     @Environment(AppCoordinator.self) private var c
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var menu: MenuMas?
+    @State private var usados: [Apartado] = []
+    @State private var filtro = ""
+    @FocusState private var focoFiltro: Bool
 
     // Lo que ya es nativo: o una pestaña de la barra, o una página dentro de «más.».
     static let pestanas: [String: Pestana] = ["calendar": .calendario, "planner": .plan, "finances": .finanzas]
@@ -35,68 +53,133 @@ struct MasView: View {
         ScrollViewReader { lector in
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                CabeceraApartado(titulo: "menú", contexto: nil) { EmptyView() }.id("arriba")
-                NavigationLink(value: "buscar") {
-                    HStack(spacing: Espacio.s) {
-                        Image(systemName: "magnifyingglass").font(.system(size: 15, weight: .semibold))
-                        Text("buscar en bitácora.").font(Tipo.cuerpo)
-                        Spacer()
+                CabeceraMarca {
+                    NavigationLink(value: "settings") {
+                        IconoCuadrado(id: "ajustes", tono: .blanco)
+                            .frame(minWidth: Medida.toque, minHeight: Medida.toque)
+                            .contentShape(Rectangle())
                     }
-                    .foregroundStyle(Paleta.textoSecundario)
-                    .padding(.horizontal, 14).frame(minHeight: 46)
-                    .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+                    .buttonStyle(.pulsable(0.9))
+                    .simultaneousGesture(TapGesture().onEnded { c.anotarUso("settings") })
+                    .accessibilityLabel("ajustes")
                 }
-                .buttonStyle(.plain).padding(.top, Espacio.m)
-                .accessibilityLabel("buscar")
+                .id("arriba")
+                Text("menú.").font(Letra.titulo).foregroundStyle(Lienzo.tinta).kerning(-0.4)
+                    .accessibilityAddTraits(.isHeader)
+                    .padding(.top, Medida.s)
+                BuscadorCapsula(texto: $filtro, placeholder: "buscar un apartado", enfocar: $focoFiltro)
+                    .padding(.top, Medida.s)
                 if let menu {
-                    ForEach(menu.grupos, id: \.nombre) { g in
-                        GrupoMenu(titulo: g.nombre + ".") {
-                            ForEach(Array(g.apartados.enumerated()), id: \.element.id) { n, a in
-                                if n > 0 { SeparadorMenu() }
-                                fila(a.vista == "studies" ? Apartado(vista: menu.estudios, nombre: a.nombre) : a, cuenta: menu.cuentas[a.vista] ?? 0)
-                            }
-                        }
+                    if filtro.trimmingCharacters(in: .whitespaces).isEmpty {
+                        contenido(menu)
+                            .transition(.opacity)
+                    } else {
+                        filtrado(menu)
+                            .transition(.opacity)
                     }
                 } else {
-                    ProgressView().tint(Paleta.textoSecundario).frame(maxWidth: .infinity).padding(.top, Espacio.xl)
-                }
-                GrupoMenu(titulo: "este iphone.") {
-                    NavigationLink(value: "estado") { FilaMenu(nombre: "estado de la sincronización", inicial: "estado") }.buttonStyle(.plain)
-                    SeparadorMenu()
-                    Button { c.web = Config.webURL } label: { FilaMenu(nombre: "bitácora web", inicial: "web", web: true) }.buttonStyle(.plain)
+                    ProgressView().tint(Lienzo.tintaSecundaria).frame(maxWidth: .infinity).padding(.top, Medida.xl)
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, Espacio.xl)
+            .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: filtro.isEmpty)
+            .padding(.horizontal, Medida.margen)
+            .padding(.bottom, Medida.entreSecciones)
         }
         .scrollIndicators(.hidden)
+        .scrollDismissesKeyboard(.interactively)
         .onChange(of: c.subir[.mas]) { lector.scrollTo("arriba", anchor: .top) }
         }
-        .background(Paleta.fondo.ignoresSafeArea())
+        .fondoLienzo()
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
         // Toda pantalla que se abre desde el menú lleva la barra del sistema (transparente): su botón de volver, con
         // «menú» de título, y el gesto de volver desde el borde. Ocultarla quitaba las dos cosas (Documentos, 0.17).
         .navigationTitle("menú")
         .navigationDestination(for: String.self) { destino($0).toolbar(.visible, for: .navigationBar).navigationBarTitleDisplayMode(.inline) }
+        .onChange(of: c.rutaMas) { if !c.rutaMas.isEmpty { focoFiltro = false } }
         .task(id: c.revision) {
             let t0 = Medidas.ahora
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { MenuMas.desde($0) } }) else { return }
             menu = nuevo
+            if let nuevo { usados = masUsados(nuevo) }
             await Medidas.anotar("pestaña menú (cargar)", desde: t0)
         }
+        .onAppear { if let menu { usados = masUsados(menu) } }
+    }
+
+    // MARK: contenido
+
+    @ViewBuilder private func contenido(_ menu: MenuMas) -> some View {
+        if !usados.isEmpty {
+            EtiquetaSeccion(texto: "más usados")
+                .padding(.top, Medida.entreSecciones).padding(.bottom, Medida.xs)
+            RejillaUsados(apartados: usados, cuentas: menu.cuentas, web: { esWeb($0) }) { abrir($0) }
+        }
+        ForEach(Array(menu.grupos.enumerated()), id: \.element.nombre) { i, g in
+            GrupoMenu(titulo: g.nombre + ".") {
+                ForEach(Array(g.apartados.enumerated()), id: \.element.id) { n, a in
+                    if n > 0 { SeparadorMenu() }
+                    fila(a.vista == "studies" ? Apartado(vista: menu.estudios, nombre: a.nombre) : a, cuenta: menu.cuentas[a.vista] ?? 0)
+                }
+            }
+            .entradaEscalonada(i + 1)
+        }
+        GrupoMenu(titulo: "este iphone.") {
+            NavigationLink(value: "estado") { FilaMenu(nombre: "estado de la sincronización", inicial: "estado") }.buttonStyle(EstiloFila())
+            SeparadorMenu()
+            Button { c.web = Config.webURL } label: { FilaMenu(nombre: "bitácora web", inicial: "web", web: true) }.buttonStyle(EstiloFila())
+        }
+        .entradaEscalonada(menu.grupos.count + 1)
+    }
+
+    @ViewBuilder private func filtrado(_ menu: MenuMas) -> some View {
+        let lista = menu.filtrados(filtro)
+        TarjetaFilas {
+            if lista.isEmpty {
+                EstadoVacio(texto: "ningún apartado con «\(filtro)».", icono: "buscar")
+            } else {
+                ForEach(Array(lista.enumerated()), id: \.element.id) { n, a in
+                    if n > 0 { SeparadorMenu() }
+                    fila(a, cuenta: menu.cuentas[a.vista == menu.estudios ? "studies" : a.vista] ?? 0)
+                }
+            }
+        }
+        .padding(.top, Medida.m)
+        NavigationLink(value: "buscar") {
+            Text("buscar «\(filtro)» en todo.")
+        }
+        .buttonStyle(.capsula(.oscuro, ancho: true))
+        .padding(.top, Medida.s)
+        .accessibilityHint("busca también en eventos, tareas, notas, asignaturas y ocio")
+    }
+
+    // MARK: navegación (la de siempre: pestaña, página nativa o web)
+
+    private func esWeb(_ vista: String) -> Bool { Self.pestanas[vista] == nil && !Self.paginas.contains(vista) }
+
+    private func abrir(_ vista: String) {
+        if let p = Self.pestanas[vista] { c.anotarUso(vista); c.pestana = p }
+        else if Self.paginas.contains(vista) { c.anotarUso(vista); c.rutaMas.append(vista) }
+        else { c.anotarUso(vista); c.web = Apartados.webURL(vista) }
+    }
+
+    // Los ocho más usados de este iphone (UsoApartados), sin plan ni ajustes; si aún no hay uso, el orden del menú.
+    private func masUsados(_ menu: MenuMas) -> [Apartado] {
+        let todos = menu.todos
+        let ids = c.uso.ranking(candidatos: todos.map(\.vista), excluir: ["planner", "settings"], cuantos: 8)
+        return ids.compactMap { id in todos.first { $0.vista == id } }
     }
 
     @ViewBuilder private func fila(_ a: Apartado, cuenta: Int) -> some View {
         let inicial = a.vista
         if let p = Self.pestanas[a.vista] {
-            Button { c.anotarUso(a.vista); c.pestana = p } label: { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta) }.buttonStyle(.plain)
+            Button { c.anotarUso(a.vista); c.pestana = p } label: { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta) }.buttonStyle(EstiloFila())
         } else if Self.paginas.contains(a.vista) {
-            NavigationLink(value: a.vista) { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta) }.buttonStyle(.plain)
+            NavigationLink(value: a.vista) { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta) }.buttonStyle(EstiloFila())
                 .simultaneousGesture(TapGesture().onEnded { c.anotarUso(a.vista) })
         } else {
-            Button { c.anotarUso(a.vista); c.web = Apartados.webURL(a.vista) } label: { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta, web: true) }.buttonStyle(.plain)
+            Button { c.anotarUso(a.vista); c.web = Apartados.webURL(a.vista) } label: { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta, web: true) }.buttonStyle(EstiloFila())
         }
     }
 
@@ -119,7 +202,7 @@ struct MasView: View {
         case "documents": DocumentosView()
         case "bandeja": BandejaView()
         case "estado": EstadoView()
-        case "buscar": BuscarView()
+        case "buscar": BuscarView(inicial: filtro)
         case "home": PanoramaView()
         case "listas": ListasView()
         default: Color.clear.onAppear { c.rutaMas = []; c.web = Apartados.webURL(vista) }
@@ -127,29 +210,80 @@ struct MasView: View {
     }
 }
 
-// .m-menu-grupo (13, negrita, gris) sobre una .m-mtarjeta (radio 22, color de superficie).
+// «más usados.»: rejilla de cuatro columnas con squircles grandes (blancos sobre el lienzo; el primero, oscuro) y el
+// nombre debajo en pequeño. El recuento va en un puntito naranja con la cifra en la esquina.
+struct RejillaUsados: View {
+    let apartados: [Apartado]
+    let cuentas: [String: Int]
+    let web: (String) -> Bool
+    let abrir: (String) -> Void
+
+    private let columnas = Array(repeating: GridItem(.flexible(), spacing: Medida.xs, alignment: .top), count: 4)
+
+    var body: some View {
+        LazyVGrid(columns: columnas, spacing: Medida.m) {
+            ForEach(Array(apartados.enumerated()), id: \.element.id) { i, a in
+                Button { abrir(a.vista) } label: {
+                    VStack(spacing: Medida.xs) {
+                        IconoCuadrado(id: a.vista, tono: i == 0 ? .oscuro : .blanco, tamano: AccesoGrande.lado)
+                            .sombra(.suave)
+                            .overlay(alignment: .topTrailing) {
+                                let n = cuentas[a.vista] ?? 0
+                                if n > 0 { ContadorEsquina(cifra: n).offset(x: Medida.xxs, y: -Medida.xxs) }
+                            }
+                        Text(a.nombre + ".").font(Letra.pie).foregroundStyle(Lienzo.tinta).lineLimit(1).minimumScaleFactor(0.85)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.pulsable(0.92))
+                .accessibilityLabel(a.nombre + ((cuentas[a.vista] ?? 0) > 0 ? ", \(cuentas[a.vista] ?? 0) pendientes" : ""))
+                .accessibilityHint(web(a.vista) ? "se abre en la web" : "")
+                .entradaEscalonada(i)
+            }
+        }
+    }
+}
+
+// Lado del acceso grande de «más usados.» (entre iconoGrande y el ancho de una cuarta de pantalla).
+enum AccesoGrande {
+    static let lado: CGFloat = 60
+}
+
+// Cifra pequeña en un círculo naranja, para la esquina de un acceso grande.
+struct ContadorEsquina: View {
+    let cifra: Int
+    var body: some View {
+        Text("\(cifra)").font(Letra.etiqueta).monospacedDigit().foregroundStyle(Lienzo.sobreNaranja)
+            .padding(.horizontal, 5)
+            .frame(minWidth: 20, minHeight: 20)
+            .background(Lienzo.naranja, in: Capsule())
+            .overlay(Capsule().strokeBorder(Lienzo.fondo, lineWidth: 2))
+            .accessibilityHidden(true)
+    }
+}
+
+// Grupo del menú y de Ajustes: etiqueta en mayúsculas pequeñas y una tarjeta blanca con las filas.
 struct GrupoMenu<Contenido: View>: View {
     let titulo: String
     @ViewBuilder var contenido: () -> Contenido
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(titulo).font(Tipo.poppins(13, .bold, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario)
-                .padding(.horizontal, 6).padding(.top, 22).padding(.bottom, 8)
-                .accessibilityAddTraits(.isHeader)
-            VStack(spacing: 0) { contenido() }
-                .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        VStack(alignment: .leading, spacing: Medida.xs) {
+            EtiquetaSeccion(texto: titulo.hasSuffix(".") ? String(titulo.dropLast()) : titulo)
+            TarjetaFilas { contenido() }
         }
+        .padding(.top, Medida.entreSecciones)
     }
 }
 
-// .m-mfila + .m-mfila::before: el filete empieza a 62, después del icono.
+// Filete entre filas: empieza después del icono cuadrado, como SeparadorFila, con el relleno lateral de la fila.
 struct SeparadorMenu: View {
-    var body: some View { Rectangle().fill(Paleta.borde).frame(height: 1).padding(.leading, 62) }
+    var body: some View { SeparadorFila(sangria: Medida.rellenoTarjeta + Medida.icono + Medida.s) }
 }
 
-// .m-mfila: 56 de alto, la inicial en un cuadrado de 32 con radio 10, el nombre a 17 seminegrita, el contador en una
-// bola del acento y la flecha.
+// Fila de apartado: FilaTarjeta con su IconoCuadrado del catálogo, «web» discreto, el recuento en un Chip naranja y la
+// flecha.
 struct FilaMenu: View {
     let nombre: String
     let inicial: String
@@ -157,128 +291,14 @@ struct FilaMenu: View {
     var web = false
 
     var body: some View {
-        HStack(spacing: 14) {
-            // `inicial` es la vista o un id del catálogo: el icono propio sustituye a la letra.
-            Icono(id: Icono.deVista(inicial)).foregroundStyle(Paleta.texto)
-                .frame(width: 32, height: 32).background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            Text(nombre).font(Tipo.poppins(17, .semibold, estilo: .body)).kerning(-0.17).foregroundStyle(Paleta.texto)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            if web { Text("web.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-            if cuenta > 0 {
-                Text("\(cuenta)").font(Tipo.poppins(12, .bold, estilo: .caption)).foregroundStyle(Paleta.sobreAcento)
-                    .padding(.horizontal, 7).frame(minWidth: 24, minHeight: 24).background(Paleta.acento, in: Capsule())
+        FilaTarjeta(icono: inicial, titulo: nombre + ".") {
+            HStack(spacing: Medida.xs) {
+                if web { Text("web").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
+                if cuenta > 0 { Chip(texto: "\(cuenta)", tono: .naranja).monospacedDigit() }
+                FlechaFila()
             }
-            Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(Paleta.textoApagado)
         }
-        .padding(.horizontal, 16)
-        .frame(minHeight: 56)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
+        .padding(.horizontal, Medida.rellenoTarjeta)
         .accessibilityHint(web ? "se abre en la web" : "")
-    }
-}
-
-// Rutinas de hoy (toggleHabitToday): la página del apartado.
-struct RutinasView: View {
-    @Environment(AppCoordinator.self) private var c
-    @State private var vista: VistaMas?
-    @State private var aviso: String?
-
-    var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                CabeceraApartado(titulo: "rutinas", contexto: vista.map { $0.rutinas.isEmpty ? "ninguna hoy." : "\($0.rutinas.filter(\.hecha).count) de \($0.rutinas.count) hoy." }) { EmptyView() }
-                if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, Espacio.s) }
-                CabeceraSeccion(titulo: "hoy.")
-                ForEach(vista?.rutinas ?? []) { r in
-                    FilaAgenda(hora: nil, titulo: r.texto, notas: "\(r.semana) esta semana" + (r.momento.isEmpty ? "" : ", \(r.momento)"),
-                               hecho: r.hecha, mostrarHora: false) { marcar(r) }
-                }
-            }
-            .padding(.horizontal, 20).padding(.bottom, Espacio.xl)
-        }
-        .scrollIndicators(.hidden)
-        .background(Paleta.fondo.ignoresSafeArea())
-        .task(id: c.revision) {
-            let doc = await c.documentoVisible()
-            guard let nuevo = await ultimaGana({ doc.map { LecturaMas.vista($0) } }) else { return }
-            vista = nuevo
-        }
-    }
-
-    private func marcar(_ r: Rutina) {
-        guard var v = vista, let i = v.rutinas.firstIndex(where: { $0.id == r.id }) else { return }
-        v.rutinas[i].hecha.toggle()
-        vista = v
-        let hecha = v.rutinas[i].hecha
-        Task {
-            do { try await c.encolar(.marcarRutina(id: r.id, dia: CalendarioBitacora.madrid.dia(de: Date()).iso, hecha: hecha)); aviso = nil } catch {
-                if var w = vista, let j = w.rutinas.firstIndex(where: { $0.id == r.id }) { w.rutinas[j].hecha = !hecha; vista = w }
-                aviso = "no se pudo guardar en este iPhone."
-            }
-        }
-    }
-}
-
-// Notas: la nota rápida arriba y las últimas debajo.
-struct NotasView: View {
-    @Environment(AppCoordinator.self) private var c
-    @State private var vista: VistaMas?
-    @State private var nota = ""
-    @State private var idNota = OperacionBitacora.nuevoIdNota()
-    @State private var aviso: String?
-
-    var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                CabeceraApartado(titulo: "notas", contexto: vista.map { "\($0.notas.count) notas." }) { EmptyView() }
-                if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, Espacio.s) }
-                HStack(alignment: .bottom) {
-                    TextField("nota rápida.", text: $nota, axis: .vertical)
-                        .font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
-                        .padding(.vertical, 12)
-                    AccionTexto(texto: "guardar.") { guardarNota() }
-                        .disabled(nota.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-                .padding(.top, Espacio.m)
-                .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                ForEach(vista?.notas ?? []) { n in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(n.texto).font(Tipo.cuerpo).foregroundStyle(Paleta.texto).lineLimit(8)
-                        Text(n.fecha).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 10)
-                    .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                    .textSelection(.enabled)
-                }
-            }
-            .padding(.horizontal, 20).padding(.bottom, Espacio.xl)
-        }
-        .scrollIndicators(.hidden)
-        .background(Paleta.fondo.ignoresSafeArea())
-        .task(id: c.revision) {
-            let doc = await c.documentoVisible()
-            guard let nuevo = await ultimaGana({ doc.map { LecturaMas.vista($0) } }) else { return }
-            vista = nuevo
-        }
-    }
-
-    private func guardarNota() {
-        let texto = String(nota.trimmingCharacters(in: .whitespacesAndNewlines).prefix(5000))
-        guard !texto.isEmpty else { return }
-        let id = idNota
-        // El texto se queda en el campo hasta que la cola lo tiene guardado.
-        Task {
-            do {
-                try await c.encolar(.crearNota(id: id, dia: CalendarioBitacora.madrid.dia(de: Date()).iso, texto: texto,
-                                               creada: ISO8601DateFormatter().string(from: Date())))
-                if nota.trimmingCharacters(in: .whitespacesAndNewlines) == texto { nota = "" }
-                idNota = OperacionBitacora.nuevoIdNota()
-                aviso = nil
-            } catch {
-                aviso = "no se pudo guardar la nota en este iPhone."
-            }
-        }
     }
 }

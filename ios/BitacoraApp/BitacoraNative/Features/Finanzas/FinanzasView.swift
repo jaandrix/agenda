@@ -4,6 +4,8 @@ import UniformTypeIdentifiers
 // Finanzas como la PWA del móvil (renderMobileFinances en js/nucleo.js): las mismas cuatro pestañas, en el mismo orden,
 // con los mismos bloques y las cifras del mismo código (MotorFinanzas). Solo se calcula la pestaña que se ve; las otras
 // se preparan después, en segundo plano, para que cambiar de pestaña no espere.
+// Bitácora 2.0 (24-11): el patrimonio en una tarjeta negra, accesos rápidos en iconos cuadrados y los movimientos por
+// día en tarjetas blancas. Los datos y las escrituras no cambian.
 
 enum HojaFinanzas: Identifiable {
     case importar, buscar, gestor, editarSuscripcion(String?), permitir, revisar, opcion(OpcionFinanzas), presupuesto, objetivo, inversion(String), salud
@@ -27,6 +29,7 @@ enum HojaFinanzas: Identifiable {
 struct FinanzasView: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.openURL) private var abrirURL
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     // La pestaña se recuerda mientras la app está abierta, como financeTab en la web.
     @AppStorage("finanzas.pestana") private var pestanaGuardada = PestanaFinanzas.cuentas.rawValue
     @AppStorage("bitacora-fin-extras") private var extras = false
@@ -49,36 +52,36 @@ struct FinanzasView: View {
     }
     private var escondido: Bool { oculto && !ver }
 
+    // En el segmento caben cuatro si «planificación.» se queda en «plan.».
+    private static let titulosSegmento: [PestanaFinanzas: String] = [.cuentas: "cuentas.", .planificacion: "plan.", .movimientos: "movimientos.", .resumen: "resumen."]
+
     var body: some View {
         ScrollViewReader { scroll in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
-                    CabeceraApartado(titulo: "finanzas", contexto: mesNombre + ".") {
-                        if oculto {
-                            Button { ver.toggle() } label: {
-                                Image(systemName: ver ? "eye.slash" : "eye").font(.system(size: 17, weight: .semibold)).foregroundStyle(Paleta.textoSecundario)
-                                    .frame(width: 44, height: 44)
-                            }
-                            .buttonStyle(.plain).accessibilityLabel(ver ? "ocultar cifras" : "ver cifras")
-                        }
-                    }
-                    .id("arriba")
-                    // Mantener pulsado el título: lo que tarda el motor (arranque, carga del documento y cada pestaña, en ms).
-                    .onLongPressGesture {
-                        Task {
-                            let m = await MotorFinanzas.compartido.ultimaMedida
-                            aviso = m.sorted { $0.key < $1.key }.map { "\($0.key): \(Int($0.value.rounded())) ms" }.joined(separator: ", ")
-                        }
-                    }
-                    selector(scroll)
-                    contenido
+                    cabecera
+                        .id("arriba")
+                    SegmentoCapsula(opciones: PestanaFinanzas.allCases.map { SegmentoCapsula<PestanaFinanzas>.Opcion(valor: $0, titulo: Self.titulosSegmento[$0] ?? $0.titulo) },
+                                    elegido: Binding(get: { pestana }, set: { p in
+                                        guard p != pestana else { return }
+                                        pestanaGuardada = p.rawValue
+                                        nMov = 30
+                                        scroll.scrollTo("arriba", anchor: .top)
+                                    }),
+                                    sobreBlanco: false)
+                        .padding(.top, Medida.m)
+                    // Un VStack por pestaña: así entra y sale entera, y los ids de sus filas no se cruzan con los de otra.
+                    VStack(alignment: .leading, spacing: 0) { contenido }
+                        .id(pestana)
+                        .transition(.opacity.combined(with: .offset(y: 6)))
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, Espacio.xl)
+                .padding(.horizontal, Medida.margen)
+                .padding(.bottom, Medida.l)
+                .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: pestana)
             }
         }
         .scrollIndicators(.hidden)
-        .background(Paleta.fondo.ignoresSafeArea())
+        .fondoLienzo()
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
         .task(id: "\(c.revision)|\(pestanaGuardada)|\(rango)|\(extras)|\(nMov)") { await cargar() }
@@ -88,30 +91,33 @@ struct FinanzasView: View {
         } message: { Text(aviso ?? "") }
     }
 
-    private func selector(_ scroll: ScrollViewProxy) -> some View {
-        HStack(spacing: 4) {
-            ForEach(PestanaFinanzas.allCases) { p in
-                let on = p == pestana
-                Button {
-                    guard p != pestana else { return }
-                    pestanaGuardada = p.rawValue
-                    nMov = 30
-                    scroll.scrollTo("arriba", anchor: .top)
-                } label: {
-                    Text(p.titulo)
-                        .font(Tipo.poppins(14, on ? .semibold : .medium, estilo: .footnote))
-                        .foregroundStyle(on ? Paleta.texto : Paleta.textoSecundario)
-                        .lineLimit(1).minimumScaleFactor(0.8)
-                        .frame(maxWidth: .infinity, minHeight: 36)
-                        .background(on ? Paleta.superficie : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    private var cabecera: some View {
+        CabeceraPagina(titulo: "finanzas.", subtitulo: mesNombre + ".") {
+            HStack(spacing: Medida.xxs) {
+                if oculto {
+                    BotonRedondo(sistema: ver ? "eye.slash" : "eye", tono: .blanco, etiqueta: ver ? "ocultar cifras" : "ver cifras") {
+                        Haptica.ligera()
+                        withAnimation(Muelle.o(Muelle.rapido, reducido: sinMovimiento)) { ver.toggle() }
+                    }
                 }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
+                MenuRedondo(etiqueta: "más opciones") {
+                    Button("importar extracto.") { hoja = .importar }
+                    Button("buscar un movimiento.") { hoja = .buscar }
+                    Button("suscripciones.") { hoja = .gestor }
+                    Button("¿me lo puedo permitir?") { hoja = .permitir }
+                    Divider()
+                    ForEach(OpcionFinanzas.allCases) { o in Button(o.titulo) { hoja = .opcion(o) } }
+                }
             }
         }
-        .padding(4)
-        .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .padding(.top, Espacio.m)
+        .padding(.top, Medida.xs)
+        // Mantener pulsado el título: lo que tarda el motor (arranque, carga del documento y cada pestaña, en ms).
+        .onLongPressGesture {
+            Task {
+                let m = await MotorFinanzas.compartido.ultimaMedida
+                aviso = m.sorted { $0.key < $1.key }.map { "\($0.key): \(Int($0.value.rounded())) ms" }.joined(separator: ", ")
+            }
+        }
     }
 
     @ViewBuilder private var contenido: some View {
@@ -131,7 +137,7 @@ struct FinanzasView: View {
     }
 
     private var cargando: some View {
-        ProgressView().frame(maxWidth: .infinity).padding(.top, Espacio.xl)
+        ProgressView().tint(Lienzo.tintaTerciaria).frame(maxWidth: .infinity).padding(.top, Medida.xxl)
     }
 
     @ViewBuilder private func hojaVista(_ h: HojaFinanzas) -> some View {
@@ -155,7 +161,7 @@ struct FinanzasView: View {
     private func abrirTrasCerrar(_ f: FilaMov) {
         Task { try? await Task.sleep(nanoseconds: 450_000_000); abrirMovimiento(f) }
     }
-    private func nuevoMovimiento() { c.modal = .movimiento(OperacionBitacora.nuevoIdMovimiento(), tipo: "expense") }
+    private func nuevoMovimiento(_ tipo: String) { c.modal = .movimiento(OperacionBitacora.nuevoIdMovimiento(), tipo: tipo) }
 
     private func detectada(_ clave: String, _ accion: String) {
         let id = "sub_\(Int64(Date().timeIntervalSince1970 * 1000))_" + String(UUID().uuidString.prefix(4)).lowercased()
@@ -236,31 +242,26 @@ struct FinanzasView: View {
 
 // MARK: - piezas comunes
 
+// Título de sección de las hojas de Finanzas (antes en Poppins 13): ahora la etiqueta pequeña de V2.
 struct EtiquetaFin: View {
     let texto: String
     var detalle: String?
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(texto).font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario).accessibilityAddTraits(.isHeader)
-            Spacer()
-            if let detalle { Text(detalle).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+            EtiquetaSeccion(texto: texto)
+            if let detalle { Text(detalle).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).monospacedDigit().padding(.trailing, Medida.xxs) }
         }
-        .padding(.top, Espacio.l).padding(.bottom, Espacio.xs)
+        .padding(.top, Medida.l).padding(.bottom, Medida.xs)
     }
 }
 
+// Botón de acción de Finanzas: cápsula negra (la principal) o gris, a todo el ancho.
 struct BotonFin: View {
     let texto: String
     var acento = false
     let accion: () -> Void
     var body: some View {
-        Button(action: accion) {
-            Text(texto).font(Tipo.poppins(15, .semibold, estilo: .body))
-                .foregroundStyle(acento ? Paleta.sobreAcento : Paleta.texto)
-                .frame(maxWidth: .infinity, minHeight: 46)
-                .background(acento ? Paleta.acento : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
-        }
-        .buttonStyle(.plain)
+        Button(texto, action: accion).buttonStyle(.capsula(acento ? .oscuro : .claro, ancho: true))
     }
 }
 
@@ -268,46 +269,58 @@ struct EnlaceFin: View {
     let texto: String
     let accion: () -> Void
     var body: some View {
-        Button(action: accion) { Text(texto).font(Tipo.poppins(14, .medium, estilo: .footnote)).foregroundStyle(Paleta.acento).frame(minHeight: 44) }
-            .buttonStyle(.plain)
+        Button(action: accion) {
+            Text(texto).font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo).frame(minHeight: Medida.toque).contentShape(Rectangle())
+        }
+        .buttonStyle(.pulsable(0.94))
     }
 }
 
-// .m-fila de un movimiento (mobileFinFilaMov): fecha corta, concepto y «categoría, cuenta», y la cifra con su signo.
+// .m-fila de un movimiento (mobileFinFilaMov): icono de la categoría, concepto y «categoría, cuenta», y la cifra con su
+// signo alineada a la derecha. Sin raya propia: la pone la lista que la contiene (TarjetaLista).
 struct FilaMovView: View {
     let f: FilaMov
     let oculto: Bool
+    var conDia = true
     let abrir: (FilaMov) -> Void
+
+    private var cifra: String {
+        oculto ? "•••" : (f.tipo == "income" ? "+" : f.tipo == "expense" ? "−" : "") + FormatoFin.dinero(f.importe)
+    }
+    private var tinta: Color {
+        if f.futuro { return Lienzo.tintaTerciaria }
+        if f.tipo == "income" { return Lienzo.positivo }
+        if f.tipo == "transfer" || f.neutro { return Lienzo.tintaSecundaria }
+        return Lienzo.tinta
+    }
 
     var body: some View {
         Button { abrir(f) } label: {
-            HStack(alignment: .center, spacing: Espacio.s) {
-                if f.icono.isEmpty {
-                    Image(systemName: "arrow.left.arrow.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Paleta.textoSecundario)
-                        .frame(width: 32, height: 32).background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            FilaImporte(titulo: f.titulo,
+                        detalle: ([conDia ? f.dia : "", f.meta].filter { !$0.isEmpty }.joined(separator: ", ")) + (f.pendiente ? ", pendiente." : ""),
+                        cifra: cifra, tono: tinta, apagado: f.futuro, aviso: f.revisar) {
+                if f.tipo == "transfer" || f.icono.isEmpty {
+                    IconoFinanzas(clave: f.tipo == "transfer" ? "repeat" : "other")
                 } else {
-                    IconoCategoria(icono: f.icono, color: f.color, tam: 32)
+                    IconoCategoria(icono: f.icono, color: f.color, tam: Medida.icono)
                 }
-                VStack(alignment: .leading, spacing: 2) {
-                    (Text(f.titulo) + (f.pendiente ? Text(" pendiente.").font(Tipo.pie).foregroundColor(Paleta.textoSecundario) : Text("")))
-                        .font(Tipo.cuerpo).foregroundStyle(f.futuro ? Paleta.textoSecundario : Paleta.texto).lineLimit(1)
-                    Text([f.dia, f.meta].filter { !$0.isEmpty }.joined(separator: ", ")).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(1)
-                }
-                Spacer(minLength: Espacio.s)
-                HStack(spacing: 2) {
-                    if f.tipo == "transfer" { Image(systemName: "arrow.left.arrow.right").font(.system(size: 11, weight: .semibold)) }
-                    Text(oculto ? "•••" : (f.tipo == "income" ? "+" : f.tipo == "expense" ? "−" : "") + FormatoFin.dinero(f.importe))
-                        .font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit()
-                }
-                .foregroundStyle(f.tipo == "income" ? Paleta.positivo : Paleta.texto)
             }
-            .padding(.vertical, 9)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+        .buttonStyle(.pulsable(0.98))
         .accessibilityElement(children: .combine)
         .accessibilityHint("abrir el movimiento.")
+    }
+}
+
+// Una lista de movimientos en su tarjeta blanca.
+struct ListaMovs: View {
+    let filas: [FilaMov]
+    let oculto: Bool
+    var conDia = true
+    let abrir: (FilaMov) -> Void
+
+    var body: some View {
+        TarjetaLista(elementos: filas) { f in FilaMovView(f: f, oculto: oculto, conDia: conDia, abrir: abrir) }
     }
 }
 
@@ -318,34 +331,37 @@ struct AvisoPorAjustar: View {
     @State private var abierto = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Espacio.s) {
-            if !p.incidencias.isEmpty {
-                DisclosureGroup(isExpanded: $abierto) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        ForEach(Array(p.incidencias.enumerated()), id: \.offset) { _, i in
-                            Text("\(i.nota): \(i.motivo).").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                        }
-                    }.padding(.top, 4)
-                } label: {
-                    Text("\(p.incidencias.count) \(p.incidencias.count == 1 ? "movimiento tiene" : "movimientos tienen") la fecha o el importe mal y no cuentan en los saldos.")
-                        .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                }
-                .tint(Paleta.textoSecundario)
-            }
+        VStack(alignment: .leading, spacing: Medida.xs) {
             if p.n > 0 {
                 Button(action: abrir) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(p.n) \(p.n == 1 ? "movimiento" : "movimientos") por ajustar.").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-                        Text("ponles categoría y revisa la cuenta.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    HStack(spacing: Medida.s) {
+                        IconoFinanzas(clave: "other", tono: .naranja)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(p.n) \(p.n == 1 ? "movimiento" : "movimientos") por ajustar.").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta)
+                            Text("ponles categoría y revisa la cuenta.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        }
+                        Spacer(minLength: Medida.xs)
+                        FlechaFila()
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(14)
-                    .background(Paleta.tinteAcento, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+                    .tarjeta(relleno: Medida.s)
+                    .contentShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pulsable(0.97))
+            }
+            if !p.incidencias.isEmpty {
+                SeccionPlegable(titulo: "\(p.incidencias.count) con la fecha o el importe mal.", abierta: $abierto) {
+                    VStack(alignment: .leading, spacing: Medida.xxs) {
+                        Text("No cuentan en los saldos hasta que se arreglen.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        ForEach(Array(p.incidencias.enumerated()), id: \.offset) { _, i in
+                            Text("\(i.nota): \(i.motivo).").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        }
+                    }
+                    .padding(.bottom, Medida.xs)
+                }
+                .padding(.horizontal, Medida.xxs)
             }
         }
-        .padding(.top, Espacio.m)
+        .padding(.top, Medida.m)
     }
 }
 
@@ -361,25 +377,25 @@ private struct AvisoSalud: View {
         var partes: [String] = []
         if n > 0 { partes.append("\(n) por clasificar") }
         if s.avisos > 0 { partes.append("\(s.avisos) " + (s.avisos == 1 ? "aviso" : "avisos")) }
-        if partes.isEmpty { return "salud de tus finanzas." }
-        return "salud. " + partes.joined(separator: ", ")
+        if partes.isEmpty { return "todo en orden." }
+        return partes.joined(separator: ", ") + "."
     }
 
     var body: some View {
         let hay = s.propuestas + s.porRevisar + s.avisos > 0
         Button(action: abrir) {
-            HStack {
-                Text(texto).font(Tipo.poppins(14, .medium, estilo: .footnote)).foregroundStyle(hay ? Paleta.texto : Paleta.acento)
-                Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(Paleta.textoSecundario)
+            FilaTarjeta(icono: "objetivos", tonoIcono: hay ? .suave : .claro, titulo: "salud de tus finanzas.", detalle: texto) {
+                FlechaFila()
             }
-            .frame(minHeight: 44)
+            .padding(.horizontal, Medida.rellenoTarjeta).padding(.vertical, Medida.xxs)
+            .tarjeta(relleno: 0)
         }
-        .buttonStyle(.plain)
-        .padding(.top, Espacio.s)
+        .buttonStyle(.pulsable(0.97))
+        .padding(.top, Medida.s)
     }
 }
 
+// El patrimonio protagonista: la tarjeta negra con la cifra y la gráfica, y debajo los accesos rápidos.
 private struct PestanaCuentas: View {
     let m: ModeloCuentas
     let oculto: Bool
@@ -388,132 +404,151 @@ private struct PestanaCuentas: View {
     @Binding var hoja: HojaFinanzas?
     let logos: LogosFinanzas
     let abrir: (FilaMov) -> Void
-    let nuevo: () -> Void
+    let nuevo: (String) -> Void
     let verTodos: () -> Void
     let detectada: (String, String) -> Void
     let cobroVisto: (String) -> Void
     let alta: (String) -> Void
 
+    private func din(_ v: Double) -> String { CifraFin.texto(v, oculto: oculto) }
+
     var body: some View {
         GraficaPatrimonio(g: m.grafica, oculto: oculto, rango: $rango, extras: $extras)
-        BotonFin(texto: "+ movimiento.", acento: true, accion: nuevo).padding(.top, Espacio.m)
+            .padding(.top, Medida.m)
+        HStack(spacing: Medida.xs) {
+            BotonAcceso(titulo: "gasto.", icono: "bag", destacado: true) { nuevo("expense") }
+            BotonAcceso(titulo: "ingreso.", icono: "coin") { nuevo("income") }
+            BotonAcceso(titulo: "traspaso.", icono: "repeat") { nuevo("transfer") }
+            BotonAcceso(titulo: "importar.", icono: "bank") { hoja = .importar }
+        }
+        .padding(.top, Medida.m)
         if m.porAjustar.n > 0 || !m.porAjustar.incidencias.isEmpty { AvisoPorAjustar(p: m.porAjustar) { hoja = .revisar } }
         if let s = m.salud { AvisoSalud(s: s) { hoja = .salud } }
         // renderAvisoPresupuestos
         if !m.avisosPresupuesto.isEmpty {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: Medida.xs) {
                 ForEach(Array(m.avisosPresupuesto.enumerated()), id: \.offset) { _, a in
-                    Group {
-                        if a.queda >= 0 {
-                            Text("vas al ") + Text("\(a.pct) %").bold() + Text(" en \(a.nombre): quedan \(oculto ? "•••" : FormatoFin.dinero(a.queda)) para \(a.dias) \(a.dias == 1 ? "día" : "días").")
-                        } else {
-                            Text("\(a.nombre) se ha pasado ") + Text(oculto ? "•••" : FormatoFin.dinero(-a.queda)).bold() + Text(" del presupuesto este mes.")
+                    HStack(alignment: .firstTextBaseline, spacing: Medida.xs) {
+                        Puntito(color: a.queda >= 0 ? Lienzo.aviso : Lienzo.negativo, tamano: 6)
+                        Group {
+                            if a.queda >= 0 {
+                                Text("vas al ") + Text("\(a.pct) %").fontWeight(.semibold) + Text(" en \(a.nombre): quedan \(din(a.queda)) para \(a.dias) \(a.dias == 1 ? "día" : "días").")
+                            } else {
+                                Text("\(a.nombre) se ha pasado ") + Text(din(-a.queda)).fontWeight(.semibold) + Text(" del presupuesto este mes.")
+                            }
                         }
+                        .font(Letra.detalle).foregroundStyle(Lienzo.tinta)
                     }
-                    .font(Tipo.pie).foregroundStyle(Paleta.texto)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14).background(Paleta.superficie, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
-            .padding(.top, Espacio.m)
+            .tarjeta(relleno: Medida.s + 2)
+            .padding(.top, Medida.s)
         }
         // renderSuscripcionesDetectadas (con los que siguen cobrando tras la baja)
         ForEach(m.detectadas.siguenCobrando) { s in
             tarjetaSugerencia(titulo: "\(s.titulo) sigue cobrando.",
-                              texto: "La diste de baja el \(s.desde) y hay \(s.n == 1 ? "un cargo" : "\(s.n) cargos"): \(oculto ? "•••" : FormatoFin.dinero(s.importe)) el \(s.fecha).",
+                              texto: "La diste de baja el \(s.desde) y hay \(s.n == 1 ? "un cargo" : "\(s.n) cargos"): \(din(s.importe)) el \(s.fecha).",
                               botones: [("dar de alta.", { alta(s.id) }), ("ya lo sé.", { cobroVisto(s.id) })])
         }
         ForEach(m.detectadas.propuestas) { s in
             tarjetaSugerencia(titulo: "¿\(s.nombre) es una suscripción?",
-                              texto: "unos \(oculto ? "•••" : FormatoFin.dinero(s.importe)) cada mes, hacia el día \(s.dia) (\(s.meses) meses seguidos).",
+                              texto: "unos \(din(s.importe)) cada mes, hacia el día \(s.dia) (\(s.meses) meses seguidos).",
                               botones: [("añadir.", { detectada(s.clave, "anadir") }), ("no es.", { detectada(s.clave, "ignorar") })])
         }
-        EtiquetaFin(texto: "este mes.")
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("entra.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                Text(oculto ? "•••" : FormatoFin.dinero(m.ingresos)).font(Tipo.poppins(24, .bold, estilo: .title2)).monospacedDigit().foregroundStyle(Paleta.texto)
-            }.frame(maxWidth: .infinity, alignment: .leading)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("sale.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                Text(oculto ? "•••" : FormatoFin.dinero(m.gastos)).font(Tipo.poppins(24, .bold, estilo: .title2)).monospacedDigit().foregroundStyle(Paleta.texto)
-            }.frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .accessibilityElement(children: .combine)
-        if m.ingresos != 0 || m.gastos != 0 {
-            VStack(alignment: .leading, spacing: 6) {
-                BarraAvance(valor: min(1, m.ratio), fondo: Paleta.borde, color: m.ratio > 1 ? Paleta.atencion : Paleta.acento, alto: 6, forma: m.ratio > 1 ? .rayada : .llena)
-                Text(m.ingresos > 0 ? "\(Int((m.ratio * 100).rounded())) % de lo que ha entrado, ya gastado." : "Este mes todavía no ha entrado nada.")
-                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+        TarjetaSeccion(titulo: "este mes.") {
+            HStack(alignment: .top, spacing: Medida.s) {
+                cifraMes("entra.", m.ingresos, color: Lienzo.positivo)
+                Rectangle().fill(Lienzo.filo).frame(width: 1, height: 40)
+                cifraMes("sale.", m.gastos, color: Lienzo.tinta)
             }
-            .padding(.top, Espacio.s)
+            .accessibilityElement(children: .combine)
+            if m.ingresos != 0 || m.gastos != 0 {
+                VStack(alignment: .leading, spacing: Medida.xs) {
+                    BarraFina(valor: min(1, m.ratio), color: m.ratio > 1 ? Lienzo.negativo : Lienzo.naranja)
+                    Text(m.ingresos > 0 ? "\(Int((m.ratio * 100).rounded())) % de lo que ha entrado, ya gastado." : "Este mes todavía no ha entrado nada.")
+                        .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                }
+                .padding(.top, Medida.m)
+            }
+            if let r = m.ritmo {
+                VStack(alignment: .leading, spacing: Medida.xxs) {
+                    textoRitmo(r).font(Letra.detalle).foregroundStyle(Lienzo.tinta)
+                    if let p = r.previsto, p != 0 {
+                        Text("A este ritmo, unos \(din(p)) a final de mes.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                    }
+                }
+                .padding(.top, Medida.s)
+                .overlay(alignment: .top) { Rectangle().fill(Lienzo.filo).frame(height: 1) }
+                .padding(.top, Medida.s)
+            }
         }
-        if let r = m.ritmo {
-            EtiquetaFin(texto: "ritmo.")
-            VStack(alignment: .leading, spacing: 4) {
-                textoRitmo(r).font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
-                if let p = r.previsto, p != 0 {
-                    Text("A este ritmo, unos \(oculto ? "•••" : FormatoFin.dinero(p)) a final de mes.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+        if !m.cuentas.isEmpty {
+            TarjetaSeccion(titulo: "cuentas.", enTarjeta: false) {
+                TarjetaLista(elementos: m.cuentas) { cta in
+                    FilaTarjeta(titulo: cta.nombre + ".") {
+                        Text(din(cta.saldo)).font(Letra.numero).foregroundStyle(cta.saldo < 0 ? Lienzo.negativo : Lienzo.tinta)
+                            .contentTransition(.numericText())
+                    }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14).background(Paleta.superficie, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
-        }
-        EtiquetaFin(texto: "cuentas.")
-        ForEach(m.cuentas) { cta in
-            FilaLibro(etiqueta: cta.nombre + ".", valor: oculto ? "•••" : FormatoFin.dinero(cta.saldo))
         }
         if !m.cargos.lista.isEmpty {
-            EtiquetaFin(texto: "próximos cargos.")
-            ForEach(m.cargos.lista) { x in
-                HStack(alignment: .firstTextBaseline, spacing: Espacio.s) {
-                    Text(x.cuando).font(Tipo.poppins(13, .medium, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario).frame(width: 64, alignment: .leading)
-                    LogoSuscripcion(id: x.id, titulo: x.titulo, logos: logos, lado: 22)
-                    Text(x.titulo).font(Tipo.cuerpo).foregroundStyle(Paleta.texto).lineLimit(1)
-                    Spacer()
-                    Text(oculto ? "•••" : FormatoFin.dinero(x.importe)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit().foregroundStyle(Paleta.texto)
+            TarjetaSeccion(titulo: "próximos cargos.", detalle: din(m.cargos.total), enTarjeta: false) {
+                TarjetaLista(elementos: m.cargos.lista) { x in
+                    HStack(spacing: Medida.s) {
+                        LogoSuscripcion(id: x.id, titulo: x.titulo, logos: logos, lado: Medida.icono)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(x.titulo).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                            Text(x.cuando).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        }
+                        Spacer(minLength: Medida.xs)
+                        Text(din(x.importe)).font(Letra.numero).foregroundStyle(Lienzo.tinta)
+                    }
+                    .frame(minHeight: 54)
+                    .accessibilityElement(children: .combine)
                 }
-                .padding(.vertical, 10)
-                .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                .accessibilityElement(children: .combine)
             }
         }
-        EtiquetaFin(texto: "últimos movimientos.")
         if m.ultimos.isEmpty {
-            Text("todavía no hay movimientos. Añade uno o importa un extracto.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
+            TarjetaSeccion(titulo: "últimos movimientos.") {
+                EstadoVacio(texto: "todavía no hay movimientos. Añade uno o importa un extracto.", icono: "finanzas")
+            }
         } else {
-            ForEach(m.ultimos) { f in FilaMovView(f: f, oculto: oculto, abrir: abrir) }
-            EnlaceFin(texto: "ver todos.", accion: verTodos)
+            VStack(alignment: .leading, spacing: Medida.xs) {
+                EtiquetaSeccion(texto: "últimos movimientos.", accion: ("ver todos.", verTodos))
+                ListaMovs(filas: m.ultimos, oculto: oculto, abrir: abrir)
+            }
+            .padding(.top, Medida.entreSecciones)
         }
     }
 
+    private func cifraMes(_ nombre: String, _ v: Double, color: Color) -> some View {
+        CifraGrande(texto: din(v), etiqueta: nombre, punto: color)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private func textoRitmo(_ r: ModeloCuentas.Ritmo) -> Text {
-        var t = Text(oculto ? "•••" : FormatoFin.dinero(r.gasto)).bold() + Text(" gastados hasta hoy")
+        var t = Text(din(r.gasto)).fontWeight(.semibold) + Text(" gastados hasta hoy")
         if r.antes != 0 {
             let dif = (oculto ? "•••" : FormatoFin.dinero(abs(r.dif))) + (r.dif > 0 ? " más" : " menos")
-            t = t + Text(", ") + Text(dif).foregroundColor(r.dif > 0 ? Paleta.atencion : Paleta.positivo) + Text(" que a día \(r.dia) de \(r.mesPasado)")
+            t = t + Text(", ") + Text(dif).foregroundColor(r.dif > 0 ? Lienzo.negativo : Lienzo.positivo) + Text(" que a día \(r.dia) de \(r.mesPasado)")
         }
         return t + Text(".")
     }
 
     private func tarjetaSugerencia(titulo: String, texto: String, botones: [(String, () -> Void)]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(titulo).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-            Text(texto).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            HStack(spacing: Espacio.s) {
-                ForEach(Array(botones.enumerated()), id: \.offset) { _, b in
-                    Button(action: b.1) {
-                        Text(b.0).font(Tipo.poppins(14, .medium, estilo: .footnote)).foregroundStyle(Paleta.texto)
-                            .padding(.horizontal, 12).frame(minHeight: 36)
-                            .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
-                            .frame(minHeight: 44).contentShape(Rectangle())
-                    }.buttonStyle(.plain)
+        VStack(alignment: .leading, spacing: Medida.xs) {
+            Text(titulo).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta)
+            Text(texto).font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+            HStack(spacing: Medida.xs) {
+                ForEach(Array(botones.enumerated()), id: \.offset) { i, b in
+                    Button(b.0, action: b.1).buttonStyle(.capsula(i == 0 ? .oscuro : .claro))
                 }
             }
+            .padding(.top, Medida.xxs)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14).background(Paleta.superficie, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
-        .padding(.top, Espacio.s)
+        .tarjeta()
+        .padding(.top, Medida.s)
     }
 }
 
@@ -524,67 +559,137 @@ private struct PestanaMovimientos: View {
     let oculto: Bool
     @Binding var hoja: HojaFinanzas?
     let abrir: (FilaMov) -> Void
-    let nuevo: () -> Void
+    let nuevo: (String) -> Void
     let mas: () -> Void
     let web: () -> Void
 
-    private static let meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+    enum Filtro: Hashable { case todo, gastos, ingresos }
+    @State private var filtro = Filtro.todo
+    @State private var texto = ""
 
-    private var grupos: [(String, [FilaMov])] {
+    private static let meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+    private static let iso: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"; f.timeZone = .current; return f
+    }()
+    private static let largo: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "es_ES"); f.dateFormat = "EEEE d"; f.timeZone = .current; return f
+    }()
+
+    private static func plano(_ s: String) -> String {
+        s.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "es_ES"))
+    }
+
+    private var filtradas: [FilaMov] {
+        let q = Self.plano(texto.trimmingCharacters(in: .whitespaces))
+        return m.filas.filter { f in
+            switch filtro {
+            case .todo: break
+            case .gastos: guard f.tipo == "expense" else { return false }
+            case .ingresos: guard f.tipo == "income" else { return false }
+            }
+            guard !q.isEmpty else { return true }
+            return Self.plano([f.titulo, f.meta, f.categoriaNombre, f.nota, f.cifra].joined(separator: " ")).contains(q)
+        }
+    }
+
+    // Por día, en el orden en que llegan (del motor, de más nuevo a más viejo).
+    private func grupos(_ filas: [FilaMov]) -> [(String, [FilaMov])] {
         var r: [(String, [FilaMov])] = []
-        for f in m.filas {
-            let mes = String(f.fecha.prefix(7))
-            if r.last?.0 == mes { r[r.count - 1].1.append(f) } else { r.append((mes, [f])) }
+        for f in filas {
+            if r.last?.0 == f.fecha { r[r.count - 1].1.append(f) } else { r.append((f.fecha, [f])) }
         }
         return r
     }
 
-    private func titulo(_ mes: String) -> String {
+    private func tituloMes(_ mes: String) -> String {
         guard mes.count == 7, let n = Int(mes.suffix(2)), (1...12).contains(n) else { return "sin fecha." }
         let anio = String(mes.prefix(4))
         return Self.meses[n - 1] + (anio != String(m.anioActual) ? " " + anio : "") + "."
     }
 
-    var body: some View {
-        HStack(spacing: Espacio.s) {
-            BotonFin(texto: "importar extracto.") { hoja = .importar }
-            BotonFin(texto: "+ movimiento.", acento: true, accion: nuevo)
+    private func tituloDia(_ fecha: String, _ filas: [FilaMov]) -> String {
+        guard let d = Self.iso.date(from: fecha) else { return filas.first?.dia ?? "sin fecha." }
+        if Calendar.current.isDateInToday(d) { return "hoy." }
+        if Calendar.current.isDateInYesterday(d) { return "ayer." }
+        if Calendar.current.isDateInTomorrow(d) { return "mañana." }
+        return Self.largo.string(from: d).lowercased() + "."
+    }
+
+    private func netoDia(_ filas: [FilaMov]) -> String? {
+        guard !oculto else { return nil }
+        let n = filas.reduce(0.0) { s, f in
+            guard !f.neutro else { return s }
+            return s + (f.tipo == "income" ? f.importe : f.tipo == "expense" ? -f.importe : 0)
         }
-        .padding(.top, Espacio.m)
+        return abs(n) < 0.005 ? nil : CifraFin.texto(n, oculto: false, signo: true)
+    }
+
+    private var mesActual: String { String(Self.iso.string(from: Date()).prefix(7)) }
+
+    var body: some View {
+        let lista = filtradas
+        let gs = grupos(lista)
+        HStack(spacing: Medida.xs) {
+            Button("+ movimiento.") { nuevo("expense") }.buttonStyle(.capsula(.oscuro, ancho: true))
+            Button("importar.") { hoja = .importar }.buttonStyle(.capsula(.blanco, ancho: true))
+        }
+        .padding(.top, Medida.m)
         if m.total > 0 {
-            Button { hoja = .buscar } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass").font(.system(size: 15, weight: .semibold))
-                    Text("buscar un movimiento.").font(Tipo.cuerpo)
-                    Spacer()
-                }
-                .foregroundStyle(Paleta.textoSecundario)
-                .padding(.horizontal, 14).frame(minHeight: 46)
-                .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+            VStack(spacing: Medida.xs) {
+                SegmentoCapsula(opciones: [SegmentoCapsula<Filtro>.Opcion(valor: .todo, titulo: "todo."),
+                                           SegmentoCapsula<Filtro>.Opcion(valor: .gastos, titulo: "gastos."),
+                                           SegmentoCapsula<Filtro>.Opcion(valor: .ingresos, titulo: "ingresos.")],
+                                elegido: $filtro, sobreBlanco: false)
+                BuscadorCapsula(texto: $texto, placeholder: "buscar en estos movimientos")
             }
-            .buttonStyle(.plain)
-            .padding(.top, Espacio.s)
+            .padding(.top, Medida.m)
         }
         if m.porAjustar.n > 0 || !m.porAjustar.incidencias.isEmpty { AvisoPorAjustar(p: m.porAjustar) { hoja = .revisar } }
         if m.filas.isEmpty {
-            Text("todavía no hay movimientos. Añade uno o importa un extracto para empezar a ver tus cuentas.")
-                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.m)
+            TarjetaInvitacion(frase: "todavía no hay movimientos.", destacado: "añade uno o importa un extracto.", boton: "importar extracto.") { hoja = .importar }
+                .padding(.top, Medida.m)
+        } else if lista.isEmpty {
+            EstadoVacio(texto: "nada coincide con lo que buscas entre los últimos \(m.filas.count).", icono: "buscar")
+                .padding(.top, Medida.s)
         } else {
-            ForEach(grupos, id: \.0) { g in
-                EtiquetaFin(texto: titulo(g.0))
-                ForEach(g.1) { f in FilaMovView(f: f, oculto: oculto, abrir: abrir) }
+            ForEach(Array(gs.enumerated()), id: \.element.0) { i, g in
+                let mes = String(g.0.prefix(7))
+                let mesAntes = i > 0 ? String(gs[i - 1].0.prefix(7)) : mesActual
+                if mes != mesAntes {
+                    Text(tituloMes(mes)).font(Letra.seccion).foregroundStyle(Lienzo.tinta)
+                        .accessibilityAddTraits(.isHeader)
+                        .padding(.top, Medida.entreSecciones).padding(.horizontal, Medida.xxs)
+                }
+                VStack(alignment: .leading, spacing: Medida.xs) {
+                    HStack(alignment: .firstTextBaseline) {
+                        EtiquetaSeccion(texto: tituloDia(g.0, g.1))
+                        if let n = netoDia(g.1) {
+                            Text(n).font(Letra.pie).monospacedDigit().foregroundStyle(Lienzo.tintaSecundaria).padding(.trailing, Medida.xxs)
+                        }
+                    }
+                    ListaMovs(filas: g.1, oculto: oculto, conDia: false, abrir: abrir)
+                }
+                .padding(.top, mes != mesAntes ? Medida.xs : Medida.l)
+                .entradaEscalonada(i)
             }
         }
-        HStack(spacing: Espacio.l) {
-            if m.total > m.filas.count { EnlaceFin(texto: "ver \(min(30, m.total - m.filas.count)) más.", accion: mas) }
+        if !texto.isEmpty || filtro != .todo {
+            Button("buscar en todos tus movimientos.") { hoja = .buscar }.buttonStyle(.capsula(.blanco, ancho: true))
+                .padding(.top, Medida.m)
+        }
+        HStack(spacing: Medida.xs) {
+            if m.total > m.filas.count {
+                Button("ver \(min(30, m.total - m.filas.count)) más.", action: mas).buttonStyle(.capsula(.claro))
+            }
+            Spacer()
             // mobileFinMenu.
             Menu {
                 ForEach(OpcionFinanzas.allCases) { o in Button(o.titulo) { hoja = .opcion(o) } }
             } label: {
-                Text("más opciones.").font(Tipo.poppins(14, .medium, estilo: .footnote)).foregroundStyle(Paleta.acento).frame(minHeight: 44)
+                Text("más opciones.").font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo).frame(minHeight: Medida.toque)
             }
         }
-        .padding(.top, Espacio.s)
+        .padding(.top, Medida.m)
     }
 }
 
@@ -595,55 +700,60 @@ private struct PestanaPlanificacion: View {
     let oculto: Bool
     @Binding var hoja: HojaFinanzas?
 
-    private func color(_ s: String) -> Color { s == "superado" ? Paleta.atencion : s == "aviso" ? Paleta.acento : Paleta.positivo }
-    private func din(_ v: Double) -> String { oculto ? "•••" : FormatoFin.dinero(v) }
+    private func color(_ s: String) -> Color { s == "superado" ? Lienzo.negativo : s == "aviso" ? Lienzo.aviso : Lienzo.naranja }
+    private func din(_ v: Double) -> String { CifraFin.texto(v, oculto: oculto) }
 
     var body: some View {
         if m.categorias.isEmpty && m.otros.isEmpty {
-            Text(m.ingresos != 0 ? "Todo está sin asignar: todavía no has puesto presupuestos." : "este mes no tienes presupuestos.")
-                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.m)
-            BotonFin(texto: "repartir el mes.", acento: true) { hoja = .presupuesto }
+            TarjetaInvitacion(frase: m.ingresos != 0 ? "todo está sin asignar." : "este mes no tienes presupuestos.",
+                              destacado: "reparte el mes en casillas.", boton: "repartir el mes.") { hoja = .presupuesto }
+                .padding(.top, Medida.m)
         } else {
-            EtiquetaFin(texto: "presupuestos.")
-            ForEach(m.categorias) { cat in
-                let sub = [cat.refunded > 0 ? "\(din(cat.refunded)) devueltos" : nil, "el mes pasado gastaste \(din(cat.lastMonth))", cat.casillas > 1 ? "\(cat.casillas) casillas" : nil]
-                    .compactMap { $0 }.joined(separator: ", ")
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(alignment: .center) {
-                        IconoCategoria(icono: cat.icono, color: cat.color, tam: 26)
-                        Text(cat.nombre).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).lineLimit(1)
-                        Spacer()
-                        Text(din(cat.spent)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit().foregroundStyle(Paleta.texto)
-                        Text("de \(din(cat.available))").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                    }
-                    BarraAvance(valor: min(100, max(2, cat.percentage)) / 100, fondo: Paleta.borde, color: color(cat.status), alto: 6, forma: cat.status == "superado" ? .rayada : .llena)
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(sub + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(2)
-                        Spacer(minLength: Espacio.s)
-                        Text(oculto ? "•••" : cat.estado).font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(color(cat.status))
-                    }
-                    Text("plan. \(din(cat.planned))").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+            if !m.categorias.isEmpty {
+                TarjetaSeccion(titulo: "presupuestos.", enTarjeta: false) {
+                    TarjetaLista(elementos: m.categorias) { cat in filaCategoria(cat) }
                 }
-                .padding(.vertical, 12)
-                .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                .accessibilityElement(children: .combine)
-                .accessibilityValue("\(Int(cat.percentage.rounded())) por ciento gastado.")
             }
             if !m.otros.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("otros destinos.").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-                    ForEach(Array(m.otros.enumerated()), id: \.offset) { _, a in
-                        Text("\(a.label) \(din(a.amount))").font(Tipo.pie).foregroundStyle(Paleta.texto)
+                TarjetaSeccion(titulo: "otros destinos.") {
+                    ForEach(Array(m.otros.enumerated()), id: \.offset) { i, a in
+                        FilaDato(etiqueta: a.label, valor: din(a.amount), separador: i < m.otros.count - 1)
                     }
-                    Text("Cuentan como repartido; sin categoría no se puede seguir su gasto.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    Text("Cuentan como repartido; sin categoría no se puede seguir su gasto.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        .padding(.top, Medida.xs)
                 }
-                .padding(.top, Espacio.m)
+            }
+            BotonFin(texto: "editar presupuestos.", acento: true) { hoja = .presupuesto }.padding(.top, Medida.l)
+        }
+        Button("¿me lo puedo permitir?") { hoja = .permitir }.buttonStyle(.capsula(.blanco, ancho: true)).padding(.top, Medida.xs)
+    }
+
+    private func filaCategoria(_ cat: ModeloPlanificacion.Categoria) -> some View {
+        let sub = [cat.refunded > 0 ? "\(din(cat.refunded)) devueltos" : nil, "el mes pasado \(din(cat.lastMonth))", cat.casillas > 1 ? "\(cat.casillas) casillas" : nil]
+            .compactMap { $0 }.joined(separator: ", ")
+        return VStack(alignment: .leading, spacing: Medida.xs) {
+            HStack(alignment: .center, spacing: Medida.s) {
+                IconoCategoria(icono: cat.icono, color: cat.color, tam: Medida.icono)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(cat.nombre).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                    Text("plan. \(din(cat.planned))").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                }
+                Spacer(minLength: Medida.xs)
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text(din(cat.spent)).font(Letra.numero).foregroundStyle(Lienzo.tinta)
+                    Text("de \(din(cat.available))").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                }
+            }
+            BarraFina(valor: min(100, max(2, cat.percentage)) / 100, color: color(cat.status))
+            HStack(alignment: .firstTextBaseline) {
+                Text(sub + ".").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(2)
+                Spacer(minLength: Medida.xs)
+                Text(oculto ? "•••" : cat.estado).font(Letra.pieFuerte).foregroundStyle(cat.status == "superado" ? Lienzo.negativo : Lienzo.tinta)
             }
         }
-        if !(m.categorias.isEmpty && m.otros.isEmpty) {
-            BotonFin(texto: "editar presupuestos.") { hoja = .presupuesto }.padding(.top, Espacio.m)
-        }
-        EnlaceFin(texto: "¿me lo puedo permitir?") { hoja = .permitir }.padding(.top, Espacio.s)
+        .padding(.vertical, Medida.s)
+        .accessibilityElement(children: .combine)
+        .accessibilityValue("\(Int(cat.percentage.rounded())) por ciento gastado.")
     }
 }
 
@@ -656,7 +766,7 @@ private struct PestanaResumen: View {
     let logos: LogosFinanzas
     let web: () -> Void
 
-    private func din(_ v: Double) -> String { oculto ? "•••" : FormatoFin.dinero(v) }
+    private func din(_ v: Double) -> String { CifraFin.texto(v, oculto: oculto) }
     private func pctSinMas(_ v: Double) -> String { FormatoFin.pct(v).replacingOccurrences(of: "+", with: "") }
 
     var body: some View {
@@ -670,63 +780,34 @@ private struct PestanaResumen: View {
         panelPrevision
     }
 
-    private func panel<C: View>(_ titulo: String, _ sub: String?, @ViewBuilder _ c: () -> C) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(titulo).font(Tipo.poppins(17, .semibold, estilo: .headline)).foregroundStyle(Paleta.texto).accessibilityAddTraits(.isHeader)
-                Spacer()
-                if let sub { Text(sub).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-            }
-            c()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .padding(.top, Espacio.m)
-    }
-
     private func cifra(_ t: String, negativa: Bool = false) -> some View {
-        Text(t).font(Tipo.poppins(28, .bold, estilo: .title)).monospacedDigit().foregroundStyle(negativa ? Paleta.atencion : Paleta.texto)
+        CifraGrande(texto: t, tono: negativa ? Lienzo.negativo : nil)
     }
 
-    // En tinta, «entra.» va hueca (lo que suma) y «sale.» llena; lo que falta por entrar, rayado.
-    private func barra(_ nombre: String, _ v: Double, _ falta: Double, _ max: Double, color: Color, hueca: Bool = false) -> some View {
-        HStack(spacing: 8) {
-            Text(nombre).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(width: 44, alignment: .leading)
-            GeometryReader { g in
-                HStack(spacing: 0) {
-                    if Paleta.mono && hueca {
-                        Rectangle().strokeBorder(color, lineWidth: 1.5).frame(width: g.size.width * v / max)
-                    } else {
-                        Rectangle().fill(color).frame(width: g.size.width * v / max)
-                    }
-                    if falta > 0 {
-                        if Paleta.mono {
-                            Trama(paso: 4).stroke(color, lineWidth: 1).frame(width: g.size.width * falta / max).clipped()
-                        } else {
-                            Rectangle().fill(color.opacity(0.3)).frame(width: g.size.width * falta / max)
-                        }
-                    }
-                    Spacer(minLength: 0)
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 3))
-                .background(Paleta.borde, in: RoundedRectangle(cornerRadius: 3))
-            }
-            .frame(height: 8)
-            Text(din(v)).font(Tipo.poppins(13, .semibold, estilo: .footnote)).monospacedDigit().foregroundStyle(Paleta.texto)
+    private func barra(_ nombre: String, _ v: Double, _ falta: Double, _ max: Double, color: Color) -> some View {
+        HStack(spacing: Medida.xs) {
+            Text(nombre).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).frame(width: 44, alignment: .leading)
+            BarraFina(valor: v / max, color: color, falta: falta / max)
+            Text(din(v)).font(Letra.pieFuerte).monospacedDigit().foregroundStyle(Lienzo.tinta)
         }
+        .accessibilityElement(children: .combine)
     }
 
     private func panelMes(_ titulo: String, _ mes: ModeloResumen.Mes, conSueldo: Bool) -> some View {
         let neto = mes.entra - mes.sale
         let max = Swift.max(mes.entra + mes.falta, mes.sale, mes.sueldo, 1)
-        return panel(titulo, mes.nombre + ".") {
-            cifra(oculto ? "•••" : (neto >= 0 ? "+" : "−") + FormatoFin.dinero(abs(neto)), negativa: neto < 0)
-            Text((neto >= 0 ? "te queda" : "has gastado más de lo que ha entrado") + (mes.falta > 0 ? ", y aún falta por entrar \(din(mes.falta)) del sueldo previsto" : "") + ".")
-                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            barra("entra.", mes.entra, mes.falta, max, color: Paleta.positivo, hueca: true)
-            barra("sale.", mes.sale, 0, max, color: Paleta.acento)
-            if conSueldo && mes.sueldo != 0 { FilaLibro(etiqueta: "sueldo previsto.", valor: din(mes.sueldo)) }
+        return TarjetaSeccion(titulo: titulo, detalle: mes.nombre + ".", arriba: titulo == "este mes." ? Medida.m : Medida.entreSecciones) {
+            VStack(alignment: .leading, spacing: Medida.xs) {
+                cifra(oculto ? "•••" : (neto >= 0 ? "+" : "−") + FormatoFin.dinero(abs(neto)), negativa: neto < 0)
+                Text((neto >= 0 ? "te queda" : "has gastado más de lo que ha entrado") + (mes.falta > 0 ? ", y aún falta por entrar \(din(mes.falta)) del sueldo previsto" : "") + ".")
+                    .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                VStack(spacing: Medida.xs) {
+                    barra("entra.", mes.entra, mes.falta, max, color: Lienzo.positivo)
+                    barra("sale.", mes.sale, 0, max, color: Lienzo.naranja)
+                }
+                .padding(.top, Medida.xxs)
+                if conSueldo && mes.sueldo != 0 { FilaDato(etiqueta: "sueldo previsto.", valor: din(mes.sueldo), separador: false) }
+            }
         }
     }
 
@@ -739,39 +820,28 @@ private struct PestanaResumen: View {
             guard let anterior else { return "Aparece al cerrar el primer mes con movimientos." }
             return "de lo que entró en \(anterior.nombre), el último mes cerrado" + (a.media.map { ", frente a un \(pctSinMas($0)) de media desde \(desde)" } ?? "") + "."
         }()
-        return panel("tasa de ahorro.", anterior.map { $0.nombre + "." } ?? "de lo que entra.") {
-            cifra(anterior == nil ? "sin datos" : anterior!.tasa == nil ? "sin ingresos" : pctSinMas(anterior!.tasa!), negativa: (anterior?.tasa ?? 0) < 0)
-            Text(nota).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            VStack(spacing: 6) {
-                ForEach(Array(a.meses.reversed().enumerated()), id: \.offset) { _, x in filaAhorro(x, conAnio: conAnio, enCurso: false) }
-                filaAhorro(a.enCurso, conAnio: conAnio, enCurso: true)
+        return TarjetaSeccion(titulo: "tasa de ahorro.", detalle: anterior.map { $0.nombre + "." } ?? "de lo que entra.") {
+            VStack(alignment: .leading, spacing: Medida.xs) {
+                cifra(anterior == nil ? "sin datos" : anterior!.tasa == nil ? "sin ingresos" : pctSinMas(anterior!.tasa!), negativa: (anterior?.tasa ?? 0) < 0)
+                Text(nota).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                VStack(spacing: Medida.xs) {
+                    ForEach(Array(a.meses.reversed().enumerated()), id: \.offset) { _, x in filaAhorro(x, conAnio: conAnio, enCurso: false) }
+                    filaAhorro(a.enCurso, conAnio: conAnio, enCurso: true)
+                }
+                .padding(.top, Medida.xxs)
             }
-            .padding(.top, 4)
         }
     }
 
     private func filaAhorro(_ x: ModeloResumen.MesAhorro, conAnio: Bool, enCurso: Bool) -> some View {
         let ancho = x.tasa.map { Swift.max(2, Swift.min(100, abs($0))) } ?? 0
         let neg = (x.tasa ?? 0) < 0
-        return HStack(spacing: 8) {
+        return HStack(spacing: Medida.xs) {
             Text(x.nombre + (conAnio ? " \(x.anio)" : "") + (enCurso ? ", en curso" : "") + ".")
-                .font(Tipo.pie).foregroundStyle(enCurso ? Paleta.textoSecundario : Paleta.texto).frame(width: 120, alignment: .leading).lineLimit(1).minimumScaleFactor(0.8)
-            GeometryReader { g in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3).fill(Paleta.borde)
-                    if Paleta.mono && neg {
-                        RoundedRectangle(cornerRadius: 3).fill(Paleta.atencion).frame(width: g.size.width * ancho / 100)
-                            .overlay(Trama(paso: 5).stroke(Paleta.fondo, lineWidth: 1).clipShape(RoundedRectangle(cornerRadius: 3)))
-                    } else if Paleta.mono {
-                        RoundedRectangle(cornerRadius: 3).strokeBorder(Paleta.positivo, lineWidth: 1.5).frame(width: g.size.width * ancho / 100)
-                    } else {
-                        RoundedRectangle(cornerRadius: 3).fill(neg ? Paleta.atencion : Paleta.positivo).frame(width: g.size.width * ancho / 100)
-                    }
-                }
-            }
-            .frame(height: 8)
-            Text(x.tasa == nil ? "sin ingresos" : pctSinMas(x.tasa!)).font(Tipo.poppins(13, .semibold, estilo: .footnote)).monospacedDigit()
-                .foregroundStyle(neg ? Paleta.atencion : Paleta.texto).frame(width: 82, alignment: .trailing)
+                .font(Letra.pie).foregroundStyle(enCurso ? Lienzo.tintaSecundaria : Lienzo.tinta).frame(width: 116, alignment: .leading).lineLimit(1).minimumScaleFactor(0.8)
+            BarraFina(valor: ancho / 100, color: neg ? Lienzo.negativo : (enCurso ? Lienzo.tintaTerciaria : Lienzo.positivo))
+            Text(x.tasa == nil ? "sin ingresos" : pctSinMas(x.tasa!)).font(Letra.pieFuerte).monospacedDigit()
+                .foregroundStyle(neg ? Lienzo.negativo : Lienzo.tinta).frame(width: 78, alignment: .trailing)
         }
         .accessibilityElement(children: .combine)
     }
@@ -785,105 +855,119 @@ private struct PestanaResumen: View {
             let n = o.mesesHasta ?? 0
             return "Al ritmo de los últimos meses (\(din(o.ritmo)) al mes) llegarías en \(n) \(n == 1 ? "mes" : "meses"). Te faltan \(din(o.objetivo - o.actual))."
         }()
-        return panel("camino al objetivo.", nil) {
-            Text(frase).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            if o.puntos.count < 2 {
-                Text("La previsión aparece en cuanto haya un par de meses de movimientos.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            } else if !oculto {
-                GraficaObjetivo(o: o).frame(height: 150)
+        return TarjetaSeccion(titulo: "camino al objetivo.", accion: (o.objetivo != 0 ? "cambiar." : "poner objetivo.", { hoja = .objetivo })) {
+            VStack(alignment: .leading, spacing: Medida.xs) {
+                Text(frase).font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+                if o.puntos.count < 2 {
+                    Text("La previsión aparece en cuanto haya un par de meses de movimientos.").font(Letra.pie).foregroundStyle(Lienzo.tintaTerciaria)
+                } else if !oculto {
+                    GraficaObjetivo(o: o).frame(height: 140).padding(.top, Medida.xs)
+                }
             }
-            EnlaceFin(texto: o.objetivo != 0 ? "cambiar objetivo." : "poner objetivo.") { hoja = .objetivo }
         }
     }
 
     private var panelActivos: some View {
         let total = m.activos.reduce(0) { $0 + $1.valor }
-        return panel("tus activos.", "en directo.") {
+        return TarjetaSeccion(titulo: "tus activos.", detalle: "en directo.") {
             ForEach(Array(m.activos.enumerated()), id: \.offset) { _, f in
                 // Las cuentas de inversión abren su ficha (openFichaInversion).
                 Button { if !f.ficha.isEmpty { hoja = .inversion(f.ficha) } } label: {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(f.nombre + ".").font(Tipo.cuerpo).foregroundStyle(Paleta.texto).lineLimit(1)
-                        if !f.ficha.isEmpty { Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Paleta.textoSecundario) }
+                    HStack(alignment: .center, spacing: Medida.xs) {
+                        Text(f.nombre + ".").font(Letra.cuerpo).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                        if !f.ficha.isEmpty { FlechaFila() }
                         Spacer()
-                        Text(din(f.valor)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit().foregroundStyle(Paleta.texto)
-                        variacion(f).frame(minWidth: 70, alignment: .trailing)
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text(din(f.valor)).font(Letra.numero).foregroundStyle(Lienzo.tinta)
+                            variacion(f)
+                        }
                     }
+                    .frame(minHeight: 48)
+                    .overlay(alignment: .bottom) { Rectangle().fill(Lienzo.filo).frame(height: 1) }
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pulsable(0.98))
                 .disabled(f.ficha.isEmpty)
                 .accessibilityElement(children: .combine)
                 .accessibilityHint(f.ficha.isEmpty ? "" : "abrir la ficha de la inversión.")
             }
-            FilaLibro(etiqueta: "total.", valor: din(total))
+            FilaDato(etiqueta: "total.", valor: din(total), separador: false)
         }
     }
 
     @ViewBuilder private func variacion(_ f: ModeloResumen.Activo) -> some View {
         if oculto {
-            Text("")
+            EmptyView()
         } else if f.pct == nil, let c = f.cambio, abs(c) >= 0.5 {
-            Text((c >= 0 ? "+" : "−") + FormatoFin.dinero(abs(c))).font(Tipo.pie).foregroundStyle(c < 0 ? Paleta.atencion : Paleta.positivo)
+            Text((c >= 0 ? "+" : "−") + FormatoFin.dinero(abs(c))).font(Letra.pie).monospacedDigit().foregroundStyle(c < 0 ? Lienzo.negativo : Lienzo.positivo)
         } else if let p = f.pct {
             let clase = abs(p) < 0.05 ? 0 : p > 0 ? 1 : -1
-            HStack(spacing: 2) {
-                if clase != 0 { Image(systemName: clase > 0 ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill").font(.system(size: 8)) }
-                Text(FormatoFin.pct(p))
-            }
-            .font(Tipo.pie).foregroundStyle(clase > 0 ? Paleta.positivo : clase < 0 ? Paleta.atencion : Paleta.textoSecundario)
+            Text(FormatoFin.pct(p)).font(Letra.pie).monospacedDigit()
+                .foregroundStyle(clase > 0 ? Lienzo.positivo : clase < 0 ? Lienzo.negativo : Lienzo.tintaSecundaria)
         } else {
-            Text("sin datos").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+            Text("sin datos").font(Letra.pie).foregroundStyle(Lienzo.tintaTerciaria)
         }
     }
 
     private var panelSuscripciones: some View {
         let mes = m.suscripciones.reduce(0) { $0 + $1.importe }
-        return panel("suscripciones y fijos.", "\(din(mes)) al mes, \(din(mes * 12)) al año.") {
-            if m.suscripciones.isEmpty {
-                Text("No tienes suscripciones ni gastos fijos activos.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            } else {
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-                    ForEach(m.suscripciones) { x in
-                        Button { hoja = .gestor } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                LogoSuscripcion(id: x.id, titulo: x.titulo, logos: logos, lado: 30)
-                                Text(x.titulo).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).lineLimit(1)
-                                Text(din(x.importe)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit().foregroundStyle(Paleta.texto)
-                                Text(x.faltan == 0 ? "hoy." : x.faltan == 1 ? "mañana." : "día \(x.dia), en \(x.faltan) días.")
-                                    .font(Tipo.pie).foregroundStyle(x.faltan <= 3 ? Paleta.acento : Paleta.textoSecundario)
+        return TarjetaSeccion(titulo: "suscripciones y fijos.", accion: ("gestionar.", { hoja = .gestor })) {
+            VStack(alignment: .leading, spacing: Medida.s) {
+                Text("\(din(mes)) al mes, \(din(mes * 12)) al año.").font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+                if m.suscripciones.isEmpty {
+                    Text("No tienes suscripciones ni gastos fijos activos.").font(Letra.pie).foregroundStyle(Lienzo.tintaTerciaria)
+                } else {
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: Medida.xs), GridItem(.flexible(), spacing: Medida.xs)], spacing: Medida.xs) {
+                        ForEach(m.suscripciones) { x in
+                            Button { hoja = .gestor } label: {
+                                VStack(alignment: .leading, spacing: Medida.xxs) {
+                                    LogoSuscripcion(id: x.id, titulo: x.titulo, logos: logos, lado: 28)
+                                    Text(x.titulo).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                                    Text(din(x.importe)).font(Letra.numero).foregroundStyle(Lienzo.tinta)
+                                    Text(x.faltan == 0 ? "hoy." : x.faltan == 1 ? "mañana." : "día \(x.dia), en \(x.faltan) días.")
+                                        .font(Letra.pie).foregroundStyle(x.faltan <= 3 ? Lienzo.naranjaProfundo : Lienzo.tintaSecundaria)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(Medida.s)
+                                .background(Lienzo.fondo, in: RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
+                                .contentShape(RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(10)
-                            .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+                            .buttonStyle(.pulsable)
+                            .accessibilityHint("gestionar suscripciones.")
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("gestionar suscripciones.")
                     }
                 }
             }
-            EnlaceFin(texto: "gestionar suscripciones.") { hoja = .gestor }
         }
     }
 
     private var panelPrevision: some View {
         let p = m.prevision
-        return panel("fin de mes.", "previsión.") {
-            cifra(din(p.fin), negativa: p.fin < 0)
-            Text("en tus cuentas el día \(p.ultimoDia), contando fijos\(p.variable != 0 ? ", tu gasto normal" : "")\(p.porEntrar != 0 ? " y el sueldo por entrar" : "").")
-                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            FilaLibro(etiqueta: "fijos que quedan.", valor: din(p.fijos))
-            if p.variable != 0 { FilaLibro(etiqueta: "gasto normal hasta fin de mes.", valor: din(p.variable)) }
-            if p.porEntrar != 0 { FilaLibro(etiqueta: "sueldo por entrar.", valor: din(p.porEntrar)) }
-            if let col = p.colchon { FilaLibro(etiqueta: "colchón.", valor: String(format: "%.1f", col).replacingOccurrences(of: ".", with: ",") + " meses") }
-            if !p.top.isEmpty { FilaLibro(etiqueta: "donde más gastas.", valor: p.top) }
+        var filas: [(String, String)] = [("fijos que quedan.", din(p.fijos))]
+        if p.variable != 0 { filas.append(("gasto normal hasta fin de mes.", din(p.variable))) }
+        if p.porEntrar != 0 { filas.append(("sueldo por entrar.", din(p.porEntrar))) }
+        if let col = p.colchon { filas.append(("colchón.", String(format: "%.1f", col).replacingOccurrences(of: ".", with: ",") + " meses")) }
+        if !p.top.isEmpty { filas.append(("donde más gastas.", p.top)) }
+        return TarjetaSeccion(titulo: "fin de mes.", detalle: "previsión.") {
+            VStack(alignment: .leading, spacing: Medida.xs) {
+                cifra(din(p.fin), negativa: p.fin < 0)
+                Text("en tus cuentas el día \(p.ultimoDia), contando fijos\(p.variable != 0 ? ", tu gasto normal" : "")\(p.porEntrar != 0 ? " y el sueldo por entrar" : "").")
+                    .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                VStack(spacing: 0) {
+                    ForEach(Array(filas.enumerated()), id: \.offset) { i, f in FilaDato(etiqueta: f.0, valor: f.1, separador: i < filas.count - 1) }
+                }
+            }
         }
+        .padding(.bottom, Medida.xs)
     }
 }
 
-// finResGraficaObjetivo: lo real, la previsión a este ritmo y la raya del objetivo.
+// finResGraficaObjetivo: lo real en naranja, la previsión a este ritmo en naranja discontinuo, la raya del objetivo en
+// gris. Se dibuja de izquierda a derecha al aparecer.
 private struct GraficaObjetivo: View {
     let o: ModeloResumen.Objetivo
+    @State private var visto: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
     var body: some View {
         Canvas { ctx, size in
@@ -906,18 +990,23 @@ private struct GraficaObjetivo: View {
             let i0 = Double(reales.count - 1)
             var area = real
             area.addLine(to: CGPoint(x: x(i0), y: size.height)); area.addLine(to: CGPoint(x: 0, y: size.height)); area.closeSubpath()
-            ctx.fill(area, with: .color(Paleta.tinteAcento))
+            ctx.fill(area, with: .color(Lienzo.naranjaSuave))
             if o.objetivo > 0 {
                 var l = Path(); l.move(to: CGPoint(x: 0, y: y(o.objetivo))); l.addLine(to: CGPoint(x: size.width, y: y(o.objetivo)))
-                ctx.stroke(l, with: .color(Paleta.textoSecundario), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                ctx.stroke(l, with: .color(Lienzo.tintaTerciaria), style: StrokeStyle(lineWidth: 1, dash: [3, 4]))
             }
             var hoy = Path(); hoy.move(to: CGPoint(x: x(i0), y: 0)); hoy.addLine(to: CGPoint(x: x(i0), y: size.height))
-            ctx.stroke(hoy, with: .color(Paleta.borde), lineWidth: 1)
-            ctx.stroke(real, with: .color(Paleta.acento), style: StrokeStyle(lineWidth: 2, lineJoin: .round))
+            ctx.stroke(hoy, with: .color(Lienzo.filoFuerte), lineWidth: 1)
+            ctx.stroke(real, with: .color(Lienzo.naranja), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
             var prev = Path(); prev.move(to: CGPoint(x: x(i0), y: y(o.actual)))
             for (k, v) in proy.enumerated() { prev.addLine(to: CGPoint(x: x(i0 + Double(k + 1)), y: y(v))) }
-            ctx.stroke(prev, with: .color(Paleta.acento.opacity(0.6)), style: StrokeStyle(lineWidth: 2, dash: [5, 4]))
+            ctx.stroke(prev, with: .color(Lienzo.naranja.opacity(0.5)), style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [4, 5]))
+            ctx.fill(Path(ellipseIn: CGRect(x: x(i0) - 3.5, y: y(o.actual) - 3.5, width: 7, height: 7)), with: .color(Lienzo.naranja))
         }
+        .mask(alignment: .leading) {
+            GeometryReader { g in Rectangle().frame(width: g.size.width * visto) }
+        }
+        .onAppear { withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento).delay(0.1)) { visto = 1 } }
         .accessibilityLabel("Patrimonio de los últimos meses y su previsión" + (o.fecha.isEmpty ? "." : ", llegarías al objetivo en \(o.fecha)."))
     }
 }

@@ -130,6 +130,8 @@ enum DestinoViaje {
     }
 }
 
+// Dentro de la ficha del viaje, plegada: cada bloque en su tarjeta (dónde y la hora, el tiempo, el dinero, enchufes y
+// urgencias). Se carga al abrirla.
 struct DestinoViajeView: View {
     let viaje: Viaje
     @State private var geo: GeoDestino?
@@ -144,74 +146,110 @@ struct DestinoViajeView: View {
     private var fin: String { viaje.fin.isEmpty ? ini : viaje.fin }
 
     var body: some View {
-        List {
+        VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
             if viaje.destino.isEmpty {
-                Text("ponle un destino al viaje y aquí tendrás el tiempo, la hora, la moneda y los enchufes de allí.").foregroundStyle(Paleta.textoSecundario)
+                EstadoVacio(texto: "ponle un destino al viaje y aquí tendrás el tiempo, la hora, la moneda y los enchufes de allí.", icono: "viajes")
+                    .tarjeta(relleno: Medida.xs)
             } else if let g = geo {
-                Section {
-                    LabeledContent(g.nombre.lowercased() + ".", value: g.paisNombre.lowercased())
+                VStack(alignment: .leading, spacing: 0) {
+                    FilaTarjeta(icono: "viajes", titulo: g.nombre.lowercased() + ".", detalle: g.paisNombre.lowercased())
+                    if let h = DestinoViaje.hora(g.zona) {
+                        SeparadorFila()
+                        FilaTarjeta(icono: "calendario", titulo: h, detalle: "la hora.")
+                    }
                 }
+                .tarjeta(relleno: Medida.s)
                 if fin >= hoy {
-                    Section("el tiempo.") { tiempo }
+                    bloque("el tiempo.") { tiempo }
                 }
-                if let h = DestinoViaje.hora(g.zona) { Section("la hora.") { Text(h) } }
                 if let info = DestinoViaje.paises[g.pais] {
-                    Section("el dinero.") { dinero(info.0) }
-                    Section("enchufes y urgencias.") {
-                        Text(DestinoViaje.enchufe(info.1))
-                        LabeledContent("urgencias.", value: DestinoViaje.urgencias(g.pais))
+                    bloque("el dinero.") { dinero(info.0) }
+                    bloque("enchufes y urgencias.") {
+                        Text(DestinoViaje.enchufe(info.1)).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
+                        fila("urgencias.", DestinoViaje.urgencias(g.pais))
                     }
                 } else {
-                    Section("urgencias.") { LabeledContent("urgencias.", value: DestinoViaje.urgencias(g.pais)) }
+                    bloque("urgencias.") { fila("urgencias.", DestinoViaje.urgencias(g.pais)) }
                 }
-                Section { Text("datos de open-meteo y del banco central europeo. los festivos de allí, en la web.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+                Text("datos de open-meteo y del banco central europeo. los festivos de allí, en la web.")
+                    .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                    .padding(.horizontal, Medida.xxs)
             } else if buscando {
-                HStack { ProgressView(); Text("buscando el destino.").foregroundStyle(Paleta.textoSecundario) }
+                HStack(spacing: Medida.xs) {
+                    ProgressView()
+                    Text("buscando el destino.").font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+                }
+                .tarjeta(relleno: Medida.s)
             } else {
-                Text("no encuentro «\(viaje.destino)». prueba a escribir solo la ciudad en el destino del viaje.").foregroundStyle(Paleta.textoSecundario)
+                EstadoVacio(texto: "no encuentro «\(viaje.destino)». prueba a escribir solo la ciudad en el destino del viaje.", icono: "viajes")
+                    .tarjeta(relleno: Medida.xs)
             }
         }
-        .font(Tipo.cuerpo)
-        .scrollContentBackground(.hidden)
-        .background(Paleta.fondo)
-        .navigationTitle("destino.")
-        .navigationBarTitleDisplayMode(.inline)
         .task { await cargar() }
+    }
+
+    private func bloque<C: View>(_ titulo: String, @ViewBuilder _ contenido: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: Medida.xs) {
+            Text(titulo).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta).accessibilityAddTraits(.isHeader)
+            contenido()
+        }
+        .tarjeta()
+    }
+
+    private func fila(_ titulo: String, _ valor: String) -> some View {
+        HStack {
+            Text(titulo).font(Letra.cuerpo).foregroundStyle(Lienzo.tintaSecundaria)
+            Spacer()
+            Text(valor).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).multilineTextAlignment(.trailing)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder private var tiempo: some View {
         if !dias.isEmpty {
-            ForEach(dias, id: \.fecha) { d in
-                HStack(spacing: 12) {
-                    Text(DestinoViajeView.diaCorto(d.fecha)).frame(width: 64, alignment: .leading)
-                    Image(systemName: Tiempo.simbolo[Tiempo.tipo(d.code, esDia: true)] ?? "cloud.fill").foregroundStyle(Paleta.acento).frame(width: 26)
-                    Text("\(Int(d.max.rounded()))°").font(Tipo.cuerpoFuerte)
-                    Text("\(Int(d.min.rounded()))°").foregroundStyle(Paleta.textoSecundario)
-                    Spacer()
-                    if let l = d.lluvia, l >= 40 { Text("\(Int(l)) %").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+            VStack(spacing: Medida.xs) {
+                ForEach(dias, id: \.fecha) { d in
+                    HStack(spacing: Medida.s) {
+                        Text(DestinoViajeView.diaCorto(d.fecha)).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                            .frame(width: 56, alignment: .leading)
+                        Image(systemName: Tiempo.simbolo[Tiempo.tipo(d.code, esDia: true)] ?? "cloud.fill")
+                            .symbolRenderingMode(.hierarchical).foregroundStyle(Lienzo.tinta).frame(width: 26)
+                        Text("\(Int(d.max.rounded()))°").font(Letra.numero).foregroundStyle(Lienzo.tinta)
+                        Text("\(Int(d.min.rounded()))°").font(Letra.cuerpo).foregroundStyle(Lienzo.tintaSecundaria).monospacedDigit()
+                        Spacer()
+                        if let l = d.lluvia, l >= 40 { Chip(texto: "\(Int(l)) %", icono: "drop.fill") }
+                    }
+                    .accessibilityElement(children: .combine)
                 }
-                .accessibilityElement(children: .combine)
             }
         } else if let h = historico {
             Text("el año pasado, esos mismos días: entre \(h.min)° y \(h.max)° de media" + (h.lluvia > 0 ? ", y llovió \(h.lluvia) de \(h.dias) días." : ", sin lluvia.") + " la previsión llega dos semanas antes.")
+                .font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria).fixedSize(horizontal: false, vertical: true)
         } else {
-            Text("cargando.").foregroundStyle(Paleta.textoSecundario)
+            Text("cargando.").font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
         }
     }
 
     @ViewBuilder private func dinero(_ moneda: String) -> some View {
         if moneda == "EUR" {
-            Text("se paga en euros.")
+            Text("se paga en euros.").font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
         } else if let tasa {
-            LabeledContent("1 €", value: String(format: tasa < 10 ? "%.3f %@" : "%.1f %@", tasa, moneda))
-            HStack {
-                TextField("importe en \(moneda).", text: $importe).keyboardType(.decimalPad)
+            fila("1 €", String(format: tasa < 10 ? "%.3f %@" : "%.1f %@", tasa, moneda))
+            HStack(spacing: Medida.xs) {
+                TextField("", text: $importe, prompt: Text("importe en \(moneda).").foregroundColor(Lienzo.tintaTerciaria))
+                    .font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
+                    .keyboardType(.decimalPad)
+                    .padding(.horizontal, Medida.s)
+                    .frame(height: Medida.alturaControl)
+                    .background(Lienzo.sutil, in: RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
                 if let d = Dinero.decimal(texto: importe), d > 0 {
-                    Text(Dinero.formato(d / Decimal(tasa))).font(Tipo.cuerpoFuerte)
+                    Text(Dinero.formato(d / Decimal(tasa))).font(Letra.numero).foregroundStyle(Lienzo.tinta)
+                        .transition(.opacity)
                 }
             }
+            .animation(Muelle.rapido, value: importe.isEmpty)
         } else {
-            Text("se paga en \(moneda).")
+            Text("se paga en \(moneda).").font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
         }
     }
 

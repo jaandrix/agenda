@@ -208,7 +208,7 @@ struct SaludFinanzasView: View {
             Group {
                 if let m = e.m { contenido(m) } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
             }
-            .background(Paleta.fondo)
+            .background(Lienzo.fondo)
             .navigationTitle("salud.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } } }
@@ -224,7 +224,7 @@ struct SaludFinanzasView: View {
         FormCasa {
             if !m.avisos.isEmpty {
                 Section {
-                    ForEach(m.avisos) { a in Text(a.texto).foregroundStyle(Paleta.atencion) }
+                    ForEach(m.avisos) { a in Text(a.texto).foregroundStyle(Lienzo.negativo) }
                 }
             }
             seccionClasificacion(m)
@@ -247,14 +247,14 @@ struct SaludFinanzasView: View {
     private func seccionClasificacion(_ m: ModeloSalud) -> some View {
         Section {
             NavigationLink { PropuestasSaludView(e: e, oculto: oculto) } label: {
-                FilaLibro(etiqueta: "propuestas", valor: String(m.propuestas.count))
+                FilaDato(etiqueta: "propuestas", valor: String(m.propuestas.count))
             }
             NavigationLink { PorRevisarSaludView(e: e, oculto: oculto) } label: {
-                FilaLibro(etiqueta: "por revisar", valor: String(m.porRevisar.count))
+                FilaDato(etiqueta: "por revisar", valor: String(m.porRevisar.count))
             }
             if let f = m.fechasTraspaso, !f.isEmpty {
                 NavigationLink { FechasTraspasoSaludView(e: e, oculto: oculto) } label: {
-                    FilaLibro(etiqueta: "traspasos con otra fecha", valor: String(f.count))
+                    FilaDato(etiqueta: "traspasos con otra fecha", valor: String(f.count))
                 }
             }
         } header: { Text("clasificación.") } footer: {
@@ -267,17 +267,17 @@ struct SaludFinanzasView: View {
         let p = m.presupuesto
         let duplicadosFuturos = m.futuros.reduce(0) { $0 + $1.duplicados }
         Section {
-            FilaLibro(etiqueta: "ingresos previstos", valor: din(p.ingresos))
-            FilaLibro(etiqueta: "planificado", valor: din(p.asignado), acento: p.exceso > 0)
+            FilaDato(etiqueta: "ingresos previstos", valor: din(p.ingresos))
+            FilaDato(etiqueta: "planificado", valor: din(p.asignado), tono: p.exceso > 0 ? Lienzo.negativo : Lienzo.tinta)
             if p.exceso > 0 {
-                Text("Planificas \(din(p.exceso)) más de lo que esperas ingresar.").font(Tipo.pie).foregroundStyle(Paleta.atencion)
+                Text("Planificas \(din(p.exceso)) más de lo que esperas ingresar.").font(Letra.pie).foregroundStyle(Lienzo.negativo)
             }
             if p.suscripcionesFuera > 0 || p.fijosFuera > 0 {
-                Text("Este mes faltan \(din(p.suscripcionesFuera + p.fijosFuera)) de suscripciones y gastos fijos.").font(Tipo.pie).foregroundStyle(Paleta.atencion)
+                Text("Este mes faltan \(din(p.suscripcionesFuera + p.fijosFuera)) de suscripciones y gastos fijos.").font(Letra.pie).foregroundStyle(Lienzo.negativo)
                 Button("volver a ponerlos.") { Task { await e.accion(c, "reponerCompromisos", ["mes": p.mes]) } }
             }
             ForEach(m.futuros) { f in
-                Text(textoFuturo(f)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                Text(textoFuturo(f)).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
             }
             if !p.duplicados.isEmpty || duplicadosFuturos > 0 {
                 Button("quitar las casillas repetidas.") { Task { await e.accion(c, "quitarDuplicados", [:]) } }.disabled(e.trabajando)
@@ -300,19 +300,19 @@ struct SaludFinanzasView: View {
         let k = m.colchones
         let s = k.estabilizacion
         Section {
-            FilaLibro(etiqueta: "gastos esenciales al mes", valor: k.esencialesMes > 0 ? din(k.esencialesMes) : "sin datos")
-            FilaLibro(etiqueta: "tu fondo cubre", valor: k.cubre.map { mesesTexto($0) } ?? "sin datos", acento: (k.cubre ?? 0) < 1)
+            FilaDato(etiqueta: "gastos esenciales al mes", valor: k.esencialesMes > 0 ? din(k.esencialesMes) : "sin datos")
+            FilaDato(etiqueta: "tu fondo cubre", valor: k.cubre.map { mesesTexto($0) } ?? "sin datos", tono: (k.cubre ?? 0) < 1 ? Lienzo.negativo : Lienzo.tinta)
             if k.objetivoFondo > 0 {
-                Text("Para \(mesesTexto(k.mesesObjetivo)) harían falta \(din(k.objetivoFondo)); tienes \(din(k.fondo)).").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                Text("Para \(mesesTexto(k.mesesObjetivo)) harían falta \(din(k.objetivoFondo)); tienes \(din(k.fondo)).").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
             }
             NavigationLink("qué gastos son esenciales.") { EsencialesSaludView(e: e) }
         } header: { Text("fondo de emergencia.") } footer: {
             if !k.elegidasAMano { Text("Con las esenciales por defecto (vivienda, comida, transporte, salud...). Elige las tuyas para que la cifra sea la de verdad.") }
         }
         Section {
-            FilaLibro(etiqueta: "tienes", valor: din(s.saldo))
-            FilaLibro(etiqueta: "objetivo", valor: s.objetivo > 0 ? din(s.objetivo) : "sin datos")
-            FilaLibro(etiqueta: "ingreso de referencia", valor: s.base > 0 ? din(s.base) : "sin datos")
+            FilaDato(etiqueta: "tienes", valor: din(s.saldo))
+            FilaDato(etiqueta: "objetivo", valor: s.objetivo > 0 ? din(s.objetivo) : "sin datos")
+            FilaDato(etiqueta: "ingreso de referencia", valor: s.base > 0 ? din(s.base) : "sin datos")
             NavigationLink("cambiar.") { EstabilizacionSaludView(e: e) }
         } header: { Text("reserva de estabilización.") } footer: {
             Text(textoEstabilizacion(s))
@@ -331,9 +331,9 @@ struct SaludFinanzasView: View {
             Section {
                 ForEach(lista) { n in
                     VStack(alignment: .leading, spacing: 2) {
-                        FilaLibro(etiqueta: n.nombre.lowercased(), valor: din(n.neto))
+                        FilaDato(etiqueta: n.nombre.lowercased(), valor: din(n.neto))
                         if n.devuelto > 0 {
-                            Text("\(din(n.bruto)) gastados, \(din(n.devuelto)) devueltos o vendidos.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                            Text("\(din(n.bruto)) gastados, \(din(n.devuelto)) devueltos o vendidos.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                         }
                     }
                 }
@@ -362,16 +362,16 @@ private struct FilaSuscripcionSalud: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(s.titulo).font(Tipo.cuerpoFuerte).foregroundStyle(s.toca ? Paleta.atencion : Paleta.texto)
+                Text(s.titulo).font(Letra.cuerpoFuerte).foregroundStyle(s.toca ? Lienzo.negativo : Lienzo.tinta)
                 Spacer()
                 Text(oculto ? "•••" : FormatoFin.dinero(s.importe)).monospacedDigit()
             }
-            Text(uso).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            HStack(spacing: Espacio.m) {
+            Text(uso).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+            HStack(spacing: Medida.m) {
                 Button("la usé hoy.") { Task { await e.accion(c, "suscripcionUso", ["id": s.id]) } }
                 Button("revisada.") { Task { await e.accion(c, "suscripcionRevisada", ["id": s.id]) } }
             }
-            .buttonStyle(.borderless).font(Tipo.pie)
+            .buttonStyle(.pulsable).font(Letra.pie)
         }
     }
 
@@ -397,7 +397,7 @@ struct PropuestasSaludView: View {
         let lista = e.m?.propuestas ?? []
         FormCasa {
             if lista.isEmpty {
-                Text("nada que proponer.").foregroundStyle(Paleta.textoSecundario)
+                Text("nada que proponer.").foregroundStyle(Lienzo.tintaSecundaria)
             }
             ForEach(Self.tipos) { tipo in
                 let filas = lista.filter { $0.propuesta == tipo.id }
@@ -426,12 +426,12 @@ private struct FilaPropuestaSalud: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             FilaMovSalud(f: p.f, oculto: oculto)
-            Text(p.motivo).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            HStack(spacing: Espacio.m) {
+            Text(p.motivo).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+            HStack(spacing: Medida.m) {
                 Button("sí.") { Task { await e.accion(c, "propuestas", ["ids": [p.f.id]], callado: true) } }
                 Button("no, está bien así.") { Task { await e.accion(c, "resolver", ["id": p.f.id, "como": "bien"], callado: true) } }
             }
-            .buttonStyle(.borderless).font(Tipo.pie).disabled(e.trabajando)
+            .buttonStyle(.pulsable).font(Letra.pie).disabled(e.trabajando)
         }
     }
 }
@@ -444,8 +444,8 @@ private struct FilaMovSalud: View {
         let signo = f.tipo == "income" ? "+" : (f.tipo == "expense" ? "−" : "")
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(f.titulo).font(Tipo.cuerpo).lineLimit(1)
-                Text([f.dia, f.meta].filter { !$0.isEmpty }.joined(separator: ", ")).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(1)
+                Text(f.titulo).font(Letra.cuerpo).lineLimit(1)
+                Text([f.dia, f.meta].filter { !$0.isEmpty }.joined(separator: ", ")).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
             }
             Spacer()
             Text(oculto ? "•••" : signo + FormatoFin.dinero(f.importe)).monospacedDigit()
@@ -466,19 +466,19 @@ struct FechasTraspasoSaludView: View {
         let lista = e.m?.fechasTraspaso ?? []
         FormCasa {
             if lista.isEmpty {
-                Text("todos tus traspasos llevan ya la fecha de la recarga.").foregroundStyle(Paleta.textoSecundario)
+                Text("todos tus traspasos llevan ya la fecha de la recarga.").foregroundStyle(Lienzo.tintaSecundaria)
             } else {
                 Section {
                     ForEach(lista) { t in
                         VStack(alignment: .leading, spacing: 4) {
                             HStack(alignment: .firstTextBaseline) {
-                                Text(t.titulo).font(Tipo.cuerpo).lineLimit(1)
+                                Text(t.titulo).font(Letra.cuerpo).lineLimit(1)
                                 Spacer()
                                 Text(oculto ? "•••" : FormatoFin.dinero(t.importe)).monospacedDigit()
                             }
-                            Text("del \(t.dia) al \(t.nuevoDia)" + (t.meta.isEmpty ? "." : ", \(t.meta).")).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                            Text("del \(t.dia) al \(t.nuevoDia)" + (t.meta.isEmpty ? "." : ", \(t.meta).")).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                             Button("sí.") { Task { await e.accion(c, "fechaTraspaso", ["ids": [t.id]], callado: true) } }
-                                .buttonStyle(.borderless).font(Tipo.pie).frame(minHeight: 44).disabled(e.trabajando)
+                                .buttonStyle(.pulsable).font(Letra.pie).frame(minHeight: 44).disabled(e.trabajando)
                         }
                     }
                     Button("aceptar \(lista.count == 1 ? "este" : "los \(lista.count)").") {
@@ -514,18 +514,18 @@ struct PorRevisarSaludView: View {
                             Button(cat.nombre) { Task { await e.accion(c, "bizums", ["categoria": cat.id]) } }
                         }
                     } label: {
-                        Text("pasar los \(bizums) Bizums recibidos a...").foregroundStyle(Paleta.acento)
+                        Text("pasar los \(bizums) Bizums recibidos a...").foregroundStyle(Lienzo.naranjaProfundo)
                     }
                     .disabled(e.trabajando)
                 } footer: {
                     Text("Casi siempre son amigos pagando su parte. En «Comida y bebida» (la de ingreso) restan de lo que gastas en comida y bebida y dejan de contar como ingreso.")
                 }
             }
-            if lista.isEmpty { Text("nada por revisar.").foregroundStyle(Paleta.textoSecundario) }
+            if lista.isEmpty { Text("nada por revisar.").foregroundStyle(Lienzo.tintaSecundaria) }
             ForEach(lista) { p in
                 VStack(alignment: .leading, spacing: 4) {
                     FilaMovSalud(f: p.f, oculto: oculto)
-                    Text(p.motivo).font(Tipo.pie).foregroundStyle(Paleta.atencion)
+                    Text(p.motivo).font(Letra.pie).foregroundStyle(Lienzo.negativo)
                     menu(p)
                 }
             }
@@ -555,7 +555,7 @@ struct PorRevisarSaludView: View {
             if tipo == "income" { Button("devolución de una compra...") { devolucion = p } }
             Button("está bien así.") { Task { await e.accion(c, "resolver", ["id": p.f.id, "como": "bien"], callado: true) } }
         } label: {
-            Text("resolver.").font(Tipo.pie).foregroundStyle(Paleta.acento)
+            Text("resolver.").font(Letra.pie).foregroundStyle(Lienzo.naranjaProfundo)
         }
         .disabled(e.trabajando)
     }
@@ -574,7 +574,7 @@ private struct CompraDevueltaSaludView: View {
             FormCasa {
                 Section {
                     if let compras {
-                        if compras.isEmpty { Text("no hay compras anteriores por ese importe o más.").foregroundStyle(Paleta.textoSecundario) }
+                        if compras.isEmpty { Text("no hay compras anteriores por ese importe o más.").foregroundStyle(Lienzo.tintaSecundaria) }
                         ForEach(compras) { f in
                             Button {
                                 Task {
@@ -582,7 +582,7 @@ private struct CompraDevueltaSaludView: View {
                                     cerrar()
                                 }
                             } label: { FilaMovSalud(f: f, oculto: oculto) }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.pulsable)
                         }
                     } else { ProgressView() }
                 } footer: { Text("Restará del gasto de su categoría y no contará como ingreso.") }
@@ -682,16 +682,16 @@ struct SemanaSaludView: View {
         FormCasa {
             if let s = e.m?.semanal {
                 Section {
-                    FilaLibro(etiqueta: "1. por revisar", valor: String(s.porRevisar))
-                    FilaLibro(etiqueta: "2. propuestas", valor: String(s.propuestas))
-                    FilaLibro(etiqueta: "3. queda en presupuestos", valor: oculto ? "•••" : FormatoFin.dinero(s.queda))
+                    FilaDato(etiqueta: "1. por revisar", valor: String(s.porRevisar))
+                    FilaDato(etiqueta: "2. propuestas", valor: String(s.propuestas))
+                    FilaDato(etiqueta: "3. queda en presupuestos", valor: oculto ? "•••" : FormatoFin.dinero(s.queda))
                     if !s.presupuestosPasados.isEmpty {
-                        Text("Pasados: " + s.presupuestosPasados.joined(separator: ", ") + ".").font(Tipo.pie).foregroundStyle(Paleta.atencion)
+                        Text("Pasados: " + s.presupuestosPasados.joined(separator: ", ") + ".").font(Letra.pie).foregroundStyle(Lienzo.negativo)
                     }
                 } footer: { Text("Clasifica lo pendiente, corrige traspasos y devoluciones y mira lo que queda.") }
                 Section {
-                    if s.cargos.isEmpty { Text("ningún cargo en 7 días.").foregroundStyle(Paleta.textoSecundario) }
-                    ForEach(s.cargos) { cg in FilaLibro(etiqueta: "\(cg.fecha.suffix(2)), \(cg.titulo.lowercased())", valor: oculto ? "•••" : FormatoFin.dinero(cg.importe)) }
+                    if s.cargos.isEmpty { Text("ningún cargo en 7 días.").foregroundStyle(Lienzo.tintaSecundaria) }
+                    ForEach(s.cargos) { cg in FilaDato(etiqueta: "\(cg.fecha.suffix(2)), \(cg.titulo.lowercased())", valor: oculto ? "•••" : FormatoFin.dinero(cg.importe)) }
                 } header: { Text("4. cargos de los próximos 7 días.") }
                 Section {
                     Button(s.ultima.map { "hecha. (la última, el \($0))" } ?? "hecha.") { Task { await e.accion(c, "semanalHecha", [:]) } }
@@ -724,18 +724,18 @@ struct CobroSaludView: View {
             if let r = e.m?.reparto, r.sinMargen == true {
                 Section {
                     Text("Lo que gastas de media al mes (\(oculto ? "•••" : FormatoFin.dinero(r.ordinarioBase))) pasa de lo que ha entrado: no queda nada que repartir.")
-                    Text("Si tu gasto normal es menor, ponlo en ajustes, «gastos del mes.».").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    Text("Si tu gasto normal es menor, ponlo en ajustes, «gastos del mes.».").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                 }
             } else if let r = e.m?.reparto {
                 Section {
                     ForEach(r.pasos) { p in
                         VStack(alignment: .leading, spacing: 2) {
-                            FilaLibro(etiqueta: p.nombre, valor: oculto ? "•••" : FormatoFin.dinero(p.importe))
-                            if !p.nota.isEmpty { Text(p.nota).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+                            FilaDato(etiqueta: p.nombre, valor: oculto ? "•••" : FormatoFin.dinero(p.importe))
+                            if !p.nota.isEmpty { Text(p.nota).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
                         }
                     }
                     if r.falta > 0 {
-                        Text("Faltan \(FormatoFin.dinero(r.falta)) para los gastos del mes.").font(Tipo.pie).foregroundStyle(Paleta.atencion)
+                        Text("Faltan \(FormatoFin.dinero(r.falta)) para los gastos del mes.").font(Letra.pie).foregroundStyle(Lienzo.negativo)
                     }
                 } header: { Text("en este orden.") } footer: {
                     Text("Los gastos del mes son la media de los últimos tres (o lo que pongas en ajustes). La inversión va por tramos de ingreso.")
@@ -776,16 +776,16 @@ struct CierreSaludView: View {
         FormCasa {
             if let k = e.m?.cierre {
                 Section {
-                    FilaLibro(etiqueta: "ingresos", valor: din(k.cifras.ingresos))
-                    FilaLibro(etiqueta: "gastos", valor: din(k.cifras.gastos))
-                    FilaLibro(etiqueta: "ahorro", valor: lineaAhorro(k.cifras), acento: k.cifras.ahorro < 0)
-                    FilaLibro(etiqueta: "a la inversión", valor: din(k.cifras.invertido))
-                    FilaLibro(etiqueta: "fondo", valor: lineaFondo(k.cifras))
+                    FilaDato(etiqueta: "ingresos", valor: din(k.cifras.ingresos))
+                    FilaDato(etiqueta: "gastos", valor: din(k.cifras.gastos))
+                    FilaDato(etiqueta: "ahorro", valor: lineaAhorro(k.cifras), tono: k.cifras.ahorro < 0 ? Lienzo.negativo : Lienzo.tinta)
+                    FilaDato(etiqueta: "a la inversión", valor: din(k.cifras.invertido))
+                    FilaDato(etiqueta: "fondo", valor: lineaFondo(k.cifras))
                 } header: { Text(k.titulo.lowercased() + ".") }
                 Section {
-                    Text(k.preguntas.first ?? "").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    Text(k.preguntas.first ?? "").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                     TextField("", text: $r1, axis: .vertical)
-                    Text(k.preguntas.last ?? "").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    Text(k.preguntas.last ?? "").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                     TextField("", text: $r2, axis: .vertical)
                 }
                 Section {
@@ -898,11 +898,11 @@ struct DeseosSaludView: View {
             Section {
                 TextField("qué quieres comprar", text: $titulo)
                 TextField("precio", text: $precio).keyboardType(.decimalPad)
-                HStack(spacing: Espacio.m) {
+                HStack(spacing: Medida.m) {
                     Button("esperar 48 h.") { nuevo(2) }
                     Button("esperar 7 días.") { nuevo(7) }
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.pulsable)
                 .disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty || e.trabajando)
             } header: { Text("antes de comprar.") }
             if let deseos = e.m?.deseos, !deseos.isEmpty {
@@ -917,15 +917,15 @@ struct DeseosSaludView: View {
 
     private func fila(_ d: ModeloSalud.Deseo) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            FilaLibro(etiqueta: d.titulo.isEmpty ? "sin nombre" : d.titulo, valor: oculto ? "•••" : FormatoFin.dinero(d.precio))
-            Text(estado(d)).font(Tipo.pie).foregroundStyle(d.listo ? Paleta.acento : Paleta.textoSecundario)
-            HStack(spacing: Espacio.m) {
+            FilaDato(etiqueta: d.titulo.isEmpty ? "sin nombre" : d.titulo, valor: oculto ? "•••" : FormatoFin.dinero(d.precio))
+            Text(estado(d)).font(Letra.pie).foregroundStyle(d.listo ? Lienzo.naranjaProfundo : Lienzo.tintaSecundaria)
+            HStack(spacing: Medida.m) {
                 if d.esperaHasta == nil {
                     Button(d.diasSugeridos == 7 ? "esperar 7 días." : "esperar 48 h.") { Task { await e.accion(c, "esperar", ["id": d.id, "dias": d.diasSugeridos]) } }
                 }
                 Button("quitar.") { Task { await e.accion(c, "deseoFuera", ["id": d.id], callado: true) } }
             }
-            .buttonStyle(.borderless).font(Tipo.pie)
+            .buttonStyle(.pulsable).font(Letra.pie)
         }
     }
 

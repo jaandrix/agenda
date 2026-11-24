@@ -42,19 +42,19 @@ struct ObjetivoPatrimonioView: View {
                 } footer: {
                     Text("El objetivo es la suma de los tres: «camino al objetivo.» calcula cuándo llegas al ritmo de los últimos meses.")
                 }
-                if let error { Section { Text(error).foregroundStyle(Paleta.error) } }
+                if let error { Section { Text(error).foregroundStyle(Lienzo.negativo) } }
             }
-            .font(Tipo.cuerpo)
+            .font(Letra.cuerpo)
             .scrollContentBackground(.hidden)
-            .background(Paleta.fondo)
+            .background(Lienzo.fondo)
             .navigationTitle("objetivo.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } } }
             .safeAreaInset(edge: .bottom) {
                 BotonFin(texto: guardando ? "guardando." : "guardar objetivo.", acento: true) { Task { await guardar() } }
                     .disabled(guardando)
-                    .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 8)
-                    .background(Paleta.fondo.ignoresSafeArea(edges: .bottom))
+                    .padding(.horizontal, Medida.margen).padding(.top, 10).padding(.bottom, 8)
+                    .background(Lienzo.fondo.ignoresSafeArea(edges: .bottom))
             }
             .task {
                 if let m = try? await motorListo(c), let d = try? await m.llamar("objetivoDatos", como: Datos.self) {
@@ -70,7 +70,7 @@ struct ObjetivoPatrimonioView: View {
             Text(t)
             Spacer()
             TextField("0", text: v).keyboardType(.decimalPad).multilineTextAlignment(.trailing).monospacedDigit().frame(maxWidth: 140)
-            Text("€").foregroundStyle(Paleta.textoSecundario)
+            Text("€").foregroundStyle(Lienzo.tintaSecundaria)
         }
     }
 
@@ -102,21 +102,21 @@ struct InversionDesdeView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text("inversión desde.").font(Tipo.poppins(14, .medium, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario)
+                Text("inversión desde.").font(Letra.pieFuerte).foregroundStyle(Lienzo.tintaSecundaria)
                 Spacer()
                 if abierto || !actual.isEmpty {
                     DatePicker("", selection: $fecha, displayedComponents: .date).labelsHidden()
                         .environment(\.locale, Locale(identifier: "es_ES"))
                         .onChange(of: fecha) { _, f in Task { await poner(Self.iso.string(from: f)) } }
                     if !actual.isEmpty {
-                        Button { Task { await poner("") } } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Paleta.textoSecundario) }
-                            .buttonStyle(.plain).accessibilityLabel("quitar la fecha")
+                        Button { Task { await poner("") } } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Lienzo.tintaSecundaria) }
+                            .buttonStyle(.pulsable).accessibilityLabel("quitar la fecha")
                     }
                 } else {
-                    Button("elegir fecha.") { abierto = true }.font(Tipo.poppins(14, .medium, estilo: .footnote)).foregroundStyle(Paleta.acento).buttonStyle(.plain)
+                    Button("elegir fecha.") { abierto = true }.font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo).buttonStyle(.pulsable)
                 }
             }
-            if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.error) }
+            if let aviso { Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.negativo) }
         }
         .onAppear { if let d = Self.iso.date(from: actual) { fecha = d } }
     }
@@ -177,9 +177,9 @@ struct FichaInversionView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if let d { ficha(d) } else if let error { Text(error).foregroundStyle(Paleta.error).padding() } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
+                if let d { ficha(d) } else if let error { Text(error).foregroundStyle(Lienzo.negativo).padding() } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
             }
-            .background(Paleta.fondo)
+            .background(Lienzo.fondo)
             .navigationTitle((d?.nombre.lowercased() ?? "inversión") + ".")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } } }
@@ -201,11 +201,11 @@ struct FichaInversionView: View {
     private func ficha(_ d: DatosInversion) -> some View {
         FormCasa {
             Section {
-                FilaLibro(etiqueta: "vale hoy", valor: din(d.valor))
-                FilaLibro(etiqueta: "has aportado", valor: din(d.aportado))
-                FilaLibro(etiqueta: "ganancia acumulada", valor: oculto ? "•••" : (d.ganancia >= 0 ? "+" : "−") + FormatoFin.dinero(abs(d.ganancia)), acento: d.ganancia < 0)
-                FilaLibro(etiqueta: "rentabilidad acumulada", valor: pct(d.acumulada, 2))
-                FilaLibro(etiqueta: "media al mes", valor: pct(d.media, 2) + (d.anual.map { ", \(pct($0)) al año" } ?? ""))
+                FilaDato(etiqueta: "vale hoy", valor: din(d.valor))
+                FilaDato(etiqueta: "has aportado", valor: din(d.aportado))
+                FilaDato(etiqueta: "ganancia acumulada", valor: oculto ? "•••" : (d.ganancia >= 0 ? "+" : "−") + FormatoFin.dinero(abs(d.ganancia)), tono: d.ganancia < 0 ? Lienzo.negativo : Lienzo.tinta)
+                FilaDato(etiqueta: "rentabilidad acumulada", valor: pct(d.acumulada, 2))
+                FilaDato(etiqueta: "media al mes", valor: pct(d.media, 2) + (d.anual.map { ", \(pct($0)) al año" } ?? ""))
             } footer: { Text("La ganancia es lo que ha puesto el fondo, no tú.") }
 
             Section {
@@ -216,11 +216,11 @@ struct FichaInversionView: View {
                     Text("aportación del mes.")
                     Spacer()
                     TextField("0,00", text: $aportacion).keyboardType(.decimalPad).multilineTextAlignment(.trailing).monospacedDigit().frame(maxWidth: 130)
-                        .disabled(d.deMovimientos).foregroundStyle(d.deMovimientos ? Paleta.textoSecundario : Paleta.texto)
+                        .disabled(d.deMovimientos).foregroundStyle(d.deMovimientos ? Lienzo.tintaSecundaria : Lienzo.tinta)
                 }
                 if d.deMovimientos {
                     Text("de tus movimientos: " + d.movimientos.map { "\($0.dia) \($0.importe < 0 ? "−" : "")\(FormatoFin.dinero(abs($0.importe)))" }.joined(separator: ", ") + ".")
-                        .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                        .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                 }
                 HStack {
                     Text("valor de la cuenta.")
@@ -230,20 +230,20 @@ struct FichaInversionView: View {
                 if d.distinto {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Guardaste \(FormatoFin.dinero(d.guardadoAportacion)) de aportación, pero tus movimientos de este mes suman \(FormatoFin.dinero(d.sumaMovimientos)).")
-                            .font(Tipo.pie).foregroundStyle(Paleta.atencion)
-                        Button("usar lo de los movimientos.") { Task { await usarMovimientos() } }.font(Tipo.pie)
+                            .font(Letra.pie).foregroundStyle(Lienzo.negativo)
+                        Button("usar lo de los movimientos.") { Task { await usarMovimientos() } }.font(Letra.pie)
                     }
                 }
                 if let r = d.referencia {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(r.texto).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                        Text(r.texto).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                         if abs(r.valor - (numero(valor) ?? 0)) > 0.5 {
-                            Button("usar \(FormatoFin.dinero(r.valor)).") { valor = texto(r.valor) }.font(Tipo.pie)
+                            Button("usar \(FormatoFin.dinero(r.valor)).") { valor = texto(r.valor) }.font(Letra.pie)
                         }
                     }
                 }
                 Text(d.estado + (d.correo.map { " Según el correo, la cartera valía \(FormatoFin.dinero($0))." } ?? ""))
-                    .font(Tipo.pie).foregroundStyle(d.estado.hasPrefix("guardado") && !d.distinto ? Paleta.positivo : Paleta.textoSecundario)
+                    .font(Letra.pie).foregroundStyle(d.estado.hasPrefix("guardado") && !d.distinto ? Lienzo.positivo : Lienzo.tintaSecundaria)
                 BotonFin(texto: guardando ? "guardando." : "guardar \(d.mesTitulo).", acento: true) { Task { await guardarMes(confirmado: false) } }
                     .disabled(guardando)
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
@@ -255,18 +255,18 @@ struct FichaInversionView: View {
                     Spacer()
                     TextField("6", text: $tasa).keyboardType(.numbersAndPunctuation).multilineTextAlignment(.trailing).monospacedDigit().frame(maxWidth: 60)
                         .onSubmit { Task { await cambiarTasa() } }
-                    Text("%").foregroundStyle(Paleta.textoSecundario)
+                    Text("%").foregroundStyle(Lienzo.tintaSecundaria)
                 }
-                Text("Aportando \(din(d.ultimaAportacion)) al mes desde los \(din(d.valor)) de hoy.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                Text("Aportando \(din(d.ultimaAportacion)) al mes desde los \(din(d.valor)) de hoy.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                 ForEach(d.proyeccion, id: \.anios) { p in
                     VStack(alignment: .leading, spacing: 2) {
                         HStack {
-                            Text("dentro de \(p.anios) años.").font(Tipo.cuerpoFuerte)
+                            Text("dentro de \(p.anios) años.").font(Letra.cuerpoFuerte)
                             Spacer()
-                            Text(din(p.base)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit()
+                            Text(din(p.base)).font(Letra.numero).monospacedDigit()
                         }
                         Text("pones tú \(din(p.puesto)); con \(Int(d.extra)) € más al mes, \(din(p.mas)) (+\(din(p.mas - p.base))).")
-                            .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                            .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                     }
                 }
             } header: { Text("si mantienes el ritmo.") }
@@ -275,25 +275,25 @@ struct FichaInversionView: View {
 
             Section {
                 if d.historico.isEmpty {
-                    Text("Todavía no hay meses. Apunta el primero arriba.").foregroundStyle(Paleta.textoSecundario)
+                    Text("Todavía no hay meses. Apunta el primero arriba.").foregroundStyle(Lienzo.tintaSecundaria)
                 }
                 ForEach(d.historico) { h in
                     Button { Task { await cargar(h.mes) } } label: {
                         VStack(alignment: .leading, spacing: 2) {
                             HStack {
-                                Text(h.titulo + ".").font(Tipo.cuerpoFuerte).foregroundStyle(h.mes == d.mes ? Paleta.acento : Paleta.texto)
+                                Text(h.titulo + ".").font(Letra.cuerpoFuerte).foregroundStyle(h.mes == d.mes ? Lienzo.naranjaProfundo : Lienzo.tinta)
                                 Spacer()
-                                Text(h.valor.map { din($0) } ?? "sin valor").monospacedDigit().foregroundStyle(Paleta.texto)
+                                Text(h.valor.map { din($0) } ?? "sin valor").monospacedDigit().foregroundStyle(Lienzo.tinta)
                             }
                             Text(lineaHistorico(h))
-                                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                                .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                         }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pulsable)
                 }
             } header: { Text("histórico.") }
         }
-        .font(Tipo.cuerpo)
+        .font(Letra.cuerpo)
         .scrollContentBackground(.hidden)
         .scrollDismissesKeyboard(.interactively)
     }
@@ -377,11 +377,11 @@ struct FichaFondoSeccion: View {
                 Text("TER.")
                 Spacer()
                 TextField("0,20", text: $ter).keyboardType(.decimalPad).multilineTextAlignment(.trailing).monospacedDigit().frame(maxWidth: 80)
-                Text("%").foregroundStyle(Paleta.textoSecundario)
+                Text("%").foregroundStyle(Lienzo.tintaSecundaria)
             }
             TextField("otras comisiones", text: $comisiones)
             TextField("notas", text: $notas, axis: .vertical)
-            if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+            if let aviso { Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
             Button(guardando ? "guardando." : "guardar la ficha.") { Task { await guardar() } }.disabled(guardando)
         } header: { Text("el fondo.") } footer: {
             Text("Cópialo del documento de datos fundamentales del fondo. Bitácora no lo busca ni lo comprueba.")

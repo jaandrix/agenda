@@ -89,47 +89,66 @@ struct PasarRecetaView: View {
         let nuevos = receta.ingredientes.filter { elegidos.contains($0.texto) && !ya.contains($0.texto) }.count
         NavigationStack {
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    Text("a «\(lista.nombre.lowercased())».").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.bottom, Espacio.s)
-                    ForEach(receta.ingredientes, id: \.texto) { i in
-                        let marcado = elegidos.contains(i.texto), esta = ya.contains(i.texto)
-                        let meta = [i.cantidad, esta ? "ya está en la lista" : ""].filter { !$0.isEmpty }.joined(separator: ", ")
-                        let alternar = { () -> Void in if marcado { elegidos.remove(i.texto) } else { elegidos.insert(i.texto) }; return }
-                        FilaCirculo(hecho: marcado, marcar: alternar, abrir: alternar) {
-                            EmptyView()
-                        } texto: {
-                            Text(i.texto).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).multilineTextAlignment(.leading)
-                            if !meta.isEmpty { Text(meta + ".").font(Tipo.pie).foregroundStyle(esta ? Paleta.acento : Paleta.textoSecundario) }
-                        } cola: { EmptyView() }
-                        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel(i.texto + (meta.isEmpty ? "" : ", " + meta))
-                        .accessibilityAddTraits(marcado ? .isSelected : [])
-                        .accessibilityAction { alternar() }
+                VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                    Text("a «\(lista.nombre.lowercased())».").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        .padding(.horizontal, Medida.xxs)
+                    VStack(spacing: 0) {
+                        ForEach(Array(receta.ingredientes.enumerated()), id: \.element.texto) { k, i in
+                            if k > 0 { SeparadorFila(sangria: Medida.toque) }
+                            fila(i)
+                        }
                     }
-                    HStack {
-                        Button("todos.") { elegidos = Set(receta.ingredientes.map(\.texto)) }
-                        Button("ninguno.") { elegidos = [] }
+                    .tarjeta(relleno: Medida.s)
+                    HStack(spacing: Medida.xs) {
+                        Button("todos.") { Haptica.seleccion(); elegidos = Set(receta.ingredientes.map(\.texto)) }
+                            .buttonStyle(.capsula(.claro))
+                        Button("ninguno.") { Haptica.seleccion(); elegidos = [] }
+                            .buttonStyle(.capsula(.claro))
                     }
-                    .font(Tipo.pie).foregroundStyle(Paleta.acento).buttonStyle(.plain).frame(minHeight: 44)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Medida.margen)
+                .padding(.top, Medida.xs)
+                .padding(.bottom, Medida.l)
             }
-            .background(Paleta.fondo.ignoresSafeArea())
+            .scrollIndicators(.hidden)
+            .fondoLienzo()
             .safeAreaInset(edge: .bottom) {
-                Button(nuevos == 0 && !elegidos.isEmpty ? "anotar la receta." : "pasar \(nuevos) a la cesta.") {
+                Button(nuevos == 0 && !elegidos.isEmpty ? "anotar la receta." : "pasar \(nuevos) a la lista.") {
                     pasar(receta.ingredientes.filter { elegidos.contains($0.texto) })
                     cerrar()
                 }
-                .buttonStyle(BotonPrincipal())
+                .buttonStyle(.capsula(.oscuro, ancho: true))
                 .disabled(elegidos.isEmpty)
-                .padding(.horizontal, 20).padding(.vertical, Espacio.s)
-                .background(Paleta.fondo)
+                .padding(.horizontal, Medida.margen).padding(.vertical, Medida.s)
+                .background(Lienzo.fondo)
             }
             .navigationTitle(receta.nombre.lowercased() + ".")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } } }
         }
         .presentationDetents([.medium, .large])
+    }
+
+    private func fila(_ i: IngredienteReceta) -> some View {
+        let marcado = elegidos.contains(i.texto), esta = ya.contains(i.texto)
+        let meta = [i.cantidad, esta ? "ya está en la lista" : ""].filter { !$0.isEmpty }.joined(separator: ", ")
+        let alternar: () -> Void = { if marcado { elegidos.remove(i.texto) } else { elegidos.insert(i.texto) }; return }
+        return HStack(spacing: Medida.xxs) {
+            CasillaMarcar(hecha: marcado, marcar: alternar)
+            Button(action: alternar) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(i.texto).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta).multilineTextAlignment(.leading)
+                    if !meta.isEmpty { Text(meta + ".").font(Letra.pie).foregroundStyle(esta ? Lienzo.naranjaProfundo : Lienzo.tintaSecundaria) }
+                }
+                .padding(.vertical, Medida.xs)
+                .frame(maxWidth: .infinity, minHeight: Medida.toque, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.pulsable(0.98))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(i.texto + (meta.isEmpty ? "" : ", " + meta))
+        .accessibilityAddTraits(marcado ? .isSelected : [])
+        .accessibilityAction { alternar() }
     }
 }

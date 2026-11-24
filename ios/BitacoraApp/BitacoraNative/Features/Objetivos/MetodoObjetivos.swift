@@ -154,7 +154,7 @@ struct EditorPilar: View {
     }
 }
 
-// El paso kaizen y el mandala dentro de la ficha del objetivo.
+// El paso kaizen y el mandala dentro de la ficha del objetivo: dos tarjetas blancas; el mandala, en rejilla de squircles.
 struct MetodoSecciones: View {
     @Environment(AppCoordinator.self) private var c
     let objetivo: Objetivo
@@ -165,51 +165,60 @@ struct MetodoSecciones: View {
     private var hoy: LocalDay { CalendarioBitacora.madrid.dia(de: Date()) }
 
     var body: some View {
-        Section {
-            if let k = objetivo.kaizen {
-                let hecho = k.hechos.contains(hoy.iso)
-                let racha = k.racha(hoy: hoy)
-                FilaCirculo(hecho: hecho, marcar: { marcar(k, !hecho) }, abrir: { marcar(k, !hecho) }) { EmptyView() } texto: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(k.texto).font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
-                        Text(racha > 0 ? "\(racha) \(racha == 1 ? "día" : "días") seguidos." : (hecho ? "hecho hoy." : "hoy todavía no."))
-                            .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                    }
-                } cola: { EmptyView() }
-                .accessibilityElement(children: .combine)
-                .accessibilityValue(hecho ? "hecho hoy" : "pendiente hoy")
-                .accessibilityAction { marcar(k, !hecho) }
-                Button("cambiar el paso.") { cambiarPaso = true }.font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            } else {
-                Text("el gesto más pequeño que te acerca a esto, tan fácil que puedas hacerlo hasta el peor día: «ponerme las zapatillas», «leer una página».")
-                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                HStack {
-                    TextField("mi paso de cada día.", text: $nuevoPaso).submitLabel(.done).onSubmit(empezar)
-                    Button("empezar.", action: empezar).disabled(nuevoPaso.trimmingCharacters(in: .whitespaces).isEmpty)
+        VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+            kaizen
+            VStack(alignment: .leading, spacing: Medida.s) {
+                VStack(alignment: .leading, spacing: 2) {
+                    EtiquetaSeccion(texto: "mandala")
+                    Text("ocho pilares, ocho acciones cada uno.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        .padding(.horizontal, Medida.xxs)
                 }
+                MandalaObjetivo(titulo: objetivo.titulo, pilares: objetivo.pilares) { pilar = $0 }
             }
-        } header: { Text("paso kaizen.") }
+            .tarjeta()
+        }
         .confirmationDialog("¿cambiar el paso kaizen?", isPresented: $cambiarPaso, titleVisibility: .visible) {
             Button("cambiar.", role: .destructive) { Task { await c.guardar(MetodoOp.opQuitarKaizen(objetivo: objetivo.id)) } }
             Button("cancelar.", role: .cancel) {}
         } message: { Text("la rutina actual se pausa; su historial se conserva.") }
-
-        Section {
-            ForEach(0..<8, id: \.self) { i in
-                let p = objetivo.pilares[safe: i] ?? PilarMandala(texto: "", acciones: Array(repeating: "", count: 8))
-                Button { pilar = i } label: {
-                    HStack {
-                        Text(p.texto.isEmpty ? "+ pilar." : p.texto).foregroundStyle(p.texto.isEmpty ? Paleta.textoSecundario : Paleta.texto)
-                        Spacer()
-                        if !p.texto.isEmpty { Text("\(p.hechas)/8").font(Tipo.pie).monospacedDigit().foregroundStyle(Paleta.textoSecundario) }
-                    }
-                }
-            }
-        } header: { Text("mandala. ocho pilares, ocho acciones cada uno.") }
         .hoja(item: Binding(get: { pilar.map(PilarAbierto.init) }, set: { pilar = $0?.id })) { a in
             EditorPilar(objetivoId: objetivo.id, objetivo: objetivo.titulo, indice: a.id,
                         pilar: objetivo.pilares[safe: a.id] ?? PilarMandala(texto: "", acciones: Array(repeating: "", count: 8))).environment(c)
         }
+    }
+
+    private var kaizen: some View {
+        VStack(alignment: .leading, spacing: Medida.xs) {
+            EtiquetaSeccion(texto: "paso kaizen")
+            if let k = objetivo.kaizen {
+                let hecho = k.hechos.contains(hoy.iso)
+                let racha = k.racha(hoy: hoy)
+                HStack(spacing: Medida.xxs) {
+                    CasillaMarcar(hecha: hecho) { marcar(k, !hecho) }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(k.texto).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta)
+                        Text(hecho ? "hecho hoy." : "hoy todavía no.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                    }
+                    Spacer(minLength: Medida.xs)
+                    if racha > 0 { Chip(texto: "\(racha) \(racha == 1 ? "día" : "días").", tono: .naranja) }
+                }
+                .padding(.leading, -Medida.s)
+                .accessibilityElement(children: .combine)
+                .accessibilityValue(hecho ? "hecho hoy" : "pendiente hoy")
+                .accessibilityAction { marcar(k, !hecho) }
+                Button("cambiar el paso.") { cambiarPaso = true }
+                    .font(Letra.pieFuerte).foregroundStyle(Lienzo.tintaSecundaria)
+                    .buttonStyle(.pulsable(0.94))
+                    .padding(.horizontal, Medida.xxs)
+            } else {
+                Text("el gesto más pequeño que te acerca a esto, tan fácil que puedas hacerlo hasta el peor día: «ponerme las zapatillas», «leer una página».")
+                    .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, Medida.xxs)
+                CampoObjetivos(texto: $nuevoPaso, sugerencia: "mi paso de cada día.", boton: "empezar.", accion: empezar)
+            }
+        }
+        .tarjeta()
     }
 
     private func marcar(_ k: KaizenObjetivo, _ hecha: Bool) {
@@ -236,19 +245,29 @@ struct TableroObjetivos: View {
 
     var body: some View {
         ScrollView(.horizontal) {
-            HStack(alignment: .top, spacing: Espacio.s) {
-                ForEach(LecturaObjetivos.estados, id: \.self) { e in columna(e) }
+            HStack(alignment: .top, spacing: Medida.s) {
+                ForEach(Array(LecturaObjetivos.estados.enumerated()), id: \.element) { n, e in columna(e).entradaEscalonada(n) }
             }
-            .padding(.vertical, Espacio.xs)
+            .padding(.vertical, Medida.xxs)
         }
         .scrollIndicators(.hidden)
+        .scrollClipDisabled()
     }
 
     private func columna(_ e: String) -> some View {
         let grupo = objetivos.filter { (LecturaObjetivos.estados.contains($0.estado) ? $0.estado : "Pendiente") == e }
-        return VStack(alignment: .leading, spacing: Espacio.xs) {
-            Text(e.lowercased() + ". \(grupo.count)").font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario)
-            if grupo.isEmpty { Text("nada.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.xs) }
+        return VStack(alignment: .leading, spacing: Medida.xs) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(e.lowercased() + ".").font(Letra.seccion).foregroundStyle(Lienzo.tinta)
+                Spacer()
+                Text("\(grupo.count)").font(Letra.hora).foregroundStyle(Lienzo.tintaSecundaria)
+            }
+            .padding(.horizontal, Medida.xxs)
+            if grupo.isEmpty {
+                Text("nada.").font(Letra.pie).foregroundStyle(Lienzo.tintaTerciaria)
+                    .frame(maxWidth: .infinity, minHeight: 64)
+                    .overlay(RoundedRectangle(cornerRadius: Medida.radioFila, style: .continuous).strokeBorder(Lienzo.filoFuerte))
+            }
             ForEach(grupo) { g in tarjeta(g, e) }
         }
         .frame(width: 250, alignment: .topLeading)
@@ -256,21 +275,24 @@ struct TableroObjetivos: View {
 
     private func tarjeta(_ g: Objetivo, _ e: String) -> some View {
         let siguiente = LecturaObjetivos.estados.firstIndex(of: e).flatMap { LecturaObjetivos.estados[safe: $0 + 1] }
-        return HStack(alignment: .top, spacing: Espacio.xs) {
+        return HStack(alignment: .center, spacing: Medida.xs) {
             Button { abrir(g) } label: {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(g.titulo.lowercased() + ".").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).multilineTextAlignment(.leading)
-                    if let p = g.porcentaje { Text("\(p) %").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-                }.frame(maxWidth: .infinity, alignment: .leading)
-            }.buttonStyle(.plain)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(g.titulo.lowercased() + ".").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).multilineTextAlignment(.leading)
+                    if let a = g.avance { BarraFinaObjetivos(valor: a) }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.pulsable(0.97))
             if let siguiente {
-                Button { mover(g, siguiente) } label: { Image(systemName: "arrow.right").frame(width: 44, height: 44).contentShape(Rectangle()) }
-                    .buttonStyle(.plain).foregroundStyle(Paleta.acento)
-                    .accessibilityLabel("pasar a " + siguiente.lowercased())
+                BotonRedondo(sistema: "arrow.right", tono: .sutil, tamano: 32, etiqueta: "pasar a " + siguiente.lowercased()) {
+                    Haptica.ligera()
+                    mover(g, siguiente)
+                }
             }
         }
-        .padding(12)
-        .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .tarjeta(relleno: Medida.s, radio: Medida.radioFila)
         .contextMenu {
             ForEach(LecturaObjetivos.estados.filter { $0 != e }, id: \.self) { otro in
                 Button("pasar a " + otro.lowercased() + ".") { mover(g, otro) }

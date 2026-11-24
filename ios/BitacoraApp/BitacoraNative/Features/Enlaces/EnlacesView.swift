@@ -53,6 +53,7 @@ private enum ModalEnlace: Identifiable {
 struct EnlacesView: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.openURL) private var abrir
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var datos: ([Enlace], [CategoriaEnlace])?
     @State private var busqueda = ""
     @State private var modal: ModalEnlace?
@@ -61,23 +62,32 @@ struct EnlacesView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                CabeceraContexto(titulo: "enlaces", detalle: datos.map { "\($0.0.count) enlaces." }) {
-                    Text("tus enlaces.").font(Tipo.poppins(24, .bold, estilo: .title3)).foregroundStyle(Paleta.sobreContexto)
-                    Text("lo que guardas para volver.").font(Tipo.pie).foregroundStyle(Paleta.sobreContextoSuave)
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                CabeceraPagina(titulo: "enlaces.", subtitulo: datos.map { $0.0.count == 1 ? "1 enlace." : "\($0.0.count) enlaces." }) {
+                    HStack(spacing: Medida.xs) {
+                        BotonRedondo(sistema: "doc.on.clipboard", tono: .blanco, etiqueta: "pegar un enlace copiado") { pegar() }
+                        BotonRedondo(sistema: "plus", tono: .oscuro, etiqueta: "nuevo enlace") { Haptica.ligera(); modal = .enlace(nil, nil) }
+                    }
                 }
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: Espacio.s) {
-                        TextField("buscar.", text: $busqueda).font(Tipo.cuerpo)
-                        AccionTexto(texto: "pegar.") { pegar() }
-                        AccionTexto(texto: "+ enlace.") { modal = .enlace(nil, nil) }
-                    }.padding(.vertical, Espacio.s)
-                    if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-                    if let d = datos { contenido(d.0, d.1) } else { ProgressView().frame(maxWidth: .infinity).padding(.top, Espacio.xl) }
-                }.modifier(HojaContenido())
+                .padding(.bottom, Medida.xxs)
+                BuscadorCapsula(texto: $busqueda, placeholder: "buscar en tus enlaces")
+                if let aviso {
+                    Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        .padding(.horizontal, Medida.xxs)
+                        .transition(.opacity.combined(with: .offset(y: -4)))
+                }
+                if let d = datos { contenido(d.0, d.1) }
+                else { ProgressView().tint(Lienzo.tintaTerciaria).frame(maxWidth: .infinity).padding(.top, Medida.xl) }
             }
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.xl)
+            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: busqueda)
+            .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: aviso)
         }
-        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
+        .scrollIndicators(.hidden)
+        .scrollDismissesKeyboard(.interactively)
+        .fondoLienzo()
         .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
         .confirmarBorrado($enlaceABorrar, titulo: { "¿eliminar «\($0.titulo)»?" }, boton: "eliminar.") { e in Task { await c.guardar(.borrarEnlace(id: e.id)) } }
         .hoja(item: $modal) { m in
@@ -91,69 +101,176 @@ struct EnlacesView: View {
     @ViewBuilder private func contenido(_ enlaces: [Enlace], _ cats: [CategoriaEnlace]) -> some View {
         let visibles = enlaces.filter { LecturaEnlaces.coincide($0, busqueda) }
         let favoritos = visibles.filter(\.favorito)
-        if enlaces.isEmpty { Text("todavía no has guardado ningún enlace.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l) }
-        else if visibles.isEmpty { Text("no hay resultados.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l) }
-        if !favoritos.isEmpty {
-            CabeceraSeccion(titulo: "favoritos.", detalle: "\(favoritos.count)")
-            ForEach(favoritos) { fila($0, cats) }
+        if enlaces.isEmpty {
+            TarjetaInvitacion(frase: "todavía no has guardado", destacado: "ningún enlace.", boton: "+ enlace.") { modal = .enlace(nil, nil) }
+                .transition(.opacity)
+        } else if visibles.isEmpty {
+            TarjetaInvitacion(frase: "ningún enlace dice", destacado: "«\(busqueda.trimmingCharacters(in: .whitespaces))».", boton: "borrar búsqueda.") {
+                Haptica.ligera()
+                busqueda = ""
+            }
+            .transition(.opacity.combined(with: .scale(scale: 0.98)))
         }
-        ForEach(cats) { cat in
+        if !favoritos.isEmpty {
+            EtiquetaSeccion(texto: "favoritos")
+                .padding(.top, Medida.xs)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Medida.s) {
+                    ForEach(Array(favoritos.enumerated()), id: \.element.id) { i, e in
+                        tarjetaFavorito(e, cats).entradaEscalonada(i)
+                    }
+                }
+                .padding(.horizontal, Medida.margen)
+                .padding(.vertical, Medida.xs)
+            }
+            .padding(.horizontal, -Medida.margen)
+            .padding(.vertical, -Medida.xs)
+        }
+        ForEach(Array(cats.enumerated()), id: \.element.id) { n, cat in
             let grupo = visibles.filter { $0.categoriaId == cat.id }
             if !grupo.isEmpty || busqueda.isEmpty {
-                HStack {
-                    Circle().fill(colorHex(cat.color) ?? Paleta.acento).frame(width: 10, height: 10).accessibilityHidden(true)
-                    CabeceraSeccion(titulo: cat.nombre.lowercased() + ".", detalle: "\(grupo.count)")
-                    Spacer()
-                    Menu {
-                        Button("editar categoría.") { modal = .categoria(cat) }
-                        Button("+ enlace aquí.") { modal = .enlace(nil, nil) }
-                    } label: { Image(systemName: "ellipsis").foregroundStyle(Paleta.textoSecundario).frame(width: 32, height: 40) }
-                        .accessibilityLabel("opciones de " + cat.nombre)
+                cabeceraCategoria(cat, cuantos: grupo.count)
+                if grupo.isEmpty {
+                    Text("sin enlaces todavía.").font(Letra.pie).foregroundStyle(Lienzo.tintaTerciaria).padding(.horizontal, Medida.xxs)
+                } else {
+                    grupoTarjeta(grupo, cats).entradaEscalonada(n + 1)
                 }
-                ForEach(grupo) { fila($0, cats) }
             }
         }
         let sueltos = visibles.filter { e in e.categoriaId == nil || !cats.contains { $0.id == e.categoriaId } }
         if !sueltos.isEmpty {
-            CabeceraSeccion(titulo: "sin categoría.", detalle: "\(sueltos.count)")
-            ForEach(sueltos) { fila($0, cats) }
+            EtiquetaSeccion(texto: "sin categoría")
+                .padding(.top, Medida.xs)
+            grupoTarjeta(sueltos, cats).entradaEscalonada(cats.count + 1)
         }
-        AccionTexto(texto: "+ categoría.") { modal = .categoria(nil) }.padding(.top, Espacio.l)
+        if !enlaces.isEmpty {
+            Button("+ categoría.") { Haptica.ligera(); modal = .categoria(nil) }
+                .buttonStyle(.capsula(.claro))
+                .frame(maxWidth: .infinity)
+                .padding(.top, Medida.s)
+        }
     }
 
-    private func fila(_ e: Enlace, _ cats: [CategoriaEnlace]) -> some View {
-        HStack(spacing: Espacio.s) {
-            // Dentro de la app (SFSafariViewController, el mismo navegador que lo no migrado); «abrir en safari.» en el menú.
-            Button { if let u = URL(string: e.url) { if ["http", "https"].contains(u.scheme?.lowercased() ?? "") { c.web = u } else { abrir(u) } } } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(e.titulo.lowercased() + ".").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).lineLimit(2)
-                    Text(e.descripcion.isEmpty ? LecturaEnlaces.dominio(e.url) : e.descripcion).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(2)
-                }.frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-            }.buttonStyle(.plain).accessibilityHint("abre " + LecturaEnlaces.dominio(e.url))
-            Button { favorito(e) } label: {
-                Image(systemName: e.favorito ? "star.fill" : "star").font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(e.favorito ? Paleta.acento : Paleta.textoSecundario).frame(width: 36, height: 44)
-            }.buttonStyle(.plain).accessibilityLabel(e.favorito ? "quitar de favoritos" : "marcar como favorito")
+    private func cabeceraCategoria(_ cat: CategoriaEnlace, cuantos: Int) -> some View {
+        HStack(spacing: Medida.xs) {
+            Puntito(color: colorHex(cat.color) ?? Lienzo.tintaTerciaria, tamano: 7)
+            Text(cat.nombre.uppercased()).font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.tintaTerciaria)
+                .lineLimit(1)
+                .accessibilityAddTraits(.isHeader)
+            Text("\(cuantos)").font(Letra.pie).foregroundStyle(Lienzo.tintaTerciaria).monospacedDigit()
+            Spacer()
             Menu {
-                Button("editar.") { modal = .enlace(e, nil) }
-                Button("abrir en safari.") { if let u = URL(string: e.url) { abrir(u) } }
-                Button("duplicar.") {
-                    Task { await c.guardar(.guardarEnlace(id: LecturaEnlaces.nuevoId("link"), titulo: e.titulo + " (copia)", url: e.url, categoriaId: e.categoriaId,
-                                                                descripcion: e.descripcion, creado: ISO8601DateFormatter().string(from: Date()))) }
+                Button("editar categoría.") { modal = .categoria(cat) }
+                Button("+ enlace aquí.") { modal = .enlace(nil, nil) }
+            } label: {
+                Image(systemName: "ellipsis").font(.system(size: 14, weight: .bold)).foregroundStyle(Lienzo.tintaSecundaria)
+                    .frame(width: Medida.toque, height: Medida.toque).contentShape(Rectangle())
+            }
+            .accessibilityLabel("opciones de " + cat.nombre)
+        }
+        .padding(.leading, Medida.xxs)
+        .padding(.top, Medida.xs)
+    }
+
+    // MARK: - Favoritos: tarjetas en fila horizontal
+
+    private func tarjetaFavorito(_ e: Enlace, _ cats: [CategoriaEnlace]) -> some View {
+        Button { abrirEnlace(e) } label: {
+            VStack(alignment: .leading, spacing: Medida.s) {
+                HStack(alignment: .top) {
+                    InicialEnlace(titulo: e.titulo, url: e.url, oscuro: true)
+                    Spacer(minLength: 0)
+                    Image(systemName: "star.fill").font(.system(size: 11, weight: .bold)).foregroundStyle(Lienzo.naranja)
+                        .accessibilityHidden(true)
                 }
-                Button("copiar la dirección.") { UIPasteboard.general.string = e.url; aviso = "dirección copiada." }
-                Button("eliminar.", role: .destructive) { enlaceABorrar = e }
-            } label: { Image(systemName: "ellipsis").foregroundStyle(Paleta.textoSecundario).frame(width: 44, height: 44).contentShape(Rectangle()) }
-                .accessibilityLabel("opciones de " + e.titulo)
-        }.overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+                Spacer(minLength: 0)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(e.titulo.lowercased() + ".").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta)
+                        .lineLimit(2).multilineTextAlignment(.leading)
+                    Text(LecturaEnlaces.dominio(e.url)).font(Letra.pie).foregroundStyle(Lienzo.tintaTerciaria).lineLimit(1)
+                }
+            }
+            .frame(width: 132, height: 124, alignment: .topLeading)
+            .tarjeta(relleno: 14)
+            .contentShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+        }
+        .buttonStyle(.pulsable(0.96))
+        .accessibilityLabel(e.titulo)
+        .accessibilityHint("abre " + LecturaEnlaces.dominio(e.url))
+        .contextMenu { menuEnlace(e) }
+    }
+
+    // MARK: - Resto: filas en una tarjeta
+
+    private func grupoTarjeta(_ grupo: [Enlace], _ cats: [CategoriaEnlace]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(grupo.enumerated()), id: \.element.id) { i, e in
+                if i > 0 { SeparadorFila() }
+                fila(e)
+            }
+        }
+        .tarjeta(relleno: Medida.s)
+    }
+
+    private func fila(_ e: Enlace) -> some View {
+        HStack(spacing: 0) {
+            Button { abrirEnlace(e) } label: {
+                HStack(spacing: Medida.s) {
+                    InicialEnlace(titulo: e.titulo, url: e.url, oscuro: false)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(e.titulo.lowercased() + ".").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta)
+                            .lineLimit(2).multilineTextAlignment(.leading)
+                        Text(e.descripcion.isEmpty ? LecturaEnlaces.dominio(e.url) : LecturaEnlaces.dominio(e.url) + ", " + e.descripcion)
+                            .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
+                    }
+                    Spacer(minLength: Medida.xs)
+                }
+                .frame(minHeight: 52)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.pulsable(0.98))
+            .accessibilityElement(children: .combine)
+            .accessibilityHint("abre " + LecturaEnlaces.dominio(e.url))
+            Button { favorito(e) } label: {
+                Image(systemName: e.favorito ? "star.fill" : "star").font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(e.favorito ? Lienzo.naranja : Lienzo.tintaTerciaria)
+                    .frame(width: 36, height: Medida.toque).contentShape(Rectangle())
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .buttonStyle(.pulsable(0.85))
+            .accessibilityLabel(e.favorito ? "quitar de favoritos" : "marcar como favorito")
+            Menu { menuEnlace(e) } label: {
+                Image(systemName: "ellipsis").font(.system(size: 14, weight: .bold)).foregroundStyle(Lienzo.tintaSecundaria)
+                    .frame(width: 36, height: Medida.toque).contentShape(Rectangle())
+            }
+            .accessibilityLabel("opciones de " + e.titulo)
+        }
+    }
+
+    @ViewBuilder private func menuEnlace(_ e: Enlace) -> some View {
+        Button("editar.") { modal = .enlace(e, nil) }
+        Button(e.favorito ? "quitar de favoritos." : "a favoritos.") { favorito(e) }
+        Button("abrir en safari.") { if let u = URL(string: e.url) { abrir(u) } }
+        Button("duplicar.") {
+            Task { await c.guardar(.guardarEnlace(id: LecturaEnlaces.nuevoId("link"), titulo: e.titulo + " (copia)", url: e.url, categoriaId: e.categoriaId,
+                                                        descripcion: e.descripcion, creado: ISO8601DateFormatter().string(from: Date()))) }
+        }
+        Button("copiar la dirección.") { UIPasteboard.general.string = e.url; Haptica.ligera(); aviso = "dirección copiada." }
+        Button("eliminar.", role: .destructive) { enlaceABorrar = e }
+    }
+
+    // Dentro de la app (SFSafariViewController, el mismo navegador que lo no migrado); «abrir en safari.» en el menú.
+    private func abrirEnlace(_ e: Enlace) {
+        guard let u = URL(string: e.url) else { return }
+        if ["http", "https"].contains(u.scheme?.lowercased() ?? "") { c.web = u } else { abrir(u) }
     }
 
     private func favorito(_ e: Enlace) {
-        if !e.favorito, (datos?.0.filter(\.favorito).count ?? 0) >= 5 { aviso = "como mucho 5 favoritos: quita uno antes."; return }
+        if !e.favorito, (datos?.0.filter(\.favorito).count ?? 0) >= 5 { Haptica.error(); aviso = "como mucho 5 favoritos: quita uno antes."; return }
         aviso = nil
+        Haptica.ligera()
         Task { await c.guardar(.favoritoEnlace(id: e.id, favorito: !e.favorito)) }
     }
-
     private func pegar() {
         guard let t = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines), !t.isEmpty else { aviso = "no hay nada copiado."; return }
         aviso = nil
@@ -271,4 +388,29 @@ private func colorHex(_ h: String) -> Color? {
     let t = h.trimmingCharacters(in: CharacterSet(charactersIn: "# "))
     guard t.count == 6, let v = UInt32(t, radix: 16) else { return nil }
     return Color.deUsuario(v)
+}
+
+// La inicial del enlace en un cuadrado de esquinas continuas, como IconoCuadrado. Sin favicon a propósito: pedirlo a un
+// servicio externo le contaría qué webs guardas, y la web tampoco lo usa.
+struct InicialEnlace: View {
+    let titulo: String
+    let url: String
+    var oscuro = false
+    var tamano: CGFloat = Medida.icono
+
+    private var inicial: String {
+        let base = titulo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? LecturaEnlaces.dominio(url) : titulo
+        return base.first { $0.isLetter || $0.isNumber }.map { String($0).uppercased() } ?? "#"
+    }
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: tamano * 0.3, style: .continuous)
+            .fill(oscuro ? Lienzo.oscuro : Lienzo.sutil)
+            .frame(width: tamano, height: tamano)
+            .overlay {
+                Text(inicial).font(Letra.tituloTarjeta).foregroundStyle(oscuro ? Lienzo.sobreOscuro : Lienzo.tinta)
+                    .minimumScaleFactor(0.6).lineLimit(1)
+            }
+            .accessibilityHidden(true)
+    }
 }

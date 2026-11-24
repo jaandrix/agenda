@@ -13,11 +13,11 @@ struct MedidasView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 Text("en milisegundos: la mediana de las últimas veces y, debajo, la más rápida y la más lenta. para medir, usa la app un rato como siempre (abrirla, cada pestaña, finanzas, apuntar, marcar, deslizar la semana) y vuelve aquí.")
-                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 6).padding(.top, Espacio.m)
+                    .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 6).padding(.top, Medida.m)
                 GrupoMenu(titulo: "en este iphone.") {
                     if valores.isEmpty {
-                        Text("aún no hay medidas.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(16)
+                        Text("aún no hay medidas.").font(Letra.cuerpo).foregroundStyle(Lienzo.tintaSecundaria).padding(Medida.rellenoTarjeta)
                     }
                     ForEach(Array(valores.keys.sorted().enumerated()), id: \.element) { n, k in
                         if n > 0 { SeparadorMenu() }
@@ -29,11 +29,11 @@ struct MedidasView: View {
                         ForEach(Array(motor.keys.sorted().enumerated()), id: \.element) { n, k in
                             if n > 0 { SeparadorMenu() }
                             HStack {
-                                Text(k + ".").font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
+                                Text(k + ".").font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
                                 Spacer()
-                                Text(Self.cifra(motor[k] ?? 0)).font(Tipo.cuerpo.monospacedDigit()).foregroundStyle(Paleta.texto)
+                                Text(Self.cifra(motor[k] ?? 0)).font(Letra.cuerpo.monospacedDigit()).foregroundStyle(Lienzo.tinta)
                             }
-                            .padding(.horizontal, 16).frame(minHeight: 48)
+                            .padding(.horizontal, Medida.rellenoTarjeta).frame(minHeight: 48)
                         }
                     }
                 }
@@ -47,11 +47,11 @@ struct MedidasView: View {
                     }.buttonStyle(EstiloFila())
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, Espacio.xl)
+            .padding(.horizontal, Medida.margen)
+            .padding(.bottom, Medida.entreSecciones)
         }
         .scrollIndicators(.hidden)
-        .background(Paleta.fondo.ignoresSafeArea())
+        .fondoLienzo()
         .navigationTitle("medidas.")
         .task { await leer() }
         .refreshable { await leer() }
@@ -66,12 +66,12 @@ struct MedidasView: View {
         let mediana = o.isEmpty ? 0 : o[o.count / 2]
         return HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(k + ".").font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
+                Text(k + ".").font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
                 Text("\(o.count) veces, de \(Self.cifra(o.first ?? 0)) a \(Self.cifra(o.last ?? 0)).")
-                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
             }
             Spacer()
-            Text(Self.cifra(mediana)).font(Tipo.cuerpoFuerte.monospacedDigit()).foregroundStyle(Paleta.texto)
+            Text(Self.cifra(mediana)).font(Letra.cuerpoFuerte.monospacedDigit()).foregroundStyle(Lienzo.tinta)
         }
         .padding(.horizontal, 16).padding(.vertical, 10)
         .accessibilityElement(children: .combine)

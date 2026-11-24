@@ -25,11 +25,11 @@ struct MapaViaje: View {
     var body: some View {
         Map(initialPosition: .automatic) {
             ForEach(Array(puntos.enumerated()), id: \.element.id) { n, p in
-                Marker("\(n + 1). \(p.titulo)", coordinate: p.coord).tint(Paleta.acento)
+                Marker("\(n + 1). \(p.titulo)", coordinate: p.coord).tint(Lienzo.naranja)
             }
             if puntos.count > 1 {
                 MapPolyline(coordinates: puntos.map(\.coord))
-                    .stroke(Paleta.acento.opacity(0.7), style: StrokeStyle(lineWidth: 3, dash: [6, 6]))
+                    .stroke(Lienzo.naranja.opacity(0.7), style: StrokeStyle(lineWidth: 3, dash: [6, 6]))
             }
         }
         .accessibilityLabel("mapa del viaje con \(puntos.count) \(puntos.count == 1 ? "lugar" : "lugares")")

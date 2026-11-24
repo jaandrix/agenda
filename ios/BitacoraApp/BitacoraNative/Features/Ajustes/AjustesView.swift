@@ -1,7 +1,7 @@
 import SwiftUI
 
-// Ajustes (0.22): parte de Bitácora y no un Form gris. Cabecera con tu perfil, apariencia con muestras de verdad y los
-// grupos de la PWA (js/ajustes.js, AJUSTES_GRUPOS): apartados, avisos, conexiones, cuenta, datos y ayuda. Lo que vive
+// Ajustes (2.0): parte de Bitácora y no un Form gris. Cabecera de cuenta con la b. (o tu foto) y el correo pequeño,
+// apariencia (un solo tema, «bitácora.», y el tamaño de letra) y los grupos de la PWA (js/ajustes.js, AJUSTES_GRUPOS): apartados, avisos, conexiones, cuenta, datos y ayuda. Lo que vive
 // en la fila de `bitacora` se escribe por operaciones; lo del servidor, con las mismas RPC y funciones que la web.
 struct AjustesView: View {
     @Environment(AppCoordinator.self) private var c
@@ -12,26 +12,30 @@ struct AjustesView: View {
     @State private var confirmarSalida = false
     @State private var exportado: URL?
     @State private var exportando = false
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                CabeceraApartado(titulo: "ajustes", contexto: nil) { EmptyView() }
+                Text("ajustes.").font(Letra.titulo).foregroundStyle(Lienzo.tinta).kerning(-0.4)
+                    .accessibilityAddTraits(.isHeader)
                 CabeceraPerfil(nombre: lectura.nombre, correo: c.sesion?.email ?? "", foto: foto, resumen: resumenCuenta)
-                    .padding(.top, Espacio.m)
-                apariencia
+                    .padding(.top, Medida.s)
+                    .entradaEscalonada(0)
+                apariencia.entradaEscalonada(1)
                 GrupoMenu(titulo: "apartados.") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("eres.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    VStack(alignment: .leading, spacing: Medida.xs) {
+                        Text("eres.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                         OpcionesAjuste(opciones: [("estudiante", "estudiante."), ("trabajador", "trabajo."), ("ambos", "las dos.")],
                                  elegida: lectura.perfil) { p in ponerPerfil(p) }
                     }
-                    .padding(16)
+                    .padding(Medida.rellenoTarjeta)
                     SeparadorMenu()
                     NavigationLink { AjustesApartadosView() } label: {
                         FilaAjuste(icono: "apartados", titulo: "apartados opcionales.", detalle: "qué sale en el menú.")
                     }.buttonStyle(EstiloFila())
                 }
+                .entradaEscalonada(2)
                 GrupoMenu(titulo: "avisos.") {
                     NavigationLink { AjustesAvisosView() } label: {
                         FilaAjuste(icono: "avisos", titulo: "avisos automáticos.", detalle: detalleAvisos)
@@ -40,22 +44,24 @@ struct AjustesView: View {
                     FilaInterruptor(icono: "eventos", titulo: "avisos de eventos en este iphone.", detalle: "una hora antes de cada evento con hora.",
                                     activo: Binding(get: { avisosIphone }, set: { v in cambiarAvisosIphone(v) }))
                 }
+                .entradaEscalonada(3)
                 GrupoMenu(titulo: "seguridad.") {
                     FilaInterruptor(icono: "candado", titulo: "pedir \(Biometria.nombre) al abrir.", detalle: "solo en este iphone; tu cuenta sigue con su contraseña.",
                                     activo: Binding(get: { c.bloqueoActivo }, set: { v in Task { await c.activarBloqueo(v) } }),
                                     deshabilitado: !Biometria.disponible)
                 }
-                conexiones
-                cuenta
-                datos
-                avanzado
-                ayuda
+                .entradaEscalonada(4)
+                conexiones.entradaEscalonada(5)
+                cuenta.entradaEscalonada(6)
+                datos.entradaEscalonada(7)
+                avanzado.entradaEscalonada(8)
+                ayuda.entradaEscalonada(9)
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, Espacio.xl)
+            .padding(.horizontal, Medida.margen)
+            .padding(.bottom, Medida.entreSecciones)
         }
         .scrollIndicators(.hidden)
-        .background(Paleta.fondo.ignoresSafeArea())
+        .fondoLienzo()
         // El título va en la cabecera grande; la barra solo lo lleva para el botón de volver de las páginas.
         .navigationTitle("ajustes")
         .toolbar { ToolbarItem(placement: .principal) { EmptyView() } }
@@ -74,26 +80,39 @@ struct AjustesView: View {
 
     // MARK: grupos
 
+    // Un solo tema por ahora: el coordinador fuerza «bitácora.» (TemaElegido.unico), así que aquí solo se informa.
+    // «restablecer apariencia.» vuelve a la letra normal.
     private var apariencia: some View {
         GrupoMenu(titulo: "apariencia.") {
-            SelectorTema().padding(16)
+            FilaAjuste(icono: "tema", titulo: "tema.", detalle: "blanco, carbón y naranja coral. más temas, próximamente.") {
+                Chip(texto: TemaElegido.unico.nombre, tono: .naranja)
+            }
+            .accessibilityElement(children: .combine)
             SeparadorMenu()
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: Medida.s) {
+                HStack(spacing: Medida.s) {
                     IconoFila(id: "letra")
-                    Text("tamaño de letra.").font(Tipo.poppins(16, .medium)).foregroundStyle(Paleta.texto)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("tamaño de letra.").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta)
+                        Text("se suma al tamaño de ios (dynamic type).").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                    }
                 }
                 OpcionesAjuste(opciones: EscalaLetra.allCases.map { ($0, $0.nombre) }, elegida: c.letra) { c.ponerLetra($0) }
-                Text("se suma al tamaño de ios (dynamic type).").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
             }
-            .padding(16)
-            if c.letra != .normal || c.tema != .sistema {
+            .padding(Medida.rellenoTarjeta)
+            if c.letra != .normal {
                 SeparadorMenu()
-                Button { c.ponerLetra(.normal); c.ponerTema(.sistema) } label: {
-                    FilaAjuste(icono: "tema", titulo: "restablecer apariencia.", detalle: "tema del sistema y letra normal.") { EmptyView() }
-                }.buttonStyle(EstiloFila())
+                Button {
+                    Haptica.ligera()
+                    c.ponerLetra(.normal)
+                } label: {
+                    FilaAjuste(icono: "letra", titulo: "restablecer apariencia.", detalle: "vuelve a la letra normal.") { EmptyView() }
+                }
+                .buttonStyle(EstiloFila())
+                .transition(.opacity)
             }
         }
+        .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: c.letra)
     }
 
     private var conexiones: some View {
@@ -142,7 +161,7 @@ struct AjustesView: View {
         GrupoMenu(titulo: "datos.") {
             Button { exportar() } label: {
                 FilaAjuste(icono: "datos", titulo: "descargar mis datos.", detalle: "una copia completa en json; la web la importa.") {
-                    if exportando { ProgressView().tint(Paleta.textoSecundario) }
+                    if exportando { ProgressView().tint(Lienzo.tintaSecundaria) }
                 }
             }.buttonStyle(EstiloFila()).disabled(exportando)
             SeparadorMenu()
@@ -245,76 +264,39 @@ struct ArchivoExportado: Identifiable {
     var id: String { url.path }
 }
 
-// Tu perfil arriba: la foto de `perfiles_fotos` (en blanco y negro, como la web), el nombre y el correo.
+// Cabecera de cuenta: la b. de la marca (o tu foto de `perfiles_fotos`, en blanco y negro como la web), el nombre, el
+// correo pequeño y, si lo hay, el resumen de la suscripción en un chip.
 struct CabeceraPerfil: View {
     let nombre: String
     let correo: String
     let foto: UIImage?
     let resumen: String?
 
+    private var lado: CGFloat { Medida.iconoGrande + Medida.xs }
+
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: Medida.s) {
             Group {
                 if let foto {
                     Image(uiImage: foto).resizable().scaledToFill().enGrises()
+                        .frame(width: lado, height: lado)
+                        .clipShape(RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
                 } else {
-                    Text(String((nombre.isEmpty ? correo : nombre).prefix(1)).lowercased())
-                        .font(Tipo.poppins(26, .bold, estilo: .title2)).foregroundStyle(Paleta.sobreAcento)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Paleta.acento)
+                    LogoB(tamano: lado)
                 }
             }
-            .frame(width: 64, height: 64)
-            .clipShape(Circle())
-            .overlay(Circle().stroke(Paleta.borde, lineWidth: 1))
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(nombre.isEmpty ? "tú." : nombre.lowercased() + ".")
-                    .font(Tipo.poppins(20, .semibold, estilo: .title3)).foregroundStyle(Paleta.texto).lineLimit(1)
-                Text(correo).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(1).truncationMode(.middle)
-                if let resumen { Text(resumen).font(Tipo.pie).foregroundStyle(Paleta.acento).lineLimit(1) }
+                    .font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                Text(correo).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1).truncationMode(.middle)
+                if let resumen {
+                    Chip(texto: resumen, tono: .naranja).padding(.top, Medida.xxs)
+                }
             }
             Spacer(minLength: 0)
         }
-        .padding(16)
-        .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .tarjeta()
         .accessibilityElement(children: .combine)
-    }
-}
-
-// renderSelectorTema: una miniatura por tema que esta cuenta puede usar.
-struct SelectorTema: View {
-    @Environment(AppCoordinator.self) private var c
-    @Environment(\.colorScheme) private var esquema
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 14) {
-                IconoFila(id: "tema")
-                Text("tema.").font(Tipo.poppins(16, .medium)).foregroundStyle(Paleta.texto)
-            }
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 10)], spacing: 14) {
-                ForEach(TemaElegido.allCases.filter { $0.permitido(c.permisosTemas) }) { t in
-                    Button { c.ponerTema(t) } label: {
-                        MuestraTema(tema: t, elegido: t == c.tema, oscuroSistema: esquema == .dark)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            Text(textoTema).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private var textoTema: String {
-        switch c.tema {
-        case .sistema: return "sistema: papel de día y asfalto de noche, como tu iphone."
-        case .asfalto: return "asfalto: grafito nocturno, la arcilla solo en lo activo."
-        case .papel: return "papel: editorial crema, tinta casi negra."
-        case .acuarela: return "teja: piedra cálida y granate."
-        case .pizarra: return "pizarra: azul marino frío sobre gris azulado."
-        case .oliva: return "oliva: marfil, verde oliva y ciruela."
-        case .fundador: return "fundador: carbón y dorado, para los socios."
-        case .tinta: return "tinta: blanco, negro y grises. sigue el día y la noche de tu iphone; lo importante, en tinta plena."
-        }
     }
 }

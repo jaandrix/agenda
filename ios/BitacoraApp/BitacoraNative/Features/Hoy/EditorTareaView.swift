@@ -25,6 +25,7 @@ struct EditorTareaView: View {
     @State private var nuevaSubtarea = ""
     @FocusState private var focoSubtarea: Bool
     @FocusState private var enfocado: Bool
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
     // El id viene decidido al abrir: si «guardar.» llega dos veces, las dos llevan el mismo y la tarea sale una vez.
     init(inicial: EditorTarea) {
@@ -41,104 +42,49 @@ struct EditorTareaView: View {
 
     var body: some View {
         NavigationStack {
-            FormCasa {
-                Group {
-                Section {
-                    TextField("qué hay que hacer.", text: $titulo, axis: .vertical)
-                        .focused($enfocado)
-                    TextField("notas.", text: $notas, axis: .vertical)
-                        .lineLimit(1...4)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                    Group {
+                        textos
+                        cuando
+                        ajustes
+                    }
+                    .disabled(inicial.deTrabajo)
+                    if let error {
+                        Text(error).font(Letra.pie).foregroundStyle(Lienzo.negativo).padding(.horizontal, Medida.xxs)
+                    } else if inicial.deTrabajo {
+                        Text("viene de estudios o de un proyecto: se cambia allí, en la web. aquí solo se marca.")
+                            .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).padding(.horizontal, Medida.xxs)
+                    }
+                    if !inicial.nueva { tarjetaSubtareas }
+                    if !inicial.nueva && !inicial.deTrabajo {
+                        Button { confirmarBorrado = true } label: { Text("borrar tarea.").foregroundStyle(Lienzo.negativo) }
+                            .buttonStyle(.capsula(.blanco, ancho: true))
+                            .padding(.top, Medida.xs)
+                    }
                 }
-                .listRowBackground(Paleta.superficie)
-                Section {
-                    Picker("día.", selection: $dia) {
-                        ForEach(opcionesDia, id: \.self) { d in Text(nombre(d)).tag(d) }
-                    }
-                    if dia != nil {
-                        // Cualquier otro día, no solo hoy, mañana y pasado (mover a una fecha concreta).
-                        DatePicker("fecha.", selection: fechaElegida, displayedComponents: .date)
-                            .environment(\.locale, Locale(identifier: "es_ES"))
-                        Toggle("a una hora.", isOn: $conHora.animation(.easeOut(duration: 0.15)))
-                        if conHora {
-                            DatePicker("hora.", selection: $hora, displayedComponents: .hourAndMinute)
-                                .environment(\.locale, Locale(identifier: "es_ES"))
-                        }
-                    }
-                    Picker("prioridad.", selection: $prioridad) {
-                        Text("ninguna.").tag("")
-                        Text("alta.").tag("alta")
-                        Text("media.").tag("media")
-                        Text("baja.").tag("baja")
-                    }
-                    Picker("recordarme.", selection: $recordar) {
-                        Text("no.").tag("")
-                        if conHora && dia != nil { Text("a la hora de la tarea.").tag("hora") }
-                        Text("a una hora concreta.").tag("fecha")
-                    }
-                    if recordar == "fecha" {
-                        DatePicker("cuándo.", selection: $recordarCuando, displayedComponents: [.date, .hourAndMinute])
-                            .environment(\.locale, Locale(identifier: "es_ES"))
-                    }
-                } footer: {
-                    if let error { Text(error).foregroundStyle(Paleta.error) }
-                    else if inicial.deTrabajo { Text("viene de estudios o de un proyecto: se cambia allí, en la web. aquí solo se marca.") }
-                }
-                .listRowBackground(Paleta.superficie)
-                }
-                .disabled(inicial.deTrabajo)
-                if !inicial.nueva {
-                    Section {
-                        ForEach(subtareas) { s in
-                            Button { marcarSubtarea(s.id, !s.hecha) } label: {
-                                HStack(spacing: 12) {
-                                    // 0.27: el mismo círculo que el plan y las listas (planner-sub-check en la web).
-                                    CirculoCheck(hecho: s.hecha)
-                                    Text(s.texto).foregroundStyle(s.hecha ? Paleta.textoSecundario : Paleta.texto).strikethrough(s.hecha)
-                                }
-                                .frame(minHeight: 44)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .swipeActions { Button("quitar.", role: .destructive) { quitarSubtarea(s.id) } }
-                            .accessibilityValue(s.hecha ? "hecha" : "pendiente")
-                        }
-                        HStack {
-                            // Return añade y deja el campo abierto para la siguiente, como en la web.
-                            TextField("+ subtarea.", text: $nuevaSubtarea).submitLabel(.next).focused($focoSubtarea)
-                                .onSubmit { let habia = !nuevaSubtarea.trimmingCharacters(in: .whitespaces).isEmpty; anadirSubtarea(); focoSubtarea = habia }
-                            if !nuevaSubtarea.trimmingCharacters(in: .whitespaces).isEmpty {
-                                Button("añadir.") { anadirSubtarea() }.foregroundStyle(Paleta.acento)
-                            }
-                        }
-                    } header: {
-                        HStack {
-                            Text("subtareas.")
-                            Spacer()
-                            if !subtareas.isEmpty {
-                                let hechas = subtareas.filter(\.hecha).count
-                                Text("\(hechas)/\(subtareas.count)").monospacedDigit().fontWeight(hechas == subtareas.count ? .bold : .regular)
-                            }
-                        }
-                    }
-                    .listRowBackground(Paleta.superficie)
-                }
-                if !inicial.nueva && !inicial.deTrabajo {
-                    Section {
-                        Button("borrar.", role: .destructive) { confirmarBorrado = true }
-                    }
-                    .listRowBackground(Paleta.superficie)
+                .padding(.horizontal, Medida.margen)
+                .padding(.top, Medida.xs)
+                .padding(.bottom, Medida.xl)
+            }
+            .scrollIndicators(.hidden)
+            .scrollDismissesKeyboard(.interactively)
+            .fondoLienzo()
+            .tint(Lienzo.naranja)
+            .safeAreaInset(edge: .bottom) {
+                if !inicial.deTrabajo {
+                    Button { Task { await guardar() } } label: { Text(guardando ? "guardando." : "guardar.") }
+                        .buttonStyle(.capsula(.oscuro, ancho: true))
+                        .disabled(guardando || limpio.isEmpty)
+                        .padding(.horizontal, Medida.margen)
+                        .padding(.vertical, Medida.xs)
+                        .background { Lienzo.fondo.ignoresSafeArea() }
                 }
             }
-            .font(Tipo.cuerpo)
-            .scrollContentBackground(.hidden)
-            .background(Paleta.fondo)
             .navigationTitle(inicial.nueva ? "nueva tarea." : "tarea.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { if cambiado { descartar = true } else { cerrar() } } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("guardar.") { Task { await guardar() } }.disabled(guardando || limpio.isEmpty || inicial.deTrabajo)
-                }
             }
             .confirmationDialog("¿borrar esta tarea?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
                 Button("borrar.", role: .destructive) { Task { await enviar([.borrarTarea(id: inicial.id)]) } }
@@ -149,6 +95,135 @@ struct EditorTareaView: View {
             .preguntarAlDescartar(cambiado, preguntar: $descartar) { cerrar() }
         }
         .presentationDetents([.medium, .large])
+    }
+
+    // MARK: - Tarjetas
+
+    private var textos: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TextField("", text: $titulo, prompt: Text("qué hay que hacer.").foregroundColor(Lienzo.tintaTerciaria), axis: .vertical)
+                .font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta)
+                .focused($enfocado)
+                .padding(.vertical, Medida.xs)
+                .accessibilityLabel("qué hay que hacer")
+            SeparadorFila(sangria: 0)
+            TextField("", text: $notas, prompt: Text("notas.").foregroundColor(Lienzo.tintaTerciaria), axis: .vertical)
+                .font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
+                .lineLimit(1...4)
+                .padding(.vertical, Medida.xs)
+                .accessibilityLabel("notas")
+        }
+        .tarjeta(relleno: Medida.s)
+    }
+
+    private var cuando: some View {
+        VStack(alignment: .leading, spacing: Medida.xxs) {
+            EtiquetaSeccion(texto: "cuándo")
+            ChipsEleccion(opciones: opcionesDia.map { (valor: $0, titulo: nombre($0)) }, elegido: $dia)
+            if dia != nil {
+                SeparadorFila(sangria: 0)
+                // Cualquier otro día, no solo hoy, mañana y pasado (mover a una fecha concreta).
+                DatePicker(selection: fechaElegida, displayedComponents: .date) { rotulo("fecha.") }
+                    .environment(\.locale, Locale(identifier: "es_ES"))
+                    .frame(minHeight: Medida.toque)
+                SeparadorFila(sangria: 0)
+                Toggle(isOn: $conHora.animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento))) { rotulo("a una hora.") }
+                    .frame(minHeight: Medida.toque)
+                if conHora {
+                    DatePicker(selection: $hora, displayedComponents: .hourAndMinute) { rotulo("hora.") }
+                        .environment(\.locale, Locale(identifier: "es_ES"))
+                        .frame(minHeight: Medida.toque)
+                        .transition(.opacity.combined(with: .offset(y: -4)))
+                }
+            }
+        }
+        .tarjeta(relleno: Medida.s)
+        .animation(Muelle.o(Muelle.expandir, reducido: sinMovimiento), value: dia == nil)
+    }
+
+    private var ajustes: some View {
+        VStack(alignment: .leading, spacing: Medida.xxs) {
+            EtiquetaSeccion(texto: "prioridad")
+            ChipsEleccion(opciones: [(valor: "", titulo: "ninguna."), (valor: "alta", titulo: "alta."),
+                                     (valor: "media", titulo: "media."), (valor: "baja", titulo: "baja.")], elegido: $prioridad)
+            SeparadorFila(sangria: 0).padding(.vertical, Medida.xxs)
+            EtiquetaSeccion(texto: "recordarme")
+            ChipsEleccion(opciones: opcionesRecordar, elegido: $recordar)
+            if recordar == "fecha" {
+                DatePicker(selection: $recordarCuando, displayedComponents: [.date, .hourAndMinute]) { rotulo("cuándo.") }
+                    .environment(\.locale, Locale(identifier: "es_ES"))
+                    .frame(minHeight: Medida.toque)
+                    .transition(.opacity.combined(with: .offset(y: -4)))
+            }
+        }
+        .tarjeta(relleno: Medida.s)
+        .animation(Muelle.o(Muelle.expandir, reducido: sinMovimiento), value: recordar)
+    }
+
+    private var opcionesRecordar: [(valor: String, titulo: String)] {
+        var r: [(valor: String, titulo: String)] = [(valor: "", titulo: "no.")]
+        if conHora && dia != nil { r.append((valor: "hora", titulo: "a la hora de la tarea.")) }
+        r.append((valor: "fecha", titulo: "a una hora concreta."))
+        return r
+    }
+
+    private var tarjetaSubtareas: some View {
+        let hechas = subtareas.filter(\.hecha).count
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                EtiquetaSeccion(texto: "subtareas")
+                if !subtareas.isEmpty {
+                    Text("\(hechas)/\(subtareas.count)").font(Letra.pieFuerte).monospacedDigit()
+                        .foregroundStyle(hechas == subtareas.count ? Lienzo.positivo : Lienzo.tintaSecundaria)
+                        .contentTransition(.numericText())
+                        .padding(.trailing, Medida.xxs)
+                }
+            }
+            .padding(.bottom, Medida.xxs)
+            ForEach(subtareas) { s in
+                HStack(spacing: 2) {
+                    // El mismo cuadrado que las filas del plan (planner-sub-check en la web).
+                    CasillaMarcar(hecha: s.hecha) { marcarSubtarea(s.id, !s.hecha) }
+                        .padding(.leading, -Medida.xs)
+                    Text(s.texto).font(Letra.cuerpo)
+                        .foregroundStyle(s.hecha ? Lienzo.tintaTerciaria : Lienzo.tinta)
+                        .strikethrough(s.hecha, color: Lienzo.tintaTerciaria)
+                    Spacer(minLength: 0)
+                    Button { quitarSubtarea(s.id) } label: {
+                        Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).foregroundStyle(Lienzo.tintaTerciaria)
+                            .frame(width: Medida.toque, height: Medida.toque)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.pulsable(0.85))
+                    .accessibilityLabel("quitar «\(s.texto)»")
+                }
+                .transition(.opacity.combined(with: .offset(y: -4)))
+                SeparadorFila(sangria: Medida.toque - Medida.xs + 2)
+            }
+            HStack {
+                // Return añade y deja el campo abierto para la siguiente, como en la web.
+                TextField("", text: $nuevaSubtarea, prompt: Text("+ subtarea.").foregroundColor(Lienzo.tintaTerciaria))
+                    .font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
+                    .submitLabel(.next).focused($focoSubtarea)
+                    .onSubmit { let habia = !nuevaSubtarea.trimmingCharacters(in: .whitespaces).isEmpty; anadirSubtarea(); focoSubtarea = habia }
+                if !nuevaSubtarea.trimmingCharacters(in: .whitespaces).isEmpty {
+                    Button("añadir.") { anadirSubtarea() }
+                        .font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                        .frame(minHeight: Medida.toque)
+                        .buttonStyle(.pulsable(0.94))
+                        .transition(.opacity)
+                }
+            }
+            .frame(minHeight: Medida.toque)
+            .padding(.leading, Medida.xxs)
+        }
+        .tarjeta(relleno: Medida.s)
+        .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: subtareas)
+        .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: nuevaSubtarea.isEmpty)
+    }
+
+    private func rotulo(_ texto: String) -> some View {
+        Text(texto).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
     }
 
     private var hoy: LocalDay { CalendarioBitacora.madrid.diaLogico(Date()) }

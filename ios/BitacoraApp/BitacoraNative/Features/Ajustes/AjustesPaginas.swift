@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-// Las páginas que cuelgan de Ajustes (0.22). Misma piel que la principal: título grande, grupos sobre la superficie.
+// Las páginas que cuelgan de Ajustes (2.0). Misma piel que la principal: título pequeño-grande, grupos en tarjetas blancas.
 struct PaginaAjustes<Contenido: View>: View {
     let titulo: String
     var contexto: String?
@@ -10,14 +10,14 @@ struct PaginaAjustes<Contenido: View>: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                CabeceraApartado(titulo: titulo, contexto: contexto) { EmptyView() }
+                CabeceraPagina(titulo: titulo + ".", subtitulo: contexto)
                 contenido()
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, Espacio.xl)
+            .padding(.horizontal, Medida.margen)
+            .padding(.bottom, Medida.entreSecciones)
         }
         .scrollIndicators(.hidden)
-        .background(Paleta.fondo.ignoresSafeArea())
+        .fondoLienzo()
         .toolbar(.visible, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -31,14 +31,14 @@ struct CajaCopiar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(texto).font(Tipo.mono).foregroundStyle(Paleta.texto).textSelection(.enabled)
+            Text(texto).font(Letra.mono).foregroundStyle(Lienzo.tinta).textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
-                .background(Paleta.fondo, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Paleta.aro, lineWidth: 1))
-            Button("copiar.") { UIPasteboard.general.string = texto; c.avisar(aviso) }.buttonStyle(BotonPrincipal())
+                .background(Lienzo.fondo, in: RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous).strokeBorder(Lienzo.filo))
+            Button("copiar.") { UIPasteboard.general.string = texto; c.avisar(aviso) }.buttonStyle(.capsula(.oscuro, ancho: true))
         }
-        .padding(16)
+        .padding(Medida.rellenoTarjeta)
     }
 }
 
@@ -48,12 +48,12 @@ struct PasosLista: View {
         VStack(alignment: .leading, spacing: 10) {
             ForEach(Array(pasos.enumerated()), id: \.offset) { n, p in
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text("\(n + 1)").font(Tipo.poppins(13, .bold, estilo: .footnote)).foregroundStyle(Paleta.acento).frame(width: 16)
-                    Text(p).font(Tipo.poppins(14)).foregroundStyle(Paleta.texto).fixedSize(horizontal: false, vertical: true)
+                    Text("\(n + 1)").font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta).frame(width: 16)
+                    Text(p).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta).fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
-        .padding(16)
+        .padding(Medida.rellenoTarjeta)
     }
 }
 
@@ -88,7 +88,7 @@ struct AjustesApartadosView: View {
                     perfil = p
                     Task { await c.guardar(.ponerPerfil(perfil: p)) }
                 }
-                .padding(16)
+                .padding(Medida.rellenoTarjeta)
             }
             PieGrupo(texto: "estudiante quita empleo; trabajo quita estudios y sus avisos. lo puedes cambiar abajo uno a uno.")
             GrupoMenu(titulo: "opcionales.") {
@@ -180,24 +180,24 @@ struct AjustesConectorView: View {
                 if let tokens {
                     let propios = tokens.filter { $0.nombre != "siri" && $0.nombre != "correo" }
                     if propios.isEmpty {
-                        Text("aún no has creado ninguno.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(16)
+                        Text("aún no has creado ninguno.").font(Letra.cuerpo).foregroundStyle(Lienzo.tintaSecundaria).padding(Medida.rellenoTarjeta)
                     }
                     ForEach(Array(propios.enumerated()), id: \.element.id) { n, t in
                         if n > 0 { SeparadorMenu() }
                         FilaAjuste(icono: "conexiones", titulo: t.nombre + ".", detalle: Self.detalle(t)) {
-                            Button("revocar.") { revocar = t }.font(Tipo.poppins(14, .medium)).foregroundStyle(Paleta.error).frame(minHeight: 44)
+                            Button("revocar.") { revocar = t }.font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.negativo).frame(minHeight: 44)
                         }
                     }
                 } else {
-                    ProgressView().tint(Paleta.textoSecundario).frame(maxWidth: .infinity).padding(16)
+                    ProgressView().tint(Lienzo.tintaSecundaria).frame(maxWidth: .infinity).padding(Medida.rellenoTarjeta)
                 }
             }
-            if let error { Text(error).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, 8) }
+            if let error { Text(error).font(Letra.pie).foregroundStyle(Lienzo.negativo).padding(.top, 8) }
             HStack(spacing: 10) {
-                Button("+ claude.") { Task { await crear("claude") } }.buttonStyle(BotonSecundario())
-                Button("+ chatgpt.") { Task { await crear("chatgpt") } }.buttonStyle(BotonSecundario())
+                Button("+ claude.") { Task { await crear("claude") } }.buttonStyle(.capsula(.claro))
+                Button("+ chatgpt.") { Task { await crear("chatgpt") } }.buttonStyle(.capsula(.claro))
             }
-            .padding(.top, Espacio.m)
+            .padding(.top, Medida.m)
         }
         .task { await cargar() }
         .confirmationDialog("¿revocar este enlace?", isPresented: Binding(get: { revocar != nil }, set: { if !$0 { revocar = nil } }), titleVisibility: .visible) {
@@ -268,13 +268,15 @@ struct AjustesAtajoView: View {
                     FilaAjuste(icono: "borrar", titulo: tipo == .siri ? "cambiar el enlace." : "cambiar la dirección.", detalle: "la de ahora deja de funcionar.") { EmptyView() }
                 }
                 .buttonStyle(EstiloFila())
-                .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                .padding(.top, Espacio.m)
+                .background(Lienzo.tarjeta, in: RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+                .sombra(.suave)
+                .padding(.top, Medida.m)
             } else {
                 Button(creando ? "creando." : (tipo == .siri ? "conectar siri." : "crear mi dirección.")) { Task { await crear() } }
-                    .buttonStyle(BotonPrincipal()).disabled(creando).padding(.top, Espacio.m)
+                    .buttonStyle(.capsula(.oscuro, ancho: true)).disabled(creando).padding(.top, Medida.m)
             }
-            if let error { Text(error).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, 8) }
+            if let error { Text(error).font(Letra.pie).foregroundStyle(Lienzo.negativo).padding(.top, 8) }
         }
         .confirmationDialog("¿cambiar?", isPresented: $cambiar, titleVisibility: .visible) {
             Button("cambiar.", role: .destructive) { Task { await crear() } }
@@ -327,12 +329,14 @@ struct AjustesCalendarioView: View {
                     FilaAjuste(icono: "borrar", titulo: "cambiar el enlace.", detalle: "el anterior deja de funcionar.") { EmptyView() }
                 }
                 .buttonStyle(EstiloFila())
-                .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                .padding(.top, Espacio.m)
+                .background(Lienzo.tarjeta, in: RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+                .sombra(.suave)
+                .padding(.top, Medida.m)
             } else if let error {
-                Text(error).font(Tipo.cuerpo).foregroundStyle(Paleta.error).padding(.top, Espacio.m)
+                Text(error).font(Letra.cuerpo).foregroundStyle(Lienzo.negativo).padding(.top, Medida.m)
             } else {
-                ProgressView().tint(Paleta.textoSecundario).frame(maxWidth: .infinity).padding(.top, Espacio.xl)
+                ProgressView().tint(Lienzo.tintaSecundaria).frame(maxWidth: .infinity).padding(.top, Medida.xl)
             }
         }
         .task { await pedir() }
@@ -413,11 +417,11 @@ struct AjustesCuentaView: View {
         PaginaAjustes(titulo: "suscripción", contexto: suscripcion.map(Self.resumen)) {
             GrupoMenu(titulo: "tu plan.") {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(suscripcion.map(Self.resumen) ?? "cargando.").font(Tipo.poppins(18, .semibold, estilo: .title3)).foregroundStyle(Paleta.texto)
-                    Text(nota).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).fixedSize(horizontal: false, vertical: true)
+                    Text(suscripcion.map(Self.resumen) ?? "cargando.").font(Letra.seccion).foregroundStyle(Lienzo.tinta)
+                    Text(nota).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
+                .padding(Medida.rellenoTarjeta)
                 if pagando {
                     SeparadorMenu()
                     Button { Task { await portal() } } label: {
@@ -466,22 +470,22 @@ struct AjustesInvitarView: View {
             if let codigo {
                 GrupoMenu(titulo: "tu código.") {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(codigo.codigo).font(Tipo.poppins(24, .bold, estilo: .title2)).foregroundStyle(Paleta.texto).textSelection(.enabled)
+                        Text(codigo.codigo).font(Letra.titulo).foregroundStyle(Lienzo.tinta).textSelection(.enabled)
                         Text(codigo.amigos == 0 ? "nadie ha entrado aún con tu código." : "\(codigo.amigos) \(codigo.amigos == 1 ? "amigo ha entrado" : "amigos han entrado") con tu código.")
-                            .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                            .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
+                    .padding(Medida.rellenoTarjeta)
                 }
                 ShareLink(item: codigo.enlace, message: Text("yo organizo mi vida con bitácora. con mi enlace tienes 30 días gratis:")) {
                     Text("compartir enlace.")
                 }
-                .buttonStyle(BotonPrincipal())
-                .padding(.top, Espacio.m)
+                .buttonStyle(.capsula(.oscuro, ancho: true))
+                .padding(.top, Medida.m)
             } else if error {
-                Text("no se ha podido cargar tu código ahora mismo.").font(Tipo.cuerpo).foregroundStyle(Paleta.error).padding(.top, Espacio.m)
+                Text("no se ha podido cargar tu código ahora mismo.").font(Letra.cuerpo).foregroundStyle(Lienzo.negativo).padding(.top, Medida.m)
             } else {
-                ProgressView().tint(Paleta.textoSecundario).frame(maxWidth: .infinity).padding(.top, Espacio.xl)
+                ProgressView().tint(Lienzo.tintaSecundaria).frame(maxWidth: .infinity).padding(.top, Medida.xl)
             }
         }
         .task {
@@ -506,24 +510,24 @@ struct AjustesEliminarView: View {
                     Text("se borran tu cuenta y todos tus datos de bitácora, en la nube y en todos tus dispositivos. no se puede deshacer.")
                     Text("si pagas una suscripción, se cancela. si eres socio fundador, tu plaza no se recupera.")
                 }
-                .font(Tipo.poppins(14)).foregroundStyle(Paleta.texto).fixedSize(horizontal: false, vertical: true)
-                .padding(16)
+                .font(Letra.cuerpo).foregroundStyle(Lienzo.tinta).fixedSize(horizontal: false, vertical: true)
+                .padding(Medida.rellenoTarjeta)
                 SeparadorMenu()
                 Button { exportar() } label: {
                     FilaAjuste(icono: "datos", titulo: "descargar mis datos.", detalle: "una copia antes de borrar.") { EmptyView() }
                 }.buttonStyle(EstiloFila())
             }
-            Text("para confirmar, escribe eliminar.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.top, Espacio.l)
+            Text("para confirmar, escribe eliminar.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).padding(.top, Medida.l)
             TextField("eliminar", text: $confirmacion)
                 .textInputAutocapitalization(.never).autocorrectionDisabled()
-                .font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
+                .font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
                 .campoCasa()
                 .padding(.top, 6)
-            if let error { Text(error).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, 8) }
+            if let error { Text(error).font(Letra.pie).foregroundStyle(Lienzo.negativo).padding(.top, 8) }
             Button(eliminando ? "eliminando." : "eliminar mi cuenta para siempre.") { Task { await eliminar() } }
                 .buttonStyle(BotonPeligro())
                 .disabled(eliminando || confirmacion.trimmingCharacters(in: .whitespaces).lowercased() != "eliminar")
-                .padding(.top, Espacio.m)
+                .padding(.top, Medida.m)
         }
     }
 
@@ -539,22 +543,21 @@ struct AjustesEliminarView: View {
     }
 }
 
+// Lo irreversible (eliminar la cuenta): cápsula a todo el ancho con tinte rojo y su filete; se hunde como EstiloCapsula.
 struct BotonPeligro: ButtonStyle {
     @Environment(\.isEnabled) private var activo
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(Tipo.cuerpoFuerte)
-            .frame(maxWidth: .infinity, minHeight: 50)
-            .foregroundStyle(activo ? Paleta.error : Paleta.desactivado)
-            .background(Paleta.error.opacity(activo ? 0.12 : 0.05), in: RoundedRectangle(cornerRadius: Radio.control))
-            .overlay(RoundedRectangle(cornerRadius: Radio.control).stroke(activo ? Paleta.error : Paleta.borde, lineWidth: 1))
-            // Tinta: sin rojo, lo irreversible lleva borde doble (el secundario tiene uno solo y fino).
-            .overlay {
-                if Paleta.mono && activo {
-                    RoundedRectangle(cornerRadius: Radio.control - 3).stroke(Paleta.error, lineWidth: 1).padding(3)
-                }
-            }
-            .opacity(configuration.isPressed ? 0.7 : 1)
+            .font(Letra.boton)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, minHeight: Medida.alturaControl)
+            .foregroundStyle(activo ? Lienzo.negativo : Lienzo.tintaTerciaria)
+            .background(activo ? Lienzo.negativo.opacity(0.1) : Lienzo.sutil, in: Capsule())
+            .overlay(Capsule().strokeBorder(activo ? Lienzo.negativo : Lienzo.filo))
+            .contentShape(Capsule())
+            .scaleEffect(configuration.isPressed && !sinMovimiento ? 0.97 : 1)
+            .animation(configuration.isPressed ? Muelle.toque : Muelle.soltar, value: configuration.isPressed)
     }
 }

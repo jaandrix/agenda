@@ -12,6 +12,7 @@ final class PlanModel {
     private(set) var carga: Carga<VistaPlan> = .cargando
     private(set) var aviso: String?
     private(set) var marcadas = 0
+    private(set) var marcas = MarcasPlan()
     var desplazamiento = 0
     @ObservationIgnored private var enVuelo = Set<String>()
     // 0.23 (auditoría): la última carga gana (una lectura vieja ya no desmarca lo que se acaba de marcar).
@@ -23,12 +24,14 @@ final class PlanModel {
         let mio = turno
         let doc = await c.documentoVisible()
         let d = desplazamiento
-        let vista: VistaPlan? = await Task.detached(priority: .userInitiated) {
+        let leido: (VistaPlan, MarcasPlan)? = await Task.detached(priority: .userInitiated) {
             guard let doc else { return nil }
-            return LecturaPlanificador.vista(doc, desplazamiento: d)
+            return (LecturaPlanificador.vista(doc, desplazamiento: d), MarcasPlan.de(doc))
         }.value
         guard d == desplazamiento, mio == turno else { return }
-        if var vista {
+        if let leido {
+            var vista = leido.0
+            marcas = leido.1
             // Lo que se está guardando ahora mismo conserva el estado que ya se ve.
             if case .lista(let antes) = carga {
                 for i in vista.tareas.indices where enVuelo.contains(vista.tareas[i].id) {
@@ -98,14 +101,15 @@ struct PlanView: View {
                         c.modal = .tarea(EditorTarea(id: OperacionBitacora.nuevoIdTarea(sinDia: dia == nil), nueva: true, dia: dia))
                     },
                     abrirApartado: { c.abrirApartado($0) }
-                )
+                ),
+                marcas: modelo.marcas
             )
             .equatable()
-            .padding(.horizontal, Espacio.l - 4)
-            .padding(.bottom, Espacio.xl)
+            .padding(.horizontal, Medida.margen)
+            .padding(.bottom, Medida.entreSecciones)
         }
         .scrollIndicators(.hidden)
-        .background(Paleta.fondo.ignoresSafeArea())
+        .fondoLienzo()
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
         .task(id: "\(c.revision)-\(modelo.desplazamiento)") {
@@ -121,7 +125,17 @@ struct PlanView: View {
 extension PlanCuerpo: Equatable {
     static func == (a: PlanCuerpo, b: PlanCuerpo) -> Bool {
         a.carga == b.carga && a.desplazamiento == b.desplazamiento && a.estado == b.estado && a.pendientes == b.pendientes && a.aviso == b.aviso
+            && a.marcas == b.marcas
     }
+}
+
+enum SegmentoPlan: Hashable { case porHacer, hechas, sinDia }
+
+// Un grupo del día (foto 4: «▾ Morning»): lo arrastrado, lo que no tiene hora y la mañana, la tarde y la noche.
+struct GrupoPlan: Identifiable {
+    let id: String
+    let titulo: String
+    let tareas: [TareaPlan]
 }
 
 // La pantalla sin estado propio: recibe lo que pinta y qué hacer. Así se puede dibujar igual en las capturas del CI.
@@ -143,45 +157,57 @@ struct PlanCuerpo: View {
     let pendientes: Int
     let aviso: String?
     var acciones = Acciones()
+    var marcas = MarcasPlan()
     @State var verTodasSinDia = false
     @State var moviendo: TareaPlan?
     @State var verRecuerdos = false
+    @State var segmento: SegmentoPlan = .porHacer
+    // Lo marcado en esta visita se queda en «por hacer», tachado y al final de su grupo, hasta cambiar de día o de
+    // segmento (como los 30 minutos del inicio de la PWA): la fila baja con un muelle en vez de desaparecer de golpe.
+    @State var recienHechas: Set<String> = []
+    @State var plegadas: Set<String> = []
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
     var body: some View {
-        LazyVStack(alignment: .leading, spacing: 0) {
-            CabeceraApartado(titulo: "plan", contexto: contexto) {
-                if case .lista(let v) = carga, !v.tareas.isEmpty {
-                    ShareLink(item: textoCompartir(v)) {
-                        Image(systemName: "square.and.arrow.up").font(.system(size: 17, weight: .semibold)).foregroundStyle(Paleta.textoSecundario)
-                            .frame(width: 44, height: 44)
-                    }
-                    .accessibilityLabel("compartir el día")
-                }
-            }
-            selectorDia
-            if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, Espacio.s) }
+        let hoy = CalendarioBitacora.madrid.diaLogico(Date())
+        VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+            cabecera(hoy)
+            SemanaFlotante(hoy: hoy, elegido: hoy.sumando(dias: desplazamiento),
+                           puntos: { marcas.colores($0, hoy: hoy) },
+                           elegir: { desplazamiento = Self.dias(de: hoy, a: $0) })
+                .padding(.top, Medida.xxs)
+            if let aviso { Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.negativo).padding(.horizontal, Medida.xxs) }
             switch carga {
             case .cargando:
-                ProgressView().tint(Paleta.textoSecundario).frame(maxWidth: .infinity).padding(.top, Espacio.xl)
+                ProgressView().tint(Lienzo.tintaSecundaria).frame(maxWidth: .infinity).padding(.top, Medida.xl)
             case .vacia:
-                Text("aún no hay copia de tus datos en este iPhone. se traerá en cuanto haya red.")
-                    .font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.top, Espacio.l)
+                TarjetaInvitacion(frase: "aún no hay copia de tus datos en este iPhone.", destacado: "se traerá en cuanto haya red.")
             case .lista(let v):
-                agenda(v)
-                if !v.recurrentes.isEmpty { recurrentes(v) }
-                sinDia(v)
+                SegmentoCapsula(opciones: [.init(valor: SegmentoPlan.porHacer, titulo: "por hacer"),
+                                           .init(valor: SegmentoPlan.hechas, titulo: "hechas"),
+                                           .init(valor: SegmentoPlan.sinDia, titulo: "sin día")],
+                                elegido: $segmento, sobreBlanco: false)
+                    .padding(.top, Medida.xxs)
+                VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                    switch segmento {
+                    case .porHacer: porHacer(v)
+                    case .hechas: hechas(v)
+                    case .sinDia: sinDia(v)
+                    }
+                }
+                .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: firma(v))
                 // renderEnEsteDiaBoton: discreto, al final del plan de hoy y solo si hay algo.
                 if desplazamiento == 0 && !v.recuerdos.isEmpty {
-                    Button { verRecuerdos = true } label: {
-                        Text("en este día, " + (v.recuerdos.count == 1 ? "un recuerdo." : "\(v.recuerdos.count) recuerdos."))
-                            .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).underline(color: Paleta.bordeFuerte)
-                            .frame(minHeight: 44)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, Espacio.m)
+                    Button("en este día, " + (v.recuerdos.count == 1 ? "un recuerdo." : "\(v.recuerdos.count) recuerdos.")) { verRecuerdos = true }
+                        .buttonStyle(.capsula(.blanco))
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, Medida.xs)
                 }
             }
         }
+        .padding(.top, Medida.xs)
+        .onChange(of: desplazamiento) { recienHechas = [] }
+        .onChange(of: segmento) { recienHechas = [] }
         .hoja(item: $moviendo) { t in MoverAFecha(tarea: t) { d in acciones.mover(t, d) } }
         .hoja(isPresented: $verRecuerdos) {
             if case .lista(let v) = carga {
@@ -193,76 +219,189 @@ struct PlanCuerpo: View {
         }
     }
 
-    // hoy. / mañana. / pasado.: texto, la activa en tinta con la raya del acento debajo; nada de control segmentado.
-    private var selectorDia: some View {
-        HStack(spacing: Espacio.l) {
-            ForEach([(0, "hoy."), (1, "mañana."), (2, "pasado.")], id: \.0) { n, nombre in
-                Button { desplazamiento = n } label: {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(nombre).font(Tipo.poppins(17, desplazamiento == n ? .semibold : .regular, estilo: .headline))
-                            .foregroundStyle(desplazamiento == n ? Paleta.texto : Paleta.textoSecundario)
-                        Capsule().fill(desplazamiento == n ? Paleta.acento : .clear).frame(width: 22, height: 3)
-                    }
-                    .frame(minHeight: 44)
-                    .contentShape(Rectangle())
+    // «plan.» en pequeño con «4 por hacer, 2 hechas.»; a la derecha compartir el día y añadir (al día elegido, o sin
+    // día si se está viendo «sin día»).
+    private func cabecera(_ hoy: LocalDay) -> some View {
+        CabeceraPagina(titulo: "plan.", subtitulo: contexto) {
+            HStack(spacing: Medida.xxs) {
+                if case .lista(let v) = carga, !v.tareas.isEmpty {
+                    BotonCompartirRedondo(texto: textoCompartir(v), etiqueta: "compartir el día")
                 }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(desplazamiento == n ? [.isSelected, .isButton] : .isButton)
+                BotonRedondo(sistema: "plus", tono: .oscuro, etiqueta: segmento == .sinDia ? "nueva tarea sin día" : "nueva tarea") {
+                    acciones.nueva(segmento == .sinDia ? nil : hoy.sumando(dias: desplazamiento))
+                }
             }
-            Spacer()
-        }
-        .padding(.top, Espacio.m)
-    }
-
-    private func agenda(_ v: VistaPlan) -> some View {
-        let hechas = v.tareas.filter(\.hecha).count
-        return VStack(alignment: .leading, spacing: 0) {
-            CabeceraSeccion(titulo: desplazamiento == 0 ? "hoy." : (desplazamiento == 1 ? "mañana." : "pasado mañana."),
-                            detalle: "\(v.tareas.count - hechas) pendientes, \(hechas) hechas", raya: true)
-            if v.tareas.isEmpty {
-                Text("nada todavía.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
-            }
-            ForEach(v.tareas) { t in
-                FilaAgenda(hora: t.hora, titulo: t.titulo, notas: t.notas, hecho: t.hecha, acento: t.arrastrada, prioridad: t.prioridad,
-                           subtareas: t.subtareas, subHechas: t.subHechas) {
-                    acciones.marcar(t, false)
-                } abrir: { acciones.abrir(t, v.dia) }
-                .contextMenu { menu(t, v, enSinDia: false) }
-            }
-            AccionTexto(texto: "+ tarea.") { acciones.nueva(v.dia) }.padding(.top, Espacio.xs)
         }
     }
 
-    private func recurrentes(_ v: VistaPlan) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            CabeceraSeccion(titulo: "recurrentes.", detalle: "\(v.recurrentes.filter(\.hecha).count) de \(v.recurrentes.count)")
-            ForEach(v.recurrentes) { r in
-                FilaAgenda(hora: nil, titulo: r.texto, hecho: r.hecha, mostrarHora: false) { acciones.marcarRecurrente(r) }
+    // MARK: - Segmentos
+
+    @ViewBuilder private func porHacer(_ v: VistaPlan) -> some View {
+        let grupos = gruposPorHacer(v)
+        let rutinas = v.recurrentes.filter { !$0.hecha || recienHechas.contains($0.id) }
+        if grupos.isEmpty && rutinas.isEmpty {
+            TarjetaInvitacion(frase: v.tareas.isEmpty ? "nada apuntado para este día." : "todo hecho.",
+                              destacado: v.tareas.isEmpty ? nil : "lo marcado está en «hechas».",
+                              boton: "añadir tarea.") { acciones.nueva(v.dia) }
+                .transition(.opacity)
+        } else {
+            ForEach(grupos) { g in tarjetaGrupo(g, v) }
+            if !rutinas.isEmpty {
+                tarjetaRecurrentes(rutinas, detalle: "\(v.recurrentes.filter(\.hecha).count) de \(v.recurrentes.count)")
             }
+        }
+    }
+
+    @ViewBuilder private func hechas(_ v: VistaPlan) -> some View {
+        let tareas = v.tareas.filter(\.hecha)
+        let rutinas = v.recurrentes.filter(\.hecha)
+        if tareas.isEmpty && rutinas.isEmpty {
+            TarjetaInvitacion(frase: "aún no has marcado nada.", destacado: desplazamiento == 0 ? "el día acaba de empezar." : nil)
+                .transition(.opacity)
+        } else {
+            if !tareas.isEmpty { tarjetaGrupo(GrupoPlan(id: "hechas", titulo: "hechas.", tareas: tareas), v, detalle: "\(tareas.count)") }
+            if !rutinas.isEmpty { tarjetaRecurrentes(rutinas, detalle: "\(rutinas.count) de \(v.recurrentes.count)") }
         }
     }
 
     // Como en el inicio de la PWA: con contador y solo las primeras, salvo «ver todas».
-    private func sinDia(_ v: VistaPlan) -> some View {
-        let visibles = verTodasSinDia ? v.sinDia : Array(v.sinDia.prefix(3))
-        return VStack(alignment: .leading, spacing: 0) {
-            CabeceraSeccion(titulo: "pendientes sin día.", detalle: v.sinDia.isEmpty ? nil : "\(v.sinDia.count)")
-            ForEach(visibles) { t in
-                FilaAgenda(hora: nil, titulo: t.titulo, notas: t.notas, hecho: t.hecha, mostrarHora: false, prioridad: t.prioridad,
-                           subtareas: t.subtareas, subHechas: t.subHechas) {
-                    acciones.marcar(t, true)
-                } abrir: { acciones.abrir(t, nil) }
-                .contextMenu { menu(t, v, enSinDia: true) }
-            }
-            HStack(spacing: Espacio.l) {
-                AccionTexto(texto: "+ sin día.") { acciones.nueva(nil) }
-                if v.sinDia.count > 3 {
-                    Button(verTodasSinDia ? "ver menos." : "ver todas.") { verTodasSinDia.toggle() }
-                        .font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).frame(minHeight: 44)
+    @ViewBuilder private func sinDia(_ v: VistaPlan) -> some View {
+        if v.sinDia.isEmpty {
+            TarjetaInvitacion(frase: "nada pendiente sin día.", boton: "apuntar una.") { acciones.nueva(nil) }
+                .transition(.opacity)
+        } else {
+            let visibles = verTodasSinDia ? v.sinDia : Array(v.sinDia.prefix(5))
+            SeccionPlegable(titulo: "sin día.", detalle: "\(v.sinDia.count)", abierta: abierta("sinDia")) {
+                VStack(alignment: .leading, spacing: 0) {
+                    filas(visibles, v, enSinDia: true)
+                    if v.sinDia.count > 5 {
+                        Button(verTodasSinDia ? "ver menos." : "ver todas.") {
+                            withAnimation(Muelle.o(Muelle.expandir, reducido: sinMovimiento)) { verTodasSinDia.toggle() }
+                        }
+                        .font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                        .frame(minHeight: Medida.toque)
+                        .buttonStyle(.pulsable(0.94))
+                        .padding(.leading, sangria)
+                    }
                 }
             }
-            .padding(.top, Espacio.xs)
+            .tarjeta(relleno: Medida.s)
         }
+    }
+
+    // MARK: - Tarjetas y filas
+
+    private func tarjetaGrupo(_ g: GrupoPlan, _ v: VistaPlan, detalle: String? = nil) -> some View {
+        SeccionPlegable(titulo: g.titulo, detalle: detalle ?? "\(g.tareas.filter { !$0.hecha }.count)", abierta: abierta(g.id)) {
+            filas(g.tareas, v, enSinDia: false)
+        }
+        .tarjeta(relleno: Medida.s)
+        .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
+    }
+
+    private func tarjetaRecurrentes(_ lista: [RecurrenteHoy], detalle: String) -> some View {
+        SeccionPlegable(titulo: "recurrentes.", detalle: detalle, abierta: abierta("recurrentes")) {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(lista.enumerated()), id: \.element.id) { i, r in
+                    if i > 0 { SeparadorFila(sangria: sangria) }
+                    FilaTareaV2(titulo: r.texto, hecha: r.hecha, marcar: { marcarRecurrente(r) })
+                        .transition(.opacity)
+                }
+            }
+        }
+        .tarjeta(relleno: Medida.s)
+        .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
+    }
+
+    private func filas(_ tareas: [TareaPlan], _ v: VistaPlan, enSinDia: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(tareas.enumerated()), id: \.element.id) { i, t in
+                if i > 0 { SeparadorFila(sangria: sangria) }
+                FilaTareaV2(titulo: t.titulo, hora: enSinDia ? nil : t.hora, notas: t.notas, hecha: t.hecha, arrastrada: t.arrastrada,
+                            prioridad: t.prioridad, subtareas: t.subtareas, subHechas: t.subHechas,
+                            marcar: { marcar(t, enSinDia: enSinDia) },
+                            abrir: { acciones.abrir(t, enSinDia ? nil : v.dia) })
+                    .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: Medida.radioFila, style: .continuous))
+                    .contextMenu { menu(t, v, enSinDia: enSinDia) }
+                    .transition(.opacity.combined(with: .offset(y: -4)))
+            }
+        }
+    }
+
+    // El texto de la fila empieza tras la casilla (44 de área táctil, metida 8 hacia el borde, y 2 de aire).
+    private var sangria: CGFloat { Medida.toque - Medida.xs + 2 }
+
+    // MARK: - Marcar
+
+    private func marcar(_ t: TareaPlan, enSinDia: Bool) {
+        if t.hecha {
+            recienHechas.remove(t.id)
+        } else if enSinDia {
+            // La de «sin día» sale de la lista al marcarse: la casilla no llega a sonar, así que suena aquí.
+            Haptica.exito()
+        } else {
+            recienHechas.insert(t.id)
+        }
+        acciones.marcar(t, enSinDia)
+    }
+
+    private func marcarRecurrente(_ r: RecurrenteHoy) {
+        if r.hecha { recienHechas.remove(r.id) } else { recienHechas.insert(r.id) }
+        acciones.marcarRecurrente(r)
+    }
+
+    // MARK: - Grupos
+
+    private static let momentos = [("sinHora", "sin hora."), ("manana", "por la mañana."), ("tarde", "por la tarde."), ("noche", "por la noche.")]
+
+    private static func momento(_ hora: String?) -> String {
+        guard let h = hora?.split(separator: ":").first.flatMap({ Int($0) }) else { return "sinHora" }
+        switch h {
+        case 4..<14: return "manana"
+        case 14..<20: return "tarde"
+        default: return "noche"
+        }
+    }
+
+    private func gruposPorHacer(_ v: VistaPlan) -> [GrupoPlan] {
+        let visibles = v.tareas.filter { !$0.hecha || recienHechas.contains($0.id) }
+        // Dentro de cada grupo, lo recién hecho baja al final (el orden de la web se respeta en lo demás).
+        let ordenar = { (l: [TareaPlan]) -> [TareaPlan] in l.filter { !$0.hecha } + l.filter { $0.hecha } }
+        var grupos: [GrupoPlan] = []
+        let arrastradas = visibles.filter(\.arrastrada)
+        if !arrastradas.isEmpty { grupos.append(GrupoPlan(id: "arrastradas", titulo: "de otros días.", tareas: ordenar(arrastradas))) }
+        let resto = visibles.filter { !$0.arrastrada }
+        for (id, titulo) in Self.momentos {
+            let l = resto.filter { Self.momento($0.hora) == id }
+            if !l.isEmpty { grupos.append(GrupoPlan(id: id, titulo: titulo, tareas: ordenar(l))) }
+        }
+        return grupos
+    }
+
+    // Lo que cambia el orden o el estado de las filas: con esto se anima la recolocación.
+    private func firma(_ v: VistaPlan) -> [String] {
+        var f: [String] = v.tareas.map { $0.id + ($0.hecha ? "1" : "0") }
+        f += v.recurrentes.map { $0.id + ($0.hecha ? "1" : "0") }
+        f += v.sinDia.map(\.id)
+        f += recienHechas.sorted()
+        f.append(verTodasSinDia ? "todas" : "")
+        return f
+    }
+
+    private func abierta(_ id: String) -> Binding<Bool> {
+        Binding(get: { !plegadas.contains(id) }, set: { abrir in
+            if abrir { plegadas.remove(id) } else { plegadas.insert(id) }
+        })
+    }
+
+    static func dias(de a: LocalDay, a b: LocalDay) -> Int {
+        let cal: Calendar = {
+            var c = Calendar(identifier: .gregorian)
+            c.timeZone = TimeZone(identifier: "UTC")!
+            return c
+        }()
+        let fecha = { (d: LocalDay) in cal.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12)) ?? Date() }
+        return cal.dateComponents([.day], from: fecha(a), to: fecha(b)).day ?? 0
     }
 
     // «mover a una fecha.» desde el menú de la fila: un calendario y listo, sin abrir el editor.
@@ -277,8 +416,9 @@ struct PlanCuerpo: View {
                 DatePicker("fecha.", selection: $fecha, displayedComponents: .date)
                     .datePickerStyle(.graphical)
                     .environment(\.locale, Locale(identifier: "es_ES"))
-                    .tint(Paleta.acento)
-                    .padding(.horizontal)
+                    .tint(Lienzo.naranja)
+                    .tarjeta(relleno: Medida.xs)
+                    .padding(.horizontal, Medida.margen)
                     .navigationTitle("mover «\(tarea.titulo)».")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
@@ -287,7 +427,8 @@ struct PlanCuerpo: View {
                             Button("mover.") { mover(CalendarioBitacora.madrid.dia(de: fecha)); cerrar() }
                         }
                     }
-                    .background(Paleta.fondo)
+                    .frame(maxHeight: .infinity, alignment: .top)
+                    .fondoLienzo()
             }
             .presentationDetents([.medium, .large])
         }
@@ -313,8 +454,14 @@ struct PlanCuerpo: View {
         }
     }
 
+    // «hoy, 4 por hacer, 2 hechas.» (más el estado de la nube si no está en reposo).
     private var contexto: String {
-        var partes = [fecha]
+        var partes = [nombreDia]
+        if case .lista(let v) = carga {
+            let h = v.tareas.filter(\.hecha).count
+            partes.append("\(v.tareas.count - h) por hacer")
+            partes.append(h == 1 ? "1 hecha" : "\(h) hechas")
+        }
         switch estado {
         case .sinConexion: partes.append("sin conexión")
         case .error: partes.append("error al sincronizar")
@@ -323,6 +470,15 @@ struct PlanCuerpo: View {
         }
         if pendientes > 0 { partes.append("\(pendientes) por subir") }
         return partes.joined(separator: ", ") + "."
+    }
+
+    private var nombreDia: String {
+        switch desplazamiento {
+        case 0: "hoy"
+        case 1: "mañana"
+        case -1: "ayer"
+        default: fecha
+        }
     }
 
     private static let formatoFecha: DateFormatter = {
@@ -353,19 +509,29 @@ struct EnEsteDiaHoja: View {
     let abrir: (String) -> Void
     @Environment(\.dismiss) private var cerrar
 
+    private static let meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre",
+                                "noviembre", "diciembre"]
+
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("lo que pasó un \(hoy.day) de \(PanoramaView.meses[hoy.month - 1]) de otros años.")
-                        .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.bottom, Espacio.s)
-                    ForEach(recuerdos) { r in
-                        Button { abrir(r.vista) } label: { fila(r) }.buttonStyle(.plain)
+                VStack(alignment: .leading, spacing: Medida.s) {
+                    Text("lo que pasó un \(hoy.day) de \(Self.meses[hoy.month - 1]) de otros años.")
+                        .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        .padding(.horizontal, Medida.xxs)
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(recuerdos.enumerated()), id: \.offset) { i, r in
+                            if i > 0 { SeparadorFila() }
+                            Button { abrir(r.vista) } label: { fila(r) }
+                                .buttonStyle(Pulsable(escala: 0.98, haptica: false))
+                                .entradaEscalonada(i)
+                        }
                     }
+                    .tarjeta(relleno: Medida.s)
                 }
-                .padding(.horizontal, 20).padding(.bottom, Espacio.xl)
+                .padding(.horizontal, Medida.margen).padding(.bottom, Medida.xl)
             }
-            .background(Paleta.fondo)
+            .fondoLienzo()
             .navigationTitle("en este día.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } } }
@@ -375,22 +541,10 @@ struct EnEsteDiaHoja: View {
 
     private func fila(_ r: Recuerdo) -> some View {
         let anios = hoy.year - r.anio
-        return HStack(alignment: .firstTextBaseline, spacing: Espacio.m) {
-            Text(anios == 1 ? "hace un año" : "hace \(anios) años")
-                .font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario)
-                .frame(width: Tipo.tamano(92), alignment: .leading)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(r.titulo).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).multilineTextAlignment(.leading)
-                Text("\(r.tipo), \(String(r.anio)).").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            }
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Paleta.textoSecundario)
+        return FilaTarjeta(icono: r.vista, titulo: r.titulo, detalle: "\(r.tipo), \(String(r.anio)).") {
+            Text(anios == 1 ? "hace un año" : "hace \(anios) años").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+            FlechaFila()
         }
-        .padding(.vertical, 10)
-        .frame(minHeight: 52)
-        .contentShape(Rectangle())
-        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-        .accessibilityElement(children: .combine)
         .accessibilityHint("abre \(Apartados.nombre(r.vista))")
     }
 }
