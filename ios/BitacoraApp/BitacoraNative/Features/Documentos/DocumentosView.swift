@@ -38,6 +38,7 @@ enum LecturaDocumentos {
 struct DocumentosView: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.openURL) private var abrir
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var fichas: [FichaDocumento]?
     @State private var archivos: [ArchivoDocumento]?
     @State private var errorArchivos: String?
@@ -49,62 +50,34 @@ struct DocumentosView: View {
     @State private var renombrando: ArchivoDocumento?
     @State private var nuevoNombre = ""
     @State private var borrando: ArchivoDocumento?
+    @State private var buscar = ""
 
     private var hoy: LocalDay { CalendarioBitacora.madrid.dia(de: Date()) }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                CabeceraContexto(titulo: "documentos", detalle: fichas.map { "\($0.count) fichas." }) {
-                    Text("tus papeles.").font(Tipo.poppins(24, .bold, estilo: .title3)).foregroundStyle(Paleta.sobreContexto)
-                    Text("caducidades y archivos.").font(Tipo.pie).foregroundStyle(Paleta.sobreContextoSuave)
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                CabeceraPagina(titulo: "documentos.", subtitulo: subtitulo) {
+                    BotonRedondo(sistema: "plus", tono: .oscuro, etiqueta: "nueva ficha") { nuevaFicha() }
                 }
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        CabeceraSeccion(titulo: "fichas.", detalle: fichas.map { "\($0.count)" })
-                        Spacer()
-                        AccionTexto(texto: "+ ficha.") { editando = FichaEditando(id: OperacionBitacora.nuevoIdEntrada(), ficha: nil) }
-                    }
-                    if let fichas {
-                        if fichas.isEmpty { Text("garantías, contratos, seguros, el dni... con su caducidad.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s) }
-                        ForEach(fichas) { fila($0) }
-                    } else { ProgressView().frame(maxWidth: .infinity).padding(.vertical, Espacio.l) }
-                    HStack {
-                        CabeceraSeccion(titulo: "archivos.", detalle: archivos.map { "\($0.count)" })
-                        Spacer()
-                        if subiendo { ProgressView() } else { AccionTexto(texto: "+ pdf.") { importando = true } }
-                    }
-                    .padding(.top, Espacio.l)
-                    if let errorArchivos { Text(errorArchivos).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s) }
-                    if let archivos {
-                        if archivos.isEmpty && errorArchivos == nil { Text("no hay archivos subidos.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s) }
-                        ForEach(archivos) { a in
-                            HStack(spacing: 0) {
-                                Button { Task { await ver(a) } } label: {
-                                    HStack {
-                                        Text(a.nombre).font(Tipo.cuerpo).foregroundStyle(Paleta.texto).lineLimit(2)
-                                        Spacer()
-                                        if bajando == a.nombre { ProgressView() }
-                                        else if let b = a.bytes { Text(ByteCountFormatter.string(fromByteCount: Int64(b), countStyle: .file)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-                                    }
-                                    .frame(minHeight: 48).contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain).accessibilityHint("abre el archivo")
-                                Menu { menuArchivo(a) } label: {
-                                    Image(systemName: "ellipsis").font(.system(size: 15, weight: .semibold)).foregroundStyle(Paleta.textoSecundario)
-                                        .frame(width: 44, height: 48).contentShape(Rectangle())
-                                }
-                                .accessibilityLabel("opciones de «\(a.nombre)»")
-                            }
-                            .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                            .contextMenu { menuArchivo(a) }
-                        }
-                    } else if errorArchivos == nil { ProgressView().frame(maxWidth: .infinity).padding(.vertical, Espacio.l) }
-                    AccionTexto(texto: "html y copias, en la web.") { c.web = Apartados.webURL("documents") }.padding(.top, Espacio.l)
-                }.modifier(HojaContenido())
+                .padding(.bottom, Medida.xxs)
+                BuscadorCapsula(texto: $buscar, placeholder: "buscar en tus papeles")
+                    .padding(.bottom, Medida.xs)
+                seccionFichas
+                seccionArchivos
+                Button("html y copias, en la web.") { c.web = Apartados.webURL("documents") }
+                    .buttonStyle(.capsula(.claro))
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, Medida.s)
             }
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.xl)
+            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: buscar)
         }
-        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
+        .scrollIndicators(.hidden)
+        .scrollDismissesKeyboard(.interactively)
+        .fondoLienzo()
         .refreshable { await c.sincronizar(); await cargarArchivos() }
         .task(id: c.revision) { await cargar() }
         .task { await cargarArchivos() }
@@ -123,6 +96,174 @@ struct DocumentosView: View {
     }
 
     static func preguntaBorrar(_ a: ArchivoDocumento) -> String { "¿borrar «\(a.nombre)»? no se puede deshacer." }
+
+    // MARK: - Cabecera y búsqueda
+
+    private var subtitulo: String? {
+        guard let fichas else { return nil }
+        let pronto = fichas.filter { LecturaDocumentos.estado($0, hoy: hoy).1 }.count
+        let base = fichas.count == 1 ? "1 ficha" : "\(fichas.count) fichas"
+        return pronto == 0 ? base + "." : base + ", \(pronto) por revisar."
+    }
+
+    private var consulta: String { Self.normal(buscar.trimmingCharacters(in: .whitespaces)) }
+
+    private static func normal(_ t: String) -> String {
+        t.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "es_ES"))
+    }
+
+    private var fichasVisibles: [FichaDocumento] {
+        let q = consulta
+        guard !q.isEmpty else { return fichas ?? [] }
+        return (fichas ?? []).filter { Self.normal($0.titulo + " " + $0.tipo + " " + $0.notas).contains(q) }
+    }
+
+    private var archivosVisibles: [ArchivoDocumento] {
+        let q = consulta
+        guard !q.isEmpty else { return archivos ?? [] }
+        return (archivos ?? []).filter { Self.normal($0.nombre).contains(q) }
+    }
+
+    private func nuevaFicha() {
+        Haptica.ligera()
+        editando = FichaEditando(id: OperacionBitacora.nuevoIdEntrada(), ficha: nil)
+    }
+
+    // MARK: - Fichas
+
+    @ViewBuilder private var seccionFichas: some View {
+        EtiquetaSeccion(texto: "fichas")
+        if let fichas {
+            let visibles = fichasVisibles
+            if fichas.isEmpty {
+                TarjetaInvitacion(frase: "garantías, contratos, seguros, el dni...", destacado: "con su caducidad.", boton: "+ ficha.") { nuevaFicha() }
+                    .transition(.opacity)
+            } else if visibles.isEmpty {
+                TarjetaInvitacion(frase: "ninguna ficha dice", destacado: "«\(buscar.trimmingCharacters(in: .whitespaces))».", boton: "borrar búsqueda.") {
+                    Haptica.ligera()
+                    buscar = ""
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.98)))
+            } else {
+                ForEach(Array(visibles.enumerated()), id: \.element.id) { i, f in
+                    tarjetaFicha(f)
+                        .entradaEscalonada(i)
+                        .transition(.opacity.combined(with: .scale(scale: 0.97)))
+                }
+            }
+        } else {
+            ProgressView().tint(Lienzo.tintaTerciaria).frame(maxWidth: .infinity).padding(.vertical, Medida.xl)
+        }
+    }
+
+    // La caducidad en corto para el chip; la frase entera (LecturaDocumentos.estado) va en la accesibilidad.
+    private func caducidadCorta(_ f: FichaDocumento) -> String {
+        guard let d = LocalDay(iso: f.caduca) else { return "sin caducidad." }
+        let n = LecturaEnvios.dias(desde: hoy, hasta: d)
+        if n < 0 { return "caducada." }
+        if n == 0 { return "caduca hoy." }
+        if n == 1 { return "caduca mañana." }
+        return n <= 60 ? "en \(n) días." : LecturaEnvios.corta(f.caduca) + "."
+    }
+
+    private func tarjetaFicha(_ f: FichaDocumento) -> some View {
+        let (texto, aviso) = LecturaDocumentos.estado(f, hoy: hoy)
+        let tipo = (f.tipo.isEmpty ? "documento" : f.tipo).lowercased() + "."
+        return HStack(alignment: .top, spacing: Medida.s) {
+            Button { editando = FichaEditando(id: f.id, ficha: f) } label: {
+                HStack(alignment: .top, spacing: Medida.s) {
+                    IconoCuadrado(id: "documentos", tono: aviso ? .suave : .claro)
+                    VStack(alignment: .leading, spacing: Medida.xs) {
+                        Text(f.titulo).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta)
+                            .lineLimit(2).multilineTextAlignment(.leading)
+                        HStack(spacing: 6) {
+                            Chip(texto: tipo)
+                            Chip(texto: caducidadCorta(f), tono: aviso ? .naranja : .sutil)
+                        }
+                        if !f.notas.isEmpty {
+                            Text(f.notas).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                                .lineLimit(2).multilineTextAlignment(.leading)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.pulsable(0.98))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(f.titulo), \(tipo) \(texto)")
+            .accessibilityHint("editar la ficha")
+            if let u = URL(string: f.url), !f.url.isEmpty {
+                BotonRedondo(sistema: "arrow.up.right", tono: .sutil, tamano: 32, etiqueta: "abrir el enlace de la ficha") { abrir(u) }
+                    .padding(.top, -6).padding(.trailing, -6)
+            }
+        }
+        .tarjeta()
+    }
+
+    // MARK: - Archivos
+
+    @ViewBuilder private var seccionArchivos: some View {
+        HStack {
+            EtiquetaSeccion(texto: "archivos")
+            if subiendo {
+                ProgressView().tint(Lienzo.tintaTerciaria)
+            } else {
+                Button("+ pdf.") { Haptica.ligera(); importando = true }
+                    .font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                    .buttonStyle(.pulsable(0.94))
+                    .frame(minHeight: Medida.toque)
+                    .accessibilityLabel("subir un pdf")
+            }
+        }
+        .padding(.top, Medida.s)
+        if let errorArchivos {
+            Text(errorArchivos).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                .padding(.horizontal, Medida.xxs)
+                .transition(.opacity)
+        }
+        if let archivos {
+            let visibles = archivosVisibles
+            if archivos.isEmpty && errorArchivos == nil {
+                TarjetaInvitacion(frase: "no hay archivos subidos.", destacado: "el pdf del seguro, la garantía...", boton: "subir un pdf.") { importando = true }
+                    .transition(.opacity)
+            } else if !visibles.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(Array(visibles.enumerated()), id: \.element.id) { i, a in
+                        if i > 0 { SeparadorFila() }
+                        filaArchivo(a)
+                    }
+                }
+                .tarjeta(relleno: Medida.s)
+                .entradaEscalonada(fichasVisibles.count)
+            } else if !consulta.isEmpty {
+                Text("ningún archivo coincide.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                    .padding(.horizontal, Medida.xxs)
+            }
+        } else if errorArchivos == nil {
+            ProgressView().tint(Lienzo.tintaTerciaria).frame(maxWidth: .infinity).padding(.vertical, Medida.xl)
+        }
+    }
+
+    // La vista previa: Vista Rápida a pantalla completa; aquí, la miniatura es el icono cuadrado.
+    private func filaArchivo(_ a: ArchivoDocumento) -> some View {
+        let peso = a.bytes.map { ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file) }
+        return HStack(spacing: 0) {
+            Button { Task { await ver(a) } } label: {
+                FilaTarjeta(icono: "documentos", titulo: a.nombre, detalle: peso) {
+                    if bajando == a.nombre { ProgressView().tint(Lienzo.tintaTerciaria) }
+                }
+            }
+            .buttonStyle(.pulsable(0.98))
+            .accessibilityHint("abre el archivo")
+            Menu { menuArchivo(a) } label: {
+                Image(systemName: "ellipsis").font(.system(size: 14, weight: .bold)).foregroundStyle(Lienzo.tintaSecundaria)
+                    .frame(width: Medida.toque, height: Medida.toque).contentShape(Rectangle())
+            }
+            .accessibilityLabel("opciones de «\(a.nombre)»")
+        }
+        .contextMenu { menuArchivo(a) }
+    }
 
     @ViewBuilder private func menuArchivo(_ a: ArchivoDocumento) -> some View {
         Button("renombrar.") {
@@ -203,22 +344,6 @@ struct DocumentosView: View {
         } catch {
             errorArchivos = "sin conexión: inténtalo cuando vuelva la red."
         }
-    }
-
-    private func fila(_ f: FichaDocumento) -> some View {
-        let (texto, aviso) = LecturaDocumentos.estado(f, hoy: hoy)
-        return HStack(alignment: .firstTextBaseline) {
-            Button { editando = FichaEditando(id: f.id, ficha: f) } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text((f.tipo.isEmpty ? "documento" : f.tipo).lowercased() + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                    Text(f.titulo).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-                    Text(texto).font(Tipo.pie).foregroundStyle(aviso ? Paleta.error : Paleta.textoSecundario)
-                }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint("editar la ficha")
-            if let u = URL(string: f.url), !f.url.isEmpty { AccionTexto(texto: "abrir.") { abrir(u) } }
-        }.padding(.vertical, 10).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
     }
 
     private func cargar() async {
@@ -340,18 +465,27 @@ struct EditorFichaDocumento: View {
                     TextField("qué es (dni, seguro del coche…).", text: $titulo)
                     TextField("tipo.", text: $tipoDoc)
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: Espacio.xs) {
+                        HStack(spacing: Medida.xs) {
                             ForEach(Self.tipos, id: \.self) { t in
-                                Button(t.lowercased() + ".") { tipoDoc = t }
-                                    .font(Tipo.pie).buttonStyle(.plain).padding(.horizontal, 10).frame(minHeight: 44)
-                                    .foregroundStyle(tipoDoc == t ? Paleta.sobreAcento : Paleta.texto)
-                                    .background(tipoDoc == t ? Paleta.acento : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                let on = tipoDoc == t
+                                Button {
+                                    Haptica.seleccion()
+                                    withAnimation(Muelle.rapido) { tipoDoc = t }
+                                } label: {
+                                    Text(t.lowercased() + ".")
+                                        .font(Letra.pieFuerte).padding(.horizontal, Medida.s).frame(minHeight: Medida.toque)
+                                        .foregroundStyle(on ? Lienzo.sobreOscuro : Lienzo.tinta)
+                                        .background(on ? Lienzo.oscuro : Lienzo.sutil, in: Capsule())
+                                        .contentShape(Capsule())
+                                }
+                                .buttonStyle(.pulsable(0.94))
+                                .accessibilityAddTraits(on ? .isSelected : [])
                             }
                         }
                     }
                 }.listRowBackground(Paleta.superficie)
                 Section {
-                    Toggle("caduca.", isOn: $conFecha.animation(.easeOut(duration: 0.15)))
+                    Toggle("caduca.", isOn: $conFecha.animation(Muelle.rapido))
                     if conFecha { DatePicker("el día.", selection: $caduca, displayedComponents: .date).environment(\.locale, Locale(identifier: "es_ES")) }
                     TextField("notas.", text: $notas, axis: .vertical).lineLimit(1...5)
                 } footer: {
