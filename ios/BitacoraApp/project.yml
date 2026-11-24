@@ -126,8 +126,11 @@ targets:
         NOMBRE_APP: "Bitácora β"
         ESQUEMA_URL: bitacoradev
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # 3.1: iconos que cada cual puede elegir en Ajustes (setAlternateIconName). Xcode escribe CFBundleAlternateIcons.
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: "IconoCristal IconoArcilla IconoClaro"
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-        MARKETING_VERSION: "3.0.1"
+        MARKETING_VERSION: "3.1.0"
         ENABLE_PREVIEWS: YES
       groups:
         - unsignedBuild

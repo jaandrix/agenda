@@ -89,6 +89,8 @@ struct AjustesView: View {
             }
             .accessibilityElement(children: .combine)
             SeparadorMenu()
+            IconoAppSelector()
+            SeparadorMenu()
             VStack(alignment: .leading, spacing: Medida.s) {
                 HStack(spacing: Medida.s) {
                     IconoFila(id: "letra")
