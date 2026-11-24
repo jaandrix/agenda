@@ -20,33 +20,34 @@ struct ListasSeccion: View {
     @State private var cajaABorrar: CajaLista?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .firstTextBaseline) {
-                if cabecera { Text("listas.").font(Tipo.subtitulo).foregroundStyle(Paleta.texto).accessibilityAddTraits(.isHeader) }
-                if let v = vista, v.pendientes > 0 { Text("\(v.pendientes) por hacer").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-                Spacer()
-                Button(action: nuevaCaja) {
-                    Text("+ nueva lista.").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.acento).frame(minHeight: 44)
+        VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+            HStack(alignment: .center, spacing: Medida.xs) {
+                if cabecera { Text("listas.").font(Letra.seccion).foregroundStyle(Lienzo.tinta).accessibilityAddTraits(.isHeader) }
+                if let v = vista, v.pendientes > 0 {
+                    Chip(texto: "\(v.pendientes) por hacer").contentTransition(.numericText())
                 }
-                .buttonStyle(.plain)
+                Spacer()
+                Button("+ nueva lista.", action: nuevaCaja).buttonStyle(.capsula(.blanco))
             }
-            .padding(.top, cabecera ? Espacio.l : Espacio.s)
+            .padding(.horizontal, Medida.xxs)
             if let v = vista {
                 if v.cajas.isEmpty {
-                    Text("cajas de tareas con subtareas, para organizarte. se ven igual en el ordenador.")
-                        .font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
+                    TarjetaInvitacion(frase: "cajas de tareas con subtareas, para organizarte.", destacado: "se ven igual en el ordenador.",
+                                      boton: "nueva lista.", accion: nuevaCaja)
+                        .entradaEscalonada(0)
                 }
                 ForEach(Array(v.cajas.enumerated()), id: \.element.id) { i, caja in
                     CajaListaView(caja: caja, posicion: i, cuantas: v.cajas.count,
                                   otras: v.cajas.filter { $0.id != caja.id }, enHoy: v.enHoy, hoy: v.hoy, enfocar: $enfocar,
                                   ofrecer: { deshacer = DeshacerListas(texto: $0, ops: $1) },
                                   pedirBorrar: { cajaABorrar = $0 })
-                        .padding(.top, Espacio.m)
+                        .entradaEscalonada(i)
                 }
             } else {
-                ProgressView().tint(Paleta.textoSecundario).frame(maxWidth: .infinity).padding(.vertical, Espacio.l)
+                ProgressView().tint(Lienzo.tintaSecundaria).frame(maxWidth: .infinity).padding(.vertical, Medida.l)
             }
         }
+        .animation(Muelle.suave, value: vista?.cajas.map(\.id))
         .task(id: c.revision) {
             let doc = await c.documentoVisible()
             guard let nueva = await ultimaGana({ doc.map { VistaListas.desde($0) } }) else { return }
@@ -87,19 +88,21 @@ struct BarraDeshacerListas: View {
 
     var body: some View {
         if let d = deshacer {
-            HStack(spacing: Espacio.s) {
-                Text(d.texto).font(Tipo.pie).foregroundStyle(Paleta.texto).lineLimit(2)
+            HStack(spacing: Medida.s) {
+                Text(d.texto).font(Letra.pie).foregroundStyle(Lienzo.sobreOscuro).lineLimit(2)
                 Spacer()
                 Button("deshacer.") {
+                    Haptica.media()
                     deshacer = nil
                     Task { await c.guardar(d.ops) }
                 }
-                .font(Tipo.poppins(14, .semibold, estilo: .footnote)).foregroundStyle(Paleta.acento).buttonStyle(.plain).frame(minHeight: 44)
+                .font(Letra.boton).foregroundStyle(Lienzo.naranja).buttonStyle(.pulsable(0.94)).frame(minHeight: Medida.toque)
             }
-            .padding(.horizontal, 14)
-            .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Paleta.bordeFuerte))
-            .padding(.horizontal, 20).padding(.bottom, Espacio.s)
+            .padding(.horizontal, Medida.m)
+            .background(Lienzo.oscuro, in: RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
+            .sombra(.oscura)
+            .padding(.horizontal, Medida.margen).padding(.bottom, Medida.s)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
             .accessibilityElement(children: .contain)
             .task(id: d.id) {
                 try? await Task.sleep(nanoseconds: 7_000_000_000)
@@ -116,17 +119,19 @@ struct ListasView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                CabeceraApartado(titulo: "listas", contexto: nil) { EmptyView() }
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                CabeceraPagina(titulo: "listas.", subtitulo: "cajas de tareas con subtareas.")
                 ListasSeccion(cabecera: false, deshacer: $deshacer)
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, Espacio.xl)
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.xl)
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
-        .background(Paleta.fondo.ignoresSafeArea())
+        .fondoLienzo()
         .safeAreaInset(edge: .bottom) { BarraDeshacerListas(deshacer: $deshacer) }
+        .animation(Muelle.modal, value: deshacer?.id)
         .refreshable { await c.sincronizar() }
     }
 }
@@ -162,19 +167,23 @@ struct CajaListaView: View {
             cabeceraCaja
             ForEach(caja.filas) { f in fila(f) }
             if caja.filas.isEmpty && !(caja.ocultarHechas && caja.hechas > 0) {
-                Text("vacía. escribe abajo la primera tarea.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
+                Text("vacía. escribe abajo la primera tarea.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).padding(.vertical, Medida.s)
             }
             if caja.ocultarHechas && caja.hechas > 0 {
                 Button { guardar(op("lista", ["ocultarHechas": .bool(false)])) } label: {
                     Text((caja.hechas == 1 ? "1 hecha oculta" : "\(caja.hechas) hechas ocultas") + ". ver.")
-                        .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(minHeight: 44)
+                        .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).frame(minHeight: Medida.toque)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pulsable(0.96))
             }
-            campoAnadir
+            campoAnadir.padding(.top, Medida.xs)
         }
-        .padding(.horizontal, 14).padding(.bottom, 6)
-        .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: Radio.bloque, style: .continuous))
+        .padding(.horizontal, Medida.s).padding(.top, Medida.xxs).padding(.bottom, Medida.s)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Lienzo.tarjeta, in: RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous).strokeBorder(Lienzo.filo))
+        .sombra(.suave)
+        .animation(Muelle.suave, value: caja.filas.map(\.id))
         .onAppear {
             titulo = caja.titulo
             if enfocar == caja.id { enfocar = nil; foco = .titulo }
@@ -205,22 +214,24 @@ struct CajaListaView: View {
     // MARK: piezas
 
     private var cabeceraCaja: some View {
-        HStack(alignment: .center, spacing: Espacio.s) {
+        HStack(alignment: .center, spacing: Medida.xs) {
+            IconoCuadrado(id: "listas", tono: caja.total > 0 && caja.hechas == caja.total ? .oscuro : .claro, tamano: Medida.iconoPequeno)
             TextField("sin nombre.", text: $titulo)
-                .font(Tipo.poppins(18, .bold, estilo: .headline)).foregroundStyle(Paleta.texto)
+                .font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta)
                 .focused($foco, equals: .titulo)
                 .submitLabel(.next)
                 .onSubmit { renombrar(); foco = .anadir }
                 .background(alignment: .bottomLeading) { subrayado }
                 .accessibilityLabel("nombre de la lista")
             if caja.total > 0 {
-                Text("\(caja.hechas)/\(caja.total)").font(Tipo.poppins(13, caja.hechas == caja.total ? .bold : .regular, estilo: .footnote)).monospacedDigit()
-                    .foregroundStyle(caja.hechas == caja.total ? Paleta.texto : Paleta.textoSecundario)
+                Chip(texto: "\(caja.hechas)/\(caja.total)", tono: caja.hechas == caja.total ? .oscuro : .sutil)
+                    .contentTransition(.numericText())
+                    .animation(Muelle.rapido, value: caja.hechas)
                     .accessibilityLabel("\(caja.hechas) de \(caja.total) hechas")
             }
             Menu { menuCaja } label: {
-                Image(systemName: "ellipsis").font(.system(size: 16, weight: .semibold)).foregroundStyle(Paleta.textoSecundario)
-                    .frame(width: 44, height: 44).contentShape(Rectangle())
+                Image(systemName: "ellipsis").font(.system(size: 16, weight: .semibold)).foregroundStyle(Lienzo.tintaSecundaria)
+                    .frame(width: Medida.toque, height: Medida.toque).contentShape(Rectangle())
             }
             .accessibilityLabel("opciones de la lista")
         }
@@ -231,9 +242,9 @@ struct CajaListaView: View {
     // tinta, su gris (Color.deUsuario).
     @ViewBuilder private var subrayado: some View {
         if let hex = ListasOp.colores.first(where: { $0.0 == caja.color })?.1, !titulo.isEmpty {
-            Text(titulo).font(Tipo.poppins(18, .bold, estilo: .headline)).foregroundStyle(.clear).lineLimit(1)
+            Text(titulo).font(Letra.tituloTarjeta).foregroundStyle(.clear).lineLimit(1)
                 .background(alignment: .bottom) {
-                    Rectangle().fill(Color.deUsuario(hex).opacity(Paleta.mono ? 0.25 : 0.55)).frame(height: 9).offset(y: -3)
+                    Rectangle().fill(Color.deUsuario(hex).opacity(Paleta.mono ? 0.25 : 0.55)).frame(height: MedidaPanorama.subrayado).offset(y: -MedidaPanorama.subrayado / 3)
                 }
                 .accessibilityHidden(true)
         }
@@ -263,24 +274,26 @@ struct CajaListaView: View {
         HStack(alignment: .primeraLinea, spacing: 0) {
             Color.clear.frame(width: CGFloat(f.nivel) * Self.sangria, height: 1)
             if f.hijas > 0 {
-                Button { guardar(op("editar", ["id": .string(f.id), "plegada": .bool(!f.plegada)])) } label: {
-                    Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Paleta.textoSecundario)
+                Button {
+                    Haptica.ligera()
+                    guardar(op("editar", ["id": .string(f.id), "plegada": .bool(!f.plegada)]))
+                } label: {
+                    Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Lienzo.tintaTerciaria)
                         .rotationEffect(.degrees(f.plegada ? 0 : 90))
-                        .frame(width: 26, height: 44).contentShape(Rectangle())
+                        .animation(Muelle.expandir, value: f.plegada)
+                        .frame(width: MedidaPanorama.anchoPlegar, height: Medida.toque).contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
-                .enPrimeraLinea(16)
+                .buttonStyle(Pulsable(escala: 0.85, haptica: false))
                 .accessibilityLabel(f.plegada ? "desplegar" : "plegar")
             } else {
-                Color.clear.frame(width: 26, height: 1)
+                Color.clear.frame(width: MedidaPanorama.anchoPlegar, height: 1)
             }
-            BitacoraCheck(hecho: f.hecha) { tocarCheck(f) }
-                .enPrimeraLinea(16)
-                .accessibilityLabel("hecha")
+            // Sin enPrimeraLinea: una vista sin texto alinea su centro, que cae en el de la primera línea (fila de 44).
+            CasillaMarcar(hecha: f.hecha) { tocarCheck(f) }
                 .accessibilityValue(f.hecha ? "sí" : "no")
             if editando == f.id {
                 TextField("escribe.", text: $borrador, axis: .vertical)
-                    .font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
+                    .font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
                     .focused($foco, equals: .fila(f.id))
                     .padding(.vertical, 11)
                     .onChange(of: borrador) { _, nuevo in escribiendo(f, nuevo) }
@@ -288,35 +301,34 @@ struct CajaListaView: View {
             } else {
                 Button { empezar(f) } label: {
                     Text(f.texto.isEmpty ? "sin texto." : f.texto)
-                        .font(Tipo.cuerpo).foregroundStyle(f.hecha || f.texto.isEmpty ? Paleta.textoSecundario : Paleta.texto)
-                        .strikethrough(f.hecha, color: Paleta.textoSecundario)
+                        .font(Letra.cuerpo).foregroundStyle(f.hecha || f.texto.isEmpty ? Lienzo.tintaTerciaria : Lienzo.tinta)
+                        .strikethrough(f.hecha, color: Lienzo.tintaTerciaria)
                         .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .frame(maxWidth: .infinity, minHeight: Medida.toque, alignment: .leading)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pulsable(0.98))
                 .enPrimeraLinea(16)
                 .accessibilityHint("toca para editarla")
             }
             if f.hijas > 0 {
-                Text("\(f.hijasHechas)/\(f.hijas)").font(Tipo.poppins(12, f.hijasHechas == f.hijas ? .bold : .regular, estilo: .caption)).monospacedDigit()
-                    .foregroundStyle(f.hijasHechas == f.hijas ? Paleta.texto : Paleta.textoSecundario)
-                    .padding(.leading, 6)
+                Text("\(f.hijasHechas)/\(f.hijas)").font(f.hijasHechas == f.hijas ? Letra.pieFuerte : Letra.pie).monospacedDigit()
+                    .foregroundStyle(f.hijasHechas == f.hijas ? Lienzo.tinta : Lienzo.tintaSecundaria)
+                    .padding(.leading, Medida.xxs)
                     .enPrimeraLinea(12)
                     .accessibilityLabel("\(f.hijasHechas) de \(f.hijas) subtareas hechas")
             }
             if !f.hecha && enHoy[f.id] != nil {
-                Text("en hoy.").font(Tipo.poppins(12, .medium, estilo: .caption)).foregroundStyle(Paleta.textoSecundario)
-                    .padding(.leading, 6).enPrimeraLinea(12)
+                Chip(texto: "en hoy.", tono: .naranja)
+                    .padding(.leading, Medida.xxs)
             }
             Menu { menuFila(f) } label: {
-                Image(systemName: "ellipsis").font(.system(size: 14, weight: .semibold)).foregroundStyle(Paleta.textoSecundario)
-                    .frame(width: 36, height: 44).contentShape(Rectangle())
+                Image(systemName: "ellipsis").font(.system(size: 14, weight: .semibold)).foregroundStyle(Lienzo.tintaTerciaria)
+                    .frame(width: MedidaPanorama.anchoMenuFila, height: Medida.toque).contentShape(Rectangle())
             }
-            .enPrimeraLinea(16)
             .accessibilityLabel("opciones de «\(f.texto)»")
         }
-        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1).padding(.leading, CGFloat(f.nivel) * Self.sangria + 26) }
+        .overlay(alignment: .bottom) { Rectangle().fill(Lienzo.filo).frame(height: 1).padding(.leading, CGFloat(f.nivel) * Self.sangria + MedidaPanorama.anchoPlegar) }
         .contextMenu { menuFila(f) }
     }
 
@@ -345,30 +357,34 @@ struct CajaListaView: View {
     private var campoAnadir: some View {
         VStack(alignment: .leading, spacing: 2) {
             if let d = destino {
-                HStack(spacing: Espacio.xs) {
-                    Text(d.etiqueta).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(1)
-                    Button { destino = nil } label: {
-                        Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).foregroundStyle(Paleta.textoSecundario)
-                            .frame(width: 32, height: 32).contentShape(Rectangle())
+                HStack(spacing: Medida.xxs) {
+                    Chip(texto: d.etiqueta)
+                    Button { withAnimation(Muelle.rapido) { destino = nil } } label: {
+                        Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).foregroundStyle(Lienzo.tintaSecundaria)
+                            .frame(width: Medida.toque, height: Medida.toque).contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pulsable(0.85))
                     .accessibilityLabel("añadir al final")
                 }
-                .padding(.top, Espacio.xs)
+                .padding(.leading, CGFloat(destino?.nivel ?? 0) * Self.sangria)
+                .transition(.opacity.combined(with: .offset(y: 4)))
             }
-            HStack(spacing: Espacio.s) {
-                Image(systemName: "plus").font(.system(size: 13, weight: .bold)).foregroundStyle(Paleta.textoSecundario)
-                    .frame(width: 26)
-                    .padding(.leading, CGFloat(destino?.nivel ?? 0) * Self.sangria)
+            HStack(spacing: Medida.xs) {
+                Image(systemName: "plus").font(.system(size: 13, weight: .bold)).foregroundStyle(foco == .anadir ? Lienzo.tinta : Lienzo.tintaTerciaria)
                     .accessibilityHidden(true)
                 TextField((destino?.nivel ?? 0) > 0 ? "añadir subtarea." : "añadir tarea.", text: $texto, axis: .vertical)
-                    .font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
+                    .font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
+                    .lineLimit(1...4)
                     .focused($foco, equals: .anadir)
                     .onChange(of: texto) { _, nuevo in anadiendo(nuevo) }
                     .accessibilityLabel("añadir tarea a \(caja.titulo.isEmpty ? "la lista" : caja.titulo)")
             }
-            .frame(minHeight: 48)
+            .padding(.horizontal, Medida.m).padding(.vertical, Medida.xs)
+            .frame(minHeight: Medida.alturaControl)
+            .background(Lienzo.sutil, in: Capsule())
+            .padding(.leading, CGFloat(destino?.nivel ?? 0) * Self.sangria)
         }
+        .animation(Muelle.rapido, value: destino)
     }
 
     // MARK: acciones
