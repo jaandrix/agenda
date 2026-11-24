@@ -122,6 +122,7 @@ struct InicioView: View {
     @State private var aviso: String?
     @State private var enVuelo = Set<String>()
     @State private var foto: Data?
+    @State private var perfilAbierto = false
     @State private var tiempo: Tiempo?
     @State private var bus: TiemposParada?
     @State private var elegido: LocalDay?
@@ -135,7 +136,7 @@ struct InicioView: View {
                          irA: { c.pestana = $0 },
                          foto: foto, tiempo: tiempo, bus: bus,
                          abrirEvento: { e in if let d = vista?.dia { c.modal = .ficha(e, dia: d) } },
-                         abrirPerfil: { c.web = Apartados.webURL("friends") },
+                         abrirPerfil: { perfilAbierto = true },
                          abrirTiempo: { c.modal = .tiempo },
                          abrirBus: { c.pestana = .mas; c.rutaMas = ["transporte"] },
                          nombresPostes: nombresPostes,
@@ -148,6 +149,7 @@ struct InicioView: View {
         .fondoLienzo()
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar(); await cargarServicios(forzar: true) }
+        .hoja(isPresented: $perfilAbierto, onDismiss: { if let uid = c.sesion?.userId { foto = c.entorno.servicios.perfil.guardada(uid) } }) { PerfilHoja() }
         .task(id: "\(c.revision)-\(elegido?.iso ?? "")") { await cargar() }
         .task(id: vista?.ciudad.clave) { await cargarServicios(forzar: false) }
         // Nada se repinta cada 30 s: solo el bloque «siguiente.» cada minuto (su TimelineView) y la portada al cambiar
