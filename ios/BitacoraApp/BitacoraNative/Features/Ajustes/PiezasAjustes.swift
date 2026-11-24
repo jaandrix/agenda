@@ -1,27 +1,38 @@
 import SwiftUI
 import UIKit
 
-// Piezas de Ajustes (0.22): grupos como los del menú (GrupoMenu), filas con su icono del catálogo y un estado pulsado
-// del tema. Sin `Form` del sistema.
+// Piezas de Ajustes (2.0): grupos como los del menú (GrupoMenu, tarjeta blanca), filas con su IconoCuadrado del
+// catálogo, interruptores con tinte naranja y opciones como segmentos en cápsula. Sin `Form` del sistema.
 
 struct EstiloFila: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .background(configuration.isPressed ? Paleta.pulsado : Color.clear)
+            .background(configuration.isPressed ? Lienzo.sutilSuave : Color.clear)
             .contentShape(Rectangle())
+            .animation(configuration.isPressed ? Muelle.toque : Muelle.soltar, value: configuration.isPressed)
     }
 }
 
+// Icono de una fila de ajuste. Lo peligroso (eliminar la cuenta) en rojo sobre su tinte, con la misma geometría que
+// IconoCuadrado.
 struct IconoFila: View {
     let id: String
     var peligro = false
 
     var body: some View {
-        Icono(id: id)
-            .foregroundStyle(peligro ? (Paleta.mono ? Paleta.sobreAcento : Paleta.error) : Paleta.texto)
-            .frame(width: 32, height: 32)
-            // Tinta: lo peligroso, sin rojo, en el cuadrado invertido.
-            .background(peligro ? (Paleta.mono ? Paleta.acento : Paleta.error.opacity(0.12)) : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        if peligro {
+            RoundedRectangle(cornerRadius: Medida.radioIcono, style: .continuous)
+                .fill(Lienzo.negativo.opacity(0.1))
+                .overlay {
+                    Icono(id: id, detalle: Lienzo.negativo)
+                        .scaleEffect(Medida.icono * 0.56 / 24)
+                        .foregroundStyle(Lienzo.negativo)
+                }
+                .frame(width: Medida.icono, height: Medida.icono)
+                .accessibilityHidden(true)
+        } else {
+            IconoCuadrado(id: id, tono: .claro)
+        }
     }
 }
 
@@ -34,58 +45,68 @@ struct FilaAjuste<Cola: View>: View {
     @ViewBuilder var cola: () -> Cola
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: Medida.s) {
             IconoFila(id: icono, peligro: peligro)
             VStack(alignment: .leading, spacing: 2) {
-                Text(titulo).font(Tipo.poppins(16, .medium)).foregroundStyle(peligro ? Paleta.error : Paleta.texto)
+                Text(titulo).font(Letra.cuerpoFuerte).foregroundStyle(peligro ? Lienzo.negativo : Lienzo.tinta)
                 if let detalle, !detalle.isEmpty {
-                    Text(detalle).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).fixedSize(horizontal: false, vertical: true)
+                    Text(detalle).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).fixedSize(horizontal: false, vertical: true)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             cola()
         }
-        .padding(.horizontal, 16).padding(.vertical, 10)
-        .frame(minHeight: 56)
+        .padding(.horizontal, Medida.rellenoTarjeta).padding(.vertical, Medida.xs)
+        .frame(minHeight: 52)
         .contentShape(Rectangle())
     }
 }
 
-extension FilaAjuste where Cola == FlechaFila {
+extension FilaAjuste where Cola == FlechaAjuste {
     init(icono: String, titulo: String, detalle: String? = nil, peligro: Bool = false, web: Bool = false) {
-        self.init(icono: icono, titulo: titulo, detalle: detalle, peligro: peligro) { FlechaFila(web: web) }
+        self.init(icono: icono, titulo: titulo, detalle: detalle, peligro: peligro) { FlechaAjuste(web: web) }
     }
 }
 
-struct FlechaFila: View {
+// La flecha de la fila (FlechaFila del DesignSystem) con «web» discreto delante si se abre en la web.
+struct FlechaAjuste: View {
     var web = false
     var body: some View {
-        HStack(spacing: 6) {
-            if web { Text("web.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-            Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(Paleta.textoApagado)
+        HStack(spacing: Medida.xs) {
+            if web { Text("web").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
+            FlechaFila()
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(web ? "se abre en la web" : "")
         .accessibilityHidden(!web)
     }
 }
 
-// Interruptor con la tinta del tema: encendido en el acento, apagado con el aro del tema (3:1 con el fondo).
+// Interruptor 2.0: carril gris sutil que se tiñe de naranja al encenderse; la bola blanca se desliza con muelle.
 struct InterruptorCasa: ToggleStyle {
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
+
     func makeBody(configuration: Configuration) -> some View {
-        Button { configuration.isOn.toggle() } label: {
+        Button {
+            Haptica.ligera()
+            withAnimation(Muelle.o(Muelle.rapido, reducido: sinMovimiento)) { configuration.isOn.toggle() }
+        } label: {
             HStack(spacing: 0) {
                 configuration.label.frame(maxWidth: .infinity, alignment: .leading)
                 ZStack(alignment: configuration.isOn ? .trailing : .leading) {
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .fill(configuration.isOn ? Paleta.acento : Paleta.tinteTexto)
-                        .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).stroke(configuration.isOn ? Color.clear : Paleta.aro, lineWidth: 1))
+                    Capsule()
+                        .fill(configuration.isOn ? Lienzo.naranja : Lienzo.sutil)
+                        .overlay(Capsule().strokeBorder(configuration.isOn ? Color.clear : Lienzo.filoFuerte))
                         .frame(width: 50, height: 30)
-                    Circle().fill(configuration.isOn ? Paleta.sobreAcento : Paleta.textoSecundario)
-                        .frame(width: 22, height: 22).padding(4)
+                    Circle().fill(Lienzo.tarjeta)
+                        .frame(width: 24, height: 24).padding(3)
+                        .sombra(.suave)
                 }
-                .animation(UIAccessibility.isReduceMotionEnabled ? nil : .easeOut(duration: 0.16), value: configuration.isOn)
+                .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: configuration.isOn)
             }
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Pulsable(escala: 0.98, haptica: false))
         .accessibilityRepresentation { Toggle(isOn: configuration.$isOn) { configuration.label } }
     }
 }
@@ -99,49 +120,34 @@ struct FilaInterruptor: View {
 
     var body: some View {
         Toggle(isOn: $activo) {
-            HStack(spacing: 14) {
+            HStack(spacing: Medida.s) {
                 IconoFila(id: icono)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(titulo).font(Tipo.poppins(16, .medium)).foregroundStyle(Paleta.texto)
+                    Text(titulo).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta)
                     if let detalle, !detalle.isEmpty {
-                        Text(detalle).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).fixedSize(horizontal: false, vertical: true)
+                        Text(detalle).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                .padding(.trailing, 10)
+                .padding(.trailing, Medida.xs)
             }
         }
         .toggleStyle(InterruptorCasa())
         .disabled(deshabilitado)
         .opacity(deshabilitado ? 0.5 : 1)
-        .padding(.horizontal, 16).padding(.vertical, 10)
-        .frame(minHeight: 56)
+        .padding(.horizontal, Medida.rellenoTarjeta).padding(.vertical, Medida.xs)
+        .frame(minHeight: 52)
     }
 }
 
-// Opciones en fila (perfil, tamaño de letra): la elegida en la superficie con el filo del acento.
+// Opciones en fila (perfil, tamaño de letra): SegmentoCapsula, la elegida en la píldora negra.
 struct OpcionesAjuste<Valor: Hashable>: View {
     let opciones: [(Valor, String)]
     let elegida: Valor
     let elegir: (Valor) -> Void
 
     var body: some View {
-        HStack(spacing: 6) {
-            ForEach(Array(opciones.enumerated()), id: \.offset) { _, o in
-                let on = o.0 == elegida
-                Button { elegir(o.0) } label: {
-                    Text(o.1).font(Tipo.poppins(14, on ? .semibold : .medium, estilo: .footnote))
-                        .foregroundStyle(on ? Paleta.texto : Paleta.textoSecundario)
-                        .lineLimit(1).minimumScaleFactor(0.8)
-                        .frame(maxWidth: .infinity, minHeight: 40)
-                        .background(on ? Paleta.seleccion : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(on ? Paleta.acento : Color.clear, lineWidth: 1.5))
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
-            }
-        }
-        .padding(4)
-        .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        SegmentoCapsula<Valor>(opciones: opciones.map { SegmentoCapsula<Valor>.Opcion(valor: $0.0, titulo: $0.1) },
+                               elegido: Binding<Valor>(get: { elegida }, set: { elegir($0) }))
     }
 }
 
@@ -220,8 +226,8 @@ struct HojaCompartir: UIViewControllerRepresentable {
 struct PieGrupo: View {
     let texto: String
     var body: some View {
-        Text(texto).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            .padding(.horizontal, 6).padding(.top, 8)
+        Text(texto).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+            .padding(.horizontal, Medida.xxs).padding(.top, Medida.xs)
             .fixedSize(horizontal: false, vertical: true)
     }
 }

@@ -55,44 +55,85 @@ enum LecturaBusqueda {
     }
 }
 
+// Buscar 2.0: el buscador en cápsula grande arriba, con foco al entrar, y los resultados en tarjetas blancas agrupadas
+// por tipo (apartados, eventos, tareas…), cada fila con su IconoCuadrado.
 struct BuscarView: View {
     @Environment(AppCoordinator.self) private var c
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
+    var inicial = ""
     @State private var texto = ""
     @State private var resultados: [ResultadoBusqueda] = []
+    @State private var empezado = false
     @FocusState private var foco: Bool
+
+    // Tipo de cada resultado por el prefijo de su id (lo pone LecturaBusqueda), en el orden en que se enseñan.
+    static let grupos: [(prefijo: String, titulo: String, icono: String)] = [
+        ("a:", "apartados", "menu"), ("e:", "eventos", "eventos"), ("t:", "tareas", "tarea"), ("n:", "notas", "notas"),
+        ("s:", "asignaturas", "estudios"), ("p:", "proyectos", "proyectos"), ("o:", "ocio", "ocio"),
+    ]
+
+    struct Grupo: Identifiable {
+        let titulo: String
+        let icono: String
+        let filas: [ResultadoBusqueda]
+        var id: String { titulo }
+    }
+
+    static func agrupados(_ r: [ResultadoBusqueda]) -> [Grupo] {
+        grupos.compactMap { g -> Grupo? in
+            let filas = r.filter { $0.id.hasPrefix(g.prefijo) }
+            return filas.isEmpty ? nil : Grupo(titulo: g.titulo, icono: g.icono, filas: filas)
+        }
+    }
 
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                CabeceraApartado(titulo: "buscar", contexto: nil) { EmptyView() }
-                TextField("eventos, tareas, notas, asignaturas, ocio.", text: $texto)
-                    .font(Tipo.cuerpo).foregroundStyle(Paleta.texto).focused($foco)
-                    .textInputAutocapitalization(.never).autocorrectionDisabled().submitLabel(.search)
-                    .padding(.horizontal, 14).frame(minHeight: 48)
-                    .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
-                    .padding(.top, Espacio.m)
-                if texto.count >= 2 && resultados.isEmpty {
-                    Text("nada con «\(texto)».").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.top, Espacio.l)
+                Text("buscar.").font(Letra.titulo).foregroundStyle(Lienzo.tinta).kerning(-0.4)
+                    .accessibilityAddTraits(.isHeader)
+                BuscadorCapsula(texto: $texto, placeholder: "eventos, tareas, notas, asignaturas, ocio", enfocar: $foco)
+                    .sombra(.suave)
+                    .padding(.top, Medida.s)
+                if texto.trimmingCharacters(in: .whitespaces).count < 2 {
+                    EstadoVacio(texto: "escribe dos letras o más. se busca en la copia de este iphone, sin conexión.", icono: "buscar")
+                        .padding(.top, Medida.l)
+                        .transition(.opacity)
+                } else if resultados.isEmpty {
+                    EstadoVacio(texto: "nada con «\(texto)».", icono: "buscar")
+                        .padding(.top, Medida.l)
+                        .transition(.opacity)
                 }
-                ForEach(resultados) { r in
-                    Button { c.abrirApartado(r.vista) } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(r.titulo).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).lineLimit(2)
-                            Text(r.detalle).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                ForEach(Array(Self.agrupados(resultados).enumerated()), id: \.element.id) { i, g in
+                    VStack(alignment: .leading, spacing: Medida.xs) {
+                        HStack {
+                            EtiquetaSeccion(texto: g.titulo)
+                            Chip(texto: "\(g.filas.count)").monospacedDigit()
                         }
-                        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-                        .contentShape(Rectangle())
-                        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+                        TarjetaFilas {
+                            ForEach(Array(g.filas.enumerated()), id: \.element.id) { n, r in
+                                if n > 0 { SeparadorMenu() }
+                                Button { foco = false; c.abrirApartado(r.vista) } label: {
+                                    FilaTarjeta(icono: g.titulo == "apartados" ? r.vista : g.icono, titulo: r.titulo, detalle: r.detalle) { FlechaFila() }
+                                        .padding(.horizontal, Medida.rellenoTarjeta)
+                                }
+                                .buttonStyle(EstiloFilaMenu())
+                            }
+                        }
                     }
-                    .buttonStyle(.plain)
+                    .padding(.top, Medida.entreSecciones)
+                    .entradaEscalonada(i)
                 }
             }
-            .padding(.horizontal, 20).padding(.bottom, Espacio.xl)
+            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: resultados)
+            .padding(.horizontal, Medida.margen).padding(.bottom, Medida.entreSecciones)
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
-        .background(Paleta.fondo.ignoresSafeArea())
-        .onAppear { foco = true }
+        .fondoLienzo()
+        .onAppear {
+            if !empezado { empezado = true; texto = inicial }
+            foco = true
+        }
         .task(id: texto) {
             try? await Task.sleep(for: .milliseconds(150))
             guard !Task.isCancelled else { return }
