@@ -335,28 +335,49 @@ struct ApuntarView: View {
 
 // lo que has apuntado. (openApuntesRecientes): deshacer quita solo lo que creó ese apunte; cambiar lo deshace y lo
 // devuelve a la hoja para elegir otro tipo.
+// «lo que has apuntado.» 2.0 (24-11): las cosas en una tarjeta blanca de filas, cada una con el icono de su tipo;
+// «cambiar.» y «deshacer.» en pequeño a la derecha. Deshacer sigue siendo .deshacerApunte.
 struct RecientesApuntarView: View {
     @Environment(AppCoordinator.self) private var c
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     let cambiar: (String) -> Void
     @State private var lista: [JSONValue] = []
     @State private var aviso: String?
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                Text("lo que has apuntado.").font(Tipo.poppins(20, .bold, estilo: .title3)).foregroundStyle(Paleta.texto).padding(.bottom, 4)
-                Text("en cualquier dispositivo. deshacer. lo borra de donde se guardó; cambiar. lo borra y te lo deja escrito.")
-                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.bottom, Espacio.m)
-                if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.texto).padding(.bottom, Espacio.s) }
-                if lista.isEmpty { Text("nada todavía.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario) }
-                ForEach(Array(lista.enumerated()), id: \.offset) { n, a in
-                    if n > 0 { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                    fila(a)
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                CabeceraPagina(titulo: "lo que has apuntado.",
+                               subtitulo: "en cualquier dispositivo. deshacer. lo borra de donde se guardó; cambiar. lo borra y te lo deja escrito.")
+                    .padding(.bottom, Medida.xs)
+                if let aviso {
+                    HStack(spacing: Medida.xs) {
+                        Puntito(color: Lienzo.naranja, tamano: 6)
+                        Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.tinta)
+                    }
+                    .padding(.horizontal, Medida.xxs)
+                    .transition(.opacity.combined(with: .offset(y: -4)))
+                }
+                if lista.isEmpty {
+                    EstadoVacio(texto: "nada todavía.", icono: "apuntar").tarjeta()
+                } else {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(lista.enumerated()), id: \.offset) { n, a in
+                            if n > 0 { SeparadorFila(sangria: Medida.rellenoTarjeta + Medida.icono + Medida.s) }
+                            fila(a)
+                        }
+                    }
+                    .padding(.vertical, Medida.xxs)
+                    .tarjeta(relleno: 0)
                 }
             }
-            .padding(20)
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.m)
+            .padding(.bottom, Medida.xl)
+            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: aviso)
         }
-        .background(Paleta.fondo)
+        .scrollIndicators(.hidden)
+        .fondoLienzo()
         .task(id: c.revision) { await leer() }
     }
 
@@ -368,23 +389,36 @@ struct RecientesApuntarView: View {
         let id = a["id"]?.comoId ?? ""
         let deshecho = a["deshecho"]?.booleano == true
         let deLaWeb = a["deshacer"]?["tipo"]?.texto == "conector"
-        let tipo = TipoApunte.nombre[a["tipo"]?.texto ?? ""] ?? (a["tipo"]?.texto ?? "")
-        return VStack(alignment: .leading, spacing: 6) {
-            Text(a["texto"]?.texto ?? "").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-            Text("\(tipo), \(cuando(a["cuando"]?.texto))\(deshecho ? ", deshecho" : "")").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-            if !deshecho {
-                if deLaWeb {
-                    Text("se deshace desde la web.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                } else {
-                    HStack(spacing: Espacio.m) {
-                        Button("cambiar.") { Task { await deshacer(id, cambiando: a["texto"]?.texto) } }
-                        Button("deshacer.") { Task { await deshacer(id, cambiando: nil) } }
+        let tipoClave = a["tipo"]?.texto ?? ""
+        let tipo = TipoApunte.nombre[tipoClave] ?? tipoClave
+        return HStack(alignment: .top, spacing: Medida.s) {
+            IconoCuadrado(id: ApuntarView.iconoCatalogo(tipoClave), tono: .claro)
+                .opacity(deshecho ? 0.5 : 1)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(a["texto"]?.texto ?? "").font(Letra.cuerpoFuerte)
+                    .foregroundStyle(deshecho ? Lienzo.tintaTerciaria : Lienzo.tinta)
+                    .strikethrough(deshecho)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("\(tipo), \(cuando(a["cuando"]?.texto))\(deshecho ? ", deshecho" : "")").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                if !deshecho {
+                    if deLaWeb {
+                        Text("se deshace desde la web.").font(Letra.pie).foregroundStyle(Lienzo.tintaTerciaria)
+                    } else {
+                        HStack(spacing: Medida.l) {
+                            Button("cambiar.") { Task { await deshacer(id, cambiando: a["texto"]?.texto) } }
+                            Button("deshacer.") { Haptica.ligera(); Task { await deshacer(id, cambiando: nil) } }
+                        }
+                        .font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta)
+                        .buttonStyle(.pulsable(0.92))
+                        .frame(minHeight: Medida.toque)
+                        .contentShape(Rectangle())
                     }
-                    .font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(Paleta.texto)
                 }
             }
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, 12)
+        .padding(.horizontal, Medida.rellenoTarjeta)
+        .padding(.vertical, Medida.s)
     }
 
     private func cuando(_ iso: String?) -> String {
