@@ -140,7 +140,8 @@ private struct CapaFlotante<C: View>: ViewModifier {
                 if presentado {
                     contenido()
                         .transition(sinMovimiento ? .opacity : .asymmetric(
-                            insertion: .move(edge: .bottom).combined(with: .scale(scale: 0.94, anchor: .bottom)).combined(with: .opacity),
+                            // 3.1: sin fundido al entrar (se veía lo de detrás a través de la tarjeta mientras subía).
+                            insertion: .move(edge: .bottom).combined(with: .scale(scale: 0.94, anchor: .bottom)),
                             removal: .move(edge: .bottom).combined(with: .opacity)))
                 }
             }

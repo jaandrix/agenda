@@ -47,7 +47,9 @@ struct MasView: View {
 
     // Lo que ya es nativo: o una pestaña de la barra, o una página dentro de «más.».
     static let pestanas: [String: Pestana] = ["calendar": .calendario, "planner": .plan, "finances": .finanzas]
-    static let paginas: Set<String> = ["listas", "habits", "notes", "studies", "projects", "settings", "events", "transporte", "home", "compra", "culture", "travels", "work", "goals", "links", "actualizaciones", "documents", "bandeja"]
+    static let paginas: Set<String> = ["listas", "habits", "notes", "studies", "projects", "settings", "events", "transporte", "home", "compra", "culture", "travels", "work", "goals", "links", "actualizaciones", "documents", "bandeja",
+                                          // 3.1: ya nativos (antes abrían la web).
+                                          "friends", "collectibles", "tags", "graph", "profesorado", "suggestions"]
 
     var body: some View {
         ScrollViewReader { lector in
@@ -205,6 +207,12 @@ struct MasView: View {
         case "buscar": BuscarView(inicial: filtro)
         case "home": PanoramaView()
         case "listas": ListasView()
+        case "friends": SocialView()
+        case "collectibles": ColeccionablesView()
+        case "tags": EtiquetasView()
+        case "graph": ConexionesView()
+        case "profesorado": ProfesoradoView()
+        case "suggestions": SugerenciasView()
         default: Color.clear.onAppear { c.rutaMas = []; c.web = Apartados.webURL(vista) }
         }
     }

@@ -339,16 +339,20 @@ struct Icono: View {
             }
             punto(12, 10.2)
         case "ajustes":
-            t { p in
-                for k in 0..<6 {
-                    let a = Double(k) * .pi / 3
-                    let q = CGPoint(x: 12 + 8.6 * cos(a), y: 12 + 8.6 * sin(a))
+            // 3.1: una rueda dentada de verdad, maciza en tinta y con el agujero en medio (el hexágono de trazo no se leía
+            // como «ajustes»). Ocho dientes de puntas romas, de radio 11 a 8, centrada en el lienzo de 24.
+            Path { p in
+                let dientes = 8
+                for k in 0..<(dientes * 4) {
+                    let a = Double(k) * .pi * 2 / Double(dientes * 4) - .pi / 2
+                    let r: Double = (k % 4 == 1 || k % 4 == 2) ? 11 : 8.2
+                    let q = CGPoint(x: 12 + r * cos(a), y: 12 + r * sin(a))
                     if k == 0 { p.move(to: q) } else { p.addLine(to: q) }
                 }
                 p.closeSubpath()
+                p.addEllipse(in: CGRect(x: 8.6, y: 8.6, width: 6.8, height: 6.8))
             }
-            aro(12, 12, 6.4)
-            if activo { punto(12, 12, 3.2) }
+            .fill(activo ? AnyShapeStyle(detalle) : AnyShapeStyle(.foreground), style: FillStyle(eoFill: true))
         case "buscar":
             aro(10.5, 10.5, 12)
             t { p in p.move(to: .init(x: 15, y: 15)); p.addLine(to: .init(x: 20, y: 20)) }

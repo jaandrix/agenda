@@ -69,6 +69,57 @@ actor RepositorioPerfil {
             return guardada(uid)
         }
     }
+
+    // La hoja de perfil: foto y descripción a la vez (loadMiPerfil). Lanza ErrorRed.sinConexion sin red.
+    func propio(_ uid: String) async throws -> PerfilPropio {
+        let s = try await auth.sesionValida()
+        let r = cliente.peticion("rest/v1/perfiles_fotos", consulta: [URLQueryItem(name: "select", value: "foto,descripcion"),
+                                                                     URLQueryItem(name: "user_id", value: "eq.\(uid)")], token: s.accessToken)
+        let (d, codigo) = try await cliente.enviar(r)
+        guard codigo == 200 else { throw ErrorRed.servidor(codigo) }
+        let fila = (try? JSONSerialization.jsonObject(with: d) as? [[String: Any]])?.first
+        let foto = (fila?["foto"] as? String).flatMap(PerfilPropio.bytes)
+        pedida.insert(uid)
+        if let foto { try? foto.write(to: archivo(uid), options: .atomic) } else { try? FileManager.default.removeItem(at: archivo(uid)) }
+        return PerfilPropio(foto: foto, descripcion: fila?["descripcion"] as? String ?? "")
+    }
+
+    // guardarMiPerfil: upsert de la fila entera (foto nil = quitarla) y, si sale bien, la caché queda igual que la
+    // nube para que Inicio y Ajustes la enseñen ya.
+    func guardar(_ uid: String, foto: Data?, descripcion: String) async throws {
+        let texto = String(descripcion.trimmingCharacters(in: .whitespacesAndNewlines).prefix(PerfilPropio.maxDescripcion))
+        let url = foto.map { "data:image/jpeg;base64," + $0.base64EncodedString() }
+        if let url, url.count > PerfilPropio.maxFoto { throw ErrorPerfil.demasiadoGrande }
+        let fila: [String: Any] = ["user_id": uid, "foto": url ?? NSNull(), "descripcion": texto.isEmpty ? NSNull() : texto,
+                                   "actualizado_en": ISO8601DateFormatter().string(from: Date())]
+        let s = try await auth.sesionValida()
+        var r = cliente.peticion("rest/v1/perfiles_fotos", consulta: [URLQueryItem(name: "on_conflict", value: "user_id")],
+                                 metodo: "POST", token: s.accessToken, cuerpo: try JSONSerialization.data(withJSONObject: fila), tiempo: 15)
+        r.setValue("resolution=merge-duplicates,return=minimal", forHTTPHeaderField: "Prefer")
+        let (_, codigo) = try await cliente.enviar(r)
+        guard (200..<300).contains(codigo) else { throw codigo == 413 ? ErrorPerfil.demasiadoGrande : ErrorRed.servidor(codigo) }
+        pedida.insert(uid)
+        if let foto { try? foto.write(to: archivo(uid), options: .atomic) } else { try? FileManager.default.removeItem(at: archivo(uid)) }
+    }
+}
+
+struct PerfilPropio: Sendable, Equatable {
+    var foto: Data?
+    var descripcion: String
+
+    // Límites de perfiles_fotos.sql: el data URL entero y la descripción.
+    static let maxFoto = 150_000
+    static let maxDescripcion = 160
+
+    static func bytes(_ url: String) -> Data? {
+        guard let coma = url.firstIndex(of: ",") else { return nil }
+        return Data(base64Encoded: String(url[url.index(after: coma)...]))
+    }
+}
+
+enum ErrorPerfil: Error, Equatable {
+    case demasiadoGrande
+    case imagenNoValida
 }
 
 struct Ciudad: Sendable, Equatable, Codable {

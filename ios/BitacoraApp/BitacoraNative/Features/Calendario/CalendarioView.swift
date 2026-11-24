@@ -56,6 +56,7 @@ struct CalendarioView: View {
     @State private var haciaDelante = true
     // 3.0.1: las tareas del día elegido (solo para verlas: se marcan en Plan e Inicio).
     @State private var tareasDia: [TareaPlan] = []
+    @State private var borrandoTarea: TareaPlan?
     @AppStorage("bitacora.calendario.semana") private var enSemana = false
 
     @State private var hoy = CalendarioBitacora.madrid.dia(de: Date())
@@ -112,6 +113,31 @@ struct CalendarioView: View {
                 }
             }
             Button("cancelar.", role: .cancel) {}
+        }
+        // 3.1: las tareas del día también se borran desde aquí (mantener pulsada la tarjeta).
+        .confirmationDialog("¿borrar esta tarea?", isPresented: Binding(get: { borrandoTarea != nil }, set: { if !$0 { borrandoTarea = nil } }), titleVisibility: .visible) {
+            Button("borrar.", role: .destructive) {
+                guard let t = borrandoTarea else { return }
+                borrarTarea(t)
+            }
+            Button("cancelar.", role: .cancel) {}
+        } message: {
+            Text(borrandoTarea?.titulo ?? "")
+        }
+    }
+
+    private func borrarTarea(_ t: TareaPlan) {
+        let antes = tareasDia
+        withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento)) { tareasDia.removeAll { $0.id == t.id } }
+        Task {
+            do {
+                try await c.encolar(.borrarTarea(id: t.id))
+                aviso = nil
+                Haptica.exito()
+            } catch {
+                withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento)) { tareasDia = antes }
+                aviso = "no se pudo borrar en este iPhone."
+            }
         }
     }
 
@@ -285,6 +311,10 @@ struct CalendarioView: View {
         .buttonStyle(.pulsable(0.97))
         .accessibilityElement(children: .combine)
         .accessibilityLabel([t.hora ?? "", "tarea", t.titulo, t.hecha ? "hecha" : ""].filter { !$0.isEmpty }.joined(separator: ", "))
+        .accessibilityAction(named: "borrar") { borrandoTarea = t }
+        .contextMenu {
+            Button("borrar.", role: .destructive) { borrandoTarea = t }
+        }
     }
 
     fileprivate enum CosaDia: Identifiable {

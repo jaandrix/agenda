@@ -181,6 +181,10 @@ jobs:
           APP="build-def/Build/Products/Release-iphoneos/BitacoraNative.app"
           test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP/Info.plist")" = "com.bitacora.app"
           test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleURLTypes:0:CFBundleURLSchemes:0' "$APP/Info.plist")" = "bitacora"
+          # 3.1: los iconos que se eligen en Ajustes tienen que viajar en la app (si no, setAlternateIconName falla).
+          for i in IconoCristal IconoArcilla IconoClaro; do
+            /usr/libexec/PlistBuddy -c "Print CFBundleIcons:CFBundleAlternateIcons:$i" "$APP/Info.plist" > /dev/null || { echo "Falta el icono alternativo $i"; exit 1; }
+          done
           if [ -d "$APP/PlugIns" ]; then echo "La app definitiva no debe llevar extensiones"; exit 1; fi
           if [ -d "$APP.dSYM" ]; then cp -R "$APP.dSYM" BitacoraDefinitiva.app.dSYM; else dsymutil "$APP/BitacoraNative" -o BitacoraDefinitiva.app.dSYM || true; fi
           xcrun strip -S -x "$APP/BitacoraNative" || echo "::warning::no se pudo recortar el binario"
