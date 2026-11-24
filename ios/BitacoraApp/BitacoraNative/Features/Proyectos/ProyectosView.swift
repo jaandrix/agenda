@@ -141,7 +141,7 @@ struct ProyectosView: View {
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { LecturaProyectos.vista($0) } }) else { return }
             proyectos = nuevo
-            if !nuevo.contains(where: { $0.estado == "Completado" }) { filtro = .enCurso }
+            if !(nuevo ?? []).contains(where: { $0.estado == "Completado" }) { filtro = .enCurso }
         }
     }
 

@@ -345,7 +345,7 @@ struct ViajesView: View {
         let doc = await c.documentoVisible()
         guard let nuevo = await ultimaGana({ doc.map { LecturaViajes.viajes($0) } }) else { return }
         viajes = nuevo
-        if !opciones(nuevo).contains(where: { $0.valor == tramo }) { tramo = .proximos }
+        if !opciones(nuevo ?? []).contains(where: { $0.valor == tramo }) { tramo = .proximos }
     }
 }
 
