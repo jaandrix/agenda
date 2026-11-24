@@ -108,9 +108,9 @@ struct MasOpcionesView: View {
             FormCasa {
                 if let m { contenido(m) } else { ProgressView() }
             }
-            .font(Tipo.cuerpo)
+            .font(Letra.cuerpo)
             .scrollContentBackground(.hidden)
-            .background(Paleta.fondo)
+            .background(Lienzo.fondo)
             .navigationTitle(opcion.titulo)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } } }
@@ -138,7 +138,7 @@ struct MasOpcionesView: View {
     @ViewBuilder private func cuentas(_ m: ModeloGestion) -> some View {
         Section {
             Text("El saldo inicial es el punto de partida de cada cuenta antes de tus movimientos registrados: útil si no vas a importar todo tu historial.")
-                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
         }
         ForEach(m.cuentas) { cta in
             Section(cta.id) {
@@ -182,18 +182,18 @@ struct MasOpcionesView: View {
 
     @ViewBuilder private func categorias(_ m: ModeloGestion) -> some View {
         Section {
-            Text("Los límites de gasto se ponen en la planificación de largo plazo, vinculando una casilla a la categoría.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+            Text("Los límites de gasto se ponen en la planificación de largo plazo, vinculando una casilla a la categoría.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
         }
         ForEach(["expense", "income"], id: \.self) { tipo in
             Section(tipo == "expense" ? "gastos." : "ingresos.") {
                 let lista = m.categorias.filter { $0.tipo == tipo }
-                if lista.isEmpty { Text("ninguna.").foregroundStyle(Paleta.textoSecundario) }
+                if lista.isEmpty { Text("ninguna.").foregroundStyle(Lienzo.tintaSecundaria) }
                 ForEach(lista) { cat in
                     HStack {
                         IconoCategoria(icono: cat.icono, color: cat.color, tam: 28)
                         Text(cat.nombre)
                         Spacer()
-                        Button { borrarCat = cat } label: { Image(systemName: "xmark").foregroundStyle(Paleta.error) }.buttonStyle(.plain)
+                        Button { borrarCat = cat } label: { Image(systemName: "xmark").foregroundStyle(Lienzo.negativo) }.buttonStyle(.pulsable)
                             .accessibilityLabel("eliminar \(cat.nombre)")
                     }
                 }
@@ -207,13 +207,13 @@ struct MasOpcionesView: View {
                 HStack(spacing: 8) {
                     ForEach(m.paleta, id: \.self) { col in
                         Circle().fill(Color(hexWeb: col)).frame(width: 28, height: 28)
-                            .overlay(Circle().stroke(Paleta.texto, lineWidth: (colorCat.isEmpty ? m.paleta.first : colorCat) == col ? 2 : 0))
+                            .overlay(Circle().stroke(Lienzo.tinta, lineWidth: (colorCat.isEmpty ? m.paleta.first : colorCat) == col ? 2 : 0))
                             .onTapGesture { colorCat = col }
                     }
                 }.padding(.vertical, 4)
             }
             VStack(alignment: .leading, spacing: 4) {
-                Text(iconoCat.isEmpty ? "elige un icono." : "icono.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                Text(iconoCat.isEmpty ? "elige un icono." : "icono.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                 RejillaIconos(seleccion: $iconoCat, color: colorCat.isEmpty ? (m.paleta.first ?? "") : colorCat)
             }
             Button("+ añadir categoría.") {
@@ -223,16 +223,16 @@ struct MasOpcionesView: View {
         }
         Section("dividir una categoría.") {
             Text("Saca de una categoría los movimientos cuyo concepto lleva alguna de estas palabras. Con «*» al final cuentan también las que empiezan así. Después Bitácora aprende y los nuevos caen solos.")
-                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
             Picker("de.", selection: $origen) { ForEach(m.categorias.filter { $0.tipo == "expense" }) { Text($0.nombre).tag($0.id) } }
             TextField("a. nombre de la categoría", text: $destinoNombre)
             TextField("palabras del concepto.", text: $palabras, axis: .vertical).textInputAutocapitalization(.never)
             let marcados = candidatos.filter { !fuera.contains($0.id) }
             Text("\(marcados.count) \(marcados.count == 1 ? "movimiento" : "movimientos") pasan a «\(destinoNombre.isEmpty ? "…" : destinoNombre)», \(din(marcados.reduce(0) { $0 + $1.importe })) en total.")
-                .font(Tipo.pie)
+                .font(Letra.pie)
             ForEach(candidatos) { t in
                 Toggle(isOn: Binding(get: { !fuera.contains(t.id) }, set: { if $0 { fuera.remove(t.id) } else { fuera.insert(t.id) } })) {
-                    HStack { Text(t.dia).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(width: 52, alignment: .leading); Text(t.concepto).lineLimit(1); Spacer(); Text("−" + din(t.importe)).monospacedDigit() }
+                    HStack { Text(t.dia).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).frame(width: 52, alignment: .leading); Text(t.concepto).lineLimit(1); Spacer(); Text("−" + din(t.importe)).monospacedDigit() }
                 }
             }
             Button("mover \(marcados.count) a «\(destinoNombre.isEmpty ? "…" : destinoNombre)».") {
@@ -257,14 +257,14 @@ struct MasOpcionesView: View {
     @ViewBuilder private func reglas(_ m: ModeloGestion) -> some View {
         Section {
             Text("Para movimientos recurrentes que en realidad son traspasos entre tus propias cuentas: al importar, si el concepto contiene el texto de una regla activa, se registra como traspaso en vez de como ingreso o gasto.")
-                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
         }
         Section("reglas.") {
-            if m.reglas.isEmpty { Text("Todavía no tienes reglas. Los movimientos importados se registran como ingreso o gasto normal.").foregroundStyle(Paleta.textoSecundario) }
+            if m.reglas.isEmpty { Text("Todavía no tienes reglas. Los movimientos importados se registran como ingreso o gasto normal.").foregroundStyle(Lienzo.tintaSecundaria) }
             ForEach(m.reglas) { r in
                 HStack {
                     Toggle(isOn: Binding(get: { r.activa }, set: { _ in Task { await accion("activarRegla", ["id": r.id], ok: nil) } })) {
-                        VStack(alignment: .leading, spacing: 2) { Text("«\(r.texto)»"); Text("traspaso con \(r.cuenta).").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+                        VStack(alignment: .leading, spacing: 2) { Text("«\(r.texto)»"); Text("traspaso con \(r.cuenta).").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
                     }
                 }
                 .swipeActions { Button("eliminar.", role: .destructive) { Task { await accion("borrarRegla", ["id": r.id], ok: nil) } } }
@@ -285,7 +285,7 @@ struct MasOpcionesView: View {
 
     @ViewBuilder private func duplicados(_ m: ModeloGestion) -> some View {
         if m.duplicados.isEmpty && m.posibles.isEmpty {
-            Section { Text("No se han encontrado duplicados probables.").foregroundStyle(Paleta.textoSecundario) }
+            Section { Text("No se han encontrado duplicados probables.").foregroundStyle(Lienzo.tintaSecundaria) }
         }
         if !m.duplicados.isEmpty {
             Section {
@@ -304,8 +304,8 @@ struct MasOpcionesView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         ForEach(par) { filaDup($0) }
                         HStack {
-                            Button("fusionar.") { Task { await accion("fusionar", ["a": par[0].id, "b": par[1].id], ok: "Movimientos fusionados") } }.buttonStyle(.bordered)
-                            Button("no es duplicado.") { Task { await accion("noDuplicado", ["a": par[0].id, "b": par[1].id], ok: nil) } }.buttonStyle(.bordered)
+                            Button("fusionar.") { Task { await accion("fusionar", ["a": par[0].id, "b": par[1].id], ok: "Movimientos fusionados") } }.buttonStyle(.capsula(.claro))
+                            Button("no es duplicado.") { Task { await accion("noDuplicado", ["a": par[0].id, "b": par[1].id], ok: nil) } }.buttonStyle(.capsula(.claro))
                         }
                     }
                 }
@@ -318,11 +318,11 @@ struct MasOpcionesView: View {
     private func filaDup(_ t: ModeloGestion.Item) -> some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(t.texto).font(Tipo.pie)
-                if !t.nota.isEmpty { Text(t.nota).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+                Text(t.texto).font(Letra.pie)
+                if !t.nota.isEmpty { Text(t.nota).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
             }
             Spacer()
-            Text((t.tipo == "income" ? "+" : "-") + din(t.importe)).monospacedDigit().foregroundStyle(t.tipo == "income" ? Paleta.positivo : Paleta.texto)
+            Text((t.tipo == "income" ? "+" : "-") + din(t.importe)).monospacedDigit().foregroundStyle(t.tipo == "income" ? Lienzo.positivo : Lienzo.tinta)
         }
     }
 
@@ -331,16 +331,16 @@ struct MasOpcionesView: View {
     @ViewBuilder private var deshacer: some View {
         Section {
             Text("Finanzas vuelve a como estaba en ese momento. Lo que cambiaste en Finanzas después también se pierde; el resto de Bitácora no se toca. Antes de deshacer se guarda cómo está ahora, por si quieres volver.")
-                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
         }
         Section("en este iPhone.") {
-            if locales.isEmpty { Text("Aún no hay ninguna: se guarda una cada vez que importas a partir de ahora.").foregroundStyle(Paleta.textoSecundario) }
+            if locales.isEmpty { Text("Aún no hay ninguna: se guarda una cada vez que importas a partir de ahora.").foregroundStyle(Lienzo.tintaSecundaria) }
             ForEach(locales) { f in
                 filaVolver(fecha(f.cuando), "antes de la \(f.texto), \(f.movimientos) movimientos") { volverA = ("local", f.id) }
             }
         }
         Section {
-            if nube.isEmpty { Text("No hay copias en la nube.").foregroundStyle(Paleta.textoSecundario) }
+            if nube.isEmpty { Text("No hay copias en la nube.").foregroundStyle(Lienzo.tintaSecundaria) }
             ForEach(nube) { n in
                 filaVolver(n.created_at.prefix(16).replacingOccurrences(of: "T", with: " "), "semana \(n.week_key ?? "")") { volverA = ("nube", n.id) }
             }
@@ -356,9 +356,9 @@ struct MasOpcionesView: View {
 
     private func filaVolver(_ titulo: String, _ detalle: String, _ a: @escaping () -> Void) -> some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) { Text(titulo); Text(detalle).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+            VStack(alignment: .leading, spacing: 2) { Text(titulo); Text(detalle).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
             Spacer()
-            Button("volver aquí.", action: a).buttonStyle(.bordered)
+            Button("volver aquí.", action: a).buttonStyle(.capsula(.claro))
         }
     }
 

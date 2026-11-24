@@ -60,7 +60,7 @@ struct EditorPresupuestoView: View {
             Group {
                 if let v, b != nil { formulario(v) } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
             }
-            .background(Paleta.fondo)
+            .background(Lienzo.fondo)
             .navigationTitle("presupuestos.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -70,9 +70,9 @@ struct EditorPresupuestoView: View {
                 if let v, !v.cerrado {
                     BotonFin(texto: guardando ? "guardando." : "guardar planificación.", acento: cambiado) { Task { await guardar() } }
                         .disabled(!cambiado || guardando)
-                        .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 8)
-                        .background(Paleta.fondo.ignoresSafeArea(edges: .bottom))
-                        .overlay(alignment: .top) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+                        .padding(.horizontal, Medida.margen).padding(.top, 10).padding(.bottom, 8)
+                        .background(Lienzo.fondo.ignoresSafeArea(edges: .bottom))
+                        .overlay(alignment: .top) { Rectangle().fill(Lienzo.filo).frame(height: 1) }
                 }
             }
             .task { if b == nil { await abrir("") } }
@@ -89,24 +89,24 @@ struct EditorPresupuestoView: View {
             Section {
                 HStack {
                     Button { Task { await cambiarMes(anterior) } } label: { Image(systemName: "chevron.left").frame(width: 44, height: 36) }
-                        .buttonStyle(.plain).accessibilityLabel("mes anterior")
+                        .buttonStyle(.pulsable).accessibilityLabel("mes anterior")
                     Spacer()
-                    Text(v.titulo.lowercased() + ".").font(Tipo.cuerpoFuerte)
+                    Text(v.titulo.lowercased() + ".").font(Letra.cuerpoFuerte)
                     Spacer()
                     Button { Task { await cambiarMes(siguiente) } } label: { Image(systemName: "chevron.right").frame(width: 44, height: 36) }
-                        .buttonStyle(.plain).accessibilityLabel("mes siguiente")
+                        .buttonStyle(.pulsable).accessibilityLabel("mes siguiente")
                 }
-                .foregroundStyle(Paleta.texto)
+                .foregroundStyle(Lienzo.tinta)
                 if v.cerrado {
                     Text("Este mes ya está cerrado en el historial. Se reabre desde el ordenador, en Finanzas, planificación.")
-                        .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                        .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                 }
             }
             Section {
-                FilaLibro(etiqueta: "ingresos", valor: FormatoFin.dinero(v.ingresos))
-                FilaLibro(etiqueta: "presupuestos", valor: FormatoFin.dinero(v.presupuestos))
-                FilaLibro(etiqueta: "compromisos", valor: FormatoFin.dinero(v.compromisos))
-                FilaLibro(etiqueta: "sin asignar", valor: FormatoFin.dinero(v.sinAsignar), acento: v.sinAsignar < 0)
+                FilaDato(etiqueta: "ingresos", valor: FormatoFin.dinero(v.ingresos))
+                FilaDato(etiqueta: "presupuestos", valor: FormatoFin.dinero(v.presupuestos))
+                FilaDato(etiqueta: "compromisos", valor: FormatoFin.dinero(v.compromisos))
+                FilaDato(etiqueta: "sin asignar", valor: FormatoFin.dinero(v.sinAsignar), tono: v.sinAsignar < 0 ? Lienzo.negativo : Lienzo.tinta)
                 reparto(v)
             }
             if !v.cerrado {
@@ -114,7 +114,7 @@ struct EditorPresupuestoView: View {
                     campo("sueldo.", Binding(get: { b!.salary }, set: { b!.salary = $0 }))
                     campo("aportaciones.", Binding(get: { b!.contributions }, set: { b!.contributions = $0 }))
                     if v.aportacionesReales > (b?.contributions ?? 0) {
-                        Text("Este mes ya han entrado \(FormatoFin.dinero(v.aportacionesReales)) en aportaciones: cuenta eso.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                        Text("Este mes ya han entrado \(FormatoFin.dinero(v.aportacionesReales)) en aportaciones: cuenta eso.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                     }
                 }
                 Section {
@@ -133,9 +133,9 @@ struct EditorPresupuestoView: View {
                     Button("copiar el mes anterior.") { Task { await heredar() } }
                 }
             }
-            if let error { Section { Text(error).foregroundStyle(Paleta.error) } }
+            if let error { Section { Text(error).foregroundStyle(Lienzo.negativo) } }
         }
-        .font(Tipo.cuerpo)
+        .font(Letra.cuerpo)
         .scrollContentBackground(.hidden)
         .scrollDismissesKeyboard(.interactively)
     }
@@ -144,11 +144,11 @@ struct EditorPresupuestoView: View {
         GeometryReader { g in
             let pct = { (x: Double) -> CGFloat in v.ingresos > 0 ? CGFloat(max(0, min(1, x / v.ingresos))) : 0 }
             HStack(spacing: 0) {
-                Rectangle().fill(Paleta.acento).frame(width: g.size.width * pct(v.presupuestos))
-                Rectangle().fill(Paleta.textoSecundario.opacity(0.6)).frame(width: g.size.width * pct(v.compromisos))
+                Rectangle().fill(Lienzo.naranja).frame(width: g.size.width * pct(v.presupuestos))
+                Rectangle().fill(Lienzo.tintaSecundaria.opacity(0.6)).frame(width: g.size.width * pct(v.compromisos))
                 Spacer(minLength: 0)
             }
-            .background(Paleta.borde)
+            .background(Lienzo.filo)
             .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
         }
         .frame(height: 6)
@@ -181,8 +181,8 @@ struct EditorPresupuestoView: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     TextField("casilla. alquiler, ahorro, ocio...", text: ref(a.id, \.label, ""))
-                    Button { b!.allocations.removeAll { $0.id == a.id } } label: { Image(systemName: "xmark").foregroundStyle(Paleta.textoSecundario) }
-                        .buttonStyle(.plain).accessibilityLabel("quitar \(a.label.isEmpty ? "casilla" : a.label)")
+                    Button { b!.allocations.removeAll { $0.id == a.id } } label: { Image(systemName: "xmark").foregroundStyle(Lienzo.tintaSecundaria) }
+                        .buttonStyle(.pulsable).accessibilityLabel("quitar \(a.label.isEmpty ? "casilla" : a.label)")
                 }
                 campo("importe.", ref(a.id, \.amount, 0, alCambiar: { $0.amount = max(0, $0.amount) }))
                 Menu {
@@ -192,15 +192,15 @@ struct EditorPresupuestoView: View {
                     HStack(spacing: 8) {
                         if let o = v.opciones.first(where: { $0.id == a.categoryId }) {
                             IconoCategoria(icono: o.icono, color: o.color, tam: 24)
-                            Text(o.nombre.lowercased()).foregroundStyle(Paleta.texto)
+                            Text(o.nombre.lowercased()).foregroundStyle(Lienzo.tinta)
                         } else {
-                            Text("otros destinos.").foregroundStyle(Paleta.textoSecundario)
+                            Text("otros destinos.").foregroundStyle(Lienzo.tintaSecundaria)
                         }
                         Spacer()
-                        Image(systemName: "chevron.up.chevron.down").font(.system(size: 12)).foregroundStyle(Paleta.textoSecundario)
+                        Image(systemName: "chevron.up.chevron.down").font(.system(size: 12)).foregroundStyle(Lienzo.tintaSecundaria)
                     }
                 }
-                Text(comoVa(a, v)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                Text(comoVa(a, v)).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
             }
             .padding(.vertical, 4)
         }
@@ -218,13 +218,13 @@ struct EditorPresupuestoView: View {
             let info = v.comprometido[a.id]
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    Text((info?.nombre ?? a.label) + ".").font(Tipo.cuerpoFuerte)
+                    Text((info?.nombre ?? a.label) + ".").font(Letra.cuerpoFuerte)
                     Spacer()
-                    Button { b!.allocations.removeAll { $0.id == a.id } } label: { Image(systemName: "xmark").foregroundStyle(Paleta.textoSecundario) }
-                        .buttonStyle(.plain).accessibilityLabel("quitar \(info?.nombre ?? a.label) de este mes")
+                    Button { b!.allocations.removeAll { $0.id == a.id } } label: { Image(systemName: "xmark").foregroundStyle(Lienzo.tintaSecundaria) }
+                        .buttonStyle(.pulsable).accessibilityLabel("quitar \(info?.nombre ?? a.label) de este mes")
                 }
                 if let info {
-                    Text("\(info.n) activos, \(FormatoFin.dinero(info.alMes)) al mes, \(FormatoFin.dinero(info.cargado)) cargados.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    Text("\(info.n) activos, \(FormatoFin.dinero(info.alMes)) al mes, \(FormatoFin.dinero(info.cargado)) cargados.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                 }
                 campo("límite.", ref(a.id, \.amount, 0, alCambiar: { $0.amount = max(0, $0.amount); $0.limiteManual = true }))
             }
