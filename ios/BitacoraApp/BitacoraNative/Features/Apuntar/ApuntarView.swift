@@ -94,10 +94,10 @@ struct ApuntarView: View {
                 if !b.isEmpty { texto = b; deBorrador = true }
             }
             cargado = true
-            await Medidas.terminarAlPintar("apuntar: abrir la hoja")
-            // El teclado cuando el modal ya ha subido: así no compiten la entrada y el teclado en el mismo fotograma.
-            try? await Task.sleep(for: .milliseconds(140))
+            // 3.1 (vídeo de Alejandro): el teclado se pide a la vez que nace el modal, para que suban juntos en un solo
+            // movimiento. Con la espera de 140 ms de la hoja antigua, la tarjeta subía, se paraba y daba un segundo salto.
             escribiendo = true
+            await Medidas.terminarAlPintar("apuntar: abrir la hoja")
             if let doc = await c.documentoVisible() {
                 contexto = ContextoApuntar.desde(doc, uid: uid)
                 hayRecientes = !((((try? doc.valor(de: "apuntesRecientes")) ?? nil)?.lista ?? []).isEmpty)

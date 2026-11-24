@@ -114,6 +114,9 @@ struct PrincipalView: View {
     @State private var masUsados: [Apartado]?
     @Environment(\.scenePhase) private var fase
     @State private var teclado = false
+    // 3.1: el borde de abajo sin teclado. Con el teclado fuera, el GeometryReader lo cuenta como zona segura y la barra
+    // daba un salto al cerrarse «apuntar.».
+    @State private var abajoReposo: CGFloat = 0
 
     static func pestanas(secundaria: Pestana) -> [BarraBitacora.Pestana] {
         [.init(id: "inicio", titulo: "inicio", icono: "inicio"),
@@ -128,13 +131,19 @@ struct PrincipalView: View {
         // 2.0: la barra flota encima del contenido (no lo empuja) y se separa del borde de abajo. Cada pantalla reserva
         // abajo lo que ocupa (safeAreaInset en cada NavigationStack), así su último elemento sube por encima de ella.
         GeometryReader { g in
-            let abajo = g.safeAreaInsets.bottom
+            let abajo = g.safeAreaInsets.bottom < 120 ? g.safeAreaInsets.bottom : abajoReposo
             let margen = max(Medida.separacionInferior, abajo - 26)
             let reserva = teclado ? 0 : max(0, margen + Medida.alturaBarra + 20 - abajo)
             ZStack(alignment: .bottom) {
+                // 3.1 (vídeo de Alejandro, «no nace bien»): con «apuntar.» abierto, lo de detrás no reacciona al teclado.
+                // Antes, al salir el teclado, todas las pestañas se recolocaban a mitad de la animación del modal.
                 pantallas(reserva: reserva)
+                    .ignoresSafeArea(.keyboard, edges: apuntarActual != nil ? .bottom : [])
                 if !teclado {
                     barra
+                        // Se funde al tocar el +: si no, se veía a través del modal mientras nacía.
+                        .opacity(apuntarActual != nil ? 0 : 1)
+                        .scaleEffect(apuntarActual != nil && !sinMovimiento ? 0.96 : 1, anchor: .bottom)
                         .padding(.bottom, margen)
                         .ignoresSafeArea(.container, edges: .bottom)
                         .ignoresSafeArea(.keyboard, edges: .bottom)
@@ -142,13 +151,20 @@ struct PrincipalView: View {
                 }
             }
             .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: teclado)
+            .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: apuntarActual != nil)
+            .onAppear { if g.safeAreaInsets.bottom < 120 { abajoReposo = g.safeAreaInsets.bottom } }
+            .onChange(of: g.safeAreaInsets.bottom) { _, nuevo in if nuevo < 120 { abajoReposo = nuevo } }
         }
         // «apuntar.» ya no es una hoja: es el modal flotante oscuro, que sube con el teclado.
         .capaFlotante(presentado: apuntarActual != nil, cerrar: { c.modal = nil }) {
             if let a = apuntarActual { ApuntarView(inicial: a).id(a.id) }
         }
         // Con el teclado abierto la barra se va (en todas las pantallas): si no, quedaba encima del teclado y tapaba el campo.
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in teclado = true; masUsados = nil }
+        // Con «apuntar.» abierto la barra ya está fundida y el teclado es del modal: no se toca nada más.
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            masUsados = nil
+            if apuntarActual == nil { teclado = true }
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in teclado = false }
         .overlayPreferenceValue(AnclaMenuKey.self) { ancla in
             GeometryReader { g in
