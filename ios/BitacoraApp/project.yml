@@ -27,7 +27,7 @@ settingGroups:
     DEVELOPMENT_TEAM: ""
     SWIFT_VERSION: "5.0"
     TARGETED_DEVICE_FAMILY: "1"
-    MARKETING_VERSION: "1.1.0"
+    MARKETING_VERSION: "3.0.0"
     # Subir esto en cada build ayuda a confirmar a simple vista (Ajustes
     # > General > VPN y gestión de dispositivos > la app) que el .ipa
     # instalado es el que se cree que es.
