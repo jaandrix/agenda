@@ -45,7 +45,7 @@ struct NotasView: View {
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
-        .background(alignment: .top) { Lienzo.degradadoCabecera.frame(height: 280).ignoresSafeArea() }
+        .cabeceraPortada(alto: Medida.portadaCorta, aSangre: true)
         .fondoLienzo()
         .toolbarBackground(.hidden, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)

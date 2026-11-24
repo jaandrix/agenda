@@ -13,8 +13,27 @@ flotante y oscuro con banda naranja, iconos cuadrados. Colores de partida: blanc
   `BotonRedondo`, `IconoCuadrado`, `LogoB`, `CabeceraMarca`, `CabeceraPagina`, `EtiquetaSeccion`, `Chip`, `Puntito`.
 - `Tarjetas.swift` — `BuscadorCapsula`, `TarjetaNota`, `SegmentoCapsula`, `SeccionPlegable`, `FilaTarjeta`, `FlechaFila`,
   `SeparadorFila`, `CasillaMarcar`, `TarjetaInvitacion`, `EstadoVacio`, `TarjetaOscura`.
+- `FechasV2.swift` (3.0) — `BloqueFecha` (día y mes en squircle; tonos naranja/claro/oscuro/apagado, `grande`),
+  `CuentaAtras` (`texto(dias:)`, `chip(dias:)`, `texto(_:hora:hoy:ahora:)` con «en 40 min.»), `TipoPunto` (tipo de
+  EventoDia → `Lienzo.Punto`) y `LocalDay.dias(hasta:)`.
+- `Indicadores.swift` (3.0) — `BarraFina` (avance con muelle y tramo `falta`), `AnilloProgreso` (con `celebrar`),
+  `ChipCifra` (variación ↑↓), `CifraGrande` (cifra con etiqueta, punto y variación), `MarcaPrioridad`, `InicialCuadrada`,
+  `LineaSerie`/`AreaSerie` (formas de una serie 0…1).
+- `FilasV2.swift` (3.0) — `TarjetaSeccion` (etiqueta + tarjeta), `TarjetaLista` (filas con separadores), `TarjetaFilas`
+  (filas a todo el ancho) con `EstiloFila` (velo al pulsar una fila), `FilaDato` («etiqueta …… valor»), `FilaImporte`
+  (icono, concepto, detalle y cifra con signo).
+- `ControlesV2.swift` (3.0) — `ChipsEleccion` (chips elegibles), `InterruptorCasa` (ToggleStyle naranja con muelle),
+  `MenuRedondo` (Menu en círculo blanco), `BotonCompartirRedondo` (ShareLink en círculo).
+- `Lienzo.swift` (3.0) — tokens nuevos: `Medida.bloqueFecha/bloqueFechaGrande/portada/portadaCorta/sobrePortada/barra/
+  barraFina`, `Letra.dia/diaBloque/diaBloqueGrande/mesBloque/cuentaAtras/mono` y `.cabeceraPortada(alto:sobreBorde:aSangre:)`
+  (el degradado de portada; nunca `Lienzo.degradadoCabecera` a mano).
 - `SemanaFlotante.swift`, `BarraFlotante.swift`, `BotonApuntar.swift`, `ModalFlotante.swift` (+ `.capaFlotante`, `PuntoVivo`).
 - `GaleriaV2.swift` — ejemplo de composición con todo junto (`#Preview`).
+
+Antes de crear una pieza en tu carpeta, busca aquí: fecha en bloque, cuenta atrás, barra de avance, cifra con variación,
+fila de importe, sección con tarjeta, chips elegibles e interruptor ya existen. Nombres retirados en la 3.0 (no usarlos):
+`BloqueFechaEvento`, `BarraCapsula`, `BarraProgresoEstudio`, `EstiloFilaMenu`, `LetraInicio`, `TextoEventos.cuentaAtras`,
+`CuentaEstudios.cuentaAtras/chip`, `MedidaInicio.degradado/sobreBorde`.
 
 ## Reglas estrictas
 1. **Nada suelto**: prohibido `Color(hex/rgb)`, `Paleta.*` en vistas nuevas, radios, tamaños de letra, sombras o

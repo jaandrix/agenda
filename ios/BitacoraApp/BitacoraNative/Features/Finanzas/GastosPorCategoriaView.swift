@@ -86,7 +86,7 @@ struct GastosPorCategoriaView: View {
                     Spacer(minLength: 6)
                     Text(din(x.total)).font(Letra.numero).foregroundStyle(Lienzo.tinta)
                 }
-                BarraCapsula(valor: tope > 0 ? max(0.02, x.total / tope) : 0, color: primera ? Lienzo.naranja : Lienzo.tintaTerciaria, alto: 5)
+                BarraFina(valor: tope > 0 ? max(0.02, x.total / tope) : 0, color: primera ? Lienzo.naranja : Lienzo.tintaTerciaria, alto: 5)
                 Text(detalle(x, mesAnterior)).font(Letra.pie).foregroundStyle(cambioColor(x)).lineLimit(1)
             }
         }

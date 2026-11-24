@@ -296,25 +296,15 @@ struct FilaMovView: View {
 
     var body: some View {
         Button { abrir(f) } label: {
-            HStack(alignment: .center, spacing: Medida.s) {
+            FilaImporte(titulo: f.titulo,
+                        detalle: ([conDia ? f.dia : "", f.meta].filter { !$0.isEmpty }.joined(separator: ", ")) + (f.pendiente ? ", pendiente." : ""),
+                        cifra: cifra, tono: tinta, apagado: f.futuro, aviso: f.revisar) {
                 if f.tipo == "transfer" || f.icono.isEmpty {
                     IconoFinanzas(clave: f.tipo == "transfer" ? "repeat" : "other")
                 } else {
                     IconoCategoria(icono: f.icono, color: f.color, tam: Medida.icono)
                 }
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 5) {
-                        Text(f.titulo).font(Letra.cuerpoFuerte).foregroundStyle(f.futuro ? Lienzo.tintaSecundaria : Lienzo.tinta).lineLimit(1)
-                        if f.revisar { Puntito(color: Lienzo.naranja, tamano: 6) }
-                    }
-                    Text(([conDia ? f.dia : "", f.meta].filter { !$0.isEmpty }.joined(separator: ", ")) + (f.pendiente ? ", pendiente." : ""))
-                        .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
-                }
-                Spacer(minLength: Medida.xs)
-                Text(cifra).font(Letra.numero).foregroundStyle(tinta).lineLimit(1)
             }
-            .frame(minHeight: 58)
-            .contentShape(Rectangle())
         }
         .buttonStyle(.pulsable(0.98))
         .accessibilityElement(children: .combine)
@@ -474,7 +464,7 @@ private struct PestanaCuentas: View {
             .accessibilityElement(children: .combine)
             if m.ingresos != 0 || m.gastos != 0 {
                 VStack(alignment: .leading, spacing: Medida.xs) {
-                    BarraCapsula(valor: min(1, m.ratio), color: m.ratio > 1 ? Lienzo.negativo : Lienzo.naranja)
+                    BarraFina(valor: min(1, m.ratio), color: m.ratio > 1 ? Lienzo.negativo : Lienzo.naranja)
                     Text(m.ingresos > 0 ? "\(Int((m.ratio * 100).rounded())) % de lo que ha entrado, ya gastado." : "Este mes todavía no ha entrado nada.")
                         .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                 }
@@ -533,15 +523,8 @@ private struct PestanaCuentas: View {
     }
 
     private func cifraMes(_ nombre: String, _ v: Double, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 5) {
-                Puntito(color: color, tamano: 6)
-                Text(nombre).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
-            }
-            Text(din(v)).font(Letra.numeroGrande).foregroundStyle(Lienzo.tinta).lineLimit(1).minimumScaleFactor(0.7)
-                .contentTransition(.numericText())
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        CifraGrande(texto: din(v), etiqueta: nombre, punto: color)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func textoRitmo(_ r: ModeloCuentas.Ritmo) -> Text {
@@ -761,7 +744,7 @@ private struct PestanaPlanificacion: View {
                     Text("de \(din(cat.available))").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                 }
             }
-            BarraCapsula(valor: min(100, max(2, cat.percentage)) / 100, color: color(cat.status))
+            BarraFina(valor: min(100, max(2, cat.percentage)) / 100, color: color(cat.status))
             HStack(alignment: .firstTextBaseline) {
                 Text(sub + ".").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(2)
                 Spacer(minLength: Medida.xs)
@@ -798,14 +781,13 @@ private struct PestanaResumen: View {
     }
 
     private func cifra(_ t: String, negativa: Bool = false) -> some View {
-        Text(t).font(Letra.numeroGrande).foregroundStyle(negativa ? Lienzo.negativo : Lienzo.tinta)
-            .lineLimit(1).minimumScaleFactor(0.7).contentTransition(.numericText())
+        CifraGrande(texto: t, tono: negativa ? Lienzo.negativo : nil)
     }
 
     private func barra(_ nombre: String, _ v: Double, _ falta: Double, _ max: Double, color: Color) -> some View {
         HStack(spacing: Medida.xs) {
             Text(nombre).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).frame(width: 44, alignment: .leading)
-            BarraCapsula(valor: v / max, color: color, falta: falta / max)
+            BarraFina(valor: v / max, color: color, falta: falta / max)
             Text(din(v)).font(Letra.pieFuerte).monospacedDigit().foregroundStyle(Lienzo.tinta)
         }
         .accessibilityElement(children: .combine)
@@ -857,7 +839,7 @@ private struct PestanaResumen: View {
         return HStack(spacing: Medida.xs) {
             Text(x.nombre + (conAnio ? " \(x.anio)" : "") + (enCurso ? ", en curso" : "") + ".")
                 .font(Letra.pie).foregroundStyle(enCurso ? Lienzo.tintaSecundaria : Lienzo.tinta).frame(width: 116, alignment: .leading).lineLimit(1).minimumScaleFactor(0.8)
-            BarraCapsula(valor: ancho / 100, color: neg ? Lienzo.negativo : (enCurso ? Lienzo.tintaTerciaria : Lienzo.positivo))
+            BarraFina(valor: ancho / 100, color: neg ? Lienzo.negativo : (enCurso ? Lienzo.tintaTerciaria : Lienzo.positivo))
             Text(x.tasa == nil ? "sin ingresos" : pctSinMas(x.tasa!)).font(Letra.pieFuerte).monospacedDigit()
                 .foregroundStyle(neg ? Lienzo.negativo : Lienzo.tinta).frame(width: 78, alignment: .trailing)
         }

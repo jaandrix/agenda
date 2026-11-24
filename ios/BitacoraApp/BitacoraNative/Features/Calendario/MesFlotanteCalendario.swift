@@ -2,7 +2,7 @@ import SwiftUI
 
 // Letra de los números del mes. Pendiente de subir a `Letra` (DesignSystem/V2): la semana flotante usa el mismo tamaño.
 enum LetraCalendario {
-    static func numero(_ fuerte: Bool) -> Font { Tipo.poppins(15, fuerte ? .semibold : .regular, estilo: .headline).monospacedDigit() }
+    static func numero(_ fuerte: Bool) -> Font { fuerte ? Letra.numero : Letra.dia }
 }
 
 // El mes entero en la tarjeta semi flotante, con el mismo lenguaje que `SemanaFlotante`: placa gris para el día elegido

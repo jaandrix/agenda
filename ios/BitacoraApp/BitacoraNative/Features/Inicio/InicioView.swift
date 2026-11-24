@@ -318,13 +318,7 @@ struct InicioCuerpo: View {
         .padding(.horizontal, Medida.margen)
         .padding(.bottom, Medida.xl)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(alignment: .top) {
-            Lienzo.degradadoCabecera
-                .frame(height: MedidaInicio.degradado)
-                .offset(y: -MedidaInicio.sobreBorde)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
-        }
+        .cabeceraPortada(sobreBorde: Medida.sobrePortada)
         .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: vista?.dia)
     }
 
@@ -693,7 +687,7 @@ struct SemanaCarrusel: View, Equatable {
                 Text(CarruselDias.letras[d.indiceSemanaLunes]).font(Letra.pie)
                     .lineLimit(1).minimumScaleFactor(0.65)
                     .foregroundStyle(sel ? Lienzo.tintaSecundaria : Lienzo.tintaTerciaria)
-                Text("\(d.day)").font(sel || esHoy ? Letra.numero : LetraInicio.dia)
+                Text("\(d.day)").font(sel || esHoy ? Letra.numero : Letra.dia)
                     .lineLimit(1).minimumScaleFactor(0.65)
                     .foregroundStyle(esHoy ? Lienzo.naranjaProfundo : (d < hoy && !sel ? Lienzo.tintaSecundaria : Lienzo.tinta))
                 HStack(spacing: 3) {
@@ -759,7 +753,7 @@ struct SelectorPoste: View {
                 }
                 Button("elegir en transporte.", action: abrirTransporte)
             } label: { etiqueta }
-            .buttonStyle(.plain)
+            .buttonStyle(.pulsable(0.97))
             .accessibilityLabel("parada en inicio: " + nombre(actual))
             .accessibilityHint("cambia la parada que se ve aquí")
         } else {
@@ -836,17 +830,17 @@ struct FilaEvento: View {
     var body: some View {
         Button { abrir?() } label: {
             HStack(spacing: Espacio.s) {
-                Text(hora ?? "").font(Tipo.poppins(14, .semibold, estilo: .footnote)).monospacedDigit()
+                Text(hora ?? "").font(Letra.cuerpoFuerte).monospacedDigit()
                     .foregroundStyle(colorSuave).frame(width: Tipo.tamano(46), alignment: .leading)
                 Circle().fill(suave ? colorFilo : colorAcento).frame(width: Tipo.tamano(12), height: Tipo.tamano(12)).frame(width: 44, height: 44)
                 VStack(alignment: .leading, spacing: Tipo.tamano(2)) {
-                    Text(titulo).font(Tipo.poppins(16.5, .semibold, estilo: .body))
+                    Text(titulo).font(Letra.tituloTarjeta)
                         .foregroundStyle(suave ? colorSuave : colorTexto).multilineTextAlignment(.leading)
-                    if !detalle.isEmpty { Text(detalle).font(Tipo.poppins(13.5, .regular, estilo: .footnote)).foregroundStyle(colorSuave).lineLimit(2) }
+                    if !detalle.isEmpty { Text(detalle).font(Letra.detalle).foregroundStyle(colorSuave).lineLimit(2) }
                 }
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 if entradas > 0 {
-                    Label("qr.", systemImage: "qrcode").font(Tipo.poppins(13, .semibold, estilo: .footnote)).foregroundStyle(colorTexto)
+                    Label("qr.", systemImage: "qrcode").font(Letra.pestana).foregroundStyle(colorTexto)
                         .padding(.horizontal, Tipo.tamano(10)).frame(minHeight: max(32, Tipo.tamano(32)))
                         .background(colorTinte, in: RoundedRectangle(cornerRadius: Radio.control))
                 }
@@ -854,7 +848,7 @@ struct FilaEvento: View {
             .padding(.vertical, 4)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pulsable(0.98))
         .disabled(abrir == nil)
         .overlay(alignment: .bottom) { Rectangle().fill(colorFilo).frame(height: 1) }
         .accessibilityElement(children: .combine)

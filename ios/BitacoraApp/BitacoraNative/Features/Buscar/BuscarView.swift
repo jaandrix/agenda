@@ -116,7 +116,7 @@ struct BuscarView: View {
                                     FilaTarjeta(icono: g.titulo == "apartados" ? r.vista : g.icono, titulo: r.titulo, detalle: r.detalle) { FlechaFila() }
                                         .padding(.horizontal, Medida.rellenoTarjeta)
                                 }
-                                .buttonStyle(EstiloFilaMenu())
+                                .buttonStyle(EstiloFila())
                             }
                         }
                     }

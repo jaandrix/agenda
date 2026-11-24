@@ -126,9 +126,9 @@ struct MasView: View {
             .entradaEscalonada(i + 1)
         }
         GrupoMenu(titulo: "este iphone.") {
-            NavigationLink(value: "estado") { FilaMenu(nombre: "estado de la sincronización", inicial: "estado") }.buttonStyle(EstiloFilaMenu())
+            NavigationLink(value: "estado") { FilaMenu(nombre: "estado de la sincronización", inicial: "estado") }.buttonStyle(EstiloFila())
             SeparadorMenu()
-            Button { c.web = Config.webURL } label: { FilaMenu(nombre: "bitácora web", inicial: "web", web: true) }.buttonStyle(EstiloFilaMenu())
+            Button { c.web = Config.webURL } label: { FilaMenu(nombre: "bitácora web", inicial: "web", web: true) }.buttonStyle(EstiloFila())
         }
         .entradaEscalonada(menu.grupos.count + 1)
     }
@@ -174,12 +174,12 @@ struct MasView: View {
     @ViewBuilder private func fila(_ a: Apartado, cuenta: Int) -> some View {
         let inicial = a.vista
         if let p = Self.pestanas[a.vista] {
-            Button { c.anotarUso(a.vista); c.pestana = p } label: { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta) }.buttonStyle(EstiloFilaMenu())
+            Button { c.anotarUso(a.vista); c.pestana = p } label: { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta) }.buttonStyle(EstiloFila())
         } else if Self.paginas.contains(a.vista) {
-            NavigationLink(value: a.vista) { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta) }.buttonStyle(EstiloFilaMenu())
+            NavigationLink(value: a.vista) { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta) }.buttonStyle(EstiloFila())
                 .simultaneousGesture(TapGesture().onEnded { c.anotarUso(a.vista) })
         } else {
-            Button { c.anotarUso(a.vista); c.web = Apartados.webURL(a.vista) } label: { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta, web: true) }.buttonStyle(EstiloFilaMenu())
+            Button { c.anotarUso(a.vista); c.web = Apartados.webURL(a.vista) } label: { FilaMenu(nombre: a.nombre, inicial: inicial, cuenta: cuenta, web: true) }.buttonStyle(EstiloFila())
         }
     }
 
@@ -277,22 +277,6 @@ struct GrupoMenu<Contenido: View>: View {
     }
 }
 
-// Tarjeta blanca para filas a todo el ancho: como `.tarjeta()` pero sin relleno lateral (cada fila trae el suyo) y
-// recortada, para que el velo de pulsado llegue a las esquinas.
-struct TarjetaFilas<Contenido: View>: View {
-    @ViewBuilder var contenido: () -> Contenido
-
-    var body: some View {
-        VStack(spacing: 0) { contenido() }
-            .padding(.vertical, Medida.xxs)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Lienzo.tarjeta)
-            .clipShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous).strokeBorder(Lienzo.filo))
-            .sombra(.suave)
-    }
-}
-
 // Filete entre filas: empieza después del icono cuadrado, como SeparadorFila, con el relleno lateral de la fila.
 struct SeparadorMenu: View {
     var body: some View { SeparadorFila(sangria: Medida.rellenoTarjeta + Medida.icono + Medida.s) }
@@ -316,15 +300,5 @@ struct FilaMenu: View {
         }
         .padding(.horizontal, Medida.rellenoTarjeta)
         .accessibilityHint(web ? "se abre en la web" : "")
-    }
-}
-
-// Pulsado de una fila dentro de una tarjeta: un velo gris suave con muelle (sin hundir la tarjeta entera).
-struct EstiloFilaMenu: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background(configuration.isPressed ? Lienzo.sutilSuave : Color.clear)
-            .contentShape(Rectangle())
-            .animation(configuration.isPressed ? Muelle.toque : Muelle.soltar, value: configuration.isPressed)
     }
 }

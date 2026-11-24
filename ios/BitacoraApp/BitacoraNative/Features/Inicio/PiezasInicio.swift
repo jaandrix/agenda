@@ -1,53 +1,13 @@
 import SwiftUI
 
-// Piezas propias de Inicio en Bitácora 2.0. Lo que aquí sea útil para otras pantallas (MedidaInicio, LetraInicio,
-// TipoPunto, las filas en tarjeta) conviene subirlo a DesignSystem/V2 al unir las ramas.
+// Piezas propias de Inicio. TipoPunto, Letra.dia y la cabecera de portada viven ya en DesignSystem/V2.
 
 enum MedidaInicio {
-    static let degradado: CGFloat = 360
-    // Lo que el degradado sube por detrás de la barra de estado, para que no se vea su borde al tirar hacia abajo.
-    static let sobreBorde: CGFloat = 140
     static let alturaSemana: CGFloat = 76
     static let avatar: CGFloat = 32
     static let puntoSemana: CGFloat = 4.5
     static let puntoFila: CGFloat = 8
     static let sinDiaVisibles = 5
-}
-
-enum LetraInicio {
-    // El número de un día normal: mismo cuerpo que Letra.numero, sin negrita, para que el elegido no baile al cambiar.
-    static var dia: Font { Tipo.poppins(15, .regular, estilo: .headline).monospacedDigit() }
-}
-
-// Qué hay un día, para los puntitos de la semana. Siempre por significado (Lienzo.Punto), nunca por gusto.
-enum TipoPunto: Int, Comparable, Hashable {
-    case evento, tarea, estudio, cumple, viaje, dinero, otro
-
-    static func < (a: TipoPunto, b: TipoPunto) -> Bool { a.rawValue < b.rawValue }
-
-    var color: Color {
-        switch self {
-        case .evento: Lienzo.Punto.evento
-        case .tarea: Lienzo.Punto.tarea
-        case .estudio: Lienzo.Punto.estudio
-        case .cumple: Lienzo.Punto.cumple
-        case .viaje: Lienzo.Punto.viaje
-        case .dinero: Lienzo.Punto.dinero
-        case .otro: Lienzo.Punto.otro
-        }
-    }
-
-    // El `tipo` de EventoDia (LecturaCalendario y los partidos).
-    static func de(_ tipo: String) -> TipoPunto {
-        switch tipo {
-        case "birthday": .cumple
-        case "estudio", "exam", "assignment": .estudio
-        case "travel": .viaje
-        case "pago": .dinero
-        case "work", "laboral": .otro
-        default: .evento
-        }
-    }
 }
 
 // Una tarea del día en su tarjeta blanca: casilla a la izquierda (solo marca), el resto abre la tarea.
