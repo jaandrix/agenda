@@ -146,85 +146,206 @@ private enum EdicionViaje: Identifiable {
 
 struct ViajesView: View {
     @Environment(AppCoordinator.self) private var c
+    @Environment(\.scenePhase) private var fase
     @State private var viajes: [Viaje]?
-    @State private var completados = false
+    @State private var tramo = Tramo.proximos
     @State private var abierto: ViajeAbierto?
     @State private var edicion: EdicionViaje?
+    @State private var hoy = CalendarioBitacora.madrid.dia(de: Date())
 
-    private var hoy: String { CalendarioBitacora.madrid.dia(de: Date()).iso }
+    enum Tramo: Hashable { case proximos, pasados, lugares }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                CabeceraContexto(titulo: "viajes", detalle: viajes.map { "\($0.count) viajes." }) {
-                    Text("tus viajes.").font(Tipo.poppins(24, .bold, estilo: .title3)).foregroundStyle(Paleta.sobreContexto)
-                    Text("itinerario, lugares y gastos.").font(Tipo.pie).foregroundStyle(Paleta.sobreContextoSuave)
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                CabeceraPagina(titulo: "viajes.", subtitulo: subtitulo) {
+                    BotonRedondo(sistema: "plus", tono: .oscuro, etiqueta: "nuevo viaje") { edicion = .viaje(nil) }
                 }
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: Espacio.xs) {
-                        pestana("próximos.", !completados) { completados = false }
-                        pestana("completados.", completados) { completados = true }
-                        Spacer()
-                        AccionTexto(texto: "+ viaje.") { edicion = .viaje(nil) }
-                    }.padding(.vertical, Espacio.xs)
-                    if let viajes {
-                        let lista = filtrados(viajes)
-                        if lista.isEmpty {
-                            Text(completados ? "todavía no hay viajes terminados." : "ningún viaje a la vista.")
-                                .font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.l)
+                .padding(.bottom, Medida.xxs)
+                if let viajes {
+                    let ops = opciones(viajes)
+                    if ops.count > 1 {
+                        SegmentoCapsula(opciones: ops, elegido: $tramo, sobreBlanco: false)
+                    }
+                    Group {
+                        switch tramo {
+                        case .proximos: proximos(viajes)
+                        case .pasados: pasados(viajes)
+                        case .lugares: lugares(viajes)
                         }
-                        ForEach(lista) { fila($0) }
-                    } else { ProgressView().frame(maxWidth: .infinity).padding(.top, Espacio.xl) }
-                }.modifier(HojaContenido())
+                    }
+                    .id(tramo)
+                    .transition(.opacity)
+                } else {
+                    ProgressView().frame(maxWidth: .infinity).padding(.top, Medida.xl)
+                }
             }
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.xl)
         }
-        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
-        .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
+        .scrollIndicators(.hidden)
+        .fondoLienzo()
+        .refreshable { await c.sincronizar() }
+        .onChange(of: fase) { _, f in if f == .active { hoy = CalendarioBitacora.madrid.dia(de: Date()) } }
+        .task(id: "\(c.revision)-\(hoy.iso)") { await cargar() }
         .hoja(item: $abierto) { a in FichaViaje(id: a.id).environment(c) }
         .hoja(item: $edicion) { e in
             if case .viaje(let v) = e { EditorViaje(viaje: v).environment(c) }
         }
     }
 
-    private func pestana(_ texto: String, _ activa: Bool, _ accion: @escaping () -> Void) -> some View {
-        Button(action: accion) {
-            Text(texto).font(Tipo.poppins(14, activa ? .semibold : .medium, estilo: .footnote))
-                .padding(.horizontal, 11).padding(.vertical, 8)
-                .foregroundStyle(activa ? Paleta.sobreAcento : Paleta.textoSecundario)
-                .background(activa ? Paleta.acento : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        }.buttonStyle(.plain).accessibilityAddTraits(activa ? .isSelected : [])
+    private var subtitulo: String {
+        guard let v = viajes else { return "" }
+        let n = activos(v).count
+        return n == 0 ? "nada a la vista." : n == 1 ? "1 próximo." : "\(n) próximos."
+    }
+
+    private func opciones(_ v: [Viaje]) -> [SegmentoCapsula<Tramo>.Opcion] {
+        var o: [SegmentoCapsula<Tramo>.Opcion] = [.init(valor: .proximos, titulo: "próximos")]
+        if !completados(v).isEmpty { o.append(.init(valor: .pasados, titulo: "pasados")) }
+        if v.contains(where: { !$0.lugares.isEmpty }) { o.append(.init(valor: .lugares, titulo: "lugares")) }
+        return o
     }
 
     // renderTravels: próximos y en curso por fecha de inicio; completados, del más reciente al más antiguo.
-    private func filtrados(_ v: [Viaje]) -> [Viaje] {
-        if completados { return v.filter { $0.estado(hoy: hoy) == "completado" }.sorted { $0.inicio > $1.inicio } }
-        return v.filter { $0.estado(hoy: hoy) != "completado" }.sorted { ($0.inicio.isEmpty ? "9" : $0.inicio) < ($1.inicio.isEmpty ? "9" : $1.inicio) }
+    private func activos(_ v: [Viaje]) -> [Viaje] {
+        v.filter { $0.estado(hoy: hoy.iso) != "completado" }.sorted { ($0.inicio.isEmpty ? "9" : $0.inicio) < ($1.inicio.isEmpty ? "9" : $1.inicio) }
     }
 
-    private func fila(_ v: Viaje) -> some View {
-        Button { abierto = ViajeAbierto(id: v.id) } label: {
-            VStack(alignment: .leading, spacing: 3) {
-                Text((v.titulo.isEmpty ? v.destino : v.titulo).lowercased() + ".").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-                Text([v.estado(hoy: hoy), fechas(v), v.destino].filter { !$0.isEmpty }.joined(separator: ", ") + ".")
-                    .font(Tipo.pie).foregroundStyle(v.estado(hoy: hoy) == "en curso" ? Paleta.acento : Paleta.textoSecundario)
-            }.frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-                .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-        }.buttonStyle(.plain)
-        .contextMenu {
-            Button("editar.") { edicion = .viaje(v) }
-            Button("eliminar.", role: .destructive) { Task { await c.guardar(.borrarEntrada(id: v.id)) } }
+    private func completados(_ v: [Viaje]) -> [Viaje] {
+        v.filter { $0.estado(hoy: hoy.iso) == "completado" }.sorted { $0.inicio > $1.inicio }
+    }
+
+    // El más cercano, protagonista en negro con su cuenta atrás; el resto, en tarjetas blancas.
+    @ViewBuilder private func proximos(_ v: [Viaje]) -> some View {
+        let lista = activos(v)
+        if let primero = lista.first {
+            destacado(primero).entradaEscalonada(0)
+            let resto = Array(lista.dropFirst())
+            if !resto.isEmpty { EtiquetaSeccion(texto: "después").padding(.top, Medida.s).entradaEscalonada(1) }
+            ForEach(Array(resto.enumerated()), id: \.element.id) { n, x in
+                tarjeta(x, apagada: false).entradaEscalonada(n + 2)
+            }
+        } else {
+            TarjetaInvitacion(frase: "ningún viaje a la vista.", destacado: "planea el siguiente.", boton: "nuevo viaje.") { edicion = .viaje(nil) }
+                .entradaEscalonada(0)
         }
     }
 
-    private func fechas(_ v: Viaje) -> String {
-        if v.inicio.isEmpty { return "" }
-        return v.fin.isEmpty || v.fin == v.inicio ? v.inicio : "\(v.inicio) → \(v.fin)"
+    @ViewBuilder private func pasados(_ v: [Viaje]) -> some View {
+        let lista = completados(v)
+        if lista.isEmpty {
+            EstadoVacio(texto: "todavía no hay viajes terminados.", icono: "viajes").tarjeta(relleno: Medida.xs)
+        }
+        ForEach(Array(lista.enumerated()), id: \.element.id) { n, x in
+            tarjeta(x, apagada: true).entradaEscalonada(n)
+        }
+    }
+
+    // Los sitios que ver de cada viaje, para marcarlos sin abrir la ficha.
+    @ViewBuilder private func lugares(_ v: [Viaje]) -> some View {
+        let conLugares = (activos(v) + completados(v)).filter { !$0.lugares.isEmpty }
+        if conLugares.isEmpty {
+            EstadoVacio(texto: "apunta sitios que ver en la ficha de cada viaje.", icono: "viajes").tarjeta(relleno: Medida.xs)
+        }
+        ForEach(Array(conLugares.enumerated()), id: \.element.id) { n, x in
+            VStack(alignment: .leading, spacing: Medida.xs) {
+                EtiquetaSeccion(texto: String(TextoViajes.titulo(x).dropLast()) + ", \(x.lugares.filter(\.visitado).count) de \(x.lugares.count)")
+                    .padding(.top, n == 0 ? 0 : Medida.s)
+                VStack(spacing: 0) {
+                    ForEach(Array(x.lugares.enumerated()), id: \.element.id) { i, l in
+                        if i > 0 { SeparadorFila(sangria: Medida.toque) }
+                        HStack(spacing: Medida.xxs) {
+                            CasillaMarcar(hecha: l.visitado) {
+                                Task { await c.guardar(.cambiarViaje(viajeId: x.id, cambio: .lugarVisitado(id: l.id, visitado: !l.visitado))) }
+                            }
+                            Text(l.nombre).font(Letra.cuerpo).foregroundStyle(l.visitado ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                                .lineLimit(2)
+                            Spacer(minLength: 0)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityValue(l.visitado ? "visitado" : "por visitar")
+                    }
+                }
+                .tarjeta(relleno: Medida.xs)
+            }
+            .entradaEscalonada(n)
+        }
+    }
+
+    private func destacado(_ v: Viaje) -> some View {
+        Button { abrir(v) } label: {
+            TarjetaOscura {
+                VStack(alignment: .leading, spacing: Medida.s) {
+                    HStack(alignment: .top) {
+                        Text(v.estado(hoy: hoy.iso) == "en curso" ? "DE VIAJE" : "EL PRÓXIMO")
+                            .font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.sobreOscuroSuave)
+                        Spacer()
+                        IconoCuadrado(id: "viajes", tono: .translucido)
+                    }
+                    Text(TextoViajes.cuentaAtras(v, hoy: hoy))
+                        .font(LetraViajes.cuentaAtras).kerning(-0.8).foregroundStyle(Lienzo.naranja)
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                        .contentTransition(.numericText())
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(TextoViajes.titulo(v)).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.sobreOscuro)
+                            .lineLimit(2).multilineTextAlignment(.leading)
+                        Text(([v.destino.lowercased(), TextoViajes.fechas(v, hoy: hoy)].filter { !$0.isEmpty }).joined(separator: ", ") + ".")
+                            .font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave).lineLimit(2)
+                    }
+                    ChipsReservasViaje(viaje: v, sobreOscuro: true)
+                }
+            }
+            .contentShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+        }
+        .buttonStyle(.pulsable(0.97))
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("abre la ficha del viaje")
+        .contextMenu { menu(v) }
+    }
+
+    private func tarjeta(_ v: Viaje, apagada: Bool) -> some View {
+        let enCurso = v.estado(hoy: hoy.iso) == "en curso"
+        return Button { abrir(v) } label: {
+            HStack(spacing: Medida.s) {
+                IconoCuadrado(id: "viajes", tono: enCurso ? .suave : .claro)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(TextoViajes.titulo(v)).font(Letra.tituloTarjeta)
+                        .foregroundStyle(apagada ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                        .lineLimit(2).multilineTextAlignment(.leading)
+                    Text(([v.destino.lowercased(), TextoViajes.fechas(v, hoy: hoy)].filter { !$0.isEmpty }).joined(separator: ", ") + ".")
+                        .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
+                }
+                Spacer(minLength: Medida.xxs)
+                if !v.inicio.isEmpty {
+                    Chip(texto: TextoViajes.cuentaAtras(v, hoy: hoy), tono: enCurso ? .naranja : .sutil)
+                }
+            }
+            .tarjeta(relleno: Medida.s)
+            .contentShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+        }
+        .buttonStyle(.pulsable(0.97))
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("abre la ficha del viaje")
+        .contextMenu { menu(v) }
+    }
+
+    @ViewBuilder private func menu(_ v: Viaje) -> some View {
+        Button("editar.") { edicion = .viaje(v) }
+        Button("eliminar.", role: .destructive) { Task { await c.guardar(.borrarEntrada(id: v.id)) } }
+    }
+
+    private func abrir(_ v: Viaje) {
+        Haptica.ligera()
+        abierto = ViajeAbierto(id: v.id)
     }
 
     private func cargar() async {
         let doc = await c.documentoVisible()
         guard let nuevo = await ultimaGana({ doc.map { LecturaViajes.viajes($0) } }) else { return }
         viajes = nuevo
+        if !opciones(nuevo).contains(where: { $0.valor == tramo }) { tramo = .proximos }
     }
 }
 
@@ -242,131 +363,212 @@ private struct FichaViaje: View {
     @State private var nuevaLista = ""
     @State private var nuevosItems: [String: String] = [:]
     @State private var listaABorrar: ListaViaje?
+    @State private var hoy = CalendarioBitacora.madrid.dia(de: Date())
+    @State private var verDestino = false
+    @State private var verMapa = true
+    @State private var verItinerario = true
+    @State private var verReservas = true
+    @State private var verLugares = true
+    @State private var verListas = true
+    @State private var verGastos = false
 
     var body: some View {
-        NavigationStack {
-            List {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
                 if let v = viaje {
-                    Section {
-                        if !v.destino.isEmpty {
-                            NavigationLink { DestinoViajeView(viaje: v) } label: {
-                                LabeledContent("destino.", value: v.destino)
-                            }
+                    cabecera(v).entradaEscalonada(0)
+                    if !v.destino.isEmpty {
+                        SeccionPlegable(titulo: "destino.", detalle: "tiempo, hora y moneda", abierta: $verDestino) {
+                            DestinoViajeView(viaje: v).padding(.top, Medida.xxs)
                         }
-                        LabeledContent("fechas.", value: v.inicio.isEmpty ? "sin fecha" : (v.fin.isEmpty || v.fin == v.inicio ? v.inicio : "\(v.inicio) → \(v.fin)"))
-                        if !v.companeros.isEmpty { LabeledContent("con.", value: v.companeros) }
-                        if !v.notas.isEmpty { Text(v.notas).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+                        .entradaEscalonada(1)
                     }
-                    if !MapaViaje.puntos(v.itinerario).isEmpty {
-                        Section {
-                            MapaViaje(puntos: MapaViaje.puntos(v.itinerario)).frame(height: 240).listRowInsets(EdgeInsets())
-                        } header: { Text("mapa.") } footer: { Text("Lo del itinerario con lugar, en orden.") }
+                    let puntos = MapaViaje.puntos(v.itinerario)
+                    if !puntos.isEmpty {
+                        SeccionPlegable(titulo: "mapa.", detalle: puntos.count == 1 ? "1 lugar" : "\(puntos.count) lugares", abierta: $verMapa) {
+                            MapaViaje(puntos: puntos)
+                                .frame(height: MedidaViajes.mapa)
+                                .clipShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous).strokeBorder(Lienzo.filo))
+                                .sombra(.suave)
+                                .padding(.top, Medida.xxs)
+                        }
+                        .entradaEscalonada(2)
                     }
-                    Section("itinerario.") {
-                        ForEach(LecturaViajes.porDia(v.itinerario), id: \.0) { grupo in
-                            Text(LecturaViajes.fechaLarga(grupo.0) + ".").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                            ForEach(grupo.1) { it in
-                                Button { itemEditado = it } label: {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text([it.hora, it.titulo].filter { !$0.isEmpty }.joined(separator: "  ")).foregroundStyle(Paleta.texto)
-                                        if !it.lugar.isEmpty || !it.notas.isEmpty {
-                                            Text([it.lugar, it.notas].filter { !$0.isEmpty }.joined(separator: ". ")).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                                        }
+                    SeccionPlegable(titulo: "itinerario.", detalle: v.itinerario.isEmpty ? nil : "\(v.itinerario.count)", abierta: $verItinerario) {
+                        itinerario(v).padding(.top, Medida.xxs)
+                    }
+                    .entradaEscalonada(3)
+                    SeccionPlegable(titulo: "reservas.", detalle: numero(v.transportes.count + v.alojamientos.count), abierta: $verReservas) {
+                        reservas(v).padding(.top, Medida.xxs)
+                    }
+                    .entradaEscalonada(4)
+                    SeccionPlegable(titulo: "lugares.", detalle: v.lugares.isEmpty ? nil : "\(v.lugares.filter(\.visitado).count) de \(v.lugares.count)", abierta: $verLugares) {
+                        lugares(v).padding(.top, Medida.xxs)
+                    }
+                    .entradaEscalonada(5)
+                    SeccionPlegable(titulo: "listas.", detalle: numero(v.listas.count), abierta: $verListas) {
+                        listas(v).padding(.top, Medida.xxs)
+                    }
+                    .entradaEscalonada(6)
+                    SeccionPlegable(titulo: "gastos.", detalle: v.totalGastos + v.aMano > 0 ? Dinero.formato(v.totalGastos + v.aMano) : nil, abierta: $verGastos) {
+                        gastos(v).padding(.top, Medida.xxs)
+                    }
+                    .entradaEscalonada(7)
+                    Button { confirmarBorrado = true } label: {
+                        Text("eliminar viaje.").foregroundStyle(Lienzo.negativo)
+                    }
+                    .buttonStyle(.capsula(.blanco, ancho: true))
+                    .padding(.top, Medida.s)
+                    .entradaEscalonada(8)
+                } else {
+                    ProgressView().frame(maxWidth: .infinity).padding(.top, Medida.xxl)
+                }
+            }
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.m)
+            .padding(.bottom, Medida.xl)
+        }
+        .scrollIndicators(.hidden)
+        .scrollDismissesKeyboard(.interactively)
+        .fondoLienzo()
+        .presentationDragIndicator(.visible)
+        .confirmationDialog("¿eliminar este viaje?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
+            Button("eliminar.", role: .destructive) { Task { @MainActor in if await c.guardar(.borrarEntrada(id: id)) { Haptica.exito(); cerrar() } } }
+            Button("cancelar.", role: .cancel) {}
+        }
+        .hoja(isPresented: $editando) { EditorViaje(viaje: viaje).environment(c) }
+        .hoja(isPresented: $nuevoItem) { EditorItinerario(viajeId: id, item: nil, diaInicial: viaje?.inicio ?? "").environment(c) }
+        .hoja(item: $itemEditado) { it in EditorItinerario(viajeId: id, item: it, diaInicial: it.dia).environment(c) }
+        .hoja(item: $reserva) { r in EditorReservaViaje(viajeId: id, editando: r).environment(c) }
+        .confirmationDialog("¿eliminar la lista «\(listaABorrar?.nombre.lowercased() ?? "")»?",
+                            isPresented: Binding(get: { listaABorrar != nil }, set: { if !$0 { listaABorrar = nil } }), titleVisibility: .visible) {
+            Button("eliminar.", role: .destructive) { if let l = listaABorrar { enviar(.quitarLista(id: l.id)) }; listaABorrar = nil }
+            Button("cancelar.", role: .cancel) { listaABorrar = nil }
+        }
+        .task(id: c.revision) { await cargar() }
+    }
+
+    private func numero(_ n: Int) -> String? { n == 0 ? nil : "\(n)" }
+
+    // El icono del apartado en negro, el título, las fechas con su cuenta atrás y con quién; editar y cerrar a la derecha.
+    private func cabecera(_ v: Viaje) -> some View {
+        VStack(alignment: .leading, spacing: Medida.s) {
+            HStack(alignment: .top, spacing: 0) {
+                IconoCuadrado(id: "viajes", tono: .oscuro, tamano: Medida.iconoGrande)
+                Spacer()
+                BotonRedondo(sistema: "pencil", tono: .blanco, tamano: 36, etiqueta: "editar") { editando = true }
+                BotonRedondo(sistema: "xmark", tono: .blanco, tamano: 36, etiqueta: "cerrar") { cerrar() }
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(TextoViajes.titulo(v)).font(Letra.titulo).kerning(-0.4).foregroundStyle(Lienzo.tinta)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                HStack(spacing: Medida.xs) {
+                    Text(TextoViajes.fechas(v, hoy: hoy) + ".").font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+                    if !v.inicio.isEmpty {
+                        Chip(texto: TextoViajes.cuentaAtras(v, hoy: hoy), tono: v.estado(hoy: hoy.iso) == "completado" ? .sutil : .naranja)
+                    }
+                }
+                if !v.companeros.isEmpty {
+                    Text("con " + v.companeros + ".").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                }
+            }
+            ChipsReservasViaje(viaje: v)
+            if !v.notas.isEmpty {
+                Text(v.notas).font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+        }
+        .padding(.horizontal, Medida.xxs)
+    }
+
+    // Por día, con la hora delante; tocar abre el elemento y mantener lo quita.
+    private func itinerario(_ v: Viaje) -> some View {
+        VStack(alignment: .leading, spacing: Medida.xs) {
+            if v.itinerario.isEmpty {
+                Text("qué vais a hacer cada día, con su hora y su sitio.").font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+                    .padding(.vertical, Medida.xxs)
+            }
+            ForEach(LecturaViajes.porDia(v.itinerario), id: \.0) { grupo in
+                Text(LecturaViajes.fechaLarga(grupo.0) + ".").font(Letra.pieFuerte).foregroundStyle(Lienzo.tintaSecundaria)
+                    .padding(.top, Medida.xxs)
+                VStack(spacing: 0) {
+                    ForEach(Array(grupo.1.enumerated()), id: \.element.id) { i, it in
+                        if i > 0 { SeparadorFila(sangria: MedidaViajes.hora + Medida.s) }
+                        Button { itemEditado = it } label: {
+                            HStack(alignment: .firstTextBaseline, spacing: Medida.s) {
+                                Text(it.hora).font(Letra.hora).foregroundStyle(Lienzo.tinta)
+                                    .frame(width: MedidaViajes.hora, alignment: .leading)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(it.titulo).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta)
+                                        .multilineTextAlignment(.leading)
+                                    if !it.lugar.isEmpty || !it.notas.isEmpty {
+                                        Text([it.lugar, it.notas].filter { !$0.isEmpty }.joined(separator: ". "))
+                                            .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).multilineTextAlignment(.leading)
                                     }
                                 }
-                                .swipeActions { Button("borrar", role: .destructive) { enviar(.quitarItinerario(id: it.id)) } }
+                                Spacer(minLength: 0)
                             }
+                            .padding(.vertical, Medida.s)
+                            .contentShape(Rectangle())
                         }
-                        Button("+ al itinerario.") { nuevoItem = true }.foregroundStyle(Paleta.acento)
+                        .buttonStyle(.pulsable(0.98))
+                        .contextMenu { Button("borrar.", role: .destructive) { enviar(.quitarItinerario(id: it.id)) } }
                     }
-                    Section("lugares.") {
-                        ForEach(v.lugares) { l in
-                            let alternar = { enviar(.lugarVisitado(id: l.id, visitado: !l.visitado)) }
-                            FilaCirculo(hecho: l.visitado, marcar: alternar, abrir: alternar) { EmptyView() } texto: {
-                                Text(l.nombre).font(Tipo.cuerpo).foregroundStyle(l.visitado ? Paleta.textoSecundario : Paleta.texto)
-                            } cola: { EmptyView() }
-                            .accessibilityElement(children: .combine)
-                            .accessibilityValue(l.visitado ? "visitado" : "por visitar")
-                            .accessibilityAction { alternar() }
-                            .swipeActions { Button("borrar", role: .destructive) { enviar(.quitarLugar(id: l.id)) } }
-                        }
-                        HStack {
-                            TextField("un sitio que ver.", text: $nuevoLugar).submitLabel(.done).onSubmit(anadirLugar)
-                            Button("añadir.", action: anadirLugar).disabled(nuevoLugar.trimmingCharacters(in: .whitespaces).isEmpty)
-                        }
-                    }
-                    reservasSeccion(v)
-                    listasSecciones(v)
-                    Section {
-                        if v.gastos.isEmpty && v.aMano == 0 {
-                            Text("en finanzas, marca los gastos de estos días como «gasto de viaje.» y aparecerán aquí.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                        }
-                        if !v.gastos.isEmpty {
-                            LabeledContent("gastado en el viaje.", value: Dinero.formato(v.totalGastos))
-                            if let dias = dias(v), dias > 0 { LabeledContent("al día.", value: Dinero.formato(v.totalGastos / Decimal(dias))) }
-                            ForEach(v.gastos) { g in LabeledContent(g.nota.isEmpty ? "gasto" : g.nota, value: Dinero.formato(g.importe)).font(Tipo.pie) }
-                        }
-                        if v.aMano > 0 { LabeledContent("apuntados a mano en el viaje.", value: Dinero.formato(v.aMano)) }
-                    } header: { Text("gastos.") }
-                    Section { Button("eliminar viaje.", role: .destructive) { confirmarBorrado = true } }
-                } else { ProgressView() }
+                }
             }
-            .font(Tipo.cuerpo)
-            .navigationTitle(((viaje?.titulo).map { $0.isEmpty ? "viaje" : $0 } ?? "viaje").lowercased() + ".")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } }
-                ToolbarItem(placement: .primaryAction) { Button("editar.") { editando = true }.disabled(viaje == nil) }
-            }
-            .confirmationDialog("¿eliminar este viaje?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
-                Button("eliminar.", role: .destructive) { Task { if await c.guardar(.borrarEntrada(id: id)) { cerrar() } } }
-                Button("cancelar.", role: .cancel) {}
-            }
-            .hoja(isPresented: $editando) { EditorViaje(viaje: viaje).environment(c) }
-            .hoja(isPresented: $nuevoItem) { EditorItinerario(viajeId: id, item: nil, diaInicial: viaje?.inicio ?? "").environment(c) }
-            .hoja(item: $itemEditado) { it in EditorItinerario(viajeId: id, item: it, diaInicial: it.dia).environment(c) }
-            .hoja(item: $reserva) { r in EditorReservaViaje(viajeId: id, editando: r).environment(c) }
-            .confirmationDialog("¿eliminar la lista «\(listaABorrar?.nombre.lowercased() ?? "")»?",
-                                isPresented: Binding(get: { listaABorrar != nil }, set: { if !$0 { listaABorrar = nil } }), titleVisibility: .visible) {
-                Button("eliminar.", role: .destructive) { if let l = listaABorrar { enviar(.quitarLista(id: l.id)) }; listaABorrar = nil }
-                Button("cancelar.", role: .cancel) { listaABorrar = nil }
-            }
-            .task(id: c.revision) { await cargar() }
+            Button("+ al itinerario.") { nuevoItem = true }
+                .buttonStyle(.capsula(.claro))
+                .padding(.top, Medida.xxs)
         }
+        .tarjeta(relleno: Medida.s)
     }
 
-    // renderTripReservasTab: transportes y alojamiento; tocar uno lo abre para editarlo.
-    @ViewBuilder private func reservasSeccion(_ v: Viaje) -> some View {
-        Section("reservas.") {
-            ForEach(v.transportes) { r in
-                Button { reserva = ReservaEditando(lista: "transportes", reserva: r) } label: { filaReserva(transporte(r), detalle: detalleTransporte(r), notas: r["notas"]) }
-                    .swipeActions { Button("borrar", role: .destructive) { enviar(.quitarReserva(lista: "transportes", id: r.id)) } }
+    // renderTripReservasTab: transportes y alojamiento con su chip; tocar uno lo abre para editarlo.
+    private func reservas(_ v: Viaje) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if v.transportes.isEmpty && v.alojamientos.isEmpty {
+                Text("vuelos, trenes y alojamiento, con su localizador a mano.").font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+                    .padding(.vertical, Medida.xs)
             }
-            ForEach(v.alojamientos) { r in
-                Button { reserva = ReservaEditando(lista: "alojamientos", reserva: r) } label: { filaReserva(r["nombre"].isEmpty ? "alojamiento" : r["nombre"], detalle: detalleAlojamiento(r), notas: r["notas"]) }
-                    .swipeActions { Button("borrar", role: .destructive) { enviar(.quitarReserva(lista: "alojamientos", id: r.id)) } }
+            ForEach(Array(v.transportes.enumerated()), id: \.element.id) { i, r in
+                if i > 0 { SeparadorFila() }
+                let clase = TextoViajes.clase(r["tipo"])
+                Button { reserva = ReservaEditando(lista: "transportes", reserva: r) } label: {
+                    FilaTarjeta(icono: "transporte", titulo: transporte(r), detalle: unir(detalleTransporte(r), r["notas"])) {
+                        Chip(texto: clase.uno, icono: clase.simbolo)
+                    }
+                }
+                .buttonStyle(.pulsable(0.98))
+                .contextMenu { Button("borrar.", role: .destructive) { enviar(.quitarReserva(lista: "transportes", id: r.id)) } }
             }
-            HStack(spacing: Espacio.l) {
-                Button("+ transporte.") { reserva = ReservaEditando(lista: "transportes", reserva: nil) }.buttonStyle(.borderless)
-                Button("+ alojamiento.") { reserva = ReservaEditando(lista: "alojamientos", reserva: nil) }.buttonStyle(.borderless)
+            ForEach(Array(v.alojamientos.enumerated()), id: \.element.id) { i, r in
+                if i > 0 || !v.transportes.isEmpty { SeparadorFila() }
+                Button { reserva = ReservaEditando(lista: "alojamientos", reserva: r) } label: {
+                    FilaTarjeta(icono: "viajes", titulo: r["nombre"].isEmpty ? "alojamiento." : r["nombre"], detalle: unir(detalleAlojamiento(r), r["notas"])) {
+                        Chip(texto: "hotel", icono: "bed.double.fill")
+                    }
+                }
+                .buttonStyle(.pulsable(0.98))
+                .contextMenu { Button("borrar.", role: .destructive) { enviar(.quitarReserva(lista: "alojamientos", id: r.id)) } }
             }
-            .foregroundStyle(Paleta.acento)
+            HStack(spacing: Medida.xs) {
+                Button("+ transporte.") { reserva = ReservaEditando(lista: "transportes", reserva: nil) }.buttonStyle(.capsula(.claro))
+                Button("+ alojamiento.") { reserva = ReservaEditando(lista: "alojamientos", reserva: nil) }.buttonStyle(.capsula(.claro))
+            }
+            .padding(.top, Medida.xs)
         }
+        .tarjeta(relleno: Medida.s)
     }
 
-    private func filaReserva(_ titulo: String, detalle: String, notas: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(titulo).foregroundStyle(Paleta.texto)
-            if !detalle.isEmpty { Text(detalle).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-            if !notas.isEmpty { Text(notas).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).lineLimit(3) }
-        }
-    }
+    private func unir(_ a: String, _ b: String) -> String { [a, b].filter { !$0.isEmpty }.joined(separator: ". ") }
 
     private func transporte(_ r: ReservaViaje) -> String {
-        let nombre = EditorReservaViaje.tipos.first { $0.0 == r["tipo"] }.map { String($0.1.dropLast()) } ?? "transporte"
         let origen = r["origen"].isEmpty ? "?" : r["origen"]
         let destino = r["destino"].isEmpty ? "?" : r["destino"]
-        return nombre + ", " + origen + " → " + destino
+        return origen + " → " + destino
     }
 
     private func detalleTransporte(_ r: ReservaViaje) -> String {
@@ -385,39 +587,113 @@ private struct FichaViaje: View {
         return p.filter { !$0.isEmpty }.joined(separator: ", ")
     }
 
-    // renderTripListsTab: cada lista con sus cosas, «x de y» y un campo para añadir.
-    @ViewBuilder private func listasSecciones(_ v: Viaje) -> some View {
-        ForEach(v.listas) { l in
-            Section {
-                ForEach(l.items) { i in
-                    let alternar = { enviar(.itemListaHecho(listaId: l.id, id: i.id, hecho: !i.hecho)) }
-                    FilaCirculo(hecho: i.hecho, marcar: alternar, abrir: alternar) { EmptyView() } texto: {
-                        Text(i.texto).font(Tipo.cuerpo).foregroundStyle(i.hecho ? Paleta.textoSecundario : Paleta.texto).strikethrough(i.hecho)
-                    } cola: { EmptyView() }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityValue(i.hecho ? "hecho" : "pendiente")
-                    .accessibilityAction { alternar() }
-                    .swipeActions { Button("borrar", role: .destructive) { enviar(.quitarItemLista(listaId: l.id, id: i.id)) } }
+    private func lugares(_ v: Viaje) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(v.lugares.enumerated()), id: \.element.id) { i, l in
+                if i > 0 { SeparadorFila(sangria: Medida.toque) }
+                HStack(spacing: Medida.xxs) {
+                    CasillaMarcar(hecha: l.visitado) { enviar(.lugarVisitado(id: l.id, visitado: !l.visitado)) }
+                    Text(l.nombre).font(Letra.cuerpo).foregroundStyle(l.visitado ? Lienzo.tintaSecundaria : Lienzo.tinta).lineLimit(2)
+                    Spacer(minLength: 0)
                 }
-                HStack {
-                    TextField("añadir.", text: Binding(get: { nuevosItems[l.id] ?? "" }, set: { nuevosItems[l.id] = $0 }))
-                        .submitLabel(.done).onSubmit { anadirItem(l.id) }
-                    Button("añadir.") { anadirItem(l.id) }.disabled((nuevosItems[l.id] ?? "").trimmingCharacters(in: .whitespaces).isEmpty)
+                .accessibilityElement(children: .combine)
+                .accessibilityValue(l.visitado ? "visitado" : "por visitar")
+                .contextMenu { Button("borrar.", role: .destructive) { enviar(.quitarLugar(id: l.id)) } }
+            }
+            CampoAnadirViaje(placeholder: "un sitio que ver.", texto: $nuevoLugar, accion: anadirLugar)
+                .padding(.top, v.lugares.isEmpty ? 0 : Medida.xs)
+        }
+        .tarjeta(relleno: Medida.s)
+    }
+
+    // renderTripListsTab: cada lista en su tarjeta con «x de y», sus cosas y un campo para añadir; al final, crear otra.
+    private func listas(_ v: Viaje) -> some View {
+        VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+            ForEach(v.listas) { l in
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(l.nombre.lowercased() + ".").font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta)
+                        Text("\(l.hechos) de \(l.items.count)").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).monospacedDigit()
+                        Spacer()
+                        Button("eliminar.") { listaABorrar = l }
+                            .font(Letra.pieFuerte).foregroundStyle(Lienzo.tintaSecundaria)
+                            .frame(minHeight: Medida.toque)
+                            .buttonStyle(.pulsable(0.94))
+                    }
+                    .padding(.horizontal, Medida.xxs)
+                    ForEach(Array(l.items.enumerated()), id: \.element.id) { i, it in
+                        if i > 0 { SeparadorFila(sangria: Medida.toque) }
+                        HStack(spacing: Medida.xxs) {
+                            CasillaMarcar(hecha: it.hecho) { enviar(.itemListaHecho(listaId: l.id, id: it.id, hecho: !it.hecho)) }
+                            Text(it.texto).font(Letra.cuerpo).foregroundStyle(it.hecho ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                                .strikethrough(it.hecho).lineLimit(2)
+                            Spacer(minLength: 0)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityValue(it.hecho ? "hecho" : "pendiente")
+                        .contextMenu { Button("borrar.", role: .destructive) { enviar(.quitarItemLista(listaId: l.id, id: it.id)) } }
+                    }
+                    CampoAnadirViaje(placeholder: "añadir.", texto: Binding(get: { nuevosItems[l.id] ?? "" }, set: { nuevosItems[l.id] = $0 })) { anadirItem(l.id) }
+                        .padding(.top, Medida.xs)
                 }
-            } header: {
-                HStack {
-                    Text("\(l.nombre.lowercased()). \(l.hechos) de \(l.items.count).")
+                .tarjeta(relleno: Medida.s)
+            }
+            CampoAnadirViaje(placeholder: "nueva lista (qué llevar…).", texto: $nuevaLista, boton: "crear.", accion: anadirLista)
+                .tarjeta(relleno: Medida.s)
+        }
+    }
+
+    // financeProGastosDelViaje: el total grande, lo que sale al día y cada gasto.
+    private func gastos(_ v: Viaje) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if v.gastos.isEmpty && v.aMano == 0 {
+                Text("en finanzas, marca los gastos de estos días como «gasto de viaje.» y aparecerán aquí.")
+                    .font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+                    .padding(.vertical, Medida.xs)
+            }
+            if !v.gastos.isEmpty {
+                HStack(alignment: .lastTextBaseline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("gastado en el viaje.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        Text(Dinero.formato(v.totalGastos)).font(Letra.numeroGrande).foregroundStyle(Lienzo.tinta)
+                    }
                     Spacer()
-                    Button("eliminar.") { listaABorrar = l }.font(Tipo.pie).buttonStyle(.borderless)
+                    if let dias = dias(v), dias > 0 {
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("al día.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                            Text(Dinero.formato(v.totalGastos / Decimal(dias))).font(Letra.numero).foregroundStyle(Lienzo.tinta)
+                        }
+                    }
+                }
+                .padding(.vertical, Medida.xs)
+                .accessibilityElement(children: .combine)
+                ForEach(v.gastos) { g in
+                    SeparadorFila(sangria: 0)
+                    HStack(spacing: Medida.s) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(g.nota.isEmpty ? "gasto." : g.nota).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                            Text(TextoViajes.fechaCorta(g.fecha, hoy: hoy)).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        }
+                        Spacer()
+                        Text(Dinero.formato(g.importe)).font(Letra.numero).foregroundStyle(Lienzo.tinta)
+                    }
+                    .frame(minHeight: Medida.toque)
+                    .padding(.vertical, Medida.xxs)
+                    .accessibilityElement(children: .combine)
                 }
             }
-        }
-        Section("listas.") {
-            HStack {
-                TextField("nueva lista (qué llevar…).", text: $nuevaLista).submitLabel(.done).onSubmit(anadirLista)
-                Button("crear.", action: anadirLista).disabled(nuevaLista.trimmingCharacters(in: .whitespaces).isEmpty)
+            if v.aMano > 0 {
+                if !v.gastos.isEmpty { SeparadorFila(sangria: 0) }
+                HStack {
+                    Text("apuntados a mano en el viaje.").font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
+                    Spacer()
+                    Text(Dinero.formato(v.aMano)).font(Letra.numero).foregroundStyle(Lienzo.tinta)
+                }
+                .frame(minHeight: Medida.toque)
+                .accessibilityElement(children: .combine)
             }
         }
+        .tarjeta(relleno: Medida.s)
     }
 
     private func anadirLista() {
