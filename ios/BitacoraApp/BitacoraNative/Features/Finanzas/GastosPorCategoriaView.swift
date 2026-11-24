@@ -15,55 +15,58 @@ struct GastosPorCategoriaView: View {
     @State private var mes = ""
     @State private var m: GastosMes?
     @State private var todas = false
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
     private func din(_ v: Double) -> String { oculto ? "•••" : FormatoFin.dinero(v) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("gastos por categoría.").font(Tipo.poppins(17, .semibold, estilo: .headline)).foregroundStyle(Paleta.texto).accessibilityAddTraits(.isHeader)
-                Spacer()
-            }
-            if let m {
-                HStack {
-                    flecha("chevron.left", m.mesAnterior, "mes anterior")
-                    Spacer()
-                    VStack(spacing: 2) {
-                        Text(m.titulo.lowercased() + ".").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-                        Text(din(m.total) + comparacion(m.total, m.totalAnterior, m.anteriorNombre)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+        TarjetaSeccion(titulo: "gastos por categoría.") {
+            VStack(alignment: .leading, spacing: Medida.s) {
+                if let m {
+                    HStack(spacing: Medida.xs) {
+                        flecha("chevron.left", m.mesAnterior, "mes anterior")
+                        Spacer(minLength: 0)
+                        VStack(spacing: 2) {
+                            Text(m.titulo.lowercased() + ".").font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta)
+                                .contentTransition(.opacity)
+                            Text(din(m.total) + comparacion(m.total, m.totalAnterior, m.anteriorNombre)).font(Letra.pie).monospacedDigit()
+                                .foregroundStyle(Lienzo.tintaSecundaria).multilineTextAlignment(.center)
+                        }
+                        Spacer(minLength: 0)
+                        flecha("chevron.right", m.mesSiguiente, "mes siguiente")
                     }
-                    Spacer()
-                    flecha("chevron.right", m.mesSiguiente, "mes siguiente")
-                }
-                if m.categorias.isEmpty {
-                    Text("Sin gastos este mes.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    if m.categorias.isEmpty {
+                        EstadoVacio(texto: "Sin gastos este mes.")
+                    } else {
+                        let tope = m.categorias.first?.total ?? 1
+                        let visibles = todas ? m.categorias : Array(m.categorias.prefix(6))
+                        VStack(spacing: 0) {
+                            ForEach(Array(visibles.enumerated()), id: \.element.id) { i, x in
+                                if i > 0 { SeparadorFila() }
+                                fila(x, tope: tope, primera: i == 0, mesAnterior: m.anteriorNombre)
+                            }
+                        }
+                        if m.categorias.count > 6 {
+                            Button(todas ? "ver menos." : "ver las \(m.categorias.count).") {
+                                withAnimation(Muelle.o(Muelle.expandir, reducido: sinMovimiento)) { todas.toggle() }
+                            }
+                            .buttonStyle(.capsula(.claro, ancho: true))
+                        }
+                    }
                 } else {
-                    let tope = m.categorias.first?.total ?? 1
-                    ForEach(todas ? m.categorias : Array(m.categorias.prefix(6))) { x in fila(x, tope: tope, mesAnterior: m.anteriorNombre) }
-                    if m.categorias.count > 6 {
-                        Button(todas ? "ver menos." : "ver las \(m.categorias.count).") { todas.toggle() }
-                            .font(Tipo.pie).foregroundStyle(Paleta.acento).buttonStyle(.plain)
-                    }
+                    ProgressView().tint(Lienzo.tintaTerciaria).frame(maxWidth: .infinity).padding(.vertical, Medida.l)
                 }
-            } else {
-                ProgressView().frame(maxWidth: .infinity)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(Paleta.superficie, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .padding(.top, Espacio.m)
         .task(id: "\(c.revision)|\(mes)") { await cargar() }
     }
 
     private func flecha(_ icono: String, _ destino: String, _ etiqueta: String) -> some View {
-        Button { mes = destino } label: {
-            Image(systemName: icono).font(.system(size: 14, weight: .semibold)).frame(width: 44, height: 36)
+        BotonRedondo(sistema: icono, tono: .sutil, tamano: 32, etiqueta: etiqueta) {
+            Haptica.ligera()
+            mes = destino
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(destino.isEmpty ? Paleta.borde : Paleta.texto)
         .disabled(destino.isEmpty)
-        .accessibilityLabel(etiqueta)
     }
 
     private func comparacion(_ v: Double, _ antes: Double, _ nombre: String) -> String {
@@ -73,20 +76,21 @@ struct GastosPorCategoriaView: View {
         return ", \(d > 0 ? "+" : "−")\(FormatoFin.dinero(abs(d))) que en \(nombre)"
     }
 
-    private func fila(_ x: GastosMes.Cat, tope: Double, mesAnterior: String) -> some View {
-        HStack(alignment: .center, spacing: Espacio.s) {
-            IconoCategoria(icono: x.icono, color: x.color, tam: 30)
-            VStack(alignment: .leading, spacing: 4) {
+    // La categoría que más gasta va en naranja; las demás, en gris: la barra compara, el color no distrae.
+    private func fila(_ x: GastosMes.Cat, tope: Double, primera: Bool, mesAnterior: String) -> some View {
+        HStack(alignment: .center, spacing: Medida.s) {
+            IconoCategoria(icono: x.icono, color: x.color, tam: Medida.icono)
+            VStack(alignment: .leading, spacing: 5) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(x.nombre).font(Tipo.cuerpo).foregroundStyle(Paleta.texto).lineLimit(1)
+                    Text(x.nombre).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).lineLimit(1)
                     Spacer(minLength: 6)
-                    Text(din(x.total)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit().foregroundStyle(Paleta.texto)
+                    Text(din(x.total)).font(Letra.numero).foregroundStyle(Lienzo.tinta)
                 }
-                BarraAvance(valor: tope > 0 ? max(0.02, x.total / tope) : 0, fondo: Paleta.borde, color: x.color.isEmpty ? Paleta.textoSecundario : Color(hexWeb: x.color), alto: 5)
-                Text(detalle(x, mesAnterior)).font(Tipo.pie).foregroundStyle(cambioColor(x)).lineLimit(1)
+                BarraCapsula(valor: tope > 0 ? max(0.02, x.total / tope) : 0, color: primera ? Lienzo.naranja : Lienzo.tintaTerciaria, alto: 5)
+                Text(detalle(x, mesAnterior)).font(Letra.pie).foregroundStyle(cambioColor(x)).lineLimit(1)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Medida.s)
         .accessibilityElement(children: .combine)
     }
 
@@ -100,8 +104,8 @@ struct GastosPorCategoriaView: View {
 
     // Gastar más que el mes anterior se marca; gastar menos, en verde.
     private func cambioColor(_ x: GastosMes.Cat) -> Color {
-        guard !oculto, x.anterior > 0 else { return Paleta.textoSecundario }
-        return x.total > x.anterior * 1.1 ? Paleta.atencion : x.total < x.anterior * 0.9 ? Paleta.positivo : Paleta.textoSecundario
+        guard !oculto, x.anterior > 0 else { return Lienzo.tintaSecundaria }
+        return x.total > x.anterior * 1.1 ? Lienzo.negativo : x.total < x.anterior * 0.9 ? Lienzo.positivo : Lienzo.tintaSecundaria
     }
 
     private func cargar() async {

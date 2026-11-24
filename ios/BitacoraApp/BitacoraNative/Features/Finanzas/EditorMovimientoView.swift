@@ -5,9 +5,12 @@ import SwiftUI
 // ahorro, y la nota. Al editar conserva de dónde vino (banco, cargo automático, pendiente...) y guarda aparte el
 // concepto del banco, para que la próxima importación lo reconozca. Guardar una categoría pone la misma a los
 // parecidos (financeProAutoCategorizar). Lo abren el coordinador (.movimiento / .editarMovimiento) y Apuntar.
+// Bitácora 2.0: el importe grande en el centro, el tipo en un segmento, filas en tarjetas blancas y «guardar.» en la
+// cápsula negra de abajo.
 struct EditorMovimientoView: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.dismiss) private var cerrar
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     let id: String
     let tipoInicial: String
     var existente: Movimiento?
@@ -35,33 +38,60 @@ struct EditorMovimientoView: View {
     }()
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if d != nil { formulario } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
+        VStack(spacing: 0) {
+            barra
+            if d != nil {
+                ScrollView { formulario }
+                    .scrollIndicators(.hidden)
+                    .scrollDismissesKeyboard(.interactively)
+            } else {
+                ProgressView().tint(Lienzo.tintaTerciaria).frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .background(Paleta.fondo)
-            .navigationTitle(existente == nil ? "nuevo movimiento." : "editar movimiento.")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { if cambiado { descartar = true } else { cerrar() } } }
-                ToolbarItem(placement: .confirmationAction) { Button("guardar.") { Task { await guardar() } }.disabled(guardando || d == nil) }
-            }
-            .confirmationDialog("¿Eliminar este movimiento?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
-                Button("eliminar.", role: .destructive) { Task { await borrar() } }
-                Button("cancelar.", role: .cancel) {}
-            }
-            .task {
-                guard d == nil, let m = try? await motorListo(c),
-                      var b = try? await m.llamar("movimientoDatos", [existente == nil ? "" : id, tipoInicial], como: Borrador.self) else { return }
-                b.id = id
-                d = b
-                original = b
-                fecha = Self.iso.date(from: b.fecha).map { Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: $0) ?? $0 } ?? Date()
-                if existente == nil { enfocado = true }
-            }
-            .preguntarAlDescartar(cambiado, preguntar: $descartar) { cerrar() }
         }
+        .fondoLienzo()
+        // La acción principal, abajo y a todo el ancho, en la cápsula negra.
+        .safeAreaInset(edge: .bottom) {
+            if d != nil {
+                Button(guardando ? "guardando…" : "guardar.") { Task { await guardar() } }
+                    .buttonStyle(.capsula(.oscuro, ancho: true))
+                    .disabled(guardando)
+                    .padding(.horizontal, Medida.margen).padding(.vertical, Medida.xs)
+                    .background(Lienzo.fondo.ignoresSafeArea(edges: .bottom))
+            }
+        }
+        .confirmationDialog("¿Eliminar este movimiento?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
+            Button("eliminar.", role: .destructive) { Task { await borrar() } }
+            Button("cancelar.", role: .cancel) {}
+        }
+        .task {
+            guard d == nil, let m = try? await motorListo(c),
+                  var b = try? await m.llamar("movimientoDatos", [existente == nil ? "" : id, tipoInicial], como: Borrador.self) else { return }
+            b.id = id
+            d = b
+            original = b
+            fecha = Self.iso.date(from: b.fecha).map { Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: $0) ?? $0 } ?? Date()
+            if existente == nil { enfocado = true }
+        }
+        .preguntarAlDescartar(cambiado, preguntar: $descartar) { cerrar() }
         .presentationDetents([.large])
+    }
+
+    // Cerrar a la izquierda, el título en el centro y, si ya existe, eliminar a la derecha.
+    private var barra: some View {
+        HStack {
+            BotonRedondo(sistema: "xmark", tono: .blanco, etiqueta: "cancelar") { if cambiado { descartar = true } else { cerrar() } }
+            Spacer()
+            Text(existente == nil ? "nuevo movimiento." : "editar movimiento.").font(Letra.seccion).foregroundStyle(Lienzo.tinta)
+                .accessibilityAddTraits(.isHeader)
+            Spacer()
+            if d?.existe == true {
+                BotonRedondo(sistema: "trash", tono: .blanco, etiqueta: "eliminar movimiento") { confirmarBorrado = true }
+            } else {
+                Color.clear.frame(width: Medida.toque, height: Medida.toque)
+            }
+        }
+        .padding(.horizontal, Medida.margen - 2)
+        .padding(.top, Medida.s)
     }
 
     // B10: el borrador del motor frente al que llegó al abrir (la fecha va aparte hasta guardar).
@@ -80,36 +110,56 @@ struct EditorMovimientoView: View {
         return n.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "es_ES")).trimmingCharacters(in: .whitespaces) == "inversiones"
     }
 
+    private var tintaImporte: Color { d?.tipo == "income" ? Lienzo.positivo : Lienzo.tinta }
+
     private var formulario: some View {
         let x = d!
-        return FormCasa {
-            Section {
-                Picker("tipo.", selection: b.tipo) {
-                    Text("gasto.").tag("expense"); Text("ingreso.").tag("income"); Text("transferencia.").tag("transfer")
+        return VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+            SegmentoCapsula(opciones: [SegmentoCapsula<String>.Opcion(valor: "expense", titulo: "gasto."),
+                                       SegmentoCapsula<String>.Opcion(valor: "income", titulo: "ingreso."),
+                                       SegmentoCapsula<String>.Opcion(valor: "transfer", titulo: "traspaso.")],
+                            elegido: b.tipo, sobreBlanco: false)
+            // El importe, grande y en el centro: es lo que se viene a escribir.
+            VStack(spacing: Medida.xxs) {
+                HStack(alignment: .firstTextBaseline, spacing: Medida.xxs) {
+                    TextField("", text: b.importe, prompt: Text("0,00").foregroundColor(Lienzo.tintaTerciaria))
+                        .keyboardType(.decimalPad)
+                        .focused($enfocado)
+                        .font(Letra.numeroGrande)
+                        .foregroundStyle(tintaImporte)
+                        .multilineTextAlignment(.center)
+                        .fixedSize()
+                    Text("€").font(Letra.numeroGrande).foregroundStyle(Lienzo.tintaTerciaria)
                 }
-                .pickerStyle(.segmented)
-                DatePicker("fecha.", selection: $fecha, displayedComponents: .date).environment(\.locale, Locale(identifier: "es_ES"))
-                TextField("importe en euros. 0,00", text: b.importe).keyboardType(.decimalPad).focused($enfocado)
+                .frame(maxWidth: .infinity)
+                .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: x.tipo)
+                Text("importe en euros.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
             }
-            Section {
-                Picker(x.tipo == "transfer" ? "de qué cuenta." : "cuenta.", selection: b.cuenta) {
-                    ForEach(x.cuentas) { Text($0.nombre).tag($0.id) }
+            .padding(.vertical, Medida.l)
+            .tarjeta()
+            .contentShape(Rectangle())
+            .onTapGesture { enfocado = true }
+
+            VStack(spacing: 0) {
+                fila("fecha.") {
+                    DatePicker("fecha.", selection: $fecha, displayedComponents: .date)
+                        .labelsHidden().environment(\.locale, Locale(identifier: "es_ES"))
+                }
+                SeparadorFila(sangria: 0)
+                fila(x.tipo == "transfer" ? "de qué cuenta." : "cuenta.") {
+                    Picker("cuenta.", selection: b.cuenta) { ForEach(x.cuentas) { Text($0.nombre).tag($0.id) } }
                 }
                 if x.tipo == "transfer" {
-                    Picker("a qué cuenta.", selection: b.destino) {
-                        Text("elige una cuenta.").tag("")
-                        ForEach(x.cuentas.filter { $0.id != x.cuenta }) { Text($0.nombre).tag($0.id) }
+                    SeparadorFila(sangria: 0)
+                    fila("a qué cuenta.") {
+                        Picker("a qué cuenta.", selection: b.destino) {
+                            Text("elige una cuenta.").tag("")
+                            ForEach(x.cuentas.filter { $0.id != x.cuenta }) { Text($0.nombre).tag($0.id) }
+                        }
                     }
-                } else if !x.ahorro && !x.ajuste {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("categoría.")
-                        SelectorCategoria(opciones: x.categorias.filter { $0.tipo == x.tipo }, seleccion: b.categoria)
-                    }
-                    if x.categoriaAuto && !x.categoria.isEmpty {
-                        Text("Categoría puesta por bitácora: el 90 % o más de tus movimientos parecidos la llevan. Al guardar queda confirmada.")
-                            .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                    }
-                    if esInversion(x) && x.inversiones.count > 1 {
+                } else if !x.ahorro && !x.ajuste && esInversion(x) && x.inversiones.count > 1 {
+                    SeparadorFila(sangria: 0)
+                    fila("a qué inversión.") {
                         Picker("a qué inversión.", selection: b.inversion) {
                             Text("sin elegir.").tag("")
                             ForEach(x.inversiones) { Text($0.nombre).tag($0.id) }
@@ -117,46 +167,83 @@ struct EditorMovimientoView: View {
                     }
                 }
             }
-            if x.tipo != "transfer" {
-                Section {
-                    if x.tipo == "expense" {
-                        Toggle(isOn: b.viaje) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("gasto de viaje.")
-                                Text("Cuenta como gasto, pero no entra en los presupuestos ni en el ritmo del mes.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                            }
-                        }
-                        if x.viaje && !x.viajes.isEmpty {
-                            Picker("viaje.", selection: b.viajeId) {
-                                Text("sin un viaje concreto").tag("")
-                                ForEach(x.viajes) { Text($0.nombre).tag($0.id) }
-                            }
-                        }
-                    }
-                    Toggle(isOn: b.ahorro) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(x.tipo == "income" ? "viene de mis ahorros." : "va a mis ahorros.")
-                            Text(x.tipo == "income" ? "Sube el saldo, pero no cuenta como ingreso (lo que sacas de una hucha o un bolsillo)." : "Baja el saldo, pero no cuenta como gasto (lo que apartas a una hucha o un bolsillo).")
-                                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                        }
+            .padding(.horizontal, Medida.rellenoTarjeta).padding(.vertical, Medida.xxs)
+            .tarjeta(relleno: 0)
+
+            if x.tipo != "transfer" && !x.ahorro && !x.ajuste {
+                VStack(alignment: .leading, spacing: Medida.xs) {
+                    EtiquetaSeccion(texto: "categoría.")
+                    SelectorCategoria(opciones: x.categorias.filter { $0.tipo == x.tipo }, seleccion: b.categoria)
+                    if x.categoriaAuto && !x.categoria.isEmpty {
+                        Text("Categoría puesta por bitácora: el 90 % o más de tus movimientos parecidos la llevan. Al guardar queda confirmada.")
+                            .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).padding(.horizontal, Medida.xxs)
                     }
                 }
+                .padding(.top, Medida.xs)
             }
-            Section {
-                TextField("nota, si quieres. Cena con amigos", text: b.nota)
-            } footer: {
-                VStack(alignment: .leading, spacing: 4) {
+
+            if x.tipo != "transfer" {
+                VStack(spacing: 0) {
+                    if x.tipo == "expense" {
+                        interruptor(b.viaje, "gasto de viaje.", "Cuenta como gasto, pero no entra en los presupuestos ni en el ritmo del mes.")
+                        if x.viaje && !x.viajes.isEmpty {
+                            SeparadorFila(sangria: 0)
+                            fila("viaje.") {
+                                Picker("viaje.", selection: b.viajeId) {
+                                    Text("sin un viaje concreto").tag("")
+                                    ForEach(x.viajes) { Text($0.nombre).tag($0.id) }
+                                }
+                            }
+                        }
+                        SeparadorFila(sangria: 0)
+                    }
+                    interruptor(b.ahorro, x.tipo == "income" ? "viene de mis ahorros." : "va a mis ahorros.",
+                                x.tipo == "income" ? "Sube el saldo, pero no cuenta como ingreso (lo que sacas de una hucha o un bolsillo)." : "Baja el saldo, pero no cuenta como gasto (lo que apartas a una hucha o un bolsillo).")
+                }
+                .padding(.horizontal, Medida.rellenoTarjeta).padding(.vertical, Medida.xxs)
+                .tarjeta(relleno: 0)
+            }
+
+            VStack(alignment: .leading, spacing: Medida.xs) {
+                TextField("", text: b.nota, prompt: Text("nota, si quieres. Cena con amigos").foregroundColor(Lienzo.tintaTerciaria), axis: .vertical)
+                    .font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
+                    .lineLimit(1...4)
+                    .padding(.horizontal, Medida.rellenoTarjeta).padding(.vertical, Medida.s)
+                    .frame(minHeight: Medida.alturaControl + 8)
+                    .tarjeta(relleno: 0)
+                VStack(alignment: .leading, spacing: Medida.xxs) {
                     if !x.banco.isEmpty && x.banco != x.nota { Text("en el banco: \(x.banco).") }
                     if x.pendiente { Text("pendiente: el banco todavía no lo ha completado.") }
-                    if let error { Text(error).foregroundStyle(Paleta.error) }
+                    if let error { Text(error).foregroundStyle(Lienzo.negativo) }
                 }
-            }
-            if x.existe {
-                Section { Button("eliminar movimiento.", role: .destructive) { confirmarBorrado = true } }
+                .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                .padding(.horizontal, Medida.xxs)
             }
         }
-        .font(Tipo.cuerpo)
-        .scrollContentBackground(.hidden)
+        .padding(.horizontal, Medida.margen)
+        .padding(.top, Medida.s)
+        .padding(.bottom, Medida.l)
+    }
+
+    // Una fila «etiqueta ……… control» dentro de una tarjeta.
+    private func fila<C: View>(_ etiqueta: String, @ViewBuilder _ control: () -> C) -> some View {
+        HStack(spacing: Medida.xs) {
+            Text(etiqueta).font(Letra.cuerpo).foregroundStyle(Lienzo.tintaSecundaria)
+            Spacer(minLength: Medida.xs)
+            control().pickerStyle(.menu).tint(Lienzo.tinta)
+        }
+        .frame(minHeight: 52)
+    }
+
+    private func interruptor(_ valor: Binding<Bool>, _ titulo: String, _ texto: String) -> some View {
+        Toggle(isOn: valor) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(titulo).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta)
+                Text(texto).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+            }
+        }
+        .tint(Lienzo.naranja)
+        .padding(.vertical, Medida.s)
     }
 
     private func guardar() async {
@@ -168,7 +255,7 @@ struct EditorMovimientoView: View {
         do {
             let json = String(data: try JSONEncoder().encode(x), encoding: .utf8) ?? "{}"
             let r = try await MotorFinanzas.compartido.crudo("guardarMovimiento", [json])
-            if await encolarCambiosFinanzas(r, c) { cerrar() } else { error = "no se pudo guardar en este iPhone." }
+            if await encolarCambiosFinanzas(r, c) { Haptica.exito(); cerrar() } else { error = "no se pudo guardar en este iPhone." }
         } catch { self.error = mensajeMotor(error, "no se pudo guardar.") }
     }
 

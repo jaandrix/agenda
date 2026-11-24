@@ -105,9 +105,9 @@ struct LogoSuscripcion: View {
                 Image(uiImage: img).resizable().scaledToFit().enGrises()
             } else {
                 Text(String(titulo.trimmingCharacters(in: .whitespaces).prefix(1)).uppercased())
-                    .font(Tipo.poppins(lado * 0.5, .bold, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario)
+                    .font(Tipo.poppins(lado * 0.5, .bold, estilo: .footnote)).foregroundStyle(Lienzo.tintaSecundaria)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Paleta.tinteTexto)
+                    .background(Lienzo.sutil)
             }
         }
         .frame(width: lado, height: lado)
@@ -142,7 +142,7 @@ struct ImportarExtractoView: View {
             FormCasa {
                 if lectura != nil {
                     Section {
-                        HStack { ProgressView(); Text("leyendo el archivo…").foregroundStyle(Paleta.textoSecundario) }
+                        HStack { ProgressView(); Text("leyendo el archivo…").foregroundStyle(Lienzo.tintaSecundaria) }
                         Button("cancelar la lectura.") { lectura?.cancel(); lectura = nil }
                     }
                 } else if let r = resultado {
@@ -151,7 +151,7 @@ struct ImportarExtractoView: View {
                         if let q = r.cuadre {
                             if q.cuadra {
                                 Text("saldo cuadrado con el extracto: " + (q.retenido > 0 ? "\(FormatoFin.dinero(q.saldoBanco ?? q.esperado)) en el banco menos \(FormatoFin.dinero(q.retenido)) retenidos que aún no enseña, \(FormatoFin.dinero(q.esperado))" : FormatoFin.dinero(q.esperado)) + ".")
-                                    .foregroundStyle(Paleta.positivo)
+                                    .foregroundStyle(Lienzo.positivo)
                             }
                         }
                     }
@@ -175,11 +175,11 @@ struct ImportarExtractoView: View {
                             }
                     }
                 }
-                if let error { Section { Text(error).foregroundStyle(Paleta.error) } }
+                if let error { Section { Text(error).foregroundStyle(Lienzo.negativo) } }
             }
-            .font(Tipo.cuerpo)
+            .font(Letra.cuerpo)
             .scrollContentBackground(.hidden)
-            .background(Paleta.fondo)
+            .background(Lienzo.fondo)
             .navigationTitle("importar extracto.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -196,9 +196,9 @@ struct ImportarExtractoView: View {
                                 .disabled(!v.confirmada || !v.formatoListo || trabajando)
                         }
                     }
-                    .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 8)
-                    .background(Paleta.fondo.ignoresSafeArea(edges: .bottom))
-                    .overlay(alignment: .top) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+                    .padding(.horizontal, Medida.margen).padding(.top, 10).padding(.bottom, 8)
+                    .background(Lienzo.fondo.ignoresSafeArea(edges: .bottom))
+                    .overlay(alignment: .top) { Rectangle().fill(Lienzo.filo).frame(height: 1) }
                 }
             }
             .fileImporter(isPresented: $elegir, allowedContentTypes: Self.tiposArchivo) { r in
@@ -226,24 +226,24 @@ struct ImportarExtractoView: View {
             Picker("cuenta.", selection: Binding(get: { v.cuenta }, set: { k in Task { await paso("importarCuenta", [k]) } })) {
                 ForEach(v.cuentas) { Text($0.nombre).tag($0.id) }
             }
-            if v.cuentaDetectada { Text("la he sacado del archivo.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
+            if v.cuentaDetectada { Text("la he sacado del archivo.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
             else if !v.confirmada {
-                Text("no la he podido sacar del archivo: elígela o confírmala.").font(Tipo.pie).foregroundStyle(Paleta.atencion)
+                Text("no la he podido sacar del archivo: elígela o confírmala.").font(Letra.pie).foregroundStyle(Lienzo.negativo)
                 Button("es \(v.cuentas.first { $0.id == v.cuenta }?.nombre ?? v.cuenta).") { Task { await paso("importarConfirmar", []) } }
             }
         }
         if let f = v.formato, f.preguntaFechas || f.preguntaDecimal { formatoView(f) }
         Section {
             VStack(alignment: .leading, spacing: 4) {
-                Text(v.nuevas > 0 ? "\(v.nuevas) \(v.nuevas == 1 ? "nueva" : "nuevas")" : "nada nuevo").font(Tipo.cuerpoFuerte)
+                Text(v.nuevas > 0 ? "\(v.nuevas) \(v.nuevas == 1 ? "nueva" : "nuevas")" : "nada nuevo").font(Letra.cuerpoFuerte)
                 Text((v.ya > 0 ? "\(v.ya) ya \(v.ya == 1 ? "estaba" : "estaban") en \(v.cuentas.first { $0.id == v.cuenta }?.nombre ?? v.cuenta)" : "ninguna estaba ya")
                      + (v.fuera > 0 ? ", \(v.fuera) \(v.fuera == 1 ? "no cuenta" : "no cuentan") (anuladas, de una hucha o con un estado que no conozco)" : "") + ", de \(v.total) filas.")
-                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                 if let r = v.repetido, !r.isEmpty {
-                    Text("Este mismo archivo ya lo importaste el \(r): lo que ya está no entra otra vez.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    Text("Este mismo archivo ya lo importaste el \(r): lo que ya está no entra otra vez.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                 }
                 if !v.conSaldo {
-                    Text("Este extracto no trae la columna de saldo: no podré comprobar que cuadra con el banco.").font(Tipo.pie).foregroundStyle(Paleta.atencion)
+                    Text("Este extracto no trae la columna de saldo: no podré comprobar que cuadra con el banco.").font(Letra.pie).foregroundStyle(Lienzo.negativo)
                 }
             }
         }
@@ -251,16 +251,16 @@ struct ImportarExtractoView: View {
             ForEach(v.filas) { f in
                 Toggle(isOn: Binding(get: { f.marcada }, set: { on in Task { await paso("importarFila", [String(f.fila), on ? "true" : "false"]) } })) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(f.dia).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(width: 52, alignment: .leading)
+                        Text(f.dia).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).frame(width: 52, alignment: .leading)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(f.concepto.isEmpty ? "sin concepto" : f.concepto).lineLimit(1)
-                            if !f.fuera.isEmpty { Text(f.fuera).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-                            else if f.ya { Text("parece que ya está.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) }
-                            else if let p = f.posible, !p.isEmpty { Text(p).font(Tipo.pie).foregroundStyle(Paleta.atencion) }
+                            if !f.fuera.isEmpty { Text(f.fuera).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
+                            else if f.ya { Text("parece que ya está.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
+                            else if let p = f.posible, !p.isEmpty { Text(p).font(Letra.pie).foregroundStyle(Lienzo.negativo) }
                         }
                         Spacer()
                         if let i = f.importe {
-                            Text((i > 0 ? "+" : "") + FormatoFin.dinero(i)).monospacedDigit().foregroundStyle(i > 0 ? Paleta.positivo : Paleta.texto)
+                            Text((i > 0 ? "+" : "") + FormatoFin.dinero(i)).monospacedDigit().foregroundStyle(i > 0 ? Lienzo.positivo : Lienzo.tinta)
                         }
                     }
                 }
@@ -300,26 +300,26 @@ struct ImportarExtractoView: View {
     // openFinanceProCuadre: el saldo no cuadra. Lo que sobra o falta entre las fechas del extracto y los tres arreglos.
     @ViewBuilder private func cuadreView(_ q: ResultadoImportacion.Cuadre) -> some View {
         Section("el saldo no cuadra.") {
-            FilaLibro(etiqueta: "el extracto dice", valor: FormatoFin.dinero(q.esperado))
-            FilaLibro(etiqueta: "bitácora dice", valor: FormatoFin.dinero(q.actual))
-            FilaLibro(etiqueta: "diferencia", valor: (q.diff > 0 ? "+" : "") + FormatoFin.dinero(q.diff), acento: q.diff != 0)
+            FilaDato(etiqueta: "el extracto dice", valor: FormatoFin.dinero(q.esperado))
+            FilaDato(etiqueta: "bitácora dice", valor: FormatoFin.dinero(q.actual))
+            FilaDato(etiqueta: "diferencia", valor: (q.diff > 0 ? "+" : "") + FormatoFin.dinero(q.diff), tono: q.diff != 0 ? Lienzo.negativo : Lienzo.tinta)
             if let d = q.detalle {
                 Text("Saldo de \(q.cuenta) a \(d.hasta), ya descontados los cargos pendientes. He cruzado uno a uno los movimientos del \(d.desde) al \(d.hasta) con el extracto.")
-                    .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
             }
         }
         if let arreglado {
-            Section { Text(arreglado).foregroundStyle(Paleta.positivo) }
+            Section { Text(arreglado).foregroundStyle(Lienzo.positivo) }
         } else if let d = q.detalle {
             if !d.sobran.isEmpty {
                 Section {
                     Text(d.sobran.contains { $0.marcado == true }
                          ? "marcado = se borra de bitácora. Ya he marcado lo justo para que cuadre: pulsa «borrar los marcados.» y listo."
                          : "marcado = se borra de bitácora. Ninguna combinación cuadra sola: marca solo lo que sepas que no pasó.")
-                        .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                        .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                     ForEach(d.sobran) { t in
                         Toggle(isOn: Binding(get: { sobranMarcados.contains(t.id) }, set: { if $0 { sobranMarcados.insert(t.id) } else { sobranMarcados.remove(t.id) } })) {
-                            HStack { Text(t.dia).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(width: 52, alignment: .leading); VStack(alignment: .leading, spacing: 1) { Text(t.concepto).lineLimit(1); if let m = t.motivo, !m.isEmpty { Text(m).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario) } }; Spacer(); Text((t.tipo == "income" ? "+" : "-") + FormatoFin.dinero(t.importe)).monospacedDigit() }
+                            HStack { Text(t.dia).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).frame(width: 52, alignment: .leading); VStack(alignment: .leading, spacing: 1) { Text(t.concepto).lineLimit(1); if let m = t.motivo, !m.isEmpty { Text(m).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) } }; Spacer(); Text((t.tipo == "income" ? "+" : "-") + FormatoFin.dinero(t.importe)).monospacedDigit() }
                         }
                     }
                     Button("borrar los marcados.") { Task { await arreglar("cuadreQuitar", ["ids": Array(sobranMarcados)]) } }.disabled(sobranMarcados.isEmpty)
@@ -329,7 +329,7 @@ struct ImportarExtractoView: View {
             if !d.faltan.isEmpty {
                 Section("faltan en bitácora (están en el extracto).") {
                     ForEach(Array(d.faltan.enumerated()), id: \.offset) { _, f in
-                        HStack { Text(f.dia).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(width: 52, alignment: .leading); Text(f.concepto).lineLimit(1); Spacer(); Text((f.importe > 0 ? "+" : "") + FormatoFin.dinero(f.importe)).monospacedDigit() }
+                        HStack { Text(f.dia).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).frame(width: 52, alignment: .leading); Text(f.concepto).lineLimit(1); Spacer(); Text((f.importe > 0 ? "+" : "") + FormatoFin.dinero(f.importe)).monospacedDigit() }
                     }
                 }
             }
@@ -437,20 +437,20 @@ struct BusquedaMovimientosView: View {
                     filtros
                     if let m {
                         if m.grupos.isEmpty {
-                            Text(m.vacio).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.m)
+                            Text(m.vacio).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).padding(.vertical, Medida.m)
                         }
                         ForEach(m.grupos) { g in
                             EtiquetaFin(texto: g.titulo.lowercased() + ".", detalle: oculto ? nil : (g.neto >= 0 ? "+" : "") + FormatoFin.dinero(g.neto))
-                            ForEach(g.filas) { x in FilaMovView(f: x, oculto: oculto, abrir: abrir) }
-                            if g.mas > 0 { Text("y \(g.mas) más: afina la búsqueda.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, 6) }
+                            ListaMovs(filas: g.filas, oculto: oculto, abrir: abrir)
+                            if g.mas > 0 { Text("y \(g.mas) más: afina la búsqueda.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).padding(.vertical, 6) }
                         }
                     } else {
-                        ProgressView().frame(maxWidth: .infinity).padding(.top, Espacio.l)
+                        ProgressView().frame(maxWidth: .infinity).padding(.top, Medida.xl)
                     }
                 }
-                .padding(.horizontal, 20).padding(.bottom, Espacio.xl)
+                .padding(.horizontal, Medida.margen).padding(.bottom, Medida.xxl)
             }
-            .background(Paleta.fondo)
+            .background(Lienzo.fondo)
             .navigationTitle("movimientos.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } } }
@@ -464,11 +464,8 @@ struct BusquedaMovimientosView: View {
     }
 
     private var filtros: some View {
-        VStack(alignment: .leading, spacing: Espacio.s) {
-            TextField("Buscar por categoría, nota o cuenta...", text: $f.search)
-                .textInputAutocapitalization(.never).autocorrectionDisabled()
-                .font(Tipo.cuerpo).padding(.horizontal, 12).frame(minHeight: 44)
-                .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+        VStack(alignment: .leading, spacing: Medida.xs) {
+            BuscadorCapsula(texto: $f.search, placeholder: "buscar por categoría, nota o cuenta")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     Menu {
@@ -491,15 +488,15 @@ struct BusquedaMovimientosView: View {
                 }
             }
         }
-        .padding(.top, Espacio.s)
+        .padding(.top, Medida.xs)
     }
 
     private func chip(_ t: String, _ on: Bool) -> some View {
-        Text(t.lowercased() + ".").font(Tipo.poppins(13, on ? .semibold : .regular, estilo: .caption))
-            .foregroundStyle(on ? Paleta.texto : Paleta.textoSecundario)
+        Text(t.lowercased() + ".").font(on ? Letra.pieFuerte : Letra.detalle)
+            .foregroundStyle(on ? Lienzo.tinta : Lienzo.tintaSecundaria)
             .padding(.horizontal, 10).frame(minHeight: 34)
-            .background(on ? Paleta.tinteTexto : Color.clear, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radio.control, style: .continuous).stroke(Paleta.borde))
+            .background(on ? Lienzo.sutil : Color.clear, in: RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous).stroke(Lienzo.filo))
     }
 }
 
@@ -517,15 +514,15 @@ struct RevisarMovimientosView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     Text("ponles categoría y revisa la cuenta: al guardar con categoría dejan de estar por ajustar.")
-                        .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
+                        .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).padding(.vertical, Medida.xs)
                     if let filas {
-                        if filas.isEmpty { Text("nada por ajustar.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario) }
-                        ForEach(filas) { f in FilaMovView(f: f, oculto: oculto, abrir: abrir) }
+                        if filas.isEmpty { Text("nada por ajustar.").font(Letra.cuerpo).foregroundStyle(Lienzo.tintaSecundaria) }
+                        ListaMovs(filas: filas, oculto: oculto, abrir: abrir)
                     } else { ProgressView().frame(maxWidth: .infinity) }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Medida.margen)
             }
-            .background(Paleta.fondo)
+            .background(Lienzo.fondo)
             .navigationTitle("por ajustar.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } } }
@@ -559,15 +556,15 @@ struct GestorSuscripcionesView: View {
                     if let m {
                         let total = m.activas.reduce(0) { $0 + $1.importe }
                         Text(m.activas.isEmpty ? "Ninguna activa." : "\(m.activas.count) \(m.activas.count == 1 ? "activa" : "activas"), \(din(total)) al mes, \(din(total * 12)) al año.")
-                            .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
+                            .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).padding(.vertical, Medida.xs)
                         ForEach(m.activas) { s in
                             fila(id: s.id, titulo: s.titulo, texto: "día \(s.dia), \(s.faltan == 0 ? "hoy" : s.faltan == 1 ? "mañana" : "en \(s.faltan) días")", importe: s.importe, aviso: false) {
                                 boton("dar de baja.") { Task { await accion(s.id, "baja"); await recargar() } }
                             }
                         }
                         Button { editar(nil) } label: {
-                            Text("+ añadir.").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.acento).frame(minHeight: 48)
-                        }.buttonStyle(.plain)
+                            Text("+ añadir.").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.naranjaProfundo).frame(minHeight: 48)
+                        }.buttonStyle(.pulsable)
                         if !m.deBaja.isEmpty {
                             EtiquetaFin(texto: "dadas de baja.")
                             ForEach(m.deBaja) { s in
@@ -578,11 +575,11 @@ struct GestorSuscripcionesView: View {
                                 }
                             }
                         }
-                    } else { ProgressView().frame(maxWidth: .infinity).padding(.top, Espacio.l) }
+                    } else { ProgressView().frame(maxWidth: .infinity).padding(.top, Medida.xl) }
                 }
-                .padding(.horizontal, 20).padding(.bottom, Espacio.xl)
+                .padding(.horizontal, Medida.margen).padding(.bottom, Medida.xxl)
             }
-            .background(Paleta.fondo)
+            .background(Lienzo.fondo)
             .navigationTitle("suscripciones.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } } }
@@ -600,30 +597,30 @@ struct GestorSuscripcionesView: View {
 
     private func fila<B: View>(id: String, titulo: String, texto: String, importe: Double, aviso: Bool, @ViewBuilder botones: () -> B) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: Espacio.s) {
+            HStack(alignment: .center, spacing: Medida.xs) {
                 LogoSuscripcion(id: id, titulo: titulo, logos: logos, lado: 34)
                 Button { editar(id) } label: {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(titulo).font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).lineLimit(1)
-                        Text(texto).font(Tipo.pie).foregroundStyle(aviso ? Paleta.atencion : Paleta.textoSecundario).lineLimit(2)
+                        Text(titulo).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                        Text(texto).font(Letra.pie).foregroundStyle(aviso ? Lienzo.negativo : Lienzo.tintaSecundaria).lineLimit(2)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
-                }.buttonStyle(.plain)
-                Text(din(importe)).font(Tipo.poppins(15, .semibold, estilo: .body)).monospacedDigit().foregroundStyle(Paleta.texto)
+                }.buttonStyle(.pulsable)
+                Text(din(importe)).font(Letra.numero).monospacedDigit().foregroundStyle(Lienzo.tinta)
             }
-            HStack(spacing: 6) { botones() }.padding(.leading, 34 + Espacio.s)
+            HStack(spacing: 6) { botones() }.padding(.leading, 34 + Medida.xs)
         }
         .padding(.vertical, 10)
-        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+        .overlay(alignment: .bottom) { Rectangle().fill(Lienzo.filo).frame(height: 1) }
     }
 
     private func boton(_ t: String, rojo: Bool = false, _ a: @escaping () -> Void) -> some View {
         Button(action: a) {
-            Text(t).font(Tipo.poppins(13, .medium, estilo: .footnote)).foregroundStyle(rojo ? Paleta.error : Paleta.texto)
+            Text(t).font(Letra.pieFuerte).foregroundStyle(rojo ? Lienzo.negativo : Lienzo.tinta)
                 .padding(.horizontal, 10).frame(minHeight: 32)
-                .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+                .background(Lienzo.sutil, in: RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
                 .frame(minHeight: 44).contentShape(Rectangle())
-        }.buttonStyle(.plain)
+        }.buttonStyle(.pulsable)
     }
 }
 
@@ -664,11 +661,11 @@ struct EditorSuscripcionView: View {
                          ? "Se registra sola como gasto el día de cargo de cada mes. Si luego importas el extracto del banco, el cargo real sustituye a este en vez de duplicarse."
                          : "Si eliges una cuenta, este cargo se registrará solo como movimiento el día indicado de cada mes.")
                 }
-                if let error { Section { Text(error).foregroundStyle(Paleta.error) } }
+                if let error { Section { Text(error).foregroundStyle(Lienzo.negativo) } }
             }
-            .font(Tipo.cuerpo)
+            .font(Letra.cuerpo)
             .scrollContentBackground(.hidden)
-            .background(Paleta.fondo)
+            .background(Lienzo.fondo)
             .navigationTitle(id == nil ? "nueva suscripción." : "suscripción.")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -716,37 +713,37 @@ struct PermitirView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: Espacio.s) {
+                VStack(alignment: .leading, spacing: Medida.xs) {
                     TextField("¿cuánto cuesta? 0,00 €", text: $texto).keyboardType(.decimalPad).focused($foco)
-                        .font(Tipo.poppins(22, .semibold, estilo: .title3)).padding(.horizontal, 12).frame(minHeight: 52)
-                        .background(Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: Radio.control, style: .continuous))
+                        .font(Letra.numeroGrande).padding(.horizontal, 12).frame(minHeight: 52)
+                        .background(Lienzo.sutil, in: RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
                     if let p, let precio {
                         let titulo = ["si": "sí, sin problema.", "justo": "sí, pero justo.", "no": "este mes, mejor no."][p.veredicto] ?? ""
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(titulo).font(Tipo.poppins(20, .bold, estilo: .title3)).foregroundStyle(p.veredicto == "no" ? Paleta.atencion : p.veredicto == "justo" ? Paleta.acento : Paleta.positivo)
+                            Text(titulo).font(Letra.titulo).foregroundStyle(p.veredicto == "no" ? Lienzo.negativo : p.veredicto == "justo" ? Lienzo.naranjaProfundo : Lienzo.positivo)
                             Text(p.tras >= 0 ? "Te quedarían unos \(FormatoFin.dinero(p.tras)) hasta fin de mes (\(p.quedanDias) \(p.quedanDias == 1 ? "día" : "días"))." : "Te faltarían unos \(FormatoFin.dinero(-p.tras)) para llegar a fin de mes.")
-                                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                                .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                         }
-                        .padding(.vertical, Espacio.s)
-                        FilaLibro(etiqueta: "tienes en tus cuentas", valor: FormatoFin.dinero(p.saldo))
-                        FilaLibro(etiqueta: p.suficiente ? "lo que sueles gastar de aquí a fin de mes" : "a tu ritmo de este mes, hasta fin de mes", valor: "−" + FormatoFin.dinero(p.resto))
-                        if p.cargos != 0 { FilaLibro(etiqueta: "suscripciones y gastos fijos que faltan", valor: "−" + FormatoFin.dinero(p.cargos)) }
-                        if p.programado != 0 { FilaLibro(etiqueta: "gastos programados", valor: "−" + FormatoFin.dinero(p.programado)) }
-                        FilaLibro(etiqueta: "esto", valor: "−" + FormatoFin.dinero(precio))
+                        .padding(.vertical, Medida.xs)
+                        FilaDato(etiqueta: "tienes en tus cuentas", valor: FormatoFin.dinero(p.saldo))
+                        FilaDato(etiqueta: p.suficiente ? "lo que sueles gastar de aquí a fin de mes" : "a tu ritmo de este mes, hasta fin de mes", valor: "−" + FormatoFin.dinero(p.resto))
+                        if p.cargos != 0 { FilaDato(etiqueta: "suscripciones y gastos fijos que faltan", valor: "−" + FormatoFin.dinero(p.cargos)) }
+                        if p.programado != 0 { FilaDato(etiqueta: "gastos programados", valor: "−" + FormatoFin.dinero(p.programado)) }
+                        FilaDato(etiqueta: "esto", valor: "−" + FormatoFin.dinero(precio))
                         if p.veredicto == "no" && p.colchon >= precio {
-                            Text("Tu sueldo sin asignar de otros meses (\(FormatoFin.dinero(p.colchon))) sí lo cubriría.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                            Text("Tu sueldo sin asignar de otros meses (\(FormatoFin.dinero(p.colchon))) sí lo cubriría.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                         }
                         if !p.suficiente {
-                            Text("Con un par de meses de movimientos, el cálculo usa lo que es normal en ti y no solo este mes.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                            Text("Con un par de meses de movimientos, el cálculo usa lo que es normal en ti y no solo este mes.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                         }
                     } else {
                         Text("Escribe el precio y te digo cómo quedaría tu mes con tu ritmo de gasto, los cargos que faltan y lo que tienes programado.")
-                            .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                            .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                     }
                 }
                 .padding(20)
             }
-            .background(Paleta.fondo)
+            .background(Lienzo.fondo)
             .navigationTitle("¿me lo puedo permitir?")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } } }

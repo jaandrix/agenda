@@ -51,21 +51,25 @@ enum IconosCategoria {
     }
 }
 
-// El icono de una categoría sobre un cuadrado con un tinte de su color, como financeProCategoryBadge en la web.
+// El icono de una categoría en el cuadrado de IconoCuadrado (V2): un tinte suave de su color y el dibujo en su color,
+// como financeProCategoryBadge en la web. Sin color, el gris sutil y la tinta.
 struct IconoCategoria: View {
     let icono: String
     var color: String = ""
     var tam: CGFloat = 28
 
     var body: some View {
-        let tinta = color.isEmpty ? Paleta.textoSecundario : Color(hexWeb: color)
-        Image(IconosCategoria.imagen(icono))
-            .renderingMode(.template)
-            .resizable().scaledToFit()
-            .foregroundStyle(tinta)
-            .padding(tam * 0.2)
+        let tinta = color.isEmpty ? Lienzo.tinta : Color(hexWeb: color)
+        RoundedRectangle(cornerRadius: tam * 0.3, style: .continuous)
+            .fill(color.isEmpty ? Lienzo.sutil : tinta.opacity(0.14))
+            .overlay {
+                Image(IconosCategoria.imagen(icono))
+                    .renderingMode(.template)
+                    .resizable().scaledToFit()
+                    .foregroundStyle(tinta)
+                    .padding(tam * 0.24)
+            }
             .frame(width: tam, height: tam)
-            .background(tinta.opacity(0.16), in: RoundedRectangle(cornerRadius: tam * 0.3, style: .continuous))
             .accessibilityHidden(true)
     }
 }
@@ -76,50 +80,60 @@ struct RejillaIconos: View {
     var color: String = ""
 
     var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 8) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Medida.xs), count: 6), spacing: Medida.xs) {
             ForEach(IconosCategoria.lista) { i in
-                Button { seleccion = i.clave } label: {
-                    IconoCategoria(icono: i.clave, color: seleccion == i.clave ? color : "", tam: 40)
-                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Paleta.texto, lineWidth: seleccion == i.clave ? 2 : 0))
+                let on = seleccion == i.clave
+                Button {
+                    Haptica.seleccion()
+                    withAnimation(Muelle.rapido) { seleccion = i.clave }
+                } label: {
+                    IconoCategoria(icono: i.clave, color: on ? color : "", tam: 40)
+                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Lienzo.tinta, lineWidth: on ? 2 : 0))
+                        .scaleEffect(on ? 1.06 : 1)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pulsable(0.9))
                 .accessibilityLabel(i.nombre.lowercased())
-                .accessibilityAddTraits(seleccion == i.clave ? [.isSelected, .isButton] : .isButton)
+                .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Medida.xxs)
     }
 }
 
-// La categoría de un movimiento en el editor: todas a la vista, con su icono, en vez de un desplegable.
+// La categoría de un movimiento en el editor: todas a la vista, con su icono, en vez de un desplegable. La elegida, en
+// negro (como la píldora de los segmentos).
 struct SelectorCategoria: View {
     let opciones: [EditorMovimientoView.Opcion]
     @Binding var seleccion: String
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 8)], spacing: 8) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: Medida.xs)], spacing: Medida.xs) {
             ficha(id: "", nombre: "sin categoría.", icono: nil, color: "")
             ForEach(opciones) { o in ficha(id: o.id, nombre: o.nombre.lowercased(), icono: o.icono ?? "other", color: o.color ?? "") }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Medida.xxs)
     }
 
     private func ficha(id: String, nombre: String, icono: String?, color: String) -> some View {
         let on = seleccion == id
-        return Button { seleccion = id } label: {
-            VStack(spacing: 4) {
+        return Button {
+            Haptica.seleccion()
+            withAnimation(Muelle.rapido) { seleccion = id }
+        } label: {
+            VStack(spacing: Medida.xxs) {
                 if let icono { IconoCategoria(icono: icono, color: color, tam: 30) } else {
-                    Image(systemName: "circle.dashed").font(.system(size: 20)).foregroundStyle(Paleta.textoSecundario).frame(width: 30, height: 30)
+                    IconoFinanzas(clave: "other", tamano: 30)
                 }
-                Text(nombre).font(Tipo.poppins(11, on ? .semibold : .medium, estilo: .caption)).foregroundStyle(on ? Paleta.texto : Paleta.textoSecundario)
+                Text(nombre).font(Letra.etiqueta).foregroundStyle(on ? Lienzo.sobreOscuro : Lienzo.tinta)
                     .lineLimit(2).multilineTextAlignment(.center).minimumScaleFactor(0.85)
             }
-            .frame(maxWidth: .infinity, minHeight: 66)
-            .padding(.vertical, 4)
-            .background(on ? Paleta.tinteAcento : Paleta.tinteTexto, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(on ? Paleta.acento : .clear, lineWidth: 1.5))
+            .frame(maxWidth: .infinity, minHeight: 70)
+            .padding(.vertical, Medida.xxs)
+            .background(on ? Lienzo.oscuro : Lienzo.tarjeta, in: RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous).strokeBorder(on ? Color.clear : Lienzo.filo))
+            .contentShape(RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pulsable(0.94))
         .accessibilityLabel(nombre)
         .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
     }
