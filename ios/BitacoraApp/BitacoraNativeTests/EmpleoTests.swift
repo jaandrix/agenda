@@ -77,4 +77,18 @@ final class EmpleoTests: XCTestCase {
         XCTAssertEqual(lista.first { $0["id"]?.comoId == "e1" }?["title"], .string("cine"))
         XCTAssertEqual(lista.count, 3)
     }
+
+    // Empleo 2.0: el día de la semana con la clave de agendaLaboral.horario (0 = domingo) y los tramos de la línea de
+    // tiempo, con los turnos de noche alargados más allá de medianoche.
+    func testSemanaDeLaLineaDeTiempo() {
+        XCTAssertEqual(TextoEmpleo.diaSemana("2026-11-22"), 0)
+        XCTAssertEqual(TextoEmpleo.diaSemana("2026-11-23"), 1)
+        XCTAssertEqual(TextoEmpleo.diaSemana("2026-11-28"), 6)
+        XCTAssertNil(TextoEmpleo.diaSemana(""))
+        XCTAssertEqual(LineaSemanaEmpleo.tramo(("09:00", "17:30")).map { [$0.0, $0.1] }, [540, 1050])
+        XCTAssertEqual(LineaSemanaEmpleo.tramo(("22:00", "06:00")).map { [$0.0, $0.1] }, [1320, 1800])
+        XCTAssertNil(LineaSemanaEmpleo.tramo(("", "17:00")))
+        XCTAssertEqual(TextoEmpleo.cuando("2026-11-25", hoy: "2026-11-24"), "mañana")
+        XCTAssertEqual(TextoEmpleo.dias(1), "1 día")
+    }
 }

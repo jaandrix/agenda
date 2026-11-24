@@ -133,19 +133,19 @@ struct EditorFichaEmpleo: View {
 
     var body: some View {
         NavigationStack {
-            FormCasa {
+            FormEmpleo {
                 Section {
                     TextField("empresa.", text: campo("company"))
                     TextField("cargo.", text: campo("position"))
                     TextField("título (si no, la empresa).", text: campo("title"))
                     Picker("modalidad.", selection: campo("modalidad")) { ForEach(LecturaFichasEmpleo.modalidades, id: \.0) { Text($0.1).tag($0.0) } }
-                }
+                } header: { CabeceraFormEmpleo(texto: "puesto") }
                 Section {
                     CampoFecha(titulo: "empieza.", texto: campo("startDate"))
                     CampoFecha(titulo: "acaba.", texto: campo("endDate"))
                     CampoHora(titulo: "entrada.", texto: campo("startTime"))
                     CampoHora(titulo: "salida.", texto: campo("endTime"))
-                }
+                } header: { CabeceraFormEmpleo(texto: "fechas y jornada") }
                 Section {
                     Picker("cotización.", selection: campo("cotizationType")) {
                         Text("régimen general.").tag("general")
@@ -153,14 +153,16 @@ struct EditorFichaEmpleo: View {
                     }
                     TextField("días cotizados (vida laboral).", text: $dias).keyboardType(.numberPad)
                     TextField("sueldo al mes (€).", text: $sueldo).keyboardType(.decimalPad)
+                } header: {
+                    CabeceraFormEmpleo(texto: "vida laboral")
                 } footer: {
-                    Text("si pones los días de tu informe de vida laboral, bitácora usa esa cifra en vez de calcularla.")
+                    Text("si pones los días de tu informe de vida laboral, bitácora usa esa cifra en vez de calcularla.").pieFormEmpleo()
                 }
                 Section {
                     TextField("logros.", text: campo("logros"), axis: .vertical).lineLimit(1...5)
                     TextField("motivo de salida.", text: campo("motivoSalida"))
                     TextField("notas.", text: campo("notes"), axis: .vertical).lineLimit(1...5)
-                }
+                } header: { CabeceraFormEmpleo(texto: "más") }
                 if editando.ficha != nil {
                     Section { Button("eliminar el empleo.", role: .destructive) { confirmarBorrado = true } }
                 }
@@ -168,12 +170,10 @@ struct EditorFichaEmpleo: View {
             .navigationTitle(editando.ficha == nil ? "nuevo empleo." : "empleo.").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { if cambiado { descartar = true } else { cerrar() } } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("guardar.") {
-                        let op = FichaEmpleoOp.op(id: id, campos: campos, diasCotizados: dias.trimmingCharacters(in: .whitespaces), sueldo: sueldo)
-                        Task { if await c.guardar(op) { cerrar() } }
-                    }.disabled(!valido)
-                }
+            }
+            .botonPrincipalEmpleo("guardar.", activo: valido) {
+                let op = FichaEmpleoOp.op(id: id, campos: campos, diasCotizados: dias.trimmingCharacters(in: .whitespaces), sueldo: sueldo)
+                Task { @MainActor in if await c.guardar(op) { Haptica.exito(); cerrar() } }
             }
             .confirmationDialog("¿eliminar este empleo?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
                 Button("eliminar.", role: .destructive) { Task { if await c.guardar(.borrarEntrada(id: id)) { cerrar() } } }
