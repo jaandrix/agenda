@@ -70,29 +70,43 @@ private enum ModalEmpleo: Identifiable {
     }
 }
 
+// Empleo 2.0: el empleo actual en negro con el horario de hoy, la semana como línea de tiempo, las citas en tarjetas con
+// la hora pequeña a la izquierda y la trayectoria (fichas de empleo) en tarjetas blancas con su estado.
 struct EmpleoView: View {
     @Environment(AppCoordinator.self) private var c
     @State private var vista: VistaEmpleo?
     @State private var modal: ModalEmpleo?
     @State private var verPasadas = false
     @State private var citaABorrar: CitaLaboral?
+    @State private var filtro = FiltroEmpleo.todos
+
+    enum FiltroEmpleo: Hashable { case todos, actuales, anteriores }
 
     private var hoy: String { CalendarioBitacora.madrid.dia(de: Date()).iso }
+    private var diaDeHoy: Int { TextoEmpleo.diaSemana(hoy) ?? 1 }
+    private let anchoHora: CGFloat = 48
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                CabeceraContexto(titulo: "empleo", detalle: vista?.empleo.map { $0 + "." }) {
-                    Text("tu agenda laboral.").font(Tipo.poppins(24, .bold, estilo: .title3)).foregroundStyle(Paleta.sobreContexto)
-                    Text("horario, turnos, reuniones y plazos.").font(Tipo.pie).foregroundStyle(Paleta.sobreContextoSuave)
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                CabeceraPagina(titulo: "empleo.", subtitulo: subtitulo) {
+                    BotonRedondo(sistema: "plus", tono: .oscuro, etiqueta: "nueva cita de trabajo") { modal = .cita(nil) }
                 }
-                VStack(alignment: .leading, spacing: 0) {
-                    if let v = vista { contenido(v) } else { ProgressView().frame(maxWidth: .infinity).padding(.top, Espacio.xl) }
-                }.modifier(HojaContenido())
+                .padding(.bottom, Medida.xxs)
+                if let v = vista {
+                    contenido(v)
+                } else {
+                    ProgressView().frame(maxWidth: .infinity).padding(.top, Medida.xl)
+                }
             }
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.xl)
         }
-        .background(Paleta.fondo.ignoresSafeArea()).scrollIndicators(.hidden)
-        .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
+        .scrollIndicators(.hidden)
+        .fondoLienzo()
+        .refreshable { await c.sincronizar() }
+        .task(id: c.revision) { await cargar() }
         .confirmarBorrado($citaABorrar, titulo: { "¿eliminar la cita «\($0.titulo)»?" }, boton: "eliminar.") { x in Task { await c.guardar(.borrarCitaLaboral(id: x.id)) } }
         .hoja(item: $modal) { m in
             switch m {
@@ -103,48 +117,203 @@ struct EmpleoView: View {
         }
     }
 
-    @ViewBuilder private func contenido(_ v: VistaEmpleo) -> some View {
-        HStack { CabeceraSeccion(titulo: "horario.", detalle: nil); Spacer(); AccionTexto(texto: "cambiar.") { modal = .horario } }
-        if v.horario.isEmpty {
-            Text("todavía no has puesto tu horario.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
-        }
-        ForEach([1, 2, 3, 4, 5, 6, 0].filter { v.horario[$0] != nil }, id: \.self) { d in
-            HStack {
-                Text(LecturaEmpleo.dias[d] + ".").font(Tipo.cuerpo).foregroundStyle(Paleta.texto)
-                Spacer()
-                Text("\(v.horario[d]!.0) – \(v.horario[d]!.1)").font(Tipo.cuerpo).monospacedDigit().foregroundStyle(Paleta.textoSecundario)
-            }.frame(minHeight: 40).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-        }
-        Toggle(isOn: Binding(get: { v.enPrincipal }, set: { si in Task { await c.guardar(.laboralEnPrincipal(si)) } })) {
-            Text("en el calendario principal.").font(Tipo.cuerpo)
-        }.tint(Paleta.acento).padding(.vertical, Espacio.s)
-
-        let proximas = v.citas.filter { $0.fecha >= hoy }
-        let pasadas = v.citas.filter { $0.fecha < hoy }.reversed()
-        HStack { CabeceraSeccion(titulo: "citas.", detalle: proximas.isEmpty ? nil : "\(proximas.count)"); Spacer(); AccionTexto(texto: "+ cita.") { modal = .cita(nil) } }
-        if proximas.isEmpty { Text("nada a la vista.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s) }
-        ForEach(proximas) { fila($0) }
-        if !pasadas.isEmpty {
-            AccionTexto(texto: verPasadas ? "ocultar las pasadas." : "ver las pasadas (\(pasadas.count)).") { verPasadas.toggle() }.padding(.top, Espacio.s)
-            if verPasadas { ForEach(Array(pasadas)) { fila($0) } }
-        }
-        fichas(v)
-        AccionTexto(texto: "cv e importar vida laboral.") { c.web = Apartados.webURL("work") }.padding(.top, Espacio.l)
+    private var subtitulo: String? {
+        guard let v = vista else { return nil }
+        let n = v.citas.filter { $0.fecha >= hoy }.count
+        return n == 0 ? "nada a la vista." : n == 1 ? "1 cita por venir." : "\(n) citas por venir."
     }
 
-    // renderWork: los empleos actuales y el historial, con los días de cada uno y el total.
-    @ViewBuilder private func fichas(_ v: VistaEmpleo) -> some View {
-        let total = v.fichas.reduce(0) { $0 + $1.dias(hoy: hoy) }
-        let oficiales = v.fichas.filter(\.deVidaLaboral).count
-        HStack { CabeceraSeccion(titulo: "empleos.", detalle: v.fichas.isEmpty ? nil : "\(v.fichas.count)"); Spacer(); AccionTexto(texto: "+ empleo.") { modal = .ficha(nil) } }
-            .padding(.top, Espacio.l)
-        if v.fichas.isEmpty {
-            Text("ningún empleo todavía.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
+    @ViewBuilder private func contenido(_ v: VistaEmpleo) -> some View {
+        actual(v).entradaEscalonada(0)
+
+        EtiquetaSeccion(texto: "semana", accion: (titulo: "cambiar.", hacer: { modal = .horario }))
+            .padding(.top, Medida.s).entradaEscalonada(1)
+        semana(v).entradaEscalonada(1)
+
+        citas(v)
+        trayectoria(v)
+
+        Button("cv e importar vida laboral.") { c.web = Apartados.webURL("work") }
+            .buttonStyle(.capsula(.blanco, ancho: true))
+            .padding(.top, Medida.s)
+    }
+
+    // MARK: Empleo actual
+
+    // labEmpleoActual: el primer empleo sin fin o que acaba hoy o después; con agenda, su horario de hoy.
+    @ViewBuilder private func actual(_ v: VistaEmpleo) -> some View {
+        if let f = v.fichas.first(where: { $0.activo(hoy: hoy) }) {
+            let modalidad = LecturaFichasEmpleo.modalidades.first { $0.0 == f.modalidad && !$0.0.isEmpty }.map { String($0.1.dropLast()) } ?? ""
+            let desde = TextoEmpleo.mesAnio(f.inicio)
+            Button { modal = .ficha(f) } label: {
+                TarjetaOscura {
+                    VStack(alignment: .leading, spacing: Medida.s) {
+                        HStack(spacing: Medida.s) {
+                            IconoCuadrado(id: "empleo", tono: .translucido)
+                            Text("EMPLEO ACTUAL").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.sobreOscuroSuave)
+                            Spacer()
+                            if !modalidad.isEmpty { Text(modalidad).font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave) }
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text((f.cargo.isEmpty ? f.nombre : f.cargo).lowercased() + ".")
+                                .font(Letra.titulo).foregroundStyle(Lienzo.sobreOscuro).multilineTextAlignment(.leading)
+                            if !f.cargo.isEmpty {
+                                Text(f.nombre.lowercased() + ".").font(Letra.detalle).foregroundStyle(Lienzo.sobreOscuroSuave)
+                            }
+                        }
+                        if !desde.isEmpty || !v.horario.isEmpty {
+                            Rectangle().fill(Lienzo.filoOscuro).frame(height: 1)
+                            HStack(alignment: .top) {
+                                if !desde.isEmpty {
+                                    datoOscuro("DESDE", desde + ".", pie: TextoEmpleo.dias(f.dias(hoy: hoy)) + ".")
+                                }
+                                Spacer()
+                                if !v.horario.isEmpty { horarioDeHoy(v).multilineTextAlignment(.trailing) }
+                            }
+                        }
+                    }
+                }
+            }
+            .buttonStyle(.pulsable(0.98))
+            .accessibilityHint("abre la ficha del empleo")
         } else {
-            Text("vida laboral. \(total) días trabajados en total" + Self.fuente(oficiales, de: v.fichas.count))
-                .font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.xs)
+            TarjetaInvitacion(frase: v.fichas.isEmpty ? "¿dónde trabajas?" : "ahora no tienes un empleo actual.",
+                              destacado: "apúntalo y verás aquí tu día.", boton: "+ empleo.") { modal = .ficha(nil) }
         }
-        ForEach(v.fichas) { filaFicha($0) }
+    }
+
+    private func datoOscuro(_ etiqueta: String, _ valor: String, pie: String?) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(etiqueta).font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.sobreOscuroSuave)
+            Text(valor).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.sobreOscuro)
+            if let pie { Text(pie).font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave).monospacedDigit() }
+        }
+    }
+
+    private func horarioDeHoy(_ v: VistaEmpleo) -> some View {
+        let h = v.horario[diaDeHoy]
+        return VStack(alignment: .trailing, spacing: 2) {
+            Text("HOY").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.sobreOscuroSuave)
+            Text(h.map { "\($0.0)–\($0.1)" } ?? "libre.")
+                .font(Letra.numero).foregroundStyle(h == nil ? Lienzo.sobreOscuro : Lienzo.naranja)
+        }
+    }
+
+    // MARK: Semana
+
+    @ViewBuilder private func semana(_ v: VistaEmpleo) -> some View {
+        VStack(alignment: .leading, spacing: Medida.s) {
+            if v.horario.isEmpty {
+                EstadoVacio(texto: "todavía no has puesto tu horario.")
+                Button("poner horario.") { modal = .horario }
+                    .buttonStyle(.capsula(.claro, ancho: true))
+            } else {
+                TimelineView(.periodic(from: .now, by: 60)) { t in
+                    LineaSemanaEmpleo(horario: v.horario, hoy: diaDeHoy, ahora: TextoEmpleo.minutosAhora(t.date))
+                }
+            }
+            SeparadorFila(sangria: 0)
+            Toggle(isOn: Binding(get: { v.enPrincipal }, set: { si in Task { await c.guardar(.laboralEnPrincipal(si)) } })) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("en el calendario principal.").font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
+                    Text("el horario y las citas salen en tu calendario.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                }
+            }
+            .tint(Lienzo.oscuro)
+            .frame(minHeight: Medida.toque)
+        }
+        .tarjeta()
+    }
+
+    // MARK: Citas
+
+    @ViewBuilder private func citas(_ v: VistaEmpleo) -> some View {
+        let proximas = v.citas.filter { $0.fecha >= hoy }
+        let pasadas = Array(v.citas.filter { $0.fecha < hoy }.reversed())
+        EtiquetaSeccion(texto: "citas", accion: (titulo: "+ cita.", hacer: { modal = .cita(nil) }))
+            .padding(.top, Medida.s).entradaEscalonada(2)
+        if proximas.isEmpty {
+            EstadoVacio(texto: "nada a la vista.").tarjeta(relleno: Medida.xs).entradaEscalonada(2)
+        }
+        ForEach(Array(proximas.enumerated()), id: \.element.id) { n, cita in
+            tarjetaCita(cita, pasada: false).entradaEscalonada(n + 3)
+        }
+        if !pasadas.isEmpty {
+            SeccionPlegable(titulo: "pasadas.", detalle: "\(pasadas.count)", abierta: $verPasadas) {
+                VStack(spacing: Medida.entreTarjetas) {
+                    ForEach(pasadas) { tarjetaCita($0, pasada: true) }
+                }
+                .padding(.top, Medida.xxs)
+            }
+            .padding(.horizontal, Medida.xxs)
+        }
+    }
+
+    private func tarjetaCita(_ cita: CitaLaboral, pasada: Bool) -> some View {
+        let titulo = (cita.titulo.isEmpty ? LecturaEmpleo.nombreTipo(cita.tipo) : cita.titulo).lowercased() + "."
+        let detalle = [TextoEmpleo.cuando(cita.fecha, hoy: hoy), cita.lugar].filter { !$0.isEmpty }.joined(separator: ", ") + "."
+        let esHoy = cita.fecha == hoy
+        return Button { modal = .cita(cita) } label: {
+            HStack(alignment: .top, spacing: Medida.s) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(cita.ini.isEmpty ? "sin hora" : cita.ini)
+                        .font(Letra.hora)
+                        .foregroundStyle(cita.ini.isEmpty ? Lienzo.tintaTerciaria : (esHoy ? Lienzo.naranjaProfundo : Lienzo.tinta))
+                        .lineLimit(2)
+                    if !cita.fin.isEmpty { Text(cita.fin).font(Letra.hora).foregroundStyle(Lienzo.tintaTerciaria) }
+                }
+                .frame(width: anchoHora, alignment: .leading)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(titulo).font(Letra.tituloTarjeta).foregroundStyle(pasada ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                        .lineLimit(2).multilineTextAlignment(.leading)
+                    Text(detalle).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
+                }
+                Spacer(minLength: Medida.xs)
+                Chip(texto: LecturaEmpleo.nombreTipo(cita.tipo), tono: esHoy ? .naranja : .sutil)
+            }
+            .tarjeta()
+            .contentShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+        }
+        .buttonStyle(.pulsable(0.97))
+        .contextMenu { Button("eliminar cita.", role: .destructive) { citaABorrar = cita } }
+        .accessibilityElement(children: .combine)
+    }
+
+    // MARK: Trayectoria
+
+    // renderWork: los empleos actuales y el historial, con los días de cada uno y el total.
+    @ViewBuilder private func trayectoria(_ v: VistaEmpleo) -> some View {
+        if !v.fichas.isEmpty {
+            let total = v.fichas.reduce(0) { $0 + $1.dias(hoy: hoy) }
+            let oficiales = v.fichas.filter(\.deVidaLaboral).count
+            let hayActuales = v.fichas.contains { $0.activo(hoy: hoy) }
+            let hayAnteriores = v.fichas.contains { !$0.activo(hoy: hoy) }
+            let lista = v.fichas.filter { (f: FichaEmpleo) -> Bool in
+                switch filtro {
+                case .todos: return true
+                case .actuales: return f.activo(hoy: hoy)
+                case .anteriores: return !f.activo(hoy: hoy)
+                }
+            }
+            EtiquetaSeccion(texto: "trayectoria", accion: (titulo: "+ empleo.", hacer: { modal = .ficha(nil) }))
+                .padding(.top, Medida.s)
+            Text("vida laboral, \(total) días trabajados en total" + Self.fuente(oficiales, de: v.fichas.count))
+                .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                .padding(.horizontal, Medida.xxs)
+            if hayActuales && hayAnteriores {
+                SegmentoCapsula(opciones: [SegmentoCapsula<FiltroEmpleo>.Opcion(valor: .todos, titulo: "todos"),
+                                           SegmentoCapsula<FiltroEmpleo>.Opcion(valor: .actuales, titulo: "actuales"),
+                                           SegmentoCapsula<FiltroEmpleo>.Opcion(valor: .anteriores, titulo: "anteriores")],
+                                elegido: $filtro, sobreBlanco: false)
+            }
+            VStack(spacing: Medida.entreTarjetas) {
+                ForEach(Array(lista.enumerated()), id: \.element.id) { n, f in
+                    tarjetaFicha(f).entradaEscalonada(n)
+                }
+            }
+            .id(filtro)
+            .transition(.opacity)
+        }
     }
 
     static func fuente(_ oficiales: Int, de n: Int) -> String {
@@ -153,39 +322,38 @@ struct EmpleoView: View {
         return ", \(oficiales) de \(n) según tu informe."
     }
 
-    private func filaFicha(_ f: FichaEmpleo) -> some View {
+    private func tarjetaFicha(_ f: FichaEmpleo) -> some View {
         let activo = f.activo(hoy: hoy)
-        let fechas = f.inicio + (f.fin.isEmpty || activo ? " → actual" : " → " + f.fin)
+        let desde = TextoEmpleo.mesAnio(f.inicio)
+        let hasta = activo ? "hoy" : TextoEmpleo.mesAnio(f.fin)
+        let fechas = desde.isEmpty ? "" : desde + (hasta.isEmpty ? "" : " → " + hasta)
         let modalidad = LecturaFichasEmpleo.modalidades.first { $0.0 == f.modalidad && !$0.0.isEmpty }.map { String($0.1.dropLast()) } ?? ""
-        let meta = [f.subtitulo, fechas, modalidad, activo ? "" : f.motivoSalida].filter { !$0.isEmpty }.joined(separator: ", ")
+        let meta = [fechas, modalidad, activo ? "" : f.motivoSalida].filter { !$0.isEmpty }.joined(separator: ", ")
         return Button { modal = .ficha(f) } label: {
-            HStack(alignment: .firstTextBaseline, spacing: Espacio.s) {
+            HStack(alignment: .top, spacing: Medida.s) {
+                IconoCuadrado(id: "empleo", tono: activo ? .oscuro : .claro)
                 VStack(alignment: .leading, spacing: 2) {
-                    if activo { Text("empleo actual.").font(Tipo.pie).foregroundStyle(Paleta.acento) }
-                    Text(f.nombre.lowercased() + ".").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-                    Text(meta).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                }.frame(maxWidth: .infinity, alignment: .leading)
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text("\(f.dias(hoy: hoy))").font(Tipo.cuerpoFuerte).monospacedDigit().foregroundStyle(Paleta.texto)
-                    Text(f.deVidaLaboral ? "días, informe." : "días.").font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
+                    Text(f.nombre.lowercased() + ".").font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta)
+                        .lineLimit(2).multilineTextAlignment(.leading)
+                    if !f.subtitulo.isEmpty {
+                        Text(f.subtitulo).font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
+                    }
+                    if !meta.isEmpty {
+                        Text(meta).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(2).multilineTextAlignment(.leading)
+                    }
                 }
-            }.padding(.vertical, 10).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-        }.buttonStyle(.plain)
+                Spacer(minLength: Medida.xs)
+                VStack(alignment: .trailing, spacing: Medida.xxs) {
+                    Chip(texto: activo ? "actual" : "terminado", tono: activo ? .oscuro : .sutil)
+                    Text(TextoEmpleo.dias(f.dias(hoy: hoy)) + (f.deVidaLaboral ? ", informe" : ""))
+                        .font(Letra.hora).foregroundStyle(Lienzo.tintaSecundaria)
+                }
+            }
+            .tarjeta()
+            .contentShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+        }
+        .buttonStyle(.pulsable(0.97))
         .accessibilityElement(children: .combine)
-    }
-
-    private func fila(_ cita: CitaLaboral) -> some View {
-        Button { modal = .cita(cita) } label: {
-            HStack(alignment: .firstTextBaseline, spacing: Espacio.s) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(LecturaViajes.fechaLarga(cita.fecha)).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                    Text((cita.titulo.isEmpty ? LecturaEmpleo.nombreTipo(cita.tipo) : cita.titulo).lowercased() + ".").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-                    Text([LecturaEmpleo.nombreTipo(cita.tipo), cita.lugar].filter { !$0.isEmpty }.joined(separator: ", ")).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario)
-                }.frame(maxWidth: .infinity, alignment: .leading)
-                Text(cita.ini.isEmpty ? "" : cita.ini + (cita.fin.isEmpty ? "" : "–" + cita.fin)).font(Tipo.pie).monospacedDigit().foregroundStyle(Paleta.textoSecundario)
-            }.padding(.vertical, 10).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-        }.buttonStyle(.plain)
-        .contextMenu { Button("eliminar cita.", role: .destructive) { citaABorrar = cita } }
     }
 
     private func cargar() async {
@@ -221,35 +389,40 @@ private struct EditorCitaLaboral: View {
         _id = State(initialValue: cita?.id ?? LecturaEmpleo.nuevoId())
     }
 
+    private var valido: Bool { !titulo.trimmingCharacters(in: .whitespaces).isEmpty || tipo == "turno" }
+
     var body: some View {
         NavigationStack {
-            FormCasa {
-                Picker("tipo.", selection: $tipo) { ForEach(LecturaEmpleo.tipos, id: \.0) { t in Text(t.1 + ".").tag(t.0) } }.pickerStyle(.segmented)
-                TextField(tipo == "turno" ? "qué (opcional)." : "qué.", text: $titulo)
-                DatePicker("cuándo.", selection: $fecha, displayedComponents: .date)
-                Toggle("con horas.", isOn: $conHoras)
-                if conHoras {
-                    DatePicker("de.", selection: $ini, displayedComponents: .hourAndMinute)
-                    DatePicker("a.", selection: $fin, displayedComponents: .hourAndMinute)
-                }
-                TextField("dónde.", text: $lugar)
-                TextField("notas.", text: $notas, axis: .vertical).lineLimit(1...4)
+            FormEmpleo {
+                Section {
+                    SegmentoCapsula(opciones: LecturaEmpleo.tipos.map { SegmentoCapsula<String>.Opcion(valor: $0.0, titulo: $0.1) }, elegido: $tipo)
+                    TextField(tipo == "turno" ? "qué (opcional)." : "qué.", text: $titulo)
+                } header: { CabeceraFormEmpleo(texto: "cita") }
+                Section {
+                    DatePicker("cuándo.", selection: $fecha, displayedComponents: .date)
+                    Toggle("con horas.", isOn: $conHoras.animation(Muelle.suave))
+                    if conHoras {
+                        DatePicker("de.", selection: $ini, displayedComponents: .hourAndMinute)
+                        DatePicker("a.", selection: $fin, displayedComponents: .hourAndMinute)
+                    }
+                } header: { CabeceraFormEmpleo(texto: "cuándo") }
+                Section {
+                    TextField("dónde.", text: $lugar)
+                    TextField("notas.", text: $notas, axis: .vertical).lineLimit(1...4)
+                } header: { CabeceraFormEmpleo(texto: "más") }
                 if cita != nil { Section { Button("eliminar cita.", role: .destructive) { confirmarBorrado = true } } }
             }
-            .environment(\.locale, Locale(identifier: "es_ES"))
             .navigationTitle(cita == nil ? "nueva cita de trabajo." : "editar cita.").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("guardar.") {
-                        let op = OperacionBitacora.guardarCitaLaboral(id: id, fecha: CalendarioBitacora.madrid.dia(de: fecha).iso,
-                                                                       ini: conHoras ? texto(ini) : "", fin: conHoras ? texto(fin) : "",
-                                                                       titulo: titulo.trimmingCharacters(in: .whitespacesAndNewlines), tipo: tipo,
-                                                                       lugar: lugar.trimmingCharacters(in: .whitespacesAndNewlines),
-                                                                       notas: notas.trimmingCharacters(in: .whitespacesAndNewlines))
-                        Task { if await c.guardar(op) { cerrar() } }
-                    }.disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty && tipo != "turno")
-                }
+            }
+            .botonPrincipalEmpleo("guardar.", activo: valido) {
+                let op = OperacionBitacora.guardarCitaLaboral(id: id, fecha: CalendarioBitacora.madrid.dia(de: fecha).iso,
+                                                               ini: conHoras ? texto(ini) : "", fin: conHoras ? texto(fin) : "",
+                                                               titulo: titulo.trimmingCharacters(in: .whitespacesAndNewlines), tipo: tipo,
+                                                               lugar: lugar.trimmingCharacters(in: .whitespacesAndNewlines),
+                                                               notas: notas.trimmingCharacters(in: .whitespacesAndNewlines))
+                Task { @MainActor in if await c.guardar(op) { Haptica.exito(); cerrar() } }
             }
             .confirmationDialog("¿eliminar esta cita?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
                 Button("eliminar.", role: .destructive) { Task { if await c.guardar(.borrarCitaLaboral(id: id)) { cerrar() } } }
@@ -289,32 +462,35 @@ private struct EditorHorarioLaboral: View {
 
     var body: some View {
         NavigationStack {
-            FormCasa {
+            FormEmpleo {
                 Section {
                     ForEach([1, 2, 3, 4, 5, 6, 0], id: \.self) { d in
-                        Toggle(LecturaEmpleo.dias[d] + ".", isOn: Binding(get: { activos.contains(d) }, set: { if $0 { activos.insert(d) } else { activos.remove(d) } }))
+                        Toggle(LecturaEmpleo.dias[d] + ".", isOn: Binding(get: { activos.contains(d) }, set: { si in
+                            withAnimation(Muelle.suave) { if si { activos.insert(d) } else { activos.remove(d) } }
+                        }))
                         if activos.contains(d) {
                             HStack {
                                 DatePicker("entrada.", selection: Binding(get: { ini[d] ?? Date() }, set: { ini[d] = $0 }), displayedComponents: .hourAndMinute).labelsHidden()
-                                Text("a").foregroundStyle(Paleta.textoSecundario)
+                                Text("a").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                                 DatePicker("salida.", selection: Binding(get: { fin[d] ?? Date() }, set: { fin[d] = $0 }), displayedComponents: .hourAndMinute).labelsHidden()
                             }
                         }
                     }
-                } footer: { Text("los cambios puntuales (un turno distinto, una guardia) apúntalos como cita de tipo turno.") }
+                } header: {
+                    CabeceraFormEmpleo(texto: "días de trabajo")
+                } footer: {
+                    Text("los cambios puntuales (un turno distinto, una guardia) apúntalos como cita de tipo turno.").pieFormEmpleo()
+                }
             }
-            .environment(\.locale, Locale(identifier: "es_ES"))
             .navigationTitle("horario laboral.").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("guardar.") {
-                        var cal = Calendar(identifier: .gregorian); cal.timeZone = CalendarioBitacora.madrid.zona
-                        let t = { (d: Date?) -> String in let h = cal.dateComponents([.hour, .minute], from: d ?? Date()); return String(format: "%02d:%02d", h.hour ?? 0, h.minute ?? 0) }
-                        let dias = Dictionary(uniqueKeysWithValues: activos.map { (String($0), t(ini[$0]) + "|" + t(fin[$0])) })
-                        Task { if await c.guardar(.horarioLaboral(dias: dias)) { cerrar() } }
-                    }
-                }
+            }
+            .botonPrincipalEmpleo("guardar.") {
+                var cal = Calendar(identifier: .gregorian); cal.timeZone = CalendarioBitacora.madrid.zona
+                let t = { (d: Date?) -> String in let h = cal.dateComponents([.hour, .minute], from: d ?? Date()); return String(format: "%02d:%02d", h.hour ?? 0, h.minute ?? 0) }
+                let dias = Dictionary(uniqueKeysWithValues: activos.map { (String($0), t(ini[$0]) + "|" + t(fin[$0])) })
+                Task { @MainActor in if await c.guardar(.horarioLaboral(dias: dias)) { Haptica.exito(); cerrar() } }
             }
         }
     }
