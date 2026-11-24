@@ -27,7 +27,7 @@ enum Lienzo {
         static let tintaTerciaria: UInt32 = 0x9AA0AA
         static let sobreOscuro: UInt32 = 0xF4F4F2
         static let verde: UInt32 = 0x23986A
-        static let rojo: UInt32 = 0xD8402B
+        static let rojo: UInt32 = 0xCC3A26
         static let azul: UInt32 = 0x4A72E8
         static let ambar: UInt32 = 0xE9A21F
         static let violeta: UInt32 = 0x8A63D2
