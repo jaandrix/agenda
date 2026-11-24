@@ -31,6 +31,7 @@ struct EditorEventoView: View {
     @State private var descartar = false
     @State private var error: String?
     @FocusState private var enfocado: Bool
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     // Tipo de ocio explícito (ValorarOcio): con él, Bitácora crea «valorar …» tres horas después del final.
     @State private var ocio = ""
     @State private var ocioInicial = ""
@@ -58,75 +59,169 @@ struct EditorEventoView: View {
         _fin = State(initialValue: h.addingTimeInterval(2 * 3600))
     }
 
+    // Bitácora 2.0: hoja sobre el lienzo, campos en tarjetas blancas, el día y la hora en filas limpias, el ocio en
+    // chips y «guardar.» en cápsula negra pegada abajo.
     var body: some View {
-        NavigationStack {
-            FormCasa {
-                Section {
-                    TextField("qué es.", text: $titulo).focused($enfocado)
-                    TextField("dónde.", text: $lugar)
-                    TextField("notas.", text: $notas, axis: .vertical).lineLimit(1...4)
-                }
-                .listRowBackground(Paleta.superficie)
-                Section {
-                    Picker("de ocio.", selection: Binding(get: { ocio }, set: { ocio = $0; ocioTocado = true })) {
-                        ForEach(Self.opcionesOcio, id: \.0) { Text($0.1).tag($0.0) }
+        VStack(spacing: 0) {
+            barraSuperior
+            ScrollView {
+                VStack(alignment: .leading, spacing: Medida.m) {
+                    VStack(spacing: 0) {
+                        campo("qué es.", texto: $titulo).focused($enfocado)
+                        SeparadorFila(sangria: 0)
+                        campo("dónde.", texto: $lugar)
+                        SeparadorFila(sangria: 0)
+                        TextField("", text: $notas, prompt: Text("notas.").foregroundColor(Lienzo.tintaTerciaria), axis: .vertical)
+                            .lineLimit(1...4)
+                            .font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
+                            .padding(.vertical, Medida.s)
                     }
-                } footer: {
-                    if !ocio.isEmpty { Text("tres horas después de que acabe, bitácora te pondrá «valorar \(ValorarOcio.nombre(ocio))» en el plan.") }
-                }
-                .listRowBackground(Paleta.superficie)
-                Section {
-                    DatePicker("día.", selection: $fecha, displayedComponents: .date)
-                    Toggle("a una hora.", isOn: $conHora.animation(.easeOut(duration: 0.15)))
-                    if conHora {
-                        DatePicker("hora.", selection: $hora, displayedComponents: .hourAndMinute)
-                        Toggle("hasta una hora.", isOn: $conFin.animation(.easeOut(duration: 0.15)))
-                        if conFin { DatePicker("acaba.", selection: $fin, displayedComponents: .hourAndMinute) }
+                    .tarjeta(relleno: Medida.rellenoTarjeta)
+
+                    EtiquetaSeccion(texto: "cuándo").padding(.top, Medida.xs)
+                    VStack(spacing: 0) {
+                        fila("día.") { DatePicker("día.", selection: $fecha, displayedComponents: .date).labelsHidden() }
+                        SeparadorFila(sangria: 0)
+                        interruptor("a una hora.", $conHora)
+                        if conHora {
+                            SeparadorFila(sangria: 0)
+                            fila("empieza.") { DatePicker("hora.", selection: $hora, displayedComponents: .hourAndMinute).labelsHidden() }
+                                .transition(.opacity)
+                            SeparadorFila(sangria: 0)
+                            interruptor("hasta una hora.", $conFin).transition(.opacity)
+                            if conFin {
+                                SeparadorFila(sangria: 0)
+                                fila("acaba.") { DatePicker("acaba.", selection: $fin, displayedComponents: .hourAndMinute).labelsHidden() }
+                                    .transition(.opacity)
+                            }
+                        }
                     }
-                } footer: {
-                    if let error { Text(error).foregroundStyle(Paleta.error) }
+                    .tarjeta(relleno: Medida.rellenoTarjeta)
+                    .environment(\.locale, Locale(identifier: "es_ES"))
+
+                    EtiquetaSeccion(texto: "de ocio").padding(.top, Medida.xs)
+                    ScrollView(.horizontal) {
+                        HStack(spacing: Medida.xs) {
+                            ForEach(Self.opcionesOcio, id: \.0) { o in
+                                let on = ocio == o.0
+                                Button {
+                                    guard !on else { return }
+                                    Haptica.seleccion()
+                                    withAnimation(Muelle.o(Muelle.rapido, reducido: sinMovimiento)) { ocio = o.0; ocioTocado = true }
+                                } label: {
+                                    Chip(texto: o.1, tono: on ? .oscuro : .blanco).frame(minHeight: Medida.toque)
+                                }
+                                .buttonStyle(.pulsable(0.92))
+                                .accessibilityAddTraits(on ? .isSelected : [])
+                            }
+                        }
+                        .padding(.horizontal, Medida.margen)
+                    }
+                    .scrollIndicators(.hidden)
+                    .padding(.horizontal, -Medida.margen)
+                    if !ocio.isEmpty {
+                        Text("tres horas después de que acabe, bitácora te pondrá «valorar \(ValorarOcio.nombre(ocio))» en el plan.")
+                            .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                            .padding(.horizontal, Medida.xxs)
+                            .transition(.opacity)
+                    }
+
+                    if let error {
+                        Text(error).font(Letra.pie).foregroundStyle(Lienzo.negativo).padding(.horizontal, Medida.xxs)
+                    }
+
+                    if !inicial.nuevo {
+                        Button { confirmarBorrado = true } label: {
+                            Text("borrar evento.").foregroundStyle(Lienzo.negativo)
+                        }
+                        .buttonStyle(.capsula(.blanco, ancho: true))
+                        .padding(.top, Medida.l)
+                    }
                 }
-                .listRowBackground(Paleta.superficie)
-                .environment(\.locale, Locale(identifier: "es_ES"))
-                if !inicial.nuevo {
-                    Section { Button("borrar.", role: .destructive) { confirmarBorrado = true } }.listRowBackground(Paleta.superficie)
-                }
+                .padding(.horizontal, Medida.margen)
+                .padding(.top, Medida.xs)
+                .padding(.bottom, Medida.l)
             }
-            .font(Tipo.cuerpo)
-            .scrollContentBackground(.hidden)
-            .background(Paleta.fondo)
-            .navigationTitle(inicial.nuevo ? "nuevo evento." : "evento.")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { if cambiado { descartar = true } else { cerrar() } } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("guardar.") { Task { await enviar(guardado) } }.disabled(guardando || limpio(titulo).isEmpty)
-                }
+            .scrollIndicators(.hidden)
+            .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Button(guardando ? "guardando…" : "guardar.") { Task { await enviar(guardado) } }
+                    .buttonStyle(.capsula(.oscuro, ancho: true))
+                    .disabled(guardando || limpio(titulo).isEmpty)
+                    .padding(.horizontal, Medida.margen)
+                    .padding(.vertical, Medida.xs)
+                    .background(Lienzo.fondo)
             }
-            .confirmationDialog("¿borrar este evento?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
-                Button("borrar.", role: .destructive) { Task { await enviar(.borrarEntrada(id: inicial.id)) } }
-                Button("cancelar.", role: .cancel) {}
-            }
-            .onAppear { if inicial.nuevo { enfocado = true } }
-            .onChange(of: titulo) { _, t in
-                guard inicial.nuevo, !ocioTocado else { return }
-                ocio = ValorarOcio.clase(["title": .string(t)]) ?? ""
-            }
-            .task {
-                guard !inicial.nuevo, let doc = await c.documentoVisible(),
-                      let e = (((try? doc.valor(de: "entries")) ?? nil)?.lista ?? []).first(where: { $0["id"]?.comoId == inicial.id })?.objeto else { return }
-                let v = ValorarOcio.clase(e) ?? ""
-                if !ocioTocado { ocio = v }
-                ocioInicial = v
-                if let f = ValorarOcio.horaFin(e), let m = ValorarOcio.minutos(f) {
-                    finInicial = e["endTime"]?.texto.flatMap { $0.isEmpty ? nil : $0 }
-                    fin = Self.cal.date(bySettingHour: m / 60, minute: m % 60, second: 0, of: fecha) ?? fin
-                    conFin = true
-                }
-            }
-            .preguntarAlDescartar(cambiado, preguntar: $descartar) { cerrar() }
         }
+        .fondoLienzo()
+        .tint(Lienzo.naranja)
+        .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: ocio.isEmpty)
+        .confirmationDialog("¿borrar este evento?", isPresented: $confirmarBorrado, titleVisibility: .visible) {
+            Button("borrar.", role: .destructive) { Task { await enviar(.borrarEntrada(id: inicial.id)) } }
+            Button("cancelar.", role: .cancel) {}
+        }
+        .onAppear { if inicial.nuevo { enfocado = true } }
+        .onChange(of: titulo) { _, t in
+            guard inicial.nuevo, !ocioTocado else { return }
+            ocio = ValorarOcio.clase(["title": .string(t)]) ?? ""
+        }
+        .task {
+            guard !inicial.nuevo, let doc = await c.documentoVisible(),
+                  let e = (((try? doc.valor(de: "entries")) ?? nil)?.lista ?? []).first(where: { $0["id"]?.comoId == inicial.id })?.objeto else { return }
+            let v = ValorarOcio.clase(e) ?? ""
+            if !ocioTocado { ocio = v }
+            ocioInicial = v
+            if let f = ValorarOcio.horaFin(e), let m = ValorarOcio.minutos(f) {
+                finInicial = e["endTime"]?.texto.flatMap { $0.isEmpty ? nil : $0 }
+                fin = Self.cal.date(bySettingHour: m / 60, minute: m % 60, second: 0, of: fecha) ?? fin
+                conFin = true
+            }
+        }
+        .preguntarAlDescartar(cambiado, preguntar: $descartar) { cerrar() }
         .presentationDetents([.large])
+    }
+
+    // Cerrar a la izquierda y el título en el centro, como las hojas del sistema pero con las piezas de la casa.
+    private var barraSuperior: some View {
+        ZStack {
+            Text(inicial.nuevo ? "nuevo evento." : "evento.")
+                .font(Letra.seccion).foregroundStyle(Lienzo.tinta)
+                .accessibilityAddTraits(.isHeader)
+            HStack {
+                BotonRedondo(sistema: "xmark", tono: .sutil, tamano: 34, etiqueta: "cancelar") {
+                    if cambiado { descartar = true } else { cerrar() }
+                }
+                Spacer()
+            }
+        }
+        .padding(.horizontal, Medida.margen - 6)
+        .padding(.top, Medida.s)
+        .padding(.bottom, Medida.xxs)
+    }
+
+    private func campo(_ placeholder: String, texto: Binding<String>) -> some View {
+        TextField("", text: texto, prompt: Text(placeholder).foregroundColor(Lienzo.tintaTerciaria))
+            .font(Letra.cuerpo)
+            .foregroundStyle(Lienzo.tinta)
+            .frame(minHeight: Medida.alturaControl + 4)
+    }
+
+    private func fila<Control: View>(_ titulo: String, @ViewBuilder control: () -> Control) -> some View {
+        HStack(spacing: Medida.xs) {
+            Text(titulo).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
+            Spacer(minLength: Medida.xs)
+            control()
+        }
+        .frame(minHeight: Medida.alturaControl + 4)
+    }
+
+    private func interruptor(_ titulo: String, _ valor: Binding<Bool>) -> some View {
+        Toggle(isOn: valor.animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento))) {
+            Text(titulo).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
+        }
+        .tint(Lienzo.naranja)
+        .sensoryFeedback(.impact(weight: .light, intensity: 0.7), trigger: valor.wrappedValue)
+        .frame(minHeight: Medida.alturaControl + 4)
     }
 
     private func limpio(_ s: String, _ max: Int = 500) -> String { String(s.trimmingCharacters(in: .whitespacesAndNewlines).prefix(max)) }

@@ -44,65 +44,62 @@ final class CalendarioModel {
     }
 }
 
-// El mes sin caja: semana desde el lunes, el día elegido en un círculo del acento y puntos discretos. Debajo, la agenda
-// del día con las mismas filas que Plan e Inicio. Nada de aspecto de selector de fechas ampliado.
+// Bitácora 2.0: el mes en una tarjeta semi flotante (o la semana, si se prefiere) y, debajo, la agenda del día en
+// tarjetas blancas. Cumpleaños y lo que dura todo el día van arriba; lo que tiene hora, en orden, con su bloque de hora.
 struct CalendarioView: View {
     @Environment(AppCoordinator.self) private var c
     @State private var modelo = CalendarioModel()
     @State private var borrando: EventoDia?
     @State private var aviso: String?
+    // Lo ya leído de otros meses, para que sus puntitos estén al volver deslizando sin esperar a la lectura.
+    @State private var vistas: [YearMonth: VistaMes] = [:]
+    @State private var haciaDelante = true
+    @AppStorage("bitacora.calendario.semana") private var enSemana = false
 
     @State private var hoy = CalendarioBitacora.madrid.dia(de: Date())
     @Environment(\.scenePhase) private var fase
-    private let columnas = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                CabeceraApartado(titulo: "calendario", contexto: nombreMes) {
-                    HStack(spacing: 0) {
-                        boton("chevron.left", "mes anterior") { modelo.moverMes(-1) }
-                        boton("chevron.right", "mes siguiente") { modelo.moverMes(1) }
+            VStack(alignment: .leading, spacing: Medida.l) {
+                CabeceraPagina(titulo: "calendario.", subtitulo: nombreMes) {
+                    SegmentoCapsula(opciones: [.init(valor: false, titulo: "mes"), .init(valor: true, titulo: "semana")],
+                                    elegido: $enSemana, sobreBlanco: false)
+                        .frame(width: 156)
+                        .accessibilityLabel("ver el mes o la semana")
+                }
+                ZStack(alignment: .top) {
+                    if enSemana {
+                        SemanaFlotante(hoy: hoy, elegido: modelo.elegido, puntos: puntos, elegir: elegir)
+                            .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
+                    } else {
+                        MesFlotanteCalendario(hoy: hoy, elegido: modelo.elegido,
+                                    mes: Binding(get: { modelo.mes }, set: { cambiarMes($0) }),
+                                    puntos: puntos, elegir: elegir)
+                            .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
                     }
                 }
-                if modelo.mes != hoy.yearMonth || modelo.elegido != hoy {
-                    AccionTexto(texto: "volver a hoy.") { modelo.mes = hoy.yearMonth; modelo.elegido = hoy }
+                if let aviso {
+                    Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.negativo).padding(.horizontal, Medida.xxs)
                 }
-                LazyVGrid(columns: columnas, spacing: 2) {
-                    ForEach(Array(["l", "m", "x", "j", "v", "s", "d"].enumerated()), id: \.offset) { _, l in
-                        Text(l).font(Tipo.pie).foregroundStyle(Paleta.textoSecundario).frame(height: 28)
-                    }
-                    ForEach(0..<huecoInicial, id: \.self) { _ in Color.clear.frame(height: 48) }
-                    ForEach(diasDelMes, id: \.self) { d in celda(d) }
+                ZStack(alignment: .top) {
+                    agenda(modelo.elegido)
+                        .id(modelo.elegido)
+                        .transition(transicionDia)
                 }
-                .padding(.top, Espacio.m)
-                if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, Espacio.s) }
-                let eventos = modelo.vista?.porDia[modelo.elegido] ?? []
-                CabeceraSeccion(titulo: nombreDia(modelo.elegido) + ".", detalle: eventos.isEmpty ? nil : "\(eventos.count)", raya: true)
-                if eventos.isEmpty {
-                    Text("nada este día.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.s)
-                }
-                ForEach(eventos) { e in
-                    FilaEvento(hora: e.hora, titulo: e.titulo, detalle: e.meta.isEmpty ? e.notas : e.meta, suave: e.suave, entradas: e.entradas) {
-                        c.modal = .ficha(e, dia: modelo.elegido)
-                    }
-                        .contextMenu {
-                            if e.editable { Button("borrar.", role: .destructive) { borrando = e } }
-                        }
-                }
-                AccionTexto(texto: "+ evento.") {
-                    c.modal = .evento(EditorEvento(id: OperacionBitacora.nuevoIdEntrada(), nuevo: true, fecha: modelo.elegido))
-                }
-                .padding(.top, Espacio.xs)
             }
-            .padding(.horizontal, Espacio.l - 4)
-            .padding(.bottom, Espacio.xl)
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.xs)
+            .padding(.bottom, Medida.l)
         }
         .scrollIndicators(.hidden)
-        .background(Paleta.fondo.ignoresSafeArea())
+        .fondoLienzo()
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
         .task(id: "\(c.revision)-\(modelo.mes.iso)-\(hoy.iso)") { await modelo.cargar(c) }
+        .onChange(of: modelo.vista) { _, v in if let v { vistas[v.mes] = v } }
+        .onChange(of: c.revision) { _, _ in vistas = vistas.filter { $0.key == modelo.mes } }
         .onChange(of: fase) { _, f in if f == .active { hoy = CalendarioBitacora.madrid.dia(de: Date()) } }
         .confirmationDialog("¿borrar este evento?", isPresented: Binding(get: { borrando != nil }, set: { if !$0 { borrando = nil } }), titleVisibility: .visible) {
             Button("borrar.", role: .destructive) {
@@ -115,73 +112,187 @@ struct CalendarioView: View {
         }
     }
 
-    private func boton(_ icono: String, _ etiqueta: String, _ accion: @escaping () -> Void) -> some View {
-        Button(action: accion) {
-            Image(systemName: icono).font(.system(size: 17, weight: .semibold)).foregroundStyle(Paleta.texto).frame(width: 44, height: 44)
+    // MARK: - Día elegido
+
+    private var transicionDia: AnyTransition {
+        guard !sinMovimiento else { return .opacity }
+        return .asymmetric(insertion: .offset(x: haciaDelante ? 28 : -28).combined(with: .opacity), removal: .opacity)
+    }
+
+    private func elegir(_ d: LocalDay) {
+        guard d != modelo.elegido else { return }
+        haciaDelante = d > modelo.elegido
+        withAnimation(Muelle.o(Muelle.rapido, reducido: sinMovimiento)) {
+            if d.yearMonth != modelo.mes { modelo.mes = d.yearMonth }
+            modelo.elegido = d
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(etiqueta)
     }
 
-    private func celda(_ d: LocalDay) -> some View {
-        let n = modelo.vista?.porDia[d]?.count ?? 0
-        let elegido = d == modelo.elegido
-        return Button { modelo.elegido = d } label: {
-            VStack(spacing: 3) {
-                Text("\(d.day)")
-                    .font(Tipo.poppins(16, d == hoy || elegido ? .semibold : .regular, estilo: .body))
-                    .foregroundStyle(elegido ? Paleta.sobreAcento : (d == hoy ? Paleta.acento : Paleta.texto))
-                    .frame(width: 34, height: 34)
-                    .background(elegido ? Paleta.acento : Color.clear, in: Circle())
-                    // Tinta: hoy no puede ir en otro color que el resto de días, así que lleva su aro.
-                    .overlay(Circle().strokeBorder(Paleta.acento, lineWidth: 1.5).opacity(Paleta.mono && d == hoy && !elegido ? 1 : 0))
-                Circle().fill(n > 0 && !elegido ? Paleta.acento : .clear).frame(width: 4, height: 4)
-            }
-            .frame(maxWidth: .infinity, minHeight: 48)
-            .contentShape(Rectangle())
+    // Al deslizar de mes: hoy si es el mes de hoy; si no, el día 1.
+    private func cambiarMes(_ m: YearMonth) {
+        guard m != modelo.mes else { return }
+        haciaDelante = m > modelo.mes
+        withAnimation(Muelle.o(Muelle.rapido, reducido: sinMovimiento)) {
+            modelo.mes = m
+            modelo.elegido = m == hoy.yearMonth ? hoy : LocalDay(year: m.year, month: m.month, day: 1)!
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(nombreDia(d) + (n > 0 ? ", \(n) cosas" : ""))
-        .accessibilityAddTraits(elegido ? [.isSelected, .isButton] : .isButton)
     }
 
-    private func abrir(_ e: EventoDia) {
-        guard e.editable else { return }
-        c.modal = .evento(EditorEvento(id: e.id, nuevo: false, fecha: modelo.elegido, hora: e.hora, titulo: e.titulo, lugar: e.lugar, notas: e.notas))
+    private func vista(_ m: YearMonth) -> VistaMes? {
+        if let v = modelo.vista, v.mes == m { return v }
+        return vistas[m]
     }
 
-    private var diasDelMes: [LocalDay] {
-        var r: [LocalDay] = []
-        var d = LocalDay(year: modelo.mes.year, month: modelo.mes.month, day: 1)!
-        while d.yearMonth == modelo.mes { r.append(d); d = d.sumando(dias: 1) }
+    private func eventos(_ d: LocalDay) -> [EventoDia] { vista(d.yearMonth)?.porDia[d] ?? [] }
+
+    private func puntos(_ d: LocalDay) -> [Color] {
+        var r: [Color] = []
+        for e in eventos(d) {
+            let p = Self.punto(e.tipo)
+            if !r.contains(p) { r.append(p) }
+            if r.count == 3 { break }
+        }
         return r
     }
 
-    // Semanas que empiezan en lunes.
-    private var huecoInicial: Int {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "UTC")!
-        let f = cal.date(from: DateComponents(year: modelo.mes.year, month: modelo.mes.month, day: 1, hour: 12))!
-        return (cal.component(.weekday, from: f) + 5) % 7
+    // MARK: - Agenda
+
+    @ViewBuilder private func agenda(_ d: LocalDay) -> some View {
+        let lista = eventos(d)
+        let todoElDia = lista.filter { $0.hora == nil && $0.tipo == "birthday" } + lista.filter { $0.hora == nil && $0.tipo != "birthday" }
+        let conHora = lista.filter { $0.hora != nil }
+        VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(nombreDia(d) + ".").font(Letra.seccion).foregroundStyle(Lienzo.tinta)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                if !lista.isEmpty {
+                    Text(lista.count == 1 ? "1 cosa" : "\(lista.count) cosas").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        .monospacedDigit()
+                }
+            }
+            .padding(.horizontal, Medida.xxs)
+            if vista(d.yearMonth) == nil {
+                Color.clear.frame(height: 120)
+            } else if lista.isEmpty {
+                TarjetaInvitacion(frase: d == hoy ? "hoy no tienes nada apuntado." : "este día está libre.",
+                                  destacado: "¿apuntas algo?", boton: "apuntar.") { c.abrirApuntar(dia: d) }
+            } else {
+                if !todoElDia.isEmpty {
+                    EtiquetaSeccion(texto: "todo el día").padding(.top, Medida.xxs)
+                    ForEach(Array(todoElDia.enumerated()), id: \.element.id) { i, e in tarjeta(e, dia: d).entradaEscalonada(i) }
+                }
+                if !conHora.isEmpty {
+                    if !todoElDia.isEmpty { EtiquetaSeccion(texto: "con hora").padding(.top, Medida.xs) }
+                    ForEach(Array(conHora.enumerated()), id: \.element.id) { i, e in
+                        tarjeta(e, dia: d).entradaEscalonada(todoElDia.count + i)
+                    }
+                }
+                HStack(spacing: Medida.xs) {
+                    Button("apuntar.") { c.abrirApuntar(dia: d) }.buttonStyle(.capsula(.blanco))
+                    Button("nuevo evento.") {
+                        c.modal = .evento(EditorEvento(id: OperacionBitacora.nuevoIdEntrada(), nuevo: true, fecha: d))
+                    }
+                    .buttonStyle(.capsula)
+                    Spacer(minLength: 0)
+                }
+                .padding(.top, Medida.xs)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // Formateadores hechos una vez: crearlos en cada pintado costaba más que pintar la rejilla.
+    private func tarjeta(_ e: EventoDia, dia d: LocalDay) -> some View {
+        let detalle = e.meta.isEmpty ? e.notas : e.meta
+        return Button { c.modal = .ficha(e, dia: d) } label: {
+            HStack(spacing: Medida.s) {
+                if let hora = e.hora {
+                    BloqueHoraCalendario(hora: hora, fin: e.fin)
+                } else {
+                    IconoCuadrado(id: Self.icono(e.tipo), tono: e.tipo == "birthday" ? .suave : .claro)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(e.titulo).font(Letra.tituloTarjeta).foregroundStyle(e.suave ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                        .lineLimit(2).multilineTextAlignment(.leading)
+                    if !detalle.isEmpty {
+                        Text(detalle).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
+                    }
+                }
+                Spacer(minLength: Medida.xs)
+                if e.entradas > 0 { Chip(texto: e.entradas == 1 ? "1 entrada" : "\(e.entradas) entradas", tono: .naranja) }
+                if e.hora != nil { IconoCuadrado(id: Self.icono(e.tipo), tono: .claro, tamano: Medida.iconoPequeno) }
+            }
+            .frame(minHeight: Medida.toque)
+            .tarjeta(relleno: Medida.s, radio: Medida.radioFila + 4)
+            .contentShape(RoundedRectangle(cornerRadius: Medida.radioFila + 4, style: .continuous))
+        }
+        .buttonStyle(.pulsable(0.97))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel([e.hora ?? "todo el día", e.titulo, detalle].filter { !$0.isEmpty }.joined(separator: ", "))
+        .contextMenu {
+            if e.editable { Button("borrar.", role: .destructive) { borrando = e } }
+        }
+    }
+
+    // Tipos de EventoDia (LecturaCalendario y los partidos de ServiciosRemotos) → icono del catálogo y puntito.
+    static func icono(_ tipo: String) -> String {
+        switch tipo {
+        case "birthday": "social"
+        case "travel": "viajes"
+        case "estudio": "estudios"
+        case "work", "laboral": "empleo"
+        case "pago": "suscripcion"
+        default: "eventos"
+        }
+    }
+
+    static func punto(_ tipo: String) -> Color {
+        switch tipo {
+        case "birthday": Lienzo.Punto.cumple
+        case "travel": Lienzo.Punto.viaje
+        case "estudio": Lienzo.Punto.estudio
+        case "pago": Lienzo.Punto.dinero
+        case "work", "laboral": Lienzo.Punto.tarea
+        default: Lienzo.Punto.evento
+        }
+    }
+
+    // MARK: - Textos
+
+    // Formateador hecho una vez: crearlo en cada pintado costaba más que pintar la rejilla.
     private static let utc: Calendar = { var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!; return cal }()
-    private static func formato(_ f: String) -> DateFormatter {
+    private static let formatoDia: DateFormatter = {
         let d = DateFormatter()
         d.locale = Locale(identifier: "es_ES")
         d.timeZone = TimeZone(identifier: "UTC")
-        d.dateFormat = f
+        d.dateFormat = "EEEE d 'de' MMMM"
         return d
-    }
-    private static let formatoMes = formato("LLLL yyyy")
-    private static let formatoDia = formato("EEEE d 'de' MMMM")
+    }()
 
-    private var nombreMes: String {
-        Self.formatoMes.string(from: Self.utc.date(from: DateComponents(year: modelo.mes.year, month: modelo.mes.month, day: 1, hour: 12))!) + "."
-    }
+    private var nombreMes: String { "\(MesFlotanteCalendario.meses[modelo.mes.month - 1]) de \(modelo.mes.year)." }
 
     private func nombreDia(_ d: LocalDay) -> String {
-        Self.formatoDia.string(from: Self.utc.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12))!)
+        let t = Self.formatoDia.string(from: Self.utc.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12))!)
+        if d == hoy { return "hoy, " + t }
+        if d == hoy.sumando(dias: 1) { return "mañana, " + t }
+        return t
     }
 }
+
+// El bloque de hora de la agenda: la hora en tinta y, si la hay, la de fin debajo en pequeño, sobre gris suave.
+// Candidato a DesignSystem/V2 (Plan e Inicio pintan lo mismo).
+struct BloqueHoraCalendario: View {
+    let hora: String
+    var fin: String?
+
+    var body: some View {
+        VStack(spacing: 1) {
+            Text(hora).font(Letra.hora).foregroundStyle(Lienzo.tinta)
+            if let fin { Text(fin).font(Letra.etiqueta).foregroundStyle(Lienzo.tintaTerciaria).monospacedDigit() }
+        }
+        .frame(width: 52, height: Medida.icono + 6)
+        .background(Lienzo.sutil, in: RoundedRectangle(cornerRadius: Medida.radioIcono, style: .continuous))
+        .accessibilityHidden(true)
+    }
+}
+
