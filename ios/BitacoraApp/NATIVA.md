@@ -5,6 +5,12 @@ producto; esta app crece a su lado por cortes completos. La envoltura web (`Bita
 
 ## Estado
 
+**3.0 (23-11 a 25-11-2026): rediseño completo.** Tema único «bitácora.» (blanco, carbón y naranja coral) y sistema de
+diseño común en `BitacoraNative/DesignSystem/V2/`; reglas en `DISENO-V2.md`. Barra inferior flotante con el botón de
+apuntar en óvalo, «apuntar.» como modal flotante oscuro y todos los apartados nativos rediseñados (2.0: Inicio, Plan,
+Calendario, Finanzas, Notas, Transporte, Rutinas, Estudios, Eventos, Menú y Ajustes; 3.0: el resto). El hueco de la
+barra lo reserva cada pantalla de la pila con `huecoDeBarra()` (3.0.1): sobre el NavigationStack no llegaba al scroll.
+
 **Fases 0 y 1 (06-11-2026): núcleo de solo lectura.**
 
 - Target `BitacoraNative` (`com.bitacora.nativa.dev`, «Bitácora β»), se instala junto a la envoltura.
