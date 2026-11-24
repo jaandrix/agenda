@@ -31,7 +31,7 @@ struct CajaCopiar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(texto).font(Tipo.mono).foregroundStyle(Lienzo.tinta).textSelection(.enabled)
+            Text(texto).font(Letra.mono).foregroundStyle(Lienzo.tinta).textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
                 .background(Lienzo.fondo, in: RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))

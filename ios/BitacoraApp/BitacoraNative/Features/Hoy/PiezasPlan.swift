@@ -1,7 +1,7 @@
 import SwiftUI
 
-// Piezas del Plan 2.0 que aún no están en DesignSystem/V2 (candidatas a subir: FilaTareaV2, MarcaPrioridad, ChipsEleccion,
-// BotonCompartirRedondo). Solo presentación: no leen ni escriben datos.
+// Piezas propias del Plan (MarcaPrioridad, ChipsEleccion y BotonCompartirRedondo viven ya en DesignSystem/V2). Solo
+// presentación: no leen ni escriben datos.
 
 /// Los puntitos de la semana del Plan: qué días tienen algo en `dayPlanner.days`. Se calcula una vez al cargar.
 struct MarcasPlan: Sendable, Equatable {
@@ -32,24 +32,6 @@ struct MarcasPlan: Sendable, Equatable {
         if !pasado && deTrabajo.contains(d) { r.append(Lienzo.Punto.estudio) }
         if hechas.contains(d) && r.isEmpty { r.append(Lienzo.Punto.otro) }
         return r
-    }
-}
-
-/// Prioridad discreta: un puntito (alta naranja, media ámbar, baja gris).
-struct MarcaPrioridad: View {
-    let prioridad: String
-
-    var body: some View {
-        Puntito(color: color, tamano: 6)
-            .frame(width: 12, height: 12)
-    }
-
-    private var color: Color {
-        switch prioridad {
-        case "alta": Lienzo.naranja
-        case "media": Lienzo.aviso
-        default: Lienzo.tintaTerciaria
-        }
     }
 }
 
@@ -133,57 +115,5 @@ struct FilaTareaV2: View {
         if subtareas > 0 { p.append("\(subHechas) de \(subtareas) subtareas") }
         if !notas.isEmpty { p.append(notas) }
         return p.joined(separator: ", ")
-    }
-}
-
-/// Fila de chips elegibles (prioridad, día, recordatorio): el elegido en negro, los demás en gris sutil.
-struct ChipsEleccion<Valor: Hashable>: View {
-    let opciones: [(valor: Valor, titulo: String)]
-    @Binding var elegido: Valor
-    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
-
-    var body: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 6) {
-                ForEach(opciones.indices, id: \.self) { i in
-                    let o = opciones[i]
-                    let on = o.valor == elegido
-                    Button {
-                        guard !on else { return }
-                        Haptica.seleccion()
-                        withAnimation(Muelle.o(Muelle.rapido, reducido: sinMovimiento)) { elegido = o.valor }
-                    } label: {
-                        Chip(texto: o.titulo, tono: on ? .oscuro : .sutil)
-                            .frame(minHeight: Medida.toque)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(Pulsable(escala: 0.92, haptica: false))
-                    .accessibilityAddTraits(on ? .isSelected : [])
-                }
-            }
-        }
-        .scrollIndicators(.hidden)
-        .scrollClipDisabled()
-    }
-}
-
-/// Compartir con el mismo círculo blanco que `BotonRedondo`.
-struct BotonCompartirRedondo: View {
-    let texto: String
-    var etiqueta = "compartir"
-
-    var body: some View {
-        ShareLink(item: texto) {
-            Image(systemName: "square.and.arrow.up")
-                .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundStyle(Lienzo.tinta)
-                .frame(width: 40, height: 40)
-                .background(Lienzo.tarjeta, in: Circle())
-                .overlay { Circle().strokeBorder(Lienzo.filo) }
-                .frame(minWidth: Medida.toque, minHeight: Medida.toque)
-                .contentShape(Circle())
-        }
-        .buttonStyle(Pulsable(escala: 0.9))
-        .accessibilityLabel(etiqueta)
     }
 }

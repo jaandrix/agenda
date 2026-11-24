@@ -55,7 +55,7 @@ struct FichaEventoView: View {
     private var cabecera: some View {
         VStack(alignment: .leading, spacing: Medida.s) {
             HStack(alignment: .top) {
-                BloqueFechaEvento(dia: dia, tono: dia >= hoy ? .naranja : .apagado, grande: true)
+                BloqueFecha(dia: dia, tono: dia >= hoy ? .naranja : .apagado, grande: true)
                 Spacer()
                 BotonRedondo(sistema: "xmark", tono: .blanco, tamano: 36, etiqueta: "cerrar") { cerrar() }
             }
@@ -66,7 +66,7 @@ struct FichaEventoView: View {
                 HStack(spacing: Medida.xs) {
                     Text(Self.fecha(dia) + ".").font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
                     TimelineView(.periodic(from: .now, by: 60)) { t in
-                        Chip(texto: TextoEventos.cuentaAtras(dia, hora: evento.hora, hoy: hoy, ahora: t.date), tono: dia >= hoy ? .naranja : .sutil)
+                        Chip(texto: CuentaAtras.texto(dia, hora: evento.hora, hoy: hoy, ahora: t.date), tono: dia >= hoy ? .naranja : .sutil)
                     }
                 }
             }
@@ -276,7 +276,7 @@ struct TiempoView: View {
                         .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
                         .submitLabel(.search)
                     ForEach(resultados, id: \.clave) { r in
-                        Button { elegir(r) } label: { FilaLibro(etiqueta: r.nombre, flecha: true) }.buttonStyle(.plain)
+                        Button { elegir(r) } label: { FilaLibro(etiqueta: r.nombre, flecha: true) }.buttonStyle(EstiloFila())
                     }
                     if let error { Text(error).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, Espacio.s) }
                 }

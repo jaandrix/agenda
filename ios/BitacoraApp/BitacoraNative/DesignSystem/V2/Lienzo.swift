@@ -126,6 +126,15 @@ enum Medida {
     static let separacionInferior: CGFloat = 10  // de la barra al borde de abajo, además del indicador de inicio
     // Lo que las pantallas reservan abajo para que su último elemento suba por encima de la barra.
     static let reservaBarra: CGFloat = 74
+
+    // Piezas comunes (3.0)
+    static let bloqueFecha: CGFloat = 48         // BloqueFecha
+    static let bloqueFechaGrande: CGFloat = 64
+    static let portada: CGFloat = 360            // alto del degradado de portada (Inicio)
+    static let portadaCorta: CGFloat = 280       // portada de un apartado (Notas)
+    static let sobrePortada: CGFloat = 140       // lo que el degradado sube tras la barra de estado al tirar hacia abajo
+    static let barraFina: CGFloat = 4            // BarraFina
+    static let barra: CGFloat = 6
 }
 
 // Letra: Poppins (la de la marca), esencialmente pequeña. Pasa por Tipo.poppins: respeta el tamaño de letra de Ajustes
@@ -147,6 +156,12 @@ enum Letra {
     static var numeroGrande: Font { Tipo.poppins(28, .semibold, estilo: .title).monospacedDigit() }
     static var numero: Font { Tipo.poppins(15, .semibold, estilo: .headline).monospacedDigit() }
     static var hora: Font { Tipo.poppins(12, .medium, estilo: .footnote).monospacedDigit() }
+    static var dia: Font { Tipo.poppins(15, .regular, estilo: .headline).monospacedDigit() }  // día sin elegir: mismo cuerpo que .numero, sin negrita
+    static var diaBloque: Font { Tipo.poppins(19, .bold, estilo: .title3).monospacedDigit() }    // BloqueFecha
+    static var diaBloqueGrande: Font { Tipo.poppins(26, .bold, estilo: .title).monospacedDigit() }
+    static var mesBloque: Font { Tipo.poppins(9, .semibold, estilo: .caption2) }                 // «NOV» del BloqueFecha
+    static var cuentaAtras: Font { Tipo.poppins(20, .semibold, estilo: .title3).monospacedDigit() } // «en 3 días.»
+    static var mono: Font { Tipo.mono }                                                          // códigos, claves, tokens
     static let espaciado: CGFloat = 1.4
 }
 
@@ -185,4 +200,17 @@ extension View {
     // Para pantallas con scroll: deja subir el último elemento por encima de la barra flotante. El armazón ya añade la
     // reserva a cada NavigationStack; usar esto solo en scrolls que viven fuera de él (hojas a pantalla completa).
     func huecoBarra() -> some View { contentMargins(.bottom, Medida.reservaBarra, for: .scrollContent) }
+
+    /// Cabecera de portada: el degradado naranja detrás de lo de arriba. `sobreBorde` lo sube por detrás de la barra de
+    /// estado (para tirar hacia abajo sin ver su borde); `aSangre` lo lleva hasta el borde de la pantalla.
+    func cabeceraPortada(alto: CGFloat = Medida.portada, sobreBorde: CGFloat = 0, aSangre: Bool = false) -> some View {
+        background(alignment: .top) {
+            Lienzo.degradadoCabecera
+                .frame(height: alto)
+                .offset(y: -sobreBorde)
+                .ignoresSafeArea(aSangre ? .all : [])
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
+    }
 }

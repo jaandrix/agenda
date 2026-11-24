@@ -135,13 +135,13 @@ struct EventosView: View {
                         Text("EL PRÓXIMO").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.sobreOscuroSuave)
                         Spacer()
                         TimelineView(.periodic(from: .now, by: 60)) { t in
-                            Text(TextoEventos.cuentaAtras(f.dia, hora: f.evento.hora, hoy: hoy, ahora: t.date))
-                                .font(LetraEventos.cuentaAtras).foregroundStyle(Lienzo.naranja)
+                            Text(CuentaAtras.texto(f.dia, hora: f.evento.hora, hoy: hoy, ahora: t.date))
+                                .font(Letra.cuentaAtras).foregroundStyle(Lienzo.naranja)
                                 .contentTransition(.numericText())
                         }
                     }
                     HStack(spacing: Medida.s) {
-                        BloqueFechaEvento(dia: f.dia, tono: .naranja)
+                        BloqueFecha(dia: f.dia, tono: .naranja)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(f.evento.titulo).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.sobreOscuro)
                                 .lineLimit(2).multilineTextAlignment(.leading)
@@ -161,10 +161,10 @@ struct EventosView: View {
     }
 
     // .m-evento: bloque de fecha, título y «día, hora, lugar»; QR si hay entrada.
-    private func tarjeta(_ f: VistaEventos.Fila, tono: BloqueFechaEvento.Tono) -> some View {
+    private func tarjeta(_ f: VistaEventos.Fila, tono: BloqueFecha.Tono) -> some View {
         Button { abrir(f) } label: {
             HStack(spacing: Medida.s) {
-                BloqueFechaEvento(dia: f.dia, tono: tono)
+                BloqueFecha(dia: f.dia, tono: tono)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(f.evento.titulo).font(Letra.tituloTarjeta)
                         .foregroundStyle(tono == .apagado ? Lienzo.tintaSecundaria : Lienzo.tinta)
@@ -227,20 +227,11 @@ struct Etiqueta: View {
     let texto: String
 
     var body: some View {
-        Text(texto).font(Tipo.poppins(12, .semibold, estilo: .caption)).foregroundStyle(Paleta.textoSecundario)
+        Text(texto).font(Letra.pieFuerte).foregroundStyle(Paleta.textoSecundario)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.bottom, 8)
             .overlay(alignment: .bottom) { Rectangle().fill(Paleta.texto).frame(height: 2) }
             .padding(.top, 30)
             .accessibilityAddTraits(.isHeader)
-    }
-}
-
-extension LocalDay {
-    func dias(hasta otro: LocalDay) -> Int {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "UTC")!
-        let f = { (d: LocalDay) in cal.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12))! }
-        return cal.dateComponents([.day], from: f(self), to: f(otro)).day ?? 0
     }
 }

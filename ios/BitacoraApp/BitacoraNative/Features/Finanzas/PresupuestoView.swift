@@ -149,7 +149,7 @@ struct EditorPresupuestoView: View {
                 Spacer(minLength: 0)
             }
             .background(Lienzo.filo)
-            .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+            .clipShape(Capsule())
         }
         .frame(height: 6)
         .accessibilityHidden(true)

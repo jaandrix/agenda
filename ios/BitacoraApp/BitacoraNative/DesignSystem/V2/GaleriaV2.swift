@@ -12,6 +12,8 @@ struct GaleriaV2: View {
     @State private var expandida: Int?
     @State private var modal = false
     @State private var texto = ""
+    @State private var prioridad = "media"
+    @State private var aviso = true
 
     private var hoy: LocalDay { CalendarioBitacora.madrid.dia(de: Date()) }
 
@@ -63,13 +65,55 @@ struct GaleriaV2: View {
                         FilaTarjeta(icono: "finanzas", tonoIcono: .oscuro, titulo: "finanzas", detalle: "este mes") { FlechaFila() }
                     }
                     .tarjeta(relleno: 12)
+                    // Piezas comunes de la 3.0
+                    TarjetaOscura {
+                        HStack(spacing: Medida.s) {
+                            BloqueFecha(dia: hoy.sumando(dias: 3), tono: .naranja)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(CuentaAtras.texto(dias: 3)).font(Letra.cuentaAtras).foregroundStyle(Lienzo.naranja)
+                                Text("concierto en el auditorio.").font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave)
+                            }
+                        }
+                    }
+                    HStack(alignment: .top) {
+                        CifraGrande(texto: "1.240 €", etiqueta: "gastos.", punto: Lienzo.naranja, variacion: (texto: "−8 %", signo: -1))
+                        Spacer()
+                        AnilloProgreso(progreso: 0.6)
+                    }
+                    .tarjeta()
+                    TarjetaSeccion(titulo: "asignaturas", detalle: "2") {
+                        HStack(spacing: Medida.s) {
+                            InicialCuadrada(nombre: "historia")
+                            VStack(alignment: .leading, spacing: Medida.xs) {
+                                Text("historia.").font(Letra.cuerpoFuerte)
+                                BarraFina(valor: 0.4, color: Lienzo.tinta, alto: Medida.barraFina)
+                            }
+                            MarcaPrioridad(prioridad: "alta")
+                        }
+                        FilaDato(etiqueta: "media", valor: "7,8", separador: false)
+                    }
+                    VStack(spacing: 0) {
+                        FilaImporte(titulo: "mercado", detalle: "hoy, comida", cifra: "−23,40 €") { IconoCuadrado(id: "finanzas") }
+                        SeparadorFila()
+                        FilaImporte(titulo: "nómina", detalle: "ayer", cifra: "+1.800 €", tono: Lienzo.positivo, aviso: true) { IconoCuadrado(id: "finanzas") }
+                    }
+                    .padding(.horizontal, Medida.rellenoTarjeta).tarjeta(relleno: 0)
+                    ChipsEleccion(opciones: [(valor: "alta", titulo: "alta"), (valor: "media", titulo: "media"), (valor: "baja", titulo: "baja")], elegido: $prioridad)
+                    TarjetaFilas {
+                        Toggle(isOn: $aviso) { Text("avisos.").font(Letra.cuerpoFuerte) }
+                            .toggleStyle(InterruptorCasa())
+                            .padding(.horizontal, Medida.rellenoTarjeta).frame(minHeight: 52)
+                        SeparadorFila(sangria: Medida.rellenoTarjeta)
+                        Button {} label: { FilaTarjeta(icono: "calendario", titulo: "calendario.") { FlechaFila() }.padding(.horizontal, Medida.rellenoTarjeta) }
+                            .buttonStyle(EstiloFila())
+                    }
                     TarjetaInvitacion(frase: "¿buscas algo más?", destacado: "inspiración.", boton: "inspírame") {}
                     HStack { Button("reflexionar") {}.buttonStyle(.capsula); Button("personalizar") {}.buttonStyle(.capsula(.claro)) }
                 }
                 .padding(.horizontal, Medida.margen)
                 .padding(.bottom, 120)
             }
-            .background(alignment: .top) { Lienzo.degradadoCabecera.frame(height: 260).ignoresSafeArea() }
+            .cabeceraPortada(alto: Medida.portadaCorta, aSangre: true)
             .fondoLienzo()
 
             BarraFlotante(pestanas: [.init(id: "inicio", titulo: "inicio", icono: "inicio"), .init(id: "plan", titulo: "plan", icono: "plan"),

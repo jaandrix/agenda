@@ -4,15 +4,6 @@ import UIKit
 // Piezas de Ajustes (2.0): grupos como los del menú (GrupoMenu, tarjeta blanca), filas con su IconoCuadrado del
 // catálogo, interruptores con tinte naranja y opciones como segmentos en cápsula. Sin `Form` del sistema.
 
-struct EstiloFila: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background(configuration.isPressed ? Lienzo.sutilSuave : Color.clear)
-            .contentShape(Rectangle())
-            .animation(configuration.isPressed ? Muelle.toque : Muelle.soltar, value: configuration.isPressed)
-    }
-}
-
 // Icono de una fila de ajuste. Lo peligroso (eliminar la cuenta) en rojo sobre su tinte, con la misma geometría que
 // IconoCuadrado.
 struct IconoFila: View {
@@ -79,35 +70,6 @@ struct FlechaAjuste: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(web ? "se abre en la web" : "")
         .accessibilityHidden(!web)
-    }
-}
-
-// Interruptor 2.0: carril gris sutil que se tiñe de naranja al encenderse; la bola blanca se desliza con muelle.
-struct InterruptorCasa: ToggleStyle {
-    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
-
-    func makeBody(configuration: Configuration) -> some View {
-        Button {
-            Haptica.ligera()
-            withAnimation(Muelle.o(Muelle.rapido, reducido: sinMovimiento)) { configuration.isOn.toggle() }
-        } label: {
-            HStack(spacing: 0) {
-                configuration.label.frame(maxWidth: .infinity, alignment: .leading)
-                ZStack(alignment: configuration.isOn ? .trailing : .leading) {
-                    Capsule()
-                        .fill(configuration.isOn ? Lienzo.naranja : Lienzo.sutil)
-                        .overlay(Capsule().strokeBorder(configuration.isOn ? Color.clear : Lienzo.filoFuerte))
-                        .frame(width: 50, height: 30)
-                    Circle().fill(Lienzo.tarjeta)
-                        .frame(width: 24, height: 24).padding(3)
-                        .sombra(.suave)
-                }
-                .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: configuration.isOn)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(Pulsable(escala: 0.98, haptica: false))
-        .accessibilityRepresentation { Toggle(isOn: configuration.$isOn) { configuration.label } }
     }
 }
 

@@ -246,16 +246,7 @@ struct CalendarioView: View {
         }
     }
 
-    static func punto(_ tipo: String) -> Color {
-        switch tipo {
-        case "birthday": Lienzo.Punto.cumple
-        case "travel": Lienzo.Punto.viaje
-        case "estudio": Lienzo.Punto.estudio
-        case "pago": Lienzo.Punto.dinero
-        case "work", "laboral": Lienzo.Punto.tarea
-        default: Lienzo.Punto.evento
-        }
-    }
+    static func punto(_ tipo: String) -> Color { TipoPunto.de(tipo).color }
 
     // MARK: - Textos
 

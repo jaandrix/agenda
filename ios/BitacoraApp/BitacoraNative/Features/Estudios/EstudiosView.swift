@@ -177,7 +177,7 @@ struct EstudiosView: View {
 
     private func destacado(_ x: ProximoEstudio) -> some View {
         let i = x.item
-        let cuenta = x.dias.map { CuentaEstudios.cuentaAtras($0) } ?? "sin fecha."
+        let cuenta = x.dias.map { CuentaAtras.texto(dias: $0) } ?? "sin fecha."
         let cerca = (x.dias ?? 99) <= 3
         return TarjetaOscura {
             VStack(alignment: .leading, spacing: Medida.s) {
@@ -228,7 +228,7 @@ struct EstudiosView: View {
                         Text(detalle(x, conAsignatura: true)).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
                     }
                     Spacer(minLength: Medida.xs)
-                    if let d = x.dias { Chip(texto: CuentaEstudios.chip(d), tono: d <= 3 ? .naranja : .sutil) }
+                    if let d = x.dias { Chip(texto: CuentaAtras.chip(dias: d), tono: d <= 3 ? .naranja : .sutil) }
                 }
                 .frame(minHeight: Medida.toque)
                 .contentShape(Rectangle())
@@ -278,7 +278,7 @@ struct EstudiosView: View {
             }
             .accessibilityElement(children: .combine)
             if total > 0 {
-                BarraProgresoEstudio(fraccion: Double(s.pasados.count) / Double(total))
+                BarraFina(valor: Double(s.pasados.count) / Double(total), color: Lienzo.tinta, alto: Medida.barraFina)
             }
             if !s.pendientes.isEmpty {
                 VStack(spacing: 0) {
@@ -328,7 +328,7 @@ struct EstudiosView: View {
                             .lineLimit(1)
                     }
                     Spacer(minLength: Medida.xs)
-                    if !pasado, let d = x.dias { Chip(texto: CuentaEstudios.chip(d), tono: d <= 3 ? .naranja : .sutil) }
+                    if !pasado, let d = x.dias { Chip(texto: CuentaAtras.chip(dias: d), tono: d <= 3 ? .naranja : .sutil) }
                     if !i.nota.isEmpty { Text(i.nota).font(Letra.numero).foregroundStyle(Lienzo.tinta) }
                 }
                 .frame(minHeight: Medida.toque)
