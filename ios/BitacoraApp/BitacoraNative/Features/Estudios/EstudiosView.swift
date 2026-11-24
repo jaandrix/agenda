@@ -55,44 +55,68 @@ enum LecturaEstudios {
     }
 }
 
+// Lo pendiente de todas las asignaturas, para la pestaña «próximo.» (solo presentación).
+struct ProximoEstudio: Identifiable, Equatable {
+    let item: ItemEstudio
+    let asignaturaId: String
+    let asignatura: String
+    let dias: Int?
+    var id: String { asignaturaId + ":" + item.lista + ":" + item.id }
+}
+
 struct EstudiosView: View {
+    enum Pestana: Hashable { case proximo, asignaturas }
+
     @Environment(AppCoordinator.self) private var c
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var asignaturas: [AsignaturaVista]?
     @State private var aviso: String?
     @State private var creando: NuevaEntrega?
-    @State private var verPasados = false
-    @State private var marcadas = 0
     @State private var editando: ItemEditando?
+    @State private var pestana: Pestana = .proximo
+    @State private var hechasAbiertas: Set<String> = []
+
+    private var hoy: String { CalendarioBitacora.madrid.dia(de: Date()).iso }
 
     var body: some View {
+        let lista = asignaturas ?? []
+        let proximos = proximosOrdenados(lista)
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                let pendientes = (asignaturas ?? []).reduce(0) { $0 + $1.pendientes.count }
-                CabeceraApartado(titulo: "estudios", contexto: asignaturas == nil ? nil : pendientes == 0 ? "todo al día." : "\(pendientes) por hacer.") {
-                    AccionTexto(texto: verPasados ? "pendientes." : "ver todo.") { verPasados.toggle() }
+            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+                CabeceraPagina(titulo: "estudios.", subtitulo: asignaturas == nil ? nil : subtitulo(proximos))
+                    .padding(.top, Medida.xs)
+                if let aviso {
+                    Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.negativo)
+                        .transition(.opacity)
                 }
-                if let aviso { Text(aviso).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, Espacio.s) }
-                if let a = asignaturas, a.isEmpty {
-                    Text("aún no hay asignaturas. se crean en la web.").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.vertical, Espacio.m)
-                }
-                ForEach(asignaturas ?? []) { s in
-                    Etiqueta(texto: s.nombre.lowercased() + ".")
-                    ForEach(s.pendientes + (verPasados ? s.pasados : [])) {
-                        fila($0, asignatura: s.id).overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
+                if asignaturas != nil && lista.isEmpty {
+                    TarjetaInvitacion(frase: "aún no hay asignaturas.", destacado: "se crean en la web.", boton: "abrir la web.") {
+                        c.web = Apartados.webURL("studies")
                     }
-                    HStack(spacing: Espacio.l) {
-                        AccionTexto(texto: "+ trabajo.") { creando = NuevaEntrega(asignaturaId: s.id, lista: "assignments") }
-                        AccionTexto(texto: "+ examen.") { creando = NuevaEntrega(asignaturaId: s.id, lista: "exams") }
+                    .padding(.top, Medida.s)
+                } else if !lista.isEmpty {
+                    SegmentoCapsula(opciones: [.init(valor: Pestana.proximo, titulo: "próximo"),
+                                               .init(valor: Pestana.asignaturas, titulo: "asignaturas")],
+                                    elegido: $pestana, sobreBlanco: false)
+                        .padding(.bottom, Medida.xxs)
+                    Group {
+                        switch pestana {
+                        case .proximo: proximo(proximos)
+                        case .asignaturas: asignaturasLista(lista)
+                        }
                     }
+                    .transition(.opacity)
+                    accesosWeb
                 }
             }
-            .padding(.horizontal, 20).padding(.bottom, Espacio.xl)
+            .padding(.horizontal, Medida.margen)
+            .padding(.bottom, Medida.xl)
+            .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: pestana)
         }
-        .font(Tipo.cuerpo)
+        .font(Letra.cuerpo)
         .scrollIndicators(.hidden)
-        .background(Paleta.fondo.ignoresSafeArea())
+        .fondoLienzo()
         .refreshable { await c.sincronizar() }
-        .sensoryFeedback(.success, trigger: marcadas)
         .hoja(item: $creando) { n in EditorEntregaView(nueva: n) { aviso = $0 } }
         .hoja(item: $editando) { e in EditorEntregaView(nueva: e.nueva, existente: e.item) { aviso = $0 } }
         .task(id: c.revision) {
@@ -102,26 +126,249 @@ struct EstudiosView: View {
         }
     }
 
-    private func fila(_ i: ItemEstudio, asignatura: String) -> some View {
-        let cuando = [i.fecha, i.hora].filter { !$0.isEmpty }.joined(separator: ", ")
-        let abrir = { editando = ItemEditando(NuevaEntrega(asignaturaId: asignatura, lista: i.lista, idFijo: i.id), i) }
-        // Los trabajos se marcan con el círculo de toda la app; los exámenes no se marcan y llevan su icono en el hueco.
-        return FilaCirculo(hecho: i.hecho, icono: i.esTrabajo ? nil : "doc.text", marcar: { if i.esTrabajo { marcar(i, asignatura: asignatura) } else { abrir() } }, abrir: abrir) {
-            EmptyView()
-        } texto: {
-            Text(i.titulo).font(Tipo.cuerpoFuerte).foregroundStyle(i.hecho ? Paleta.textoSecundario : Paleta.texto).strikethrough(i.hecho)
-            Text("\(i.esTrabajo ? "trabajo" : "examen")\(cuando.isEmpty ? "" : ", " + cuando). \(i.estado)")
-                .font(Tipo.pie).foregroundStyle(i.estado == "vencido." ? Paleta.acento : Paleta.textoSecundario)
-        } cola: { EmptyView() }
+    // MARK: - Próximo
+
+    private func proximosOrdenados(_ lista: [AsignaturaVista]) -> [ProximoEstudio] {
+        let h = hoy
+        return lista.flatMap { s in
+            s.pendientes.map { i in
+                ProximoEstudio(item: i, asignaturaId: s.id, asignatura: s.nombre,
+                               dias: i.fecha.isEmpty ? nil : CuentaEstudios.dias(hasta: i.fecha, hoy: h))
+            }
+        }
+        .sorted { a, b in
+            (a.item.fecha.isEmpty ? "9" : a.item.fecha) + a.item.hora < (b.item.fecha.isEmpty ? "9" : b.item.fecha) + b.item.hora
+        }
+    }
+
+    private func subtitulo(_ p: [ProximoEstudio]) -> String {
+        let examenes = p.filter { x in !x.item.esTrabajo && (x.dias.map { (0...6).contains($0) } ?? false) }.count
+        if examenes == 1 { return "1 examen esta semana." }
+        if examenes > 1 { return "\(examenes) exámenes esta semana." }
+        return p.isEmpty ? "todo al día." : "\(p.count) por hacer."
+    }
+
+    @ViewBuilder private func proximo(_ p: [ProximoEstudio]) -> some View {
+        let vencidos = p.filter { ($0.dias ?? 0) < 0 }
+        let futuros = p.filter { ($0.dias ?? -1) >= 0 }
+        let sinFecha = p.filter { $0.dias == nil }
+        VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+            if let primero = futuros.first {
+                destacado(primero).entradaEscalonada(0)
+            } else if p.isEmpty {
+                TarjetaInvitacion(frase: "nada pendiente.", destacado: "todo al día.")
+            }
+            if futuros.count > 1 {
+                EtiquetaSeccion(texto: "después").padding(.top, Medida.xs)
+                ForEach(Array(futuros.dropFirst().enumerated()), id: \.element.id) { i, x in
+                    tarjetaItem(x).entradaEscalonada(i + 1)
+                }
+            }
+            if !vencidos.isEmpty {
+                EtiquetaSeccion(texto: "vencido").padding(.top, Medida.xs)
+                ForEach(vencidos) { x in tarjetaItem(x) }
+            }
+            if !sinFecha.isEmpty {
+                EtiquetaSeccion(texto: "sin fecha").padding(.top, Medida.xs)
+                ForEach(sinFecha) { x in tarjetaItem(x) }
+            }
+        }
+    }
+
+    private func destacado(_ x: ProximoEstudio) -> some View {
+        let i = x.item
+        let cuenta = x.dias.map { CuentaEstudios.cuentaAtras($0) } ?? "sin fecha."
+        let cerca = (x.dias ?? 99) <= 3
+        return TarjetaOscura {
+            VStack(alignment: .leading, spacing: Medida.s) {
+                HStack(spacing: Medida.xs) {
+                    IconoCuadrado(id: "estudios", tono: .translucido, tamano: Medida.iconoPequeno)
+                    Text(i.esTrabajo ? "ENTREGA" : "EXAMEN").font(Letra.etiqueta).tracking(Letra.espaciado)
+                        .foregroundStyle(Lienzo.sobreOscuroSuave)
+                    Spacer()
+                    if cerca { Puntito(color: Lienzo.naranja, tamano: 7) }
+                }
+                Text(cuenta)
+                    .font(Letra.numeroGrande).foregroundStyle(Lienzo.sobreOscuro)
+                    .contentTransition(.numericText())
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(i.titulo).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.sobreOscuro).lineLimit(2)
+                    Text(detalle(x, conAsignatura: true)).font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave).lineLimit(1)
+                }
+                HStack(spacing: Medida.xs) {
+                    if i.esTrabajo {
+                        Button("marcar entregado.") {
+                            Haptica.exito()
+                            marcar(i, asignatura: x.asignaturaId)
+                        }
+                        .buttonStyle(.capsula(.naranja))
+                    }
+                    Button("abrir.") { abrir(x) }.buttonStyle(.capsula(.blanco))
+                }
+                .padding(.top, Medida.xxs)
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private func tarjetaItem(_ x: ProximoEstudio) -> some View {
+        let i = x.item
+        return HStack(spacing: Medida.xs) {
+            if i.esTrabajo {
+                CasillaMarcar(hecha: i.hecho) { marcar(i, asignatura: x.asignaturaId) }
+            } else {
+                IconoCuadrado(id: "estudios", tono: .claro)
+                    .frame(width: Medida.toque, height: Medida.toque)
+            }
+            Button { abrir(x) } label: {
+                HStack(spacing: Medida.s) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(i.titulo).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                        Text(detalle(x, conAsignatura: true)).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
+                    }
+                    Spacer(minLength: Medida.xs)
+                    if let d = x.dias { Chip(texto: CuentaEstudios.chip(d), tono: d <= 3 ? .naranja : .sutil) }
+                }
+                .frame(minHeight: Medida.toque)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.pulsable(0.98))
+        }
+        .tarjeta(relleno: Medida.s)
         .accessibilityElement(children: .combine)
         .accessibilityAction(named: i.esTrabajo ? (i.hecho ? "marcar sin entregar" : "marcar entregado") : "abrir") {
-            if i.esTrabajo { marcar(i, asignatura: asignatura) } else { abrir() }
+            if i.esTrabajo { marcar(i, asignatura: x.asignaturaId) } else { abrir(x) }
         }
-        .listRowBackground(Paleta.superficie)
+    }
+
+    private func detalle(_ x: ProximoEstudio, conAsignatura: Bool) -> String {
+        let i = x.item
+        var partes = [i.esTrabajo ? "trabajo" : "examen"]
+        if conAsignatura { partes.append(x.asignatura.lowercased()) }
+        if !i.fecha.isEmpty { partes.append(CuentaEstudios.fechaCorta(i.fecha)) }
+        if !i.hora.isEmpty { partes.append(i.hora) }
+        return partes.joined(separator: ", ") + "."
+    }
+
+    // MARK: - Asignaturas
+
+    private func asignaturasLista(_ lista: [AsignaturaVista]) -> some View {
+        ForEach(Array(lista.enumerated()), id: \.element.id) { n, s in
+            tarjetaAsignatura(s).entradaEscalonada(n)
+        }
+    }
+
+    private func tarjetaAsignatura(_ s: AsignaturaVista) -> some View {
+        let total = s.pendientes.count + s.pasados.count
+        let media = CuentaEstudios.media(s.pasados + s.pendientes)
+        let abierta = Binding<Bool>(get: { hechasAbiertas.contains(s.id) },
+                                    set: { v in if v { hechasAbiertas.insert(s.id) } else { hechasAbiertas.remove(s.id) } })
+        let partes: [String] = [s.pendientes.isEmpty ? "al día" : "\(s.pendientes.count) pendientes", media.map { "media \($0)" }].compactMap { $0 }
+        let resumen = partes.joined(separator: ", ") + "."
+        return VStack(alignment: .leading, spacing: Medida.s) {
+            HStack(spacing: Medida.s) {
+                InicialCuadrada(nombre: s.nombre, oscuro: !s.pendientes.isEmpty)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(s.nombre.lowercased() + ".").font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                    Text(resumen).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                }
+                Spacer(minLength: Medida.xs)
+                if let media { Text(media).font(Letra.numero).foregroundStyle(Lienzo.tinta) }
+            }
+            .accessibilityElement(children: .combine)
+            if total > 0 {
+                BarraProgresoEstudio(fraccion: Double(s.pasados.count) / Double(total))
+            }
+            if !s.pendientes.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(Array(s.pendientes.enumerated()), id: \.element.id) { k, i in
+                        if k > 0 { SeparadorFila(sangria: Medida.toque) }
+                        filaAsignatura(i, asignatura: s)
+                    }
+                }
+            }
+            if !s.pasados.isEmpty {
+                SeccionPlegable(titulo: "hecho.", detalle: "\(s.pasados.count)", abierta: abierta) {
+                    VStack(spacing: 0) {
+                        ForEach(s.pasados) { i in filaAsignatura(i, asignatura: s) }
+                    }
+                }
+            }
+            HStack(spacing: Medida.xs) {
+                Button("+ trabajo.") { creando = NuevaEntrega(asignaturaId: s.id, lista: "assignments") }
+                    .buttonStyle(.capsula(.claro))
+                Button("+ examen.") { creando = NuevaEntrega(asignaturaId: s.id, lista: "exams") }
+                    .buttonStyle(.capsula(.claro))
+            }
+        }
+        .tarjeta()
+    }
+
+    private func filaAsignatura(_ i: ItemEstudio, asignatura s: AsignaturaVista) -> some View {
+        let x = ProximoEstudio(item: i, asignaturaId: s.id, asignatura: s.nombre,
+                               dias: i.fecha.isEmpty ? nil : CuentaEstudios.dias(hasta: i.fecha, hoy: hoy))
+        let pasado = i.estado != "pendiente." && i.estado != "vencido."
+        return HStack(spacing: Medida.xxs) {
+            if i.esTrabajo {
+                CasillaMarcar(hecha: i.hecho) { marcar(i, asignatura: s.id) }
+            } else {
+                IconoCuadrado(id: "estudios", tono: .claro, tamano: Medida.iconoPequeno)
+                    .frame(width: Medida.toque, height: Medida.toque)
+            }
+            Button { abrir(x) } label: {
+                HStack(spacing: Medida.xs) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(i.titulo).font(Letra.cuerpo)
+                            .foregroundStyle(pasado ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                            .strikethrough(i.hecho, color: Lienzo.tintaTerciaria)
+                            .lineLimit(2).multilineTextAlignment(.leading)
+                        Text(pasado ? i.estado : detalle(x, conAsignatura: false))
+                            .font(Letra.pie).foregroundStyle(i.estado == "vencido." ? Lienzo.naranjaProfundo : Lienzo.tintaSecundaria)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: Medida.xs)
+                    if !pasado, let d = x.dias { Chip(texto: CuentaEstudios.chip(d), tono: d <= 3 ? .naranja : .sutil) }
+                    if !i.nota.isEmpty { Text(i.nota).font(Letra.numero).foregroundStyle(Lienzo.tinta) }
+                }
+                .frame(minHeight: Medida.toque)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.pulsable(0.98))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityAction(named: i.esTrabajo ? (i.hecho ? "marcar sin entregar" : "marcar entregado") : "abrir") {
+            if i.esTrabajo { marcar(i, asignatura: s.id) } else { abrir(x) }
+        }
+    }
+
+    // MARK: - Web
+
+    private var accesosWeb: some View {
+        VStack(alignment: .leading, spacing: Medida.xs) {
+            EtiquetaSeccion(texto: "en la web").padding(.top, Medida.m)
+            VStack(spacing: 0) {
+                Button { c.web = Apartados.webURL("estudiar") } label: {
+                    FilaTarjeta(icono: "estudios", titulo: "repaso.", detalle: "tarjetas, tests y pomodoro.") { FlechaFila() }
+                }
+                .buttonStyle(.pulsable(0.98))
+                SeparadorFila()
+                Button { c.web = Apartados.webURL("universidad") } label: {
+                    FilaTarjeta(icono: "estudios", titulo: "carrera.", detalle: "cuatrimestres, créditos y notas.") { FlechaFila() }
+                }
+                .buttonStyle(.pulsable(0.98))
+            }
+            .tarjeta(relleno: Medida.s)
+        }
+    }
+
+    // MARK: - Acciones
+
+    private func abrir(_ x: ProximoEstudio) {
+        editando = ItemEditando(NuevaEntrega(asignaturaId: x.asignaturaId, lista: x.item.lista, idFijo: x.item.id), x.item)
     }
 
     private func marcar(_ i: ItemEstudio, asignatura: String) {
-        if !i.hecho { marcadas += 1 }
         Task {
             do {
                 try await c.encolar(.marcarTrabajo(asignaturaId: asignatura, id: i.id, hecho: !i.hecho, momentoMs: Int64(Date().timeIntervalSince1970 * 1000)))
@@ -130,6 +377,7 @@ struct EstudiosView: View {
         }
     }
 }
+
 
 struct NuevaEntrega: Identifiable, Equatable {
     let id: String
