@@ -310,9 +310,61 @@ table.mold tr.best td:last-child{color:var(--orange)}
 .thanks .q{font-size:36px;font-weight:700}
 .thanks .names{font-size:22px;color:var(--steel-l);text-align:right}
 
+/* ---------- slide Lean Manufacturing ---------- */
+.lrow{display:grid;grid-template-columns:1.1fr .9fr;gap:36px;margin-top:38px;align-items:stretch}
+.lorig{display:flex;flex-direction:column;gap:16px;justify-content:center}
+.lfact{display:grid;grid-template-columns:14px 1fr;gap:0 18px;align-items:start;font-size:22px;line-height:1.3;color:#3b4249}
+.lfact i{width:14px;height:14px;border-radius:50%;background:var(--orange);margin-top:8px}
+.lfact b{font-weight:700;color:var(--ink)}
+.lgoal{background:var(--graphite);color:var(--paper);border-radius:20px;padding:26px 30px;display:flex;flex-direction:column;gap:10px}
+.lgoal .tag{font-size:19px;font-weight:700;color:var(--orange)}
+.lgoal h3{font-size:30px}
+.lgoal p{font-size:21px;color:var(--steel-l)}
+.lgoal p b{color:var(--orange);font-weight:700}
+.five{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:22px;margin-top:50px;padding-top:56px}
+.five .arc{position:absolute;left:0;top:0;width:100%;height:56px;overflow:visible}
+.five .aln,.five .ahead{stroke:var(--orange);stroke-width:4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.five .aln{stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset 1.2s cubic-bezier(.5,0,.3,1) 2.5s}
+.five .ahead{opacity:0;transition:opacity .3s 3.55s}
+.slide.shown .five .aln{stroke-dashoffset:0}
+.slide.shown .five .ahead{opacity:1}
+.apill{position:absolute;left:50%;top:-5px;transform:translateX(-50%) scale(0);background:var(--orange);color:var(--graphite);font-size:19px;font-weight:800;padding:7px 18px;border-radius:999px;white-space:nowrap;transition:transform .5s cubic-bezier(.3,1.6,.5,1) 3.3s}
+.slide.shown .apill{transform:translateX(-50%) scale(1)}
+.ftrack,.fbar{position:absolute;left:32px;top:86px;height:4px;width:calc(80% + 17.6px);border-radius:2px}
+.ftrack{background:#cfcdc6}
+.fbar{background:var(--orange);width:0;transition:width 1.8s linear .4s}
+.slide.shown .fbar{width:calc(80% + 17.6px)}
+.fv{display:flex;flex-direction:column;gap:10px}
+.fv .dotn{width:64px;height:64px;border-radius:50%;background:var(--concrete);border:4px solid #cfcdc6;display:grid;place-items:center;font-size:28px;font-weight:900;font-variation-settings:"wdth" 75;position:relative;z-index:1;transition:background .4s,border-color .4s;transition-delay:var(--d,0s)}
+.slide.shown .fv .dotn{border-color:var(--orange)}
+.slide.shown .fv:last-of-type .dotn{background:var(--orange)}
+.fv h3{font-size:31px;margin-top:6px}
+.fv p{font-size:22px;line-height:1.3;color:#4a525a}
+
+/* ---------- slide 7 mudas ---------- */
+.mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:38px}
+.mcard{position:relative;background:var(--graphite2);border-radius:16px;padding:24px 26px 28px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.mcard::before{content:"";position:absolute;left:0;top:0;height:5px;width:100%;background:var(--orange);transform:scaleX(0);transform-origin:left;transition:transform .6s cubic-bezier(.6,0,.2,1) var(--s,1s)}
+.slide.shown .mcard::before{transform:scaleX(1)}
+.mhead{display:flex;justify-content:space-between;align-items:center;height:44px}
+.mhead .n{font-size:44px;font-weight:900;font-variation-settings:"wdth" 75;color:var(--orange);line-height:1}
+.mhead svg{width:42px;height:42px}
+.mhead svg *{stroke:var(--steel-l);stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset .9s ease var(--s,1s)}
+.mhead svg .a{stroke:var(--orange)}
+.slide.shown .mhead svg *{stroke-dashoffset:0}
+.mcard h3{font-size:26px;color:var(--paper);margin-top:4px}
+.mcard .d{font-size:21px;line-height:1.3;color:var(--paper)}
+.mcard .e{font-size:18px;line-height:1.3;color:var(--steel-l)}
+.mcard .e b{color:var(--orange);font-weight:700}
+.mcard.m8{background:var(--orange);color:var(--graphite);justify-content:center;gap:10px}
+.mcard.m8::before{display:none}
+.m8 .jp{font-size:64px;font-weight:900;line-height:1;letter-spacing:.04em}
+.m8 h3{color:var(--graphite);font-size:30px}
+.m8 p{font-size:20px;line-height:1.3;color:var(--graphite)}
+
 @media (prefers-reduced-motion:reduce){
   .slide.enter,.slide.leave,.press.run{animation:none!important}
-  [data-r],.tl::before,.brow .b,.hb .b,.carrow path,.net .ln,.blk,.stopzone,.phases .bar{transition:none!important}
+  [data-r],.tl::before,.brow .b,.hb .b,.carrow path,.net .ln,.blk,.stopzone,.phases .bar,.fbar,.aln,.ahead,.apill,.fv .dotn,.mcard::before,.mhead svg *{transition:none!important}
   .hub::after{animation:none}
 }
 </style>
@@ -340,9 +392,53 @@ table.mold tr.best td:last-child{color:var(--orange)}
   </div>
 </section>
 
-<!-- 2 -->
+<!-- 2 Lean Manufacturing -->
+<section class="slide concrete" data-hud="light" aria-label="Lean Manufacturing">
+  <div class="kick"><span class="no">02</span>Lean Manufacturing</div>
+  <h2 data-r>Fabricar solo lo que aporta valor</h2>
+  <div class="lrow">
+    <div class="lorig" data-r style="transition-delay:.1s">
+      <div class="lfact"><i></i><span>Nace en Japón tras la Segunda Guerra Mundial, dentro del <b>Toyota Production System (TPS)</b>.</span></div>
+      <div class="lfact"><i></i><span><b>Taiichi Ohno</b> y <b>Eiji Toyoda</b> lo impulsan para competir con la producción en masa de EE. UU.</span></div>
+      <div class="lfact"><i></i><span>Con pocos recursos y una demanda variada no cabían los grandes lotes ni los almacenes llenos: había que eliminar todo lo que no añade valor.</span></div>
+    </div>
+    <div class="lgoal" data-r style="transition-delay:.25s">
+      <span class="tag">Objetivo</span>
+      <h3>Dar al cliente lo que necesita, con máxima calidad, a tiempo y al menor coste</h3>
+      <p>Eliminando de forma sistemática todo despilfarro (<b>muda</b>).</p>
+    </div>
+  </div>
+  <div class="five">
+    <svg class="arc" viewBox="0 0 1392 56" aria-hidden="true"><path class="aln" pathLength="100" d="M1163.2 56 V32 Q1163.2 14 1145 14 H50 Q32 14 32 32 V48"/><path class="ahead" d="M22 38 L32 50 L42 38"/></svg>
+    <div class="apill">↻ Kaizen: vuelta a empezar</div>
+    <div class="ftrack"></div><div class="fbar"></div>
+    <div class="fv" data-r style="transition-delay:.35s"><div class="dotn" style="--d:.4s">1</div><h3>Valor</h3><p>Definir qué valora de verdad el cliente final.</p></div>
+    <div class="fv" data-r style="transition-delay:.8s"><div class="dotn" style="--d:.85s">2</div><h3>Flujo de valor</h3><p>Mapear la cadena y eliminar las tareas innecesarias.</p></div>
+    <div class="fv" data-r style="transition-delay:1.25s"><div class="dotn" style="--d:1.3s">3</div><h3>Flujo continuo</h3><p>Que el producto avance sin paradas ni cuellos de botella.</p></div>
+    <div class="fv" data-r style="transition-delay:1.7s"><div class="dotn" style="--d:1.75s">4</div><h3>Sistema pull</h3><p>Producir solo por demanda real, sin acumular stock.</p></div>
+    <div class="fv" data-r style="transition-delay:2.15s"><div class="dotn" style="--d:2.2s">5</div><h3>Perfección</h3><p>Mejora continua (Kaizen) hacia el cero despilfarro.</p></div>
+  </div>
+</section>
+
+<!-- 3 Las 7 mudas -->
+<section class="slide dark" data-hud="dark" aria-label="Las 7 mudas">
+  <div class="kick"><span class="no">03</span>Las 7 mudas</div>
+  <h2 data-r>Siete desperdicios que el cliente no paga</h2>
+  <div class="mgrid">
+    <div class="mcard" data-r style="transition-delay:.1s;--s:1.0s"><div class="mhead"><span class="n">1</span><svg viewBox="0 0 40 40" aria-hidden="true"><rect pathLength="1" x="4" y="14" width="18" height="18" rx="2"/><path class="a" pathLength="1" d="M28 18 H37 M28 24 H37 M28 30 H37"/></svg></div><h3>Sobreproducción</h3><p class="d">Fabricar más de lo necesario o antes de tiempo.</p><p class="e"><b>Ej.:</b> 500 cuadros rojos sin pedidos confirmados.</p></div>
+    <div class="mcard" data-r style="transition-delay:.2s;--s:1.12s"><div class="mhead"><span class="n">2</span><svg viewBox="0 0 40 40" aria-hidden="true"><circle pathLength="1" cx="20" cy="20" r="15"/><path class="a" pathLength="1" d="M20 10 V20 L27 24"/></svg></div><h3>Esperas</h3><p class="d">Tiempos muertos de personas o máquinas.</p><p class="e"><b>Ej.:</b> operario parado esperando la entrega de componentes.</p></div>
+    <div class="mcard" data-r style="transition-delay:.3s;--s:1.24s"><div class="mhead"><span class="n">3</span><svg viewBox="0 0 40 40" aria-hidden="true"><path pathLength="1" d="M4 14 H32 M26 8 L33 14 L26 20"/><path class="a" pathLength="1" d="M36 28 H8 M14 22 L7 28 L14 34"/></svg></div><h3>Transporte</h3><p class="d">Movimientos innecesarios de materiales entre zonas.</p><p class="e"><b>Ej.:</b> piezas entre almacenes lejanos por mala distribución.</p></div>
+    <div class="mcard" data-r style="transition-delay:.4s;--s:1.36s"><div class="mhead"><span class="n">4</span><svg viewBox="0 0 40 40" aria-hidden="true"><circle pathLength="1" cx="20" cy="20" r="6"/><path class="a" pathLength="1" d="M20 4 V10 M20 30 V36 M4 20 H10 M30 20 H36 M9 9 L13 13 M27 27 L31 31 M31 9 L27 13 M13 27 L9 31"/></svg></div><h3>Procesos innecesarios</h3><p class="d">Etapas de trabajo que el cliente no valora.</p><p class="e"><b>Ej.:</b> acabados extra en zonas no visibles.</p></div>
+    <div class="mcard" data-r style="transition-delay:.5s;--s:1.48s"><div class="mhead"><span class="n">5</span><svg viewBox="0 0 40 40" aria-hidden="true"><path pathLength="1" d="M4 36 H36"/><rect pathLength="1" x="5" y="24" width="13" height="12"/><rect pathLength="1" x="22" y="24" width="13" height="12"/><rect class="a" pathLength="1" x="13" y="10" width="13" height="12"/></svg></div><h3>Inventario</h3><p class="d">Exceso de materia prima, producto en proceso o terminado.</p><p class="e"><b>Ej.:</b> baterías almacenadas meses, con el capital inmovilizado.</p></div>
+    <div class="mcard" data-r style="transition-delay:.6s;--s:1.6s"><div class="mhead"><span class="n">6</span><svg viewBox="0 0 40 40" aria-hidden="true"><path pathLength="1" d="M5 34 L13 14 L21 30 L30 10"/><path class="a" pathLength="1" d="M23 9 L30 10 L31 17"/></svg></div><h3>Movimientos innecesarios</h3><p class="d">Desplazamientos ineficientes del trabajador en su puesto.</p><p class="e"><b>Ej.:</b> varios pasos para coger una herramienta mal ubicada.</p></div>
+    <div class="mcard" data-r style="transition-delay:.7s;--s:1.72s"><div class="mhead"><span class="n">7</span><svg viewBox="0 0 40 40" aria-hidden="true"><rect pathLength="1" x="6" y="6" width="28" height="28" rx="4"/><path class="a" pathLength="1" d="M14 14 L26 26 M26 14 L14 26"/></svg></div><h3>Defectos</h3><p class="d">Fallos que obligan a retrabajar, reparar o desechar.</p><p class="e"><b>Ej.:</b> pintado defectuoso que exige lijar y repintar.</p></div>
+    <div class="mcard m8" data-r style="transition-delay:.8s"><div class="jp" aria-hidden="true">無駄</div><h3>Muda = desperdicio</h3><p>Todo lo que no añade valor y por lo que el cliente no pagaría.</p></div>
+  </div>
+</section>
+
+<!-- 4 -->
 <section class="slide paper" data-hud="light" aria-label="Contexto">
-  <div class="kick"><span class="no">02</span>Contexto</div>
+  <div class="kick"><span class="no">04</span>Contexto</div>
   <h2 data-r>Dónde encaja SMED dentro de Lean</h2>
   <div class="zoom">
     <div class="zcard" data-r style="transition-delay:.1s"><span class="tag">Lean</span><h3>Eliminar lo que no aporta valor</h3><p>Sistema nacido en Toyota (TPS). Todo lo que el cliente no paga es desperdicio (muda).</p></div>
@@ -355,10 +451,10 @@ table.mold tr.best td:last-child{color:var(--orange)}
   </div>
 </section>
 
-<!-- 3 -->
+<!-- 5 -->
 <section class="slide orange s3" data-hud="orange" aria-label="Qué es SMED">
   <div>
-    <div class="kick"><span class="no">03</span>Qué es SMED</div>
+    <div class="kick"><span class="no">05</span>Qué es SMED</div>
     <div class="acr" data-r><span><b>S</b>ingle-<b>M</b>inute</span><span><b>E</b>xchange of <b>D</b>ie</span></div>
     <p class="lead" data-r style="transition-delay:.2s">Cambiar la matriz (el formato, el molde o el utillaje) en un solo dígito de minutos: menos de 10 minutos desde la última pieza buena del producto A hasta la primera pieza buena del producto B.</p>
     <div class="flow" data-r style="transition-delay:.4s">
@@ -380,9 +476,9 @@ table.mold tr.best td:last-child{color:var(--orange)}
   </div>
 </section>
 
-<!-- 4 -->
+<!-- 6 -->
 <section class="slide paper s4" data-hud="light" aria-label="Origen">
-  <div class="kick"><span class="no">04</span>Origen</div>
+  <div class="kick"><span class="no">06</span>Origen</div>
   <h2 data-r>Shigeo Shingo y el sistema Toyota</h2>
   <div class="cols">
     <div>
@@ -403,9 +499,9 @@ table.mold tr.best td:last-child{color:var(--orange)}
   </div>
 </section>
 
-<!-- 5 -->
+<!-- 7 -->
 <section class="slide concrete" data-hud="light" aria-label="El problema">
-  <div class="kick"><span class="no">05</span>El problema</div>
+  <div class="kick"><span class="no">07</span>El problema</div>
   <h2 data-r>Mientras se cambia, la máquina no produce</h2>
   <div class="cycle">
     <div class="cnode" data-r style="transition-delay:.1s"><span class="n">1</span><h3>Cambio lento</h3><p>Cada cambio de producto deja la máquina parada horas.</p></div>
@@ -426,9 +522,9 @@ table.mold tr.best td:last-child{color:var(--orange)}
   </div>
 </section>
 
-<!-- 6 -->
+<!-- 8 -->
 <section class="slide paper" data-hud="light" aria-label="La idea clave">
-  <div class="kick"><span class="no">06</span>La idea clave</div>
+  <div class="kick"><span class="no">08</span>La idea clave</div>
   <h2 data-r>Operaciones internas y externas</h2>
   <div class="io">
     <div class="iocard int" data-r style="transition-delay:.1s">
@@ -457,9 +553,9 @@ table.mold tr.best td:last-child{color:var(--orange)}
   </div>
 </section>
 
-<!-- 7 -->
+<!-- 9 -->
 <section class="slide paper" data-hud="light" aria-label="El método">
-  <div class="kick"><span class="no">07</span>El método</div>
+  <div class="kick"><span class="no">09</span>El método</div>
   <h2 data-r>SMED en 4 fases</h2>
   <div class="phases">
     <div class="bar"></div>
@@ -471,9 +567,9 @@ table.mold tr.best td:last-child{color:var(--orange)}
   <div class="callout" data-r style="transition-delay:2.4s"><i></i><p>Solo con separar bien internas y externas, el tiempo de cambio suele bajar mucho sin invertir dinero.</p></div>
 </section>
 
-<!-- 8 -->
+<!-- 10 -->
 <section class="slide concrete" data-hud="light" aria-label="Fase 4 en la práctica">
-  <div class="kick"><span class="no">08</span>Fase 4 en la práctica</div>
+  <div class="kick"><span class="no">10</span>Fase 4 en la práctica</div>
   <h2 data-r>Técnicas para acortar el cambio</h2>
   <div class="tech">
     <div class="tcard" data-r style="transition-delay:.1s"><svg viewBox="0 0 62 62" aria-hidden="true"><path class="s" d="M10 46 L40 16"/><circle class="f" cx="44" cy="12" r="7"/><path class="s" d="M8 52 h22"/></svg><h3>Anclajes rápidos</h3><p>Palancas, levas o pinzas en lugar de tornillos con muchas vueltas.</p></div>
@@ -485,9 +581,9 @@ table.mold tr.best td:last-child{color:var(--orange)}
   </div>
 </section>
 
-<!-- 9 -->
+<!-- 11 -->
 <section class="slide dark s9" data-hud="dark" aria-label="Ejemplo 1">
-  <div class="kick"><span class="no">09</span>Ejemplo 1</div>
+  <div class="kick"><span class="no">11</span>Ejemplo 1</div>
   <h2 data-r>Un pit stop de Fórmula 1 es SMED puro</h2>
   <div class="row">
     <div class="pit" data-r style="transition-delay:.15s">
@@ -511,9 +607,9 @@ table.mold tr.best td:last-child{color:var(--orange)}
   </div>
 </section>
 
-<!-- 10 -->
+<!-- 12 -->
 <section class="slide paper s10" data-hud="light" aria-label="Ejemplo 2">
-  <div class="kick"><span class="no">10</span>Ejemplo 2, ilustrativo</div>
+  <div class="kick"><span class="no">12</span>Ejemplo 2, ilustrativo</div>
   <h2 data-r>Cambio de molde en una inyectora de plástico</h2>
   <div class="row">
     <div data-r style="transition-delay:.1s">
@@ -538,9 +634,9 @@ table.mold tr.best td:last-child{color:var(--orange)}
   </div>
 </section>
 
-<!-- 11 -->
+<!-- 13 -->
 <section class="slide concrete" data-hud="light" aria-label="Resultados">
-  <div class="kick"><span class="no">11</span>Resultados</div>
+  <div class="kick"><span class="no">13</span>Resultados</div>
   <h2 data-r>Qué gana la empresa con SMED</h2>
   <div class="gains">
     <div class="gain" data-r style="transition-delay:.1s"><div class="ic"><svg viewBox="0 0 44 44"><path d="M22 38 V8 M10 20 L22 8 L34 20"/></svg></div><h3>Más capacidad</h3><p>Menos horas de máquina parada significa más horas produciendo.</p></div>
@@ -550,9 +646,9 @@ table.mold tr.best td:last-child{color:var(--orange)}
   </div>
 </section>
 
-<!-- 12 -->
+<!-- 14 -->
 <section class="slide paper" data-hud="light" aria-label="Relación con otras herramientas">
-  <div class="kick"><span class="no">12</span>Relación con otras herramientas</div>
+  <div class="kick"><span class="no">14</span>Relación con otras herramientas</div>
   <h2 data-r>SMED hace posible el resto de Lean</h2>
   <div class="net" id="net">
     <svg class="lines" id="netLines" aria-hidden="true"></svg>
@@ -572,9 +668,9 @@ table.mold tr.best td:last-child{color:var(--orange)}
   </div>
 </section>
 
-<!-- 13 -->
+<!-- 15 -->
 <section class="slide dark s13" data-hud="dark" aria-label="Conclusión">
-  <div class="kick"><span class="no">13</span>Conclusión</div>
+  <div class="kick"><span class="no">15</span>Conclusión</div>
   <p class="state" data-r>Si cambiar es rápido, producir poco y a menudo <em>sale rentable.</em></p>
   <div class="formula" data-r style="transition-delay:.4s">
     <span class="c k">SMED</span><span class="eq">=</span><span class="c">separar lo interno de lo externo</span><span class="eq">+</span><span class="c">convertir</span><span class="eq">+</span><span class="c">optimizar</span>
@@ -587,7 +683,7 @@ table.mold tr.best td:last-child{color:var(--orange)}
 
 <div class="press" id="press" aria-hidden="true"></div>
 <div class="hud" id="hud" aria-live="polite">
-  <span class="tnum" id="hudN">01 / 13</span>
+  <span class="tnum" id="hudN">01 / 15</span>
   <div class="fillwrap"><div class="track"></div><div class="fill" id="hudFill"></div></div>
   <span class="clock tnum" id="hudClock" title="Tiempo de exposición"><i></i><span id="hudClockT">00:00</span></span>
 </div>
@@ -616,10 +712,10 @@ table.mold tr.best td:last-child{color:var(--orange)}
   var FX={
     0:function(){var el=document.getElementById("digiT"),box=document.getElementById("digi");box.classList.remove("done");
       tween(2600,function(p){var s=Math.round(p*(9*60+42));el.textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");},function(){box.classList.add("done");});},
-    2:function(){dial();},
-    5:function(){gantt(false);later(function(){gantt(true);},1600);},
-    8:function(){var t=document.getElementById("pitT");t.textContent="0,0";later(function(){tween(2000,function(p){t.textContent=(p*2).toFixed(1).replace(".",",");});},700);},
-    11:function(){netLines();}
+    4:function(){dial();},
+    7:function(){gantt(false);later(function(){gantt(true);},1600);},
+    10:function(){var t=document.getElementById("pitT");t.textContent="0,0";later(function(){tween(2000,function(p){t.textContent=(p*2).toFixed(1).replace(".",",");});},700);},
+    13:function(){netLines();}
   };
   function counters(sl){[].forEach.call(sl.querySelectorAll("[data-count]"),function(el){var to=+el.dataset.count,d=+el.dataset.dur||1000;el.textContent="0";later(function(){tween(d,function(p){el.textContent=Math.round(p*to);});},+el.dataset.delay||0);});}
 
