@@ -16,6 +16,11 @@ struct EntradaOcio: Sendable, Identifiable, Equatable {
     let portada: String
     // Título y autor ya normalizados para buscar sin rehacerlo en cada tecla (0.20).
     var buscable = ""
+    // 3.2 (`OcioDatosOp`): ISBN de los libros; plataforma y formato (fisico/digital/otro) de los juegos; cuándo se añadió.
+    var isbn = ""
+    var plataforma = ""
+    var formato = ""
+    var creada = ""
 }
 
 struct ListaOcio: Sendable, Identifiable, Equatable {
@@ -47,7 +52,9 @@ enum LecturaOcio {
                 valoracion: valoracion(valor),
                 notas: valor["notes"]?.texto ?? "", enlace: valor["url"]?.texto ?? "",
                 portada: valor["portada"]?.texto ?? "",
-                buscable: normalizar((valor["title"]?.texto ?? "") + " " + (valor["author"]?.texto ?? ""))
+                buscable: normalizar((valor["title"]?.texto ?? "") + " " + (valor["author"]?.texto ?? "") + " " + (valor["platform"]?.texto ?? "")),
+                isbn: valor["isbn"]?.texto ?? "", plataforma: valor["platform"]?.texto ?? "",
+                formato: valor["format"]?.texto ?? "", creada: valor["createdAt"]?.texto ?? ""
             )
         }.sorted { a, b in
             let fa = a.fechaFin.isEmpty ? a.fechaInicio : a.fechaFin
