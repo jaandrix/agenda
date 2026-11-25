@@ -33,6 +33,9 @@ struct VistaInicio: Equatable {
     // Bitácora 2.0: qué hay cada día de las tres semanas (los puntitos de la semana) y el nombre para el saludo.
     var tipos: [LocalDay: [TipoPunto]] = [:]
     var nombre = ""
+    // 3.2: tu cumpleaños (perfilPersonal.cumple) cae hoy; edad solo si se guardó con año.
+    var esCumple = false
+    var edad: Int?
     var dia: LocalDay { elegido ?? hoy }
 
     static func desde(_ doc: DocumentoBitacora, ahora: Date = Date(), elegido: LocalDay? = nil) -> VistaInicio {
@@ -70,19 +73,31 @@ struct VistaInicio: Equatable {
                             agenda: agenda, sinDia: plan.dia == hoy ? plan.sinDia : [], pendientes: plan.tareas.count - hechas, hechas: hechas)
         v.elegido = plan.dia == hoy ? nil : plan.dia
         v.tipos = tipos
-        let nombre = (((try? doc.valor(de: "userName")) ?? nil)?.texto ?? "").trimmingCharacters(in: .whitespaces)
+        let perfil = PerfilPersonalOp.leer(doc)
+        let nombre = perfil.nombre.trimmingCharacters(in: .whitespaces)
         v.nombre = nombre.split(separator: " ").first.map { String($0).lowercased() } ?? ""
-        if let c = (try? doc.valor(de: "ciudadTiempo")) ?? nil, let n = c["nombre"]?.texto,
-           let la = Dinero.decimal(c["lat"]), let lo = Dinero.decimal(c["lon"]) {
-            v.ciudad = Ciudad(nombre: n, lat: NSDecimalNumber(decimal: la).doubleValue, lon: NSDecimalNumber(decimal: lo).doubleValue)
+        if PerfilPersonalOp.esCumple(perfil.cumple, hoy: hoy) {
+            v.esCumple = true
+            v.edad = PerfilPersonalOp.edad(perfil.cumple, sinAnio: perfil.sinAnio, hoy: hoy)
         }
+        v.ciudad = Self.ciudad(doc)
         let tr = ((try? doc.valor(de: "servicios")) ?? nil)?["transporte"]
-        if Apartados.visible("transporte", doc), let fav = LecturaTransporte.posteInicio(tr) {
+        // Solo en la zona de Avanza (ZonaTransporte): con la ciudad del tiempo en otro sitio, Inicio no enseña el bus.
+        if Apartados.visible("transporte", doc), ZonaTransporte.cubre(v.ciudad), let fav = LecturaTransporte.posteInicio(tr) {
             v.poste = String(fav.dropFirst(4))
             v.lineas = tr?["lineas"]?[fav]?.lista?.compactMap(\.texto) ?? []
             v.postes = LecturaTransporte.postesBus(tr)
         }
         return v
+    }
+}
+
+extension VistaInicio {
+    // `ciudadTiempo` = { nombre, lat, lon } (calendario.js); sin ella, Zaragoza (CIUDAD_TIEMPO_DEFECTO).
+    static func ciudad(_ doc: DocumentoBitacora) -> Ciudad {
+        guard let c = (try? doc.valor(de: "ciudadTiempo")) ?? nil, let n = c["nombre"]?.texto,
+              let la = Dinero.decimal(c["lat"]), let lo = Dinero.decimal(c["lon"]) else { return .defecto }
+        return Ciudad(nombre: n, lat: NSDecimalNumber(decimal: la).doubleValue, lon: NSDecimalNumber(decimal: lo).doubleValue)
     }
 }
 
@@ -343,7 +358,7 @@ struct InicioCuerpo: View {
 
     private var saludo: some View {
         VStack(alignment: .leading, spacing: Medida.xxs) {
-            Text(vista.map { $0.nombre.isEmpty ? "hola." : "hola, \($0.nombre)." } ?? "hola.")
+            Text(vista.map(Self.saludo) ?? "hola.")
                 .font(Letra.titulo).foregroundStyle(Lienzo.tinta).kerning(-0.4)
                 .accessibilityAddTraits(.isHeader)
             if let v = vista {
@@ -354,7 +369,13 @@ struct InicioCuerpo: View {
         }
     }
 
-    // «3 pendientes, 1 hecha.»; otro día lleva delante cuál es.
+    // Tu cumpleaños cambia el saludo todo el día, aunque mires otro día de la semana.
+    static func saludo(_ v: VistaInicio) -> String {
+        if v.esCumple { return v.nombre.isEmpty ? "feliz cumpleaños." : "feliz cumpleaños, \(v.nombre)." }
+        return v.nombre.isEmpty ? "hola." : "hola, \(v.nombre)."
+    }
+
+    // «3 pendientes, 1 hecha.»; otro día lleva delante cuál es. Por tu cumpleaños, «hoy cumples 30.» delante.
     private func contexto(_ v: VistaInicio) -> String {
         let total = v.pendientes + v.hechas
         let cuenta: String
@@ -363,7 +384,9 @@ struct InicioCuerpo: View {
         } else {
             cuenta = "\(v.pendientes) \(v.pendientes == 1 ? "pendiente" : "pendientes"), \(v.hechas) \(v.hechas == 1 ? "hecha" : "hechas")."
         }
-        return v.dia == v.hoy ? cuenta : Self.nombreDia(v) + ", " + cuenta
+        let delDia = v.dia == v.hoy ? cuenta : Self.nombreDia(v) + ", " + cuenta
+        guard v.esCumple else { return delDia }
+        return (v.edad.map { "hoy cumples \($0). " } ?? "hoy es tu día. ") + delDia
     }
 
     static func nombreDia(_ v: VistaInicio) -> String {
@@ -373,7 +396,7 @@ struct InicioCuerpo: View {
 
     @ViewBuilder private func dia(_ v: VistaInicio) -> some View {
         VStack(alignment: .leading, spacing: Medida.xs) {
-            EtiquetaSeccion(texto: Self.nombreDia(v), accion: (titulo: "ver el plan.", hacer: { irA(.plan) }))
+            TituloSeccion(texto: Self.nombreDia(v) + ".", accion: (titulo: "ver el plan.", hacer: { irA(.plan) }))
             if v.agenda.isEmpty {
                 EstadoVacio(texto: v.dia == v.hoy ? "nada para hoy." : "nada este día.", icono: "plan")
                     .tarjeta()
@@ -487,7 +510,9 @@ struct BloqueSiguiente: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.pulsable(0.98))
-                .accessibilityLabel("tu bus")
+                // Antes la etiqueta «tu bus» tapaba los tiempos: VoiceOver no leía cuándo llega.
+                .accessibilityElement(children: .combine)
+                .accessibilityHint("abre transporte")
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -740,7 +765,7 @@ struct SelectorPoste: View {
             }
             Spacer(minLength: 0)
         }
-        .frame(minHeight: 36)
+        .frame(minHeight: Medida.toque)
         .contentShape(Rectangle())
     }
 
