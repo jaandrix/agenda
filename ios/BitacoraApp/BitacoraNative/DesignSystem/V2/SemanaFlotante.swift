@@ -46,9 +46,8 @@ struct SemanaFlotante: View {
         .padding(.top, Medida.s)
         .padding(.bottom, Medida.xs)
         .padding(.horizontal, 6)
-        .background(Lienzo.tarjeta, in: RoundedRectangle(cornerRadius: Medida.radioTarjeta + 2, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Medida.radioTarjeta + 2, style: .continuous).strokeBorder(Lienzo.filo))
-        .sombra(.flotante)
+        .fondoConSombra(Lienzo.tarjeta, en: RoundedRectangle(cornerRadius: Medida.radioTarjeta + 2, style: .continuous),
+                        sombra: .flotante, filo: Lienzo.filo)
         .onAppear { visible = elegido.inicioSemanaLunes }
         .onChange(of: elegido) { _, nuevo in
             let l = nuevo.inicioSemanaLunes
@@ -69,8 +68,12 @@ struct SemanaFlotante: View {
                 Button {
                     elegir(hoy)
                     withAnimation(Muelle.o(Muelle.rapido, reducido: sinMovimiento)) { visible = lunesDeHoy }
-                } label: { Chip(texto: "hoy", tono: .naranja) }
+                } label: {
+                    // 3.2: 44 de toque sin cambiar el alto de la cabecera (28).
+                    Chip(texto: "hoy", tono: .naranja).padding(10).contentShape(Rectangle())
+                }
                 .buttonStyle(.pulsable(0.9))
+                .padding(-10)
                 .transition(.scale(scale: 0.7).combined(with: .opacity))
                 .accessibilityLabel("volver a hoy")
             }

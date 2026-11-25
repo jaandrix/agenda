@@ -155,7 +155,8 @@ enum Letra {
     static var detalle: Font { Tipo.poppins(13, .regular, estilo: .subheadline) }  // extractos, segunda línea
     static var pie: Font { Tipo.poppins(12, .regular, estilo: .footnote) }         // metadatos, fechas
     static var pieFuerte: Font { Tipo.poppins(12, .semibold, estilo: .footnote) }
-    static var etiqueta: Font { Tipo.poppins(11, .semibold, estilo: .caption) }    // EN MAYÚSCULAS con `.tracking(Letra.espaciado)`
+    static var etiqueta: Font { Tipo.poppins(11, .semibold, estilo: .caption) }    // chips y marcas mínimas; no para títulos de sección
+    static var rotulo: Font { Tipo.poppins(13, .semibold, estilo: .subheadline) }  // título de sección (EtiquetaSeccion): «Este mes.»
     static var boton: Font { Tipo.poppins(14, .semibold, estilo: .body) }
     static var pestana: Font { Tipo.poppins(13, .semibold, estilo: .footnote) }
     static var numeroGrande: Font { Tipo.poppins(28, .semibold, estilo: .title).monospacedDigit() }
@@ -191,12 +192,23 @@ extension View {
     func sombra(_ s: Sombra) -> some View { shadow(color: s.color, radius: s.radio, x: 0, y: s.y) }
 
     // Tarjeta blanca estándar: relleno, radio 22 continuo, filete casi invisible y sombra suave.
+    // 3.2 (rendimiento): la sombra va en la forma del fondo, no en la tarjeta entera. Puesta sobre todo el contenido,
+    // SwiftUI la calculaba con la silueta de cada texto e icono de dentro (un pase aparte por tarjeta al desplazarse);
+    // como el fondo es opaco, se ve exactamente igual.
     func tarjeta(relleno: CGFloat = Medida.rellenoTarjeta, radio: CGFloat = Medida.radioTarjeta) -> some View {
         padding(relleno)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Lienzo.tarjeta, in: RoundedRectangle(cornerRadius: radio, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: radio, style: .continuous).strokeBorder(Lienzo.filo))
-            .sombra(.suave)
+            .background { FondoTarjeta(radio: radio) }
+    }
+
+    /// Fondo con sombra en la forma, para piezas opacas: igual que `.background(color, in: forma).sombra(s)` pero sin
+    /// sombrear el contenido.
+    func fondoConSombra<S: InsettableShape>(_ color: Color, en forma: S, sombra s: Sombra, filo: Color? = nil) -> some View {
+        background {
+            forma.fill(color)
+                .overlay { if let filo { forma.strokeBorder(filo) } }
+                .sombra(s)
+        }
     }
 
     // Fondo de página: el lienzo hasta los bordes.
@@ -221,5 +233,26 @@ extension View {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
+    }
+}
+
+/// El fondo blanco de `.tarjeta()`: radio continuo, filete casi invisible y sombra suave en la forma.
+struct FondoTarjeta: View {
+    var radio: CGFloat = Medida.radioTarjeta
+
+    var body: some View {
+        let forma = RoundedRectangle(cornerRadius: radio, style: .continuous)
+        forma.fill(Lienzo.tarjeta)
+            .overlay(forma.strokeBorder(Lienzo.filo))
+            .sombra(.suave)
+            .accessibilityHidden(true)
+    }
+}
+
+extension String {
+    /// «este mes.» → «Este mes.»: solo la primera letra en mayúscula (lo que va antes, como «¿» o cifras, se respeta).
+    var conMayusculaInicial: String {
+        guard let i = firstIndex(where: { $0.isLetter }) else { return self }
+        return String(self[..<i]) + String(self[i]).uppercased() + String(self[index(after: i)...])
     }
 }

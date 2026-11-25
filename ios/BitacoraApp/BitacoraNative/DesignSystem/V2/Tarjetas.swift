@@ -24,8 +24,11 @@ struct BuscadorCapsula: View {
                 Button { withAnimation(Muelle.rapido) { texto = "" } } label: {
                     Image(systemName: "xmark.circle.fill").font(.system(size: 16)).foregroundStyle(Lienzo.tintaTerciaria)
                         .frame(width: 32, height: 32)
+                        // 3.2: 44 de toque sin ensanchar la cápsula.
+                        .padding(6).contentShape(Rectangle())
                 }
                 .buttonStyle(.pulsable(0.85))
+                .padding(-6)
                 .accessibilityLabel("borrar búsqueda")
                 .transition(.scale(scale: 0.5).combined(with: .opacity))
             }
@@ -43,6 +46,7 @@ struct BuscadorCapsula: View {
             .foregroundStyle(Lienzo.tinta)
             .submitLabel(.search)
             .autocorrectionDisabled()
+            .accessibilityLabel(placeholder)
         if let enfocar { t.focused(enfocar) } else { t.focused($foco) }
     }
 }
@@ -173,6 +177,7 @@ struct SeccionPlegable<Contenido: View>: View {
             }
             .buttonStyle(Pulsable(escala: 0.98, haptica: false))
             .accessibilityValue(abierta ? "abierta" : "plegada")
+            .accessibilityAddTraits(.isHeader)
             if abierta {
                 contenido()
                     .transition(.opacity.combined(with: .offset(y: -6)))
@@ -233,6 +238,8 @@ struct SeparadorFila: View {
 /// Casilla cuadrada de marcar (foto 4): cuadrado de esquinas suaves; marcada, negra con el check blanco y un sello.
 struct CasillaMarcar: View {
     let hecha: Bool
+    /// 3.2: qué se marca («comprar pan»), para VoiceOver. Sin ella dice solo «hecha» o «pendiente».
+    var etiqueta: String? = nil
     let marcar: () -> Void
     @State private var sello = false
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
@@ -263,7 +270,8 @@ struct CasillaMarcar: View {
         .animation(Muelle.toque, value: hecha)
         .animation(Muelle.toque, value: sello)
         .sensoryFeedback(.success, trigger: hecha) { antes, ahora in !antes && ahora }
-        .accessibilityLabel(hecha ? "hecha" : "pendiente")
+        .accessibilityLabel(etiqueta ?? (hecha ? "hecha" : "pendiente"))
+        .accessibilityValue(etiqueta == nil ? "" : (hecha ? "hecha" : "pendiente"))
         .accessibilityHint(hecha ? "desmarcar" : "marcar como hecha")
     }
 }
@@ -316,7 +324,6 @@ struct TarjetaOscura<Contenido: View>: View {
             .padding(Medida.rellenoTarjeta)
             .frame(maxWidth: .infinity, alignment: .leading)
             .foregroundStyle(Lienzo.sobreOscuro)
-            .background(Lienzo.oscuro, in: RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
-            .sombra(.oscura)
+            .fondoConSombra(Lienzo.oscuro, en: RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous), sombra: .oscura)
     }
 }

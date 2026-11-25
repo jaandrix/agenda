@@ -66,9 +66,18 @@ enum Elastico {
 }
 
 // Entrada escalonada de una fila: sube 8 pt y aparece. `indice` ordena el escalón.
+// 3.2 (rendimiento): a partir de la fila 12 ya no se anima (antes esperaban el último escalón). En una lista perezosa cada
+// fila que vuelve a entrar al desplazarse se rehacía y volvía a fundirse; esas filas ya salen quietas.
 struct EntradaEscalonada: ViewModifier {
     let indice: Int
-    @State private var visible = false
+    @State private var visible: Bool
+
+    init(indice: Int) {
+        self.indice = indice
+        _visible = State(initialValue: indice >= Self.tope)
+    }
+
+    static let tope = 12
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
     func body(content: Content) -> some View {
@@ -76,7 +85,8 @@ struct EntradaEscalonada: ViewModifier {
             .opacity(visible ? 1 : 0)
             .offset(y: visible || sinMovimiento ? 0 : 8)
             .onAppear {
-                withAnimation(Muelle.o(Muelle.entrada, reducido: sinMovimiento).delay(Double(min(indice, 12)) * Muelle.escalon)) { visible = true }
+                guard !visible else { return }
+                withAnimation(Muelle.o(Muelle.entrada, reducido: sinMovimiento).delay(Double(indice) * Muelle.escalon)) { visible = true }
             }
     }
 }

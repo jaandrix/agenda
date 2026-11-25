@@ -226,11 +226,11 @@ struct PrincipalView: View {
     private func pantallas(reserva: CGFloat) -> some View {
         @Bindable var c = c
         return TabView(selection: $c.pestana) {
-            NavigationStack { InicioView().huecoDeBarra() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.inicio).transition(transicionPestana)
-            NavigationStack { PlanView().huecoDeBarra() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.plan).transition(transicionPestana)
-            NavigationStack { CalendarioView().huecoDeBarra() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.calendario).transition(transicionPestana)
-            NavigationStack { FinanzasView().huecoDeBarra() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.finanzas).transition(transicionPestana)
-            NavigationStack(path: $c.rutaMas) { MasView().huecoDeBarra() }.reservaBarra(reserva).toolbar(.hidden, for: .tabBar).tag(Pestana.mas).transition(transicionPestana)
+            NavigationStack { InicioView().huecoDeBarra() }.reservaBarra(reserva).pestanaVisible(c.pestana == .inicio).toolbar(.hidden, for: .tabBar).tag(Pestana.inicio).transition(transicionPestana)
+            NavigationStack { PlanView().huecoDeBarra() }.reservaBarra(reserva).pestanaVisible(c.pestana == .plan).toolbar(.hidden, for: .tabBar).tag(Pestana.plan).transition(transicionPestana)
+            NavigationStack { CalendarioView().huecoDeBarra() }.reservaBarra(reserva).pestanaVisible(c.pestana == .calendario).toolbar(.hidden, for: .tabBar).tag(Pestana.calendario).transition(transicionPestana)
+            NavigationStack { FinanzasView().huecoDeBarra() }.reservaBarra(reserva).pestanaVisible(c.pestana == .finanzas).toolbar(.hidden, for: .tabBar).tag(Pestana.finanzas).transition(transicionPestana)
+            NavigationStack(path: $c.rutaMas) { MasView().huecoDeBarra() }.reservaBarra(reserva).pestanaVisible(c.pestana == .mas).toolbar(.hidden, for: .tabBar).tag(Pestana.mas).transition(transicionPestana)
         }
         .animation(sinMovimiento ? nil : Muelle.rapido, value: c.pestana)
     }
@@ -294,6 +294,49 @@ extension View {
 
     /// Reserva abajo el hueco de la barra flotante. Va en la raíz de cada pestaña y en cada pantalla que se apila.
     func huecoDeBarra() -> some View { modifier(HuecoDeBarra()) }
+}
+
+extension View {
+    // 3.2 (lag general): las cinco pestañas siguen vivas en el TabView y cada una recalculaba su modelo con cada cambio de
+    // `revision` aunque no se viera. El armazón marca cuál se ve; `tareaVisible(id:)` sustituye a `.task(id:)` y en una
+    // pestaña oculta deja el trabajo para cuando vuelva a verse (y solo si el id cambió mientras tanto).
+    func pestanaVisible(_ visible: Bool) -> some View {
+        environment(\.pestanaVisible, visible)
+    }
+
+    /// Como `.task(id:)`, pero si la pestaña no se ve no trabaja: lo hace al volver, una vez, si `id` cambió.
+    func tareaVisible<ID: Equatable>(id: ID, prioridad: TaskPriority = .userInitiated, _ trabajo: @escaping () async -> Void) -> some View {
+        modifier(TareaVisible(id: id, prioridad: prioridad, trabajo: trabajo))
+    }
+}
+
+private struct PestanaVisibleClave: EnvironmentKey {
+    static let defaultValue = true
+}
+
+extension EnvironmentValues {
+    var pestanaVisible: Bool {
+        get { self[PestanaVisibleClave.self] }
+        set { self[PestanaVisibleClave.self] = newValue }
+    }
+}
+
+private struct TareaVisible<ID: Equatable>: ViewModifier {
+    let id: ID
+    let prioridad: TaskPriority
+    let trabajo: () async -> Void
+    @Environment(\.pestanaVisible) private var visible
+    @State private var hecho: ID?
+
+    func body(content: Content) -> some View {
+        // Oculta, la clave se queda en lo último hecho: no se relanza nada. Al volver, si `id` cambió, se relanza.
+        content.task(id: visible ? Optional(id) : hecho, priority: prioridad) {
+            guard visible, hecho != id else { return }
+            let pedido = id
+            await trabajo()
+            if !Task.isCancelled { hecho = pedido }
+        }
+    }
 }
 
 private struct ReservaBarraClave: EnvironmentKey {

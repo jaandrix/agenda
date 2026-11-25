@@ -25,7 +25,8 @@ struct ModalFlotante<Estado: View, Contenido: View>: View {
         .background(Lienzo.oscuro, in: RoundedRectangle(cornerRadius: Medida.radioModal, style: .continuous))
         .clipShape(RoundedRectangle(cornerRadius: Medida.radioModal, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Medida.radioModal, style: .continuous).strokeBorder(Lienzo.filoOscuro))
-        .sombra(.oscura)
+        // 3.2: la sombra en la forma (sobre el contenido recortado se recalculaba en cada fotograma del arrastre).
+        .background { RoundedRectangle(cornerRadius: Medida.radioModal, style: .continuous).fill(Lienzo.oscuro).sombra(.oscura) }
         .padding(.horizontal, Medida.s - 2)
         .padding(.bottom, Medida.xs)
         .offset(y: arrastre)

@@ -56,6 +56,7 @@ struct InterruptorCasa: ToggleStyle {
                 }
                 .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: configuration.isOn)
             }
+            .frame(minHeight: Medida.toque)
             .contentShape(Rectangle())
         }
         .buttonStyle(Pulsable(escala: 0.98, haptica: false))
