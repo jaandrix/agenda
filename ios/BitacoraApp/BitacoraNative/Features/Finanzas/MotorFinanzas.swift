@@ -171,9 +171,12 @@ actor MotorFinanzas {
         return h.finalize()
     }
 
-    private static func hoyISO() -> String {
+    // 3.2: un solo formateador (antes uno nuevo en cada `cargar`, que se llama en cada revisión). Solo se usa dentro
+    // del actor.
+    private static let formatoDia: DateFormatter = {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"
-        return f.string(from: Date())
-    }
+        return f
+    }()
+    private static func hoyISO() -> String { formatoDia.string(from: Date()) }
 }

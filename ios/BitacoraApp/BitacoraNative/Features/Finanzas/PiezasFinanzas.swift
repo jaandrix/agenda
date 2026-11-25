@@ -71,3 +71,50 @@ enum CifraFin {
         return (v > 0 ? "+" : v < 0 ? "−" : "") + FormatoFin.dinero(abs(v))
     }
 }
+
+/// 3.2: colores de Finanzas que aún no están en DesignSystem/V2 (subirlos en la próxima tanda). La tendencia de una
+/// cuenta: verde palo y el granate de la casa (#8A2233, el de teja). Los dos pasan de 3:1 sobre blanco.
+enum TonoFinanzas {
+    static let subeVerdePalo = Color(uiColor: UIColor(rgb: 0x4F8A63))
+    static let bajaGranate = Color(uiColor: UIColor(rgb: 0x8A2233))
+}
+
+/// 3.2: flecha pequeña de la tendencia de una cuenta en 60 días (1 sube, -1 baja, 0 estable: nada).
+struct FlechaTendencia: View {
+    let tendencia: Int
+
+    var body: some View {
+        if tendencia != 0 {
+            Image(systemName: tendencia > 0 ? "arrow.up.right" : "arrow.down.right")
+                .font(Letra.pieFuerte).imageScale(.small)
+                .foregroundStyle(tendencia > 0 ? TonoFinanzas.subeVerdePalo : TonoFinanzas.bajaGranate)
+                .accessibilityLabel(tendencia > 0 ? "sube en los últimos 60 días." : "baja en los últimos 60 días.")
+        }
+    }
+}
+
+/// 3.2: la tarjeta de una lista de movimientos. Como TarjetaLista, pero la sombra se dibuja solo con la forma del fondo:
+/// `.sombra` sobre la tarjeta entera componía fuera de pantalla todo lo de dentro (textos, iconos) en cada pintado y en
+/// cada fila al hacer scroll, que era parte del tirón de Movimientos.
+struct TarjetaMovs<Elemento: Identifiable, Fila: View>: View {
+    let elementos: [Elemento]
+    @ViewBuilder var fila: (Elemento) -> Fila
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(elementos.enumerated()), id: \.element.id) { i, e in
+                if i > 0 { SeparadorFila() }
+                fila(e)
+            }
+        }
+        .padding(.horizontal, Medida.rellenoTarjeta)
+        .padding(.vertical, Medida.xxs)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous)
+                .fill(Lienzo.tarjeta)
+                .overlay(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous).strokeBorder(Lienzo.filo))
+                .sombra(.suave)
+        }
+    }
+}

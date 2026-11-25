@@ -84,7 +84,9 @@ struct FinanzasView: View {
         .fondoLienzo()
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
-        .task(id: "\(c.revision)|\(pestanaGuardada)|\(rango)|\(extras)|\(nMov)") { await cargar() }
+        // 3.2: `c.revision` se lee en VigiaFinanzas y no aquí: cualquier escritura de otro apartado (o cada sincronización)
+        // volvía a evaluar la página entera con todas sus filas, aunque no cambiara ni una cifra.
+        .background { VigiaFinanzas(clave: "\(pestanaGuardada)|\(rango)|\(extras)|\(nMov)") { await cargar() } }
         .hoja(item: $hoja) { h in hojaVista(h) }
         .alert("finanzas.", isPresented: Binding(get: { aviso != nil }, set: { if !$0 { aviso = nil } })) {
             Button("aceptar.", role: .cancel) { aviso = nil }
@@ -199,7 +201,8 @@ struct FinanzasView: View {
         let opciones = Opciones(rango: rango, extras: extras, n: nMov)
         do {
             try await motor.cargar(doc)
-            oculto = ((try? doc.valor(de: "blurFinances")) ?? nil)?.booleano == true
+            let ocultar = ((try? doc.valor(de: "blurFinances")) ?? nil)?.booleano == true
+            if oculto != ocultar { oculto = ocultar }
             try await pintar(tab, motor, opciones)
             if !Task.isCancelled { Medidas.anotar("pestaña finanzas (cargar)", desde: t0) }
         } catch {
@@ -213,7 +216,10 @@ struct FinanzasView: View {
             try? await pintar(tab, motor, opciones)
         }
         await logos.cargar(motor: motor, coordinador: c)
-        // Las otras pestañas, ya calculadas para cuando se toquen.
+        // Las otras pestañas, ya calculadas para cuando se toquen. 3.2: tras una pausa. El motor es un actor (una cosa a
+        // la vez): tras editar un movimiento, la pestaña que se ve esperaba detrás del cálculo de las otras tres (sin JIT,
+        // resumen y salud son lo más caro). Con la pausa, si llega otra escritura se cancela antes de empezar.
+        try? await Task.sleep(nanoseconds: 700_000_000)
         for otra in PestanaFinanzas.allCases where otra != tab {
             guard !Task.isCancelled else { return }
             try? await pintar(otra, motor, opciones)
@@ -320,7 +326,27 @@ struct ListaMovs: View {
     let abrir: (FilaMov) -> Void
 
     var body: some View {
-        TarjetaLista(elementos: filas) { f in FilaMovView(f: f, oculto: oculto, conDia: conDia, abrir: abrir) }
+        TarjetaMovs(elementos: filas) { f in FilaMovView(f: f, oculto: oculto, conDia: conDia, abrir: abrir) }
+    }
+}
+
+// 3.2: lee `c.revision` en una vista vacía aparte, así un cambio de revisión solo vuelve a evaluar esto y no FinanzasView.
+private struct VigiaFinanzas: View {
+    @Environment(AppCoordinator.self) private var c
+    let clave: String
+    let accion: () async -> Void
+
+    var body: some View {
+        Color.clear.task(id: "\(c.revision)|\(clave)") { await accion() }
+    }
+}
+
+// 3.2: con la lista perezosa, las filas que entran al hacer scroll no deben fundirse; solo escalonan las primeras.
+private struct EscalonadoInicial: ViewModifier {
+    let indice: Int
+
+    func body(content: Content) -> some View {
+        if indice < 8 { content.entradaEscalonada(indice) } else { content }
     }
 }
 
@@ -484,12 +510,7 @@ private struct PestanaCuentas: View {
         }
         if !m.cuentas.isEmpty {
             TarjetaSeccion(titulo: "cuentas.", enTarjeta: false) {
-                TarjetaLista(elementos: m.cuentas) { cta in
-                    FilaTarjeta(titulo: cta.nombre + ".") {
-                        Text(din(cta.saldo)).font(Letra.numero).foregroundStyle(cta.saldo < 0 ? Lienzo.negativo : Lienzo.tinta)
-                            .contentTransition(.numericText())
-                    }
-                }
+                TarjetaLista(elementos: m.cuentas) { cta in FilaCuentaFin(cta: cta, oculto: oculto) }
             }
         }
         if !m.cargos.lista.isEmpty {
@@ -552,6 +573,43 @@ private struct PestanaCuentas: View {
     }
 }
 
+// 3.2: la fila de una cuenta: su icono, el nombre con lo que cambió en 60 días y el saldo con la flecha de tendencia.
+private struct FilaCuentaFin: View {
+    let cta: ModeloCuentas.Cuenta
+    let oculto: Bool
+
+    private var icono: String {
+        switch cta.id {
+        case "efectivo": return "coin"
+        case "online": return "phone"
+        default: return "bank"
+        }
+    }
+    private var detalle: String {
+        guard let d = cta.cambio60, !oculto else { return "" }
+        if abs(d) < 0.005 { return "sin cambios en 60 días." }
+        return CifraFin.texto(d, oculto: false, signo: true) + " en 60 días."
+    }
+
+    var body: some View {
+        HStack(spacing: Medida.s) {
+            IconoFinanzas(clave: icono)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(cta.nombre + ".").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                if !detalle.isEmpty { Text(detalle).font(Letra.pie).monospacedDigit().foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1) }
+            }
+            Spacer(minLength: Medida.xs)
+            HStack(spacing: Medida.xxs) {
+                if !oculto { FlechaTendencia(tendencia: cta.tendencia ?? 0) }
+                Text(CifraFin.texto(cta.saldo, oculto: oculto)).font(Letra.numero).foregroundStyle(cta.saldo < 0 ? Lienzo.negativo : Lienzo.tinta)
+                    .contentTransition(.numericText())
+            }
+        }
+        .frame(minHeight: 58)
+        .accessibilityElement(children: .combine)
+    }
+}
+
 // MARK: - movimientos.
 
 private struct PestanaMovimientos: View {
@@ -609,10 +667,11 @@ private struct PestanaMovimientos: View {
 
     private func tituloDia(_ fecha: String, _ filas: [FilaMov]) -> String {
         guard let d = Self.iso.date(from: fecha) else { return filas.first?.dia ?? "sin fecha." }
-        if Calendar.current.isDateInToday(d) { return "hoy." }
-        if Calendar.current.isDateInYesterday(d) { return "ayer." }
-        if Calendar.current.isDateInTomorrow(d) { return "mañana." }
-        return Self.largo.string(from: d).lowercased() + "."
+        if Calendar.current.isDateInToday(d) { return "Hoy." }
+        if Calendar.current.isDateInYesterday(d) { return "Ayer." }
+        if Calendar.current.isDateInTomorrow(d) { return "Mañana." }
+        let t = Self.largo.string(from: d).lowercased()
+        return t.prefix(1).uppercased() + String(t.dropFirst()) + "."
     }
 
     private func netoDia(_ filas: [FilaMov]) -> String? {
@@ -652,6 +711,9 @@ private struct PestanaMovimientos: View {
             EstadoVacio(texto: "nada coincide con lo que buscas entre los últimos \(m.filas.count).", icono: "buscar")
                 .padding(.top, Medida.s)
         } else {
+            // 3.2: perezosa (antes se creaban todas las tarjetas al entrar) y el escalonado solo en las primeras: con la
+            // lista perezosa, el resto aparecía fundiéndose al hacer scroll.
+            LazyVStack(alignment: .leading, spacing: 0) {
             ForEach(Array(gs.enumerated()), id: \.element.0) { i, g in
                 let mes = String(g.0.prefix(7))
                 let mesAntes = i > 0 ? String(gs[i - 1].0.prefix(7)) : mesActual
@@ -663,7 +725,7 @@ private struct PestanaMovimientos: View {
                 VStack(alignment: .leading, spacing: Medida.xs) {
                     HStack(alignment: .firstTextBaseline) {
                         // 3.2: «Lunes 21.» y no «LUNES 21.».
-                        Text(tituloDia(g.0, g.1).prefix(1).uppercased() + tituloDia(g.0, g.1).dropFirst())
+                        Text(tituloDia(g.0, g.1))
                             .font(Letra.pieFuerte).foregroundStyle(Lienzo.tintaSecundaria)
                             .accessibilityAddTraits(.isHeader)
                             .padding(.leading, Medida.xxs)
@@ -675,7 +737,8 @@ private struct PestanaMovimientos: View {
                     ListaMovs(filas: g.1, oculto: oculto, conDia: false, abrir: abrir)
                 }
                 .padding(.top, mes != mesAntes ? Medida.xs : Medida.l)
-                .entradaEscalonada(i)
+                .modifier(EscalonadoInicial(indice: i))
+            }
             }
         }
         if !texto.isEmpty || filtro != .todo {

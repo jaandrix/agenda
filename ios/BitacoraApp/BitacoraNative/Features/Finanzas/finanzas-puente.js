@@ -257,6 +257,18 @@
         };
     }
 
+    // 3.2: lo que ha cambiado el saldo de cada cuenta en los últimos 60 días (con lo mismo que cuenta en el saldo).
+    function tendencias() {
+        var desde = isoLocal(new Date(Date.now() - 60 * 864e5)), r = {};
+        financePro.transactions.forEach(function (t) {
+            if (!t.date || t.date <= desde || !financeProCuentaEnSaldo(t)) return;
+            var v = Number(t.amount) || 0;
+            if (t.type === 'transfer') { r[t.account] = (r[t.account] || 0) - v; if (t.transferTo) r[t.transferTo] = (r[t.transferTo] || 0) + v; }
+            else r[t.account] = (r[t.account] || 0) + (t.type === 'income' ? v : -v);
+        });
+        return r;
+    }
+
     function logo(e) { return typeof e.logo === 'string' && e.logo.indexOf('data:image/') === 0 ? e.logo : ''; }
 
     var pestanas = {
@@ -268,7 +280,15 @@
                 ingresos: t.income, gastos: t.expense,
                 ratio: t.income > 0 ? t.expense / t.income : (t.expense > 0 ? 1 : 0),
                 ritmo: ritmo(),
-                cuentas: financeProCuentas().map(function (k) { return { id: k, nombre: String(nombreCuenta(k)).toLowerCase(), saldo: financeProAccountBalance(k) }; }),
+                cuentas: (function () {
+                    var t = tendencias();
+                    return financeProCuentas().map(function (k) {
+                        var saldo = financeProAccountBalance(k), d = n2(t[k] || 0);
+                        // Estable si cambió menos de 10 € o del 2 % de lo que había hace 60 días.
+                        var dir = Math.abs(d) >= Math.max(10, Math.abs(saldo - d) * 0.02) ? (d > 0 ? 1 : -1) : 0;
+                        return { id: k, nombre: String(nombreCuenta(k)).toLowerCase(), saldo: saldo, cambio60: d, tendencia: dir };
+                    });
+                })(),
                 cargos: cargos(3),
                 ultimos: financeProOrdenados().slice(0, 5).map(fila),
                 salud: saludResumen()
