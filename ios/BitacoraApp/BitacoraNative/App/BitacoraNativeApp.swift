@@ -118,10 +118,12 @@ struct PrincipalView: View {
     // daba un salto al cerrarse «apuntar.».
     @State private var abajoReposo: CGFloat = 0
 
-    static func pestanas(secundaria: Pestana) -> [BarraBitacora.Pestana] {
+    // 3.3 (petición de Alejandro): la barra es fija, inicio, plan y calendario, y el menú con el resto. Antes el tercer
+    // hueco cambiaba entre calendario y finanzas según el último abierto.
+    static func pestanas() -> [BarraBitacora.Pestana] {
         [.init(id: "inicio", titulo: "inicio", icono: "inicio"),
          .init(id: "plan", titulo: "plan", icono: "plan"),
-         secundaria == .finanzas ? .init(id: "finanzas", titulo: "finanzas", icono: "finanzas") : .init(id: "calendario", titulo: "calendario", icono: "calendario"),
+         .init(id: "calendario", titulo: "calendario", icono: "calendario"),
          .init(id: "mas", titulo: "menú", icono: "menu")]
     }
     private static let porId: [String: Pestana] = ["inicio": .inicio, "plan": .plan, "calendario": .calendario, "finanzas": .finanzas, "mas": .mas]
@@ -204,7 +206,6 @@ struct PrincipalView: View {
         .animation(sinMovimiento ? nil : .easeOut(duration: 0.18), value: c.aviso)
         .onChange(of: c.pestana) { _, p in
             Medidas.cambioDePestana(p)
-            if p == .calendario || p == .finanzas { c.secundaria = p }
         }
         .fullScreenCover(item: Binding(get: { c.web.map(PaginaWeb.init) }, set: { c.web = $0?.url })) { NavegadorWeb(url: $0.url).ignoresSafeArea() }
         .hoja(item: hojaModal) { m in
@@ -236,8 +237,9 @@ struct PrincipalView: View {
     }
 
     private var barra: some View {
-        BarraFlotante(pestanas: Self.pestanas(secundaria: c.secundaria).map { .init(id: $0.id, titulo: $0.titulo, icono: $0.icono) },
-                      activa: Self.porId.first { $0.value == c.pestana }?.key ?? "inicio",
+        // Finanzas ya no tiene hueco propio: se abre desde el menú, así que es «menú» lo que se ve encendido.
+        BarraFlotante(pestanas: Self.pestanas().map { .init(id: $0.id, titulo: $0.titulo, icono: $0.icono) },
+                      activa: c.pestana == .finanzas ? "mas" : (Self.porId.first(where: { $0.value == c.pestana })?.key ?? "inicio"),
                       elegir: { id in
                           masUsados = nil
                           if let p = Self.porId[id] { c.tocarPestana(p) }
@@ -277,7 +279,7 @@ extension PrincipalView {
     func abrirMasUsados() async {
         guard let doc = await c.documentoVisible() else { return }
         let menu = Apartados.visibles(doc).flatMap(\.1).map { $0.vista == "studies" ? Apartado(vista: Apartados.destinoEstudios(doc), nombre: $0.nombre) : $0 }
-        let cuarta = c.secundaria == .finanzas ? "finances" : "calendar"
+        let cuarta = "calendar"
         let ids = c.uso.ranking(candidatos: menu.map(\.vista), excluir: ["planner", cuarta])
         masUsados = ids.compactMap { id in menu.first { $0.vista == id } }
     }

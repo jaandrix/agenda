@@ -68,8 +68,6 @@ final class AppCoordinator {
     private(set) var fase: FaseApp = .arrancando
     private(set) var sesion: Sesion?
     var pestana: Pestana = .inicio
-    // El cuarto hueco de la barra: el último de calendario o finanzas que se abrió.
-    var secundaria: Pestana = .calendario
     var modal: Modal?
     // Lo que aún no es nativo: su página concreta de la web, a pantalla completa.
     var web: URL?

@@ -175,7 +175,7 @@ final class TintaTests: XCTestCase {
                 VStack(spacing: 0) {
                     InicioCuerpo(vista: inicio(v), ahora: ahora, estado: .reposo).padding(.horizontal, Espacio.l - 4).padding(.top, 54)
                     Spacer(minLength: 0)
-                    BarraBitacora(pestanas: PrincipalView.pestanas(secundaria: .calendario), activa: "inicio", elegir: { _ in }, capturar: {})
+                    BarraBitacora(pestanas: PrincipalView.pestanas(), activa: "inicio", elegir: { _ in }, capturar: {})
                         .padding(.bottom, 20)
                 }
                 .frame(width: 390, height: 1240, alignment: .top)
@@ -183,7 +183,7 @@ final class TintaTests: XCTestCase {
                     PlanCuerpo(carga: .lista(v), desplazamiento: .constant(0), estado: .reposo, pendientes: 0, aviso: nil)
                         .padding(.horizontal, Espacio.l - 4).padding(.top, 54)
                     Spacer(minLength: 0)
-                    BarraBitacora(pestanas: PrincipalView.pestanas(secundaria: .calendario), activa: "plan", elegir: { _ in }, capturar: {})
+                    BarraBitacora(pestanas: PrincipalView.pestanas(), activa: "plan", elegir: { _ in }, capturar: {})
                         .padding(.bottom, 20)
                 }
                 .frame(width: 390, height: 1240, alignment: .top)

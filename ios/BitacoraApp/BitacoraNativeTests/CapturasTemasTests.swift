@@ -93,7 +93,7 @@ final class CapturasTemasTests: XCTestCase {
                     PlanCuerpo(carga: .lista(v), desplazamiento: .constant(0), estado: .reposo, pendientes: 0, aviso: nil)
                         .padding(.horizontal, Espacio.l - 4).padding(.top, 54)
                     Spacer(minLength: 0)
-                    BarraBitacora(pestanas: PrincipalView.pestanas(secundaria: .calendario), activa: "plan", elegir: { _ in }, capturar: {})
+                    BarraBitacora(pestanas: PrincipalView.pestanas(), activa: "plan", elegir: { _ in }, capturar: {})
                         .padding(.bottom, 20)
                 }
                 .frame(width: 390, height: 1240, alignment: .top)

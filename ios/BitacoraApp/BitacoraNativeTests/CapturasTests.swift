@@ -39,7 +39,7 @@ final class CapturasTests: XCTestCase {
                 .padding(.horizontal, Espacio.l - 4)
                 .padding(.top, 54)
             Spacer(minLength: 0)
-            BarraBitacora(pestanas: PrincipalView.pestanas(secundaria: .calendario), activa: activa, elegir: { _ in }, capturar: {})
+            BarraBitacora(pestanas: PrincipalView.pestanas(), activa: activa, elegir: { _ in }, capturar: {})
                 .padding(.bottom, 20)
         }
         .frame(width: 390, height: 1100, alignment: .top)
