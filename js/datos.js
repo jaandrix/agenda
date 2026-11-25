@@ -510,6 +510,7 @@
                 const preparar = PREPARAR_FUSION[k] || (x => x);
                 let v = datosBase ? fusionarTresBandas(preparar(datosBase[k]), preparar(local), preparar(nube[k])) : local;
                 if (v === undefined) v = local;
+                if (k === 'dayPlanner' && typeof limpiarCopiasDeTrabajos === 'function') v = limpiarCopiasDeTrabajos(v);
                 fusion[k] = v;
                 if (v !== local && !mismoValor(v, local)) { escribir(v); cambiado = true; if (k === 'apartadosConfig') renderAllNavs(); }
             });

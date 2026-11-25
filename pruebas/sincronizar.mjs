@@ -85,3 +85,16 @@ test('listas: una tarea movida de padre en un lado y editada en el otro no sale 
     const ids = JSON.stringify(r).match(/"lt_2"/g) || [];
     assert.equal(ids.length, 1);
 });
+
+test('un trabajo que cambia de fecha no deja su tarea vieja arrastrándose (inglés a las 17:45, 25-11)', () => {
+    const entrega = run('currentPlannerDayKey(new Date(), 2)');
+    run(`studies = { subjects: [{ id: 's_ing', name: 'Inglés.', exams: [], assignments: [{ id: 'w1', title: 'Task 2', date: '${entrega}', time: '17:45', done: false }] }], schedule: {} }`);
+    const vieja = extra => ({ id: 'planner_assign_w1', time: '17:45', title: 'trabajo pendiente. Task 2', notes: '', done: false,
+        arrastrado: true, fechaPrevista: '2026-11-20', linkedAssignmentId: 'w1', ...extra });
+    const nueva = { id: 'planner_assign_w1', time: '17:45', title: 'trabajo pendiente. Task 2', notes: '', done: false, arrastrado: false, linkedAssignmentId: 'w1' };
+    const r = fusionar({ days: { [hoy]: [vieja()] }, backlog: [] },
+        { days: { [entrega]: [nueva] }, backlog: [] },
+        { days: { [hoy]: [vieja({ title: 'Entrega: Task 2' })] }, backlog: [] });
+    const copias = Object.entries(r.days).flatMap(([dia, l]) => l.filter(t => t.id === 'planner_assign_w1').map(() => dia));
+    assert.deepEqual(copias, [entrega]);
+});
