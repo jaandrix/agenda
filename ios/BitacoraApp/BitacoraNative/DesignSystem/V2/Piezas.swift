@@ -288,7 +288,7 @@ struct EtiquetaSeccion: View {
                 Button(action: accion.hacer) {
                     // Área táctil de 44 sin cambiar el alto de la cabecera: el relleno amplía el toque y el negativo lo
                     // quita del diseño.
-                    Text(accion.titulo).font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                    Text(accion.titulo).font(Letra.pieFuerte).estiloEnlace()
                         .padding(.vertical, 14).padding(.horizontal, Medida.xs)
                         .contentShape(Rectangle())
                 }

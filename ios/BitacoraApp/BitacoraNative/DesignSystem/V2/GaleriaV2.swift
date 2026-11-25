@@ -70,7 +70,7 @@ struct GaleriaV2: View {
                         HStack(spacing: Medida.s) {
                             BloqueFecha(dia: hoy.sumando(dias: 3), tono: .naranja)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(CuentaAtras.texto(dias: 3)).font(Letra.cuentaAtras).foregroundStyle(Lienzo.naranja)
+                                Text(CuentaAtras.texto(dias: 3)).font(Letra.cuentaAtras).foregroundStyle(Lienzo.tinta)
                                 Text("concierto en el auditorio.").font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave)
                             }
                         }

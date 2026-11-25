@@ -208,7 +208,7 @@ struct EditorTareaView: View {
                     .onSubmit { let habia = !nuevaSubtarea.trimmingCharacters(in: .whitespaces).isEmpty; anadirSubtarea(); focoSubtarea = habia }
                 if !nuevaSubtarea.trimmingCharacters(in: .whitespaces).isEmpty {
                     Button("añadir.") { anadirSubtarea() }
-                        .font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                        .font(Letra.pieFuerte).estiloEnlace()
                         .frame(minHeight: Medida.toque)
                         .buttonStyle(.pulsable(0.94))
                         .transition(.opacity)

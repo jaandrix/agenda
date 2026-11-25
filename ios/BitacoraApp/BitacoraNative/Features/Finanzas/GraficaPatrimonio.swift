@@ -83,7 +83,7 @@ struct GraficaPatrimonio: View {
                     Haptica.ligera()
                     extras.toggle()
                 } label: {
-                    Text(g.extras ? "solo las cuentas." : "con inversión y emergencia.").font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                    Text(g.extras ? "solo las cuentas." : "con inversión y emergencia.").font(Letra.pieFuerte).estiloEnlace()
                         .frame(minHeight: Medida.toque).contentShape(Rectangle())
                 }
                 .buttonStyle(.pulsable(0.94))

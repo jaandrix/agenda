@@ -23,7 +23,7 @@ struct TituloSeccion: View {
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: Medida.xs)
             if let accion {
-                Button(accion.titulo, action: accion.hacer).font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                Button(accion.titulo, action: accion.hacer).font(Letra.pieFuerte).estiloEnlace()
                     .frame(minHeight: Medida.toque)
                     .contentShape(Rectangle())
                     .buttonStyle(.pulsable(0.94))

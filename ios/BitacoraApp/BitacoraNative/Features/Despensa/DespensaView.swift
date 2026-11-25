@@ -148,7 +148,7 @@ struct DespensaView: View {
                     Text("quitado «\(q.item.texto.lowercased())».").font(Letra.detalle).foregroundStyle(Lienzo.sobreOscuro).lineLimit(2)
                     Spacer(minLength: Medida.xs)
                     Button("deshacer.") { reponer() }
-                        .font(Letra.pieFuerte).foregroundStyle(Lienzo.naranja)
+                        .font(Letra.pieFuerte).estiloEnlace(sobreOscuro: true)
                         .frame(minHeight: Medida.toque)
                         .buttonStyle(.pulsable(0.94))
                 }

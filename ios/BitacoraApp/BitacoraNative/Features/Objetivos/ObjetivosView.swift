@@ -157,7 +157,7 @@ struct ObjetivosView: View {
                         if let a = g.avance {
                             HStack(spacing: Medida.s) {
                                 BarraFinaObjetivos(valor: a, sobreOscuro: true)
-                                if let t = g.avanceTexto { Text(t).font(Letra.hora).foregroundStyle(Lienzo.naranja) }
+                                if let t = g.avanceTexto { Text(t).font(Letra.hora).foregroundStyle(Lienzo.tinta) }
                             }
                         }
                         if g.numerico {
@@ -375,7 +375,7 @@ private struct FichaObjetivo: View {
                 if let a = g.avance {
                     HStack(spacing: Medida.s) {
                         BarraFinaObjetivos(valor: a, sobreOscuro: true)
-                        if let t = g.avanceTexto { Text(t).font(Letra.hora).foregroundStyle(Lienzo.naranja) }
+                        if let t = g.avanceTexto { Text(t).font(Letra.hora).foregroundStyle(Lienzo.tinta) }
                     }
                 }
             }

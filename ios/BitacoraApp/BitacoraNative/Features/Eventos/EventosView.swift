@@ -142,7 +142,7 @@ struct EventosView: View {
                         Spacer()
                         TimelineView(.periodic(from: .now, by: 60)) { t in
                             Text(CuentaAtras.texto(f.dia, hora: f.evento.hora, hoy: hoy, ahora: t.date))
-                                .font(Letra.cuentaAtras).foregroundStyle(Lienzo.naranja)
+                                .font(Letra.cuentaAtras).foregroundStyle(Lienzo.sobreOscuro)
                                 .contentTransition(.numericText())
                         }
                     }

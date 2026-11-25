@@ -563,7 +563,7 @@ struct GestorSuscripcionesView: View {
                             }
                         }
                         Button { editar(nil) } label: {
-                            Text("+ añadir.").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.naranjaProfundo).frame(minHeight: 48)
+                            Text("+ añadir.").font(Letra.cuerpoFuerte).estiloEnlace().frame(minHeight: 48)
                         }.buttonStyle(.pulsable)
                         if !m.deBaja.isEmpty {
                             EtiquetaFin(texto: "dadas de baja.")

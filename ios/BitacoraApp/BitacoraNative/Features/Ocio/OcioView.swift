@@ -297,7 +297,7 @@ struct OcioView: View {
                     PortadaOcio(url: e.portada, titulo: e.titulo, ancho: anchoPortada, radio: Medida.radioIcono,
                                 cinco: BibliotecaOcio.cinco(e))
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(e.estado.lowercased() + ".").font(Letra.pieFuerte).foregroundStyle(Lienzo.naranja)
+                        Text(e.estado.lowercased() + ".").font(Letra.pieFuerte).foregroundStyle(Lienzo.sobreOscuroSuave)
                         Text(MayusculaOcio.inicial(e.titulo)).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.sobreOscuro)
                             .lineLimit(2).multilineTextAlignment(.leading)
                         if !e.autor.isEmpty {

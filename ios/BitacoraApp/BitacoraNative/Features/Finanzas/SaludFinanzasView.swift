@@ -522,7 +522,7 @@ struct PorRevisarSaludView: View {
                             Button(cat.nombre) { Task { await e.accion(c, "bizums", ["categoria": cat.id]) } }
                         }
                     } label: {
-                        Text("pasar los \(bizums) Bizums recibidos a...").foregroundStyle(Lienzo.naranjaProfundo)
+                        Text("pasar los \(bizums) Bizums recibidos a...").estiloEnlace()
                     }
                     .disabled(e.trabajando)
                 } footer: {

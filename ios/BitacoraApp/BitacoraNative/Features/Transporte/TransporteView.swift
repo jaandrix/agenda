@@ -142,7 +142,7 @@ struct TransporteView: View {
                     }
                     Spacer(minLength: Medida.xs)
                     if enInicio == p.clave {
-                        Text("EN INICIO").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.naranja)
+                        Text("EN INICIO").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.sobreOscuroSuave)
                             .accessibilityLabel("esta parada sale en inicio")
                     }
                 }
@@ -153,7 +153,7 @@ struct TransporteView: View {
                     Spacer()
                     if p.tipo == "bus" && enInicio != p.clave && enInicio != nil {
                         Button("poner en inicio.") { ponerEnInicio(p.clave) }
-                            .font(Letra.pieFuerte).foregroundStyle(Lienzo.naranja)
+                            .font(Letra.pieFuerte).estiloEnlace(sobreOscuro: true)
                             .frame(minHeight: Medida.toque).buttonStyle(.pulsable(0.94))
                     }
                     Button("quitar.") { favorita(p.clave, false) }
@@ -187,7 +187,7 @@ struct TransporteView: View {
             Chip(texto: "en inicio.", tono: .naranja).accessibilityLabel("esta parada sale en inicio")
         } else {
             Button("poner en inicio.") { ponerEnInicio(p.clave) }
-                .font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                .font(Letra.pieFuerte).estiloEnlace()
                 .frame(minHeight: Medida.toque).buttonStyle(.pulsable(0.94))
         }
     }

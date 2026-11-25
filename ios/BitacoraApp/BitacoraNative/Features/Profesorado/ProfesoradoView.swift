@@ -111,7 +111,7 @@ struct ProfesoradoView: View {
                                 }
                                 Spacer(minLength: Medida.xs)
                                 Button("ya está.") { marcar(s, true) }
-                                    .font(Letra.pieFuerte).foregroundStyle(Lienzo.naranja)
+                                    .font(Letra.pieFuerte).estiloEnlace(sobreOscuro: true)
                                     .frame(minHeight: Medida.toque)
                                     .buttonStyle(.pulsable(0.92))
                             }
@@ -225,7 +225,7 @@ private struct SemanaProfe: View {
             }
             if elegido != hoy {
                 Button("volver a hoy.") { elegir(hoy) }
-                    .font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                    .font(Letra.pieFuerte).estiloEnlace()
                     .buttonStyle(.pulsable(0.94))
             }
         }

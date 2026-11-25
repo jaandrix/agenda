@@ -19,9 +19,9 @@ enum Lienzo {
         static let oscuro: UInt32 = 0x111315
         static let oscuroElevado: UInt32 = 0x1D2024
         static let sutil: UInt32 = 0xE9EBEF
-        static let naranja: UInt32 = 0xFF6B4A
-        static let naranjaClaro: UInt32 = 0xFF9A7A
-        static let naranjaProfundo: UInt32 = 0xE8572F
+        static let naranja: UInt32 = 0xFF5A1F
+        static let naranjaClaro: UInt32 = 0xFF915C
+        static let naranjaProfundo: UInt32 = 0xC8460E
         static let tinta: UInt32 = 0x111315
         static let tintaSecundaria: UInt32 = 0x5D6470
         static let tintaTerciaria: UInt32 = 0x9AA0AA
@@ -37,8 +37,8 @@ enum Lienzo {
         static let rellenoCumple: UInt32 = 0xFFF2D1, tintaCumple: UInt32 = 0x80590A
         static let rellenoViaje: UInt32 = 0xEEE7FF, tintaViaje: UInt32 = 0x5B3FA0
         static let rellenoDinero: UInt32 = 0xDDF3E7, tintaDinero: UInt32 = 0x1C6E4D
-        static let pildoraActiva: UInt32 = 0xFFE4DB
-        static let hoySobreOscuro: UInt32 = 0xFF8A6E
+        static let pildoraActiva: UInt32 = 0xFFE6D5
+        static let hoySobreOscuro: UInt32 = 0xFF8A4D
     }
 
     // Superficies
@@ -55,6 +55,10 @@ enum Lienzo {
     static let naranjaProfundo = c(Hex.naranjaProfundo)     // texto o icono naranja sobre blanco (más contraste)
     static let naranjaSuave = c(Hex.naranja, 0.12)          // tinte de fondo (seleccionado, chip naranja)
     static let naranjaBrillo = c(Hex.naranja, 0.45)         // sombra luminosa de la banda naranja
+
+    // 3.3 (acento B, petición de Alejandro: el coral «se veía muy Claude»): el naranja es más puro y solo rellena
+    // (banda del modal, chips, puntos, hoy); los textos que actúan van en tinta subrayada (`estiloEnlace`) y los
+    // rótulos, en tinta.
 
     // 3.2: el día elegido va en una placa carbón; la pestaña activa de la barra, teñida de coral.
     static let placaElegido = c(Hex.oscuro)
@@ -308,5 +312,13 @@ extension String {
     var conMayusculaInicial: String {
         guard let i = firstIndex(where: { $0.isLetter }) else { return self }
         return String(self[..<i]) + String(self[i]).uppercased() + String(self[index(after: i)...])
+    }
+}
+
+extension View {
+    /// Una acción de texto («cambiar.», «ver todas.», «+ añadir.»): tinta con subrayado suave, sobre claro u oscuro.
+    func estiloEnlace(sobreOscuro: Bool = false) -> some View {
+        let color = sobreOscuro ? Lienzo.sobreOscuro : Lienzo.tinta
+        return foregroundStyle(color).underline(color: color.opacity(0.35))
     }
 }

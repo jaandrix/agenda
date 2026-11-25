@@ -96,7 +96,7 @@ struct BarraDeshacerListas: View {
                     deshacer = nil
                     Task { await c.guardar(d.ops) }
                 }
-                .font(Letra.boton).foregroundStyle(Lienzo.naranja).buttonStyle(.pulsable(0.94)).frame(minHeight: Medida.toque)
+                .font(Letra.boton).estiloEnlace(sobreOscuro: true).buttonStyle(.pulsable(0.94)).frame(minHeight: Medida.toque)
             }
             .padding(.horizontal, Medida.m)
             .background(Lienzo.oscuro, in: RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))

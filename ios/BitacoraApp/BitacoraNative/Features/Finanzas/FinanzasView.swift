@@ -764,7 +764,7 @@ private struct PestanaMovimientos: View {
             Menu {
                 ForEach(OpcionFinanzas.allCases) { o in Button(o.titulo) { hoja = .opcion(o) } }
             } label: {
-                Text("más opciones.").font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo).frame(minHeight: Medida.toque)
+                Text("más opciones.").font(Letra.pieFuerte).estiloEnlace().frame(minHeight: Medida.toque)
             }
         }
         .padding(.top, Medida.m)

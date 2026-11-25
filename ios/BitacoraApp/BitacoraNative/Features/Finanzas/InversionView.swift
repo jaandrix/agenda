@@ -113,7 +113,7 @@ struct InversionDesdeView: View {
                             .buttonStyle(.pulsable).accessibilityLabel("quitar la fecha")
                     }
                 } else {
-                    Button("elegir fecha.") { abierto = true }.font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo).buttonStyle(.pulsable)
+                    Button("elegir fecha.") { abierto = true }.font(Letra.pieFuerte).estiloEnlace().buttonStyle(.pulsable)
                 }
             }
             if let aviso { Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.negativo) }

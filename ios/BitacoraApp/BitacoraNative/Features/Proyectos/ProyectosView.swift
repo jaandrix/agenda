@@ -305,7 +305,7 @@ struct ProyectoDetalleView: View {
                 HStack(alignment: .firstTextBaseline) {
                     Text("siguiente paso.").font(Letra.pieFuerte).foregroundStyle(Lienzo.sobreOscuroSuave)
                     Spacer()
-                    if s.estado == "curso" { Text("en marcha.").font(Letra.pieFuerte).foregroundStyle(Lienzo.naranja) }
+                    if s.estado == "curso" { Text("en marcha.").font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta) }
                     else if s.enHoy { Text("en el plan de hoy.").font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave) }
                 }
                 Text(s.texto).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.sobreOscuro).fixedSize(horizontal: false, vertical: true)

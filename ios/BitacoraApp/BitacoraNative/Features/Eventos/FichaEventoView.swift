@@ -306,7 +306,7 @@ struct TiempoView: View {
                             Text("la del tiempo de inicio y del calendario.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                         }
                         Spacer(minLength: Medida.xs)
-                        Text(cambiando ? "cancelar." : "cambiar.").font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                        Text(cambiando ? "cancelar." : "cambiar.").font(Letra.pieFuerte).estiloEnlace()
                     }
                     .padding(.horizontal, Medida.rellenoTarjeta)
                     .frame(minHeight: 60)

@@ -471,7 +471,7 @@ struct BloqueSiguiente: View {
     }
 
     private func etiqueta(_ s: String) -> some View {
-        Text(s).font(Letra.pieFuerte).foregroundStyle(Lienzo.naranja)
+        Text(s).font(Letra.pieFuerte).foregroundStyle(Lienzo.sobreOscuroSuave)
     }
 
     var body: some View {
@@ -553,7 +553,6 @@ struct CarruselDias: View, Equatable {
     // Hasta que el scroll se coloca en la semana del día, sus avisos de posición no son del dedo.
     @State private var listo = false
     @State private var cache = CacheSemanas()
-    @Namespace private var espacio
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     static let letras = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
 
@@ -575,7 +574,7 @@ struct CarruselDias: View, Equatable {
                 ScrollView(.horizontal) {
                     LazyHStack(spacing: 0) {
                         ForEach(cache.semanas(hoy: hoy, visible: base), id: \.self) { lunes in
-                            SemanaCarrusel(lunes: lunes, marcado: marcado, hoy: hoy, conCosas: conCosas, tipos: tipos, espacio: espacio,
+                            SemanaCarrusel(lunes: lunes, marcado: marcado, hoy: hoy, conCosas: conCosas, tipos: tipos,
                                            tocar: { tocar($0) })
                                 .equatable()
                                 .containerRelativeFrame(.horizontal)
@@ -657,16 +656,24 @@ struct CarruselDias: View, Equatable {
     }
 
     // Tocar un día: en la misma semana la placa gris se desliza con un muelle; a otra semana, salta.
+    // 3.3 (lag de la placa, como en Plan): el día nuevo se pinta cuando la placa ya ha llegado. Si se pintaba durante el
+    // viaje, la agenda de debajo frenaba el muelle.
     private func tocar(_ d: LocalDay) {
         guard d != marcado else { return }
         Haptica.ligera()
-        if d.inicioSemanaLunes == base {
-            withAnimation(Muelle.o(Muelle.rapido, reducido: sinMovimiento)) { estado.tocar(d) }
-        } else {
+        guard d.inicioSemanaLunes == base else {
             estado.tocar(d)
+            colocar(d.inicioSemanaLunes)
+            elegir(d)
+            return
         }
-        colocar(d.inicioSemanaLunes)
-        elegir(d)
+        withAnimation(Muelle.o(Muelle.rapido, reducido: sinMovimiento)) { estado.tocar(d) }
+        Task {
+            try? await Task.sleep(nanoseconds: 260_000_000)
+            guard marcado == d else { return }
+            var tx = Transaction(); tx.disablesAnimations = true
+            withTransaction(tx) { elegir(d) }
+        }
     }
 }
 
@@ -688,15 +695,28 @@ struct SemanaCarrusel: View, Equatable {
     let hoy: LocalDay
     let conCosas: Set<LocalDay>
     var tipos: [LocalDay: [TipoPunto]] = [:]
-    let espacio: Namespace.ID
     let tocar: (LocalDay) -> Void
 
     static func == (a: SemanaCarrusel, b: SemanaCarrusel) -> Bool {
         a.lunes == b.lunes && a.marcado == b.marcado && a.hoy == b.hoy && a.conCosas == b.conCosas && a.tipos == b.tipos
     }
 
+    // 3.3: una sola placa movida con `offset` (no matchedGeometryEffect): animarla no recoloca el Inicio entero.
     var body: some View {
-        HStack(spacing: 2) { ForEach(0..<7, id: \.self) { celda(lunes.sumando(dias: $0)) } }
+        let posicion: Int? = marcado.inicioSemanaLunes == lunes ? (0..<7).first(where: { lunes.sumando(dias: $0) == marcado }) : nil
+        return HStack(spacing: 2) { ForEach(0..<7, id: \.self) { celda(lunes.sumando(dias: $0)) } }
+            .background(alignment: .leading) {
+                if let posicion {
+                    GeometryReader { g in
+                        let ancho = (g.size.width - 2 * 6) / 7
+                        RoundedRectangle(cornerRadius: Medida.radioFila, style: .continuous)
+                            .fill(Lienzo.placaElegido)
+                            .frame(width: ancho, height: g.size.height)
+                            .offset(x: CGFloat(posicion) * (ancho + 2))
+                    }
+                    .transition(.opacity)
+                }
+            }
     }
 
     // Sin la lectura por tipos (pruebas, capturas), un día con cosas lleva un puntito gris.
@@ -726,13 +746,6 @@ struct SemanaCarrusel: View, Equatable {
             }
             .frame(maxWidth: .infinity, minHeight: Medida.toque)
             .padding(.vertical, Medida.xs)
-            .background {
-                if sel {
-                    RoundedRectangle(cornerRadius: Medida.radioFila, style: .continuous)
-                        .fill(Lienzo.placaElegido)
-                        .matchedGeometryEffect(id: "elegido", in: espacio)
-                }
-            }
             .contentShape(Rectangle())
         }
         .buttonStyle(Pulsable(escala: 0.9, haptica: false))
@@ -761,7 +774,7 @@ struct SelectorPoste: View {
             Text(nombre("bus:" + poste) + ".").font(Letra.pieFuerte).foregroundStyle(Lienzo.sobreOscuroSuave)
                 .lineLimit(1).truncationMode(.tail)
             if postes.count > 1 {
-                Text("cambiar.").font(Letra.pieFuerte).foregroundStyle(Lienzo.naranja)
+                Text("cambiar.").font(Letra.pieFuerte).estiloEnlace(sobreOscuro: true)
             }
             Spacer(minLength: 0)
         }

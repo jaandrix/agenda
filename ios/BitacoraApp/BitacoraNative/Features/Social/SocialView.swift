@@ -256,7 +256,7 @@ struct SocialView: View {
         let ev = e.evento
         let meta = [ev["date"].map(SocialTexto.fecha), ev["time"], ev["place"]].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
         return VStack(alignment: .leading, spacing: Medida.xxs) {
-            Text(e.de.lowercased() + ".").font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+            Text(e.de.lowercased() + ".").font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta)
             Text(ev["title"] ?? "Evento").font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta)
             if !meta.isEmpty { Text(meta).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
             if let n = e.nota, !n.isEmpty { Text("«\(n)»").font(Letra.detalle).foregroundStyle(Lienzo.tinta).padding(.top, 2) }

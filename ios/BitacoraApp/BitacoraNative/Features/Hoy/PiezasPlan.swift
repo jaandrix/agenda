@@ -83,7 +83,7 @@ struct FilaTareaV2: View {
                                 .foregroundStyle(arrastrada && !hecha ? Lienzo.naranjaProfundo : Lienzo.tintaSecundaria)
                         }
                         if arrastrada && !hecha {
-                            Text("de otro día").font(Letra.pie).foregroundStyle(Lienzo.naranjaProfundo)
+                            Text("de otro día").font(Letra.pie).foregroundStyle(Lienzo.tinta)
                         }
                         if !notas.isEmpty {
                             Text(notas).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)

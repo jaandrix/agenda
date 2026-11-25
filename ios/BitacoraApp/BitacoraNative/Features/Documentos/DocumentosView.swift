@@ -210,7 +210,7 @@ struct DocumentosView: View {
                 ProgressView().tint(Lienzo.tintaTerciaria)
             } else {
                 Button("+ pdf.") { Haptica.ligera(); importando = true }
-                    .font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                    .font(Letra.pieFuerte).estiloEnlace()
                     .buttonStyle(.pulsable(0.94))
                     .frame(minHeight: Medida.toque)
                     .accessibilityLabel("subir un pdf")

@@ -278,7 +278,7 @@ struct PlanCuerpo: View {
                         Button(verTodasSinDia ? "ver menos." : "ver todas.") {
                             withAnimation(Muelle.o(Muelle.expandir, reducido: sinMovimiento)) { verTodasSinDia.toggle() }
                         }
-                        .font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                        .font(Letra.pieFuerte).estiloEnlace()
                         .frame(minHeight: Medida.toque)
                         .buttonStyle(.pulsable(0.94))
                         .padding(.leading, sangria)

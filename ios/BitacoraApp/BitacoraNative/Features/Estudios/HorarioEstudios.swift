@@ -154,7 +154,7 @@ struct TituloEstudios: View {
             Spacer()
             if let accion {
                 Button(accion.titulo, action: accion.hacer)
-                    .font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                    .font(Letra.pieFuerte).estiloEnlace()
                     .frame(minHeight: Medida.toque)
                     .contentShape(Rectangle())
                     .buttonStyle(.pulsable(0.94))
@@ -288,7 +288,7 @@ struct TarjetaHorario: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(c.asignatura.isEmpty ? "clase." : c.asignatura).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta)
                         .lineLimit(2).multilineTextAlignment(.leading)
-                    if curso { Text("ahora.").font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo) }
+                    if curso { Text("ahora.").font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta) }
                 }
                 Spacer(minLength: Medida.xs)
                 Image(systemName: "chevron.right").font(Letra.pie).foregroundStyle(Lienzo.tintaTerciaria)

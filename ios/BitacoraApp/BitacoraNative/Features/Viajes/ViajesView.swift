@@ -285,7 +285,7 @@ struct ViajesView: View {
                         IconoCuadrado(id: "viajes", tono: .translucido)
                     }
                     Text(TextoViajes.cuentaAtras(v, hoy: hoy))
-                        .font(LetraViajes.cuentaAtras).kerning(-0.8).foregroundStyle(Lienzo.naranja)
+                        .font(LetraViajes.cuentaAtras).kerning(-0.8).foregroundStyle(Lienzo.sobreOscuro)
                         .lineLimit(1).minimumScaleFactor(0.6)
                         .contentTransition(.numericText())
                     VStack(alignment: .leading, spacing: 3) {
