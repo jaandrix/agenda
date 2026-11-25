@@ -15,6 +15,9 @@ struct SemanaFlotante: View {
     var accesorio: AnyView?
 
     @State private var visible: LocalDay?
+    // 3.2 (lag de la placa): la placa sigue a `marcado` al momento y `elegir` llega cuando ya casi ha llegado. Si el día
+    // nuevo se pintaba en el mismo fotograma del toque (lista, puntos, carga), el muelle de la placa daba tirones.
+    @State private var marcado: LocalDay?
     @Namespace private var espacio
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
@@ -50,11 +53,12 @@ struct SemanaFlotante: View {
                         sombra: .flotante, filo: Lienzo.filo)
         .onAppear { visible = elegido.inicioSemanaLunes }
         .onChange(of: elegido) { _, nuevo in
+            if marcado != nil && marcado != nuevo { marcado = nil }
             let l = nuevo.inicioSemanaLunes
             if l != visible { withAnimation(Muelle.o(Muelle.rapido, reducido: sinMovimiento)) { visible = l } }
         }
         .sensoryFeedback(.selection, trigger: visible)
-        .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: elegido)
+        .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: marcado ?? elegido)
     }
 
     private var cabecera: some View {
@@ -93,13 +97,21 @@ struct SemanaFlotante: View {
     }
 
     private func dia(_ d: LocalDay, indice: Int) -> some View {
-        let on = d == elegido
+        let on = d == (marcado ?? elegido)
         let esHoy = d == hoy
         let colores = Array(puntos(d).prefix(3))
         return Button {
-            guard d != elegido else { return }
+            guard d != (marcado ?? elegido) else { return }
             Haptica.ligera()
-            elegir(d)
+            marcado = d
+            Task {
+                try? await Task.sleep(nanoseconds: 160_000_000)
+                guard marcado == d else { return }
+                var sinAnimar = Transaction()
+                sinAnimar.disablesAnimations = true
+                withTransaction(sinAnimar) { elegir(d) }
+                marcado = nil
+            }
         } label: {
             VStack(spacing: 5) {
                 Text(Self.abreviaturas[indice])

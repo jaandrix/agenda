@@ -33,6 +33,9 @@ struct FinanzasView: View {
     // La pestaña se recuerda mientras la app está abierta, como financeTab en la web.
     @AppStorage("finanzas.pestana") private var pestanaGuardada = PestanaFinanzas.cuentas.rawValue
     @AppStorage("bitacora-fin-extras") private var extras = false
+    // 3.2 (lag al cambiar de pestaña): la cápsula sigue a `segmento` al momento y el contenido cambia cuando ya ha
+    // llegado. Montar la pestaña nueva en el mismo fotograma del toque frenaba el muelle de la cápsula.
+    @State private var segmento: PestanaFinanzas?
     @State private var rango = "6m"
     @State private var nMov = 30
     @State private var cuentas: ModeloCuentas?
@@ -62,22 +65,29 @@ struct FinanzasView: View {
                     cabecera
                         .id("arriba")
                     SegmentoCapsula(opciones: PestanaFinanzas.allCases.map { SegmentoCapsula<PestanaFinanzas>.Opcion(valor: $0, titulo: Self.titulosSegmento[$0] ?? $0.titulo) },
-                                    elegido: Binding(get: { pestana }, set: { p in
-                                        guard p != pestana else { return }
-                                        pestanaGuardada = p.rawValue
-                                        nMov = 30
+                                    elegido: Binding(get: { segmento ?? pestana }, set: { p in
+                                        guard p != (segmento ?? pestana) else { return }
+                                        segmento = p
                                         scroll.scrollTo("arriba", anchor: .top)
+                                        Task {
+                                            try? await Task.sleep(nanoseconds: 180_000_000)
+                                            guard segmento == p else { return }
+                                            withAnimation(sinMovimiento ? nil : .easeOut(duration: 0.14)) {
+                                                pestanaGuardada = p.rawValue
+                                                nMov = 30
+                                            }
+                                            segmento = nil
+                                        }
                                     }),
                                     sobreBlanco: false)
                         .padding(.top, Medida.m)
                     // Un VStack por pestaña: así entra y sale entera, y los ids de sus filas no se cruzan con los de otra.
                     VStack(alignment: .leading, spacing: 0) { contenido }
                         .id(pestana)
-                        .transition(.opacity.combined(with: .offset(y: 6)))
+                        .transition(.opacity)
                 }
                 .padding(.horizontal, Medida.margen)
                 .padding(.bottom, Medida.l)
-                .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: pestana)
             }
         }
         .scrollIndicators(.hidden)

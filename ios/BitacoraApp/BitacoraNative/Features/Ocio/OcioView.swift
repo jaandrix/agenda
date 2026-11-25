@@ -140,8 +140,11 @@ struct OcioView: View {
             if pestana == .book {
                 Button { Haptica.ligera(); modal = .escaner } label: {
                     Label("escáner.", systemImage: "barcode.viewfinder").labelStyle(.titleAndIcon)
+                        .lineLimit(1)
                 }
                 .buttonStyle(EstiloCapsula(tono: .blanco, alto: 40))
+                // 3.2: con las acciones a la altura del título, el botón cedía ancho y salía «e...»; ahora encoge el título.
+                .fixedSize()
                 .frame(minHeight: Medida.toque)
                 .accessibilityLabel("escáner de isbn")
                 .accessibilityHint("añade libros leyendo el código de barras")
