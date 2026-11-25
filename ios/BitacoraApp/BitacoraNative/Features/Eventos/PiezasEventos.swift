@@ -33,21 +33,26 @@ enum TonoEventos {
         return categorias.contains(t) ? t : "otro"
     }
 
-    // Todos dejan la tinta y la tinta secundaria por encima de 4,5:1 (ver TonoPanorama). «otro» se queda en blanco.
-    static func fondo(_ categoria: String) -> Color {
-        switch categoria {
-        case "social": TonoPanorama.melocoton
-        case "teatro": TonoPanorama.rosa
-        case "cine": TonoPanorama.lavanda
-        case "concierto": TonoPanorama.mantequilla
-        case "deportes": TonoPanorama.salvia
-        case "estudios", "viajes": TonoPanorama.niebla
-        case "trabajo": TonoPanorama.arena
-        case "salud": TonoPanorama.salvia
-        case "hogar": TonoPanorama.crudo
-        default: Lienzo.tarjeta
-        }
-    }
+    // 3.2, «pastel.» (la propuesta de color elegida): la tarjeta va rellena del pastel de su tipo y la segunda línea en el
+    // tono oscuro de ese color. Las cinco primeras parejas son las de `Lienzo` en la rama de color (evento, cumple,
+    // viaje, dinero, estudio); las otras cuatro, nuevas y de la misma familia. Todas ≥ 5:1 la tinta sobre su relleno y
+    // ≥ 15:1 el título en carbón. «otro» se queda en blanco con la tinta secundaria de siempre.
+    private static func c(_ v: UInt32) -> Color { Color(uiColor: UIColor(rgb: v)) }
+    static let pasteles: [String: (relleno: UInt32, tinta: UInt32)] = [
+        "social": (0xFFE9E2, 0xA8401F),      // coral (rellenoEvento / tintaEvento)
+        "teatro": (0xFCE4EC, 0x9C2A55),      // rosa
+        "cine": (0xEEE7FF, 0x5B3FA0),        // violeta (rellenoViaje / tintaViaje)
+        "concierto": (0xFFF2D1, 0x80590A),   // ámbar (rellenoCumple / tintaCumple)
+        "deportes": (0xDDF3E7, 0x1C6E4D),    // verde (rellenoDinero / tintaDinero)
+        "estudios": (0xE3EAFF, 0x2F4FA8),    // azul (rellenoEstudio / tintaEstudio)
+        "trabajo": (0xE6ECF2, 0x3E5368),     // pizarra
+        "salud": (0xDDF2F0, 0x1F6B66),       // agua
+        "hogar": (0xF4ECDF, 0x6B5330),       // arena
+        "viajes": (0xEEE7FF, 0x5B3FA0),      // violeta
+    ]
+
+    static func relleno(_ categoria: String) -> Color? { pasteles[categoria].map { c($0.relleno) } }
+    static func tinta(_ categoria: String) -> Color { pasteles[categoria].map { c($0.tinta) } ?? Lienzo.tintaSecundaria }
 
     // Opacidad del velo rojo (en multiplicar: oscurece fondo y letra a la vez, así el contraste se conserva). Hoy ya va en
     // naranja; tope 0,15 para que el «NOV» del bloque no baje de 4,5:1.

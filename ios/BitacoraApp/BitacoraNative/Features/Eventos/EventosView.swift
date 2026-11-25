@@ -176,6 +176,8 @@ struct EventosView: View {
         let pasado = tono == .apagado
         let conQR = f.evento.entradas > 0
         let dias = hoy.dias(hasta: f.dia)
+        let relleno = pasado ? nil : TonoEventos.relleno(f.categoria)
+        let segunda = relleno == nil ? Lienzo.tintaSecundaria : TonoEventos.tinta(f.categoria)
         return Button { abrir(f) } label: {
             HStack(spacing: Medida.s) {
                 BloqueFecha(dia: f.dia, tono: tono)
@@ -192,10 +194,10 @@ struct EventosView: View {
                         .foregroundStyle(pasado ? Lienzo.tintaSecundaria : Lienzo.tinta)
                         .lineLimit(2).multilineTextAlignment(.leading)
                     HStack(spacing: Medida.xs) {
-                        Text(Self.diaSemana(f.dia) + ".").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
-                        if let h = f.evento.hora { Text(h).font(Letra.hora).foregroundStyle(Lienzo.tinta) }
+                        Text(Self.diaSemana(f.dia) + ".").font(Letra.pie).foregroundStyle(segunda)
+                        if let h = f.evento.hora { Text(h).font(Letra.hora).foregroundStyle(relleno == nil ? Lienzo.tinta : segunda) }
                         if let lugar = lugar(f) {
-                            Text(lugar).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
+                            Text(lugar).font(Letra.pie).foregroundStyle(segunda).lineLimit(1)
                         }
                     }
                 }
@@ -206,7 +208,7 @@ struct EventosView: View {
                     Chip(texto: "auto.")
                 }
             }
-            .tarjetaTono(pasado ? Lienzo.tarjeta : TonoEventos.fondo(f.categoria), relleno: Medida.s)
+            .tarjetaEvento(relleno, relleno: Medida.s)
             .contentShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
         }
         .buttonStyle(.pulsable(0.97))
@@ -287,5 +289,18 @@ struct Etiqueta: View {
             .overlay(alignment: .bottom) { Rectangle().fill(Paleta.texto).frame(height: 2) }
             .padding(.top, 30)
             .accessibilityAddTraits(.isHeader)
+    }
+}
+
+// Como `.tarjetaTipo` de la rama de color: con pastel, rellena y sin filete ni sombra; sin él, la tarjeta blanca.
+extension View {
+    @ViewBuilder func tarjetaEvento(_ color: Color?, relleno: CGFloat = Medida.rellenoTarjeta) -> some View {
+        if let color {
+            padding(relleno)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(color, in: RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+        } else {
+            tarjeta(relleno: relleno)
+        }
     }
 }

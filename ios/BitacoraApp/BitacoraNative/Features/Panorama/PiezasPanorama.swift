@@ -4,18 +4,19 @@ import UIKit
 // 3.2: piezas de Panorama que aún no están en DesignSystem/V2 (para subirlas si gustan): los tonos palo de las
 // tarjetas, el rótulo de sección sin mayúsculas, el macro resumen de la cuenta y la gráfica pequeña del saldo.
 
-// Tonos palo y crudo para fondos de tarjeta. Todos dejan leer `Lienzo.tinta` (≥ 15:1) y `Lienzo.tintaSecundaria`
-// (≥ 4,7:1); no sirven para texto naranja ni rojo (≈ 3:1), que sobre ellos va en tinta.
+// Tonos de fondo de tarjeta, de la familia «pastel.» (la propuesta de color elegida para la 3.2; mismos rellenos que
+// `Lienzo` en la rama de color, más crudo y arena). Todos dejan leer `Lienzo.tinta` (≥ 15:1) y la tinta secundaria
+// (≥ 4,8:1); no sirven para texto naranja ni rojo (≈ 3:1), que sobre ellos va en tinta.
 enum TonoPanorama {
     private static func c(_ v: UInt32) -> Color { Color(uiColor: UIColor(rgb: v)) }
     static let crudo = c(0xF6F1E7)
-    static let arena = c(0xF3EADB)
-    static let salvia = c(0xE6EEE4)
-    static let niebla = c(0xE5ECF4)
-    static let rosa = c(0xF6E6E4)
-    static let lavanda = c(0xECE8F4)
-    static let mantequilla = c(0xF7F0D9)
-    static let melocoton = c(0xFBE9DD)
+    static let arena = c(0xF4ECDF)
+    static let salvia = c(0xDDF3E7)       // = rellenoDinero
+    static let niebla = c(0xE3EAFF)       // = rellenoEstudio
+    static let rosa = c(0xFCE4EC)
+    static let lavanda = c(0xEEE7FF)      // = rellenoViaje
+    static let mantequilla = c(0xFFF2D1)  // = rellenoCumple
+    static let melocoton = c(0xFFE9E2)    // = rellenoEvento
 }
 
 // Fondo de tarjeta como `.tarjeta()`, pero con un tono propio (el filete y la sombra iguales).
