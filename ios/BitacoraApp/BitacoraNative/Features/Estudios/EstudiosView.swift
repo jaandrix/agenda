@@ -55,6 +55,13 @@ enum LecturaEstudios {
     }
 }
 
+// Lo que pinta Estudios, leído de una vez.
+struct DatosEstudios: Sendable {
+    let asignaturas: [AsignaturaVista]
+    let horario: [String: [ClaseHorario]]
+    let nombres: [String]
+}
+
 // Lo pendiente de todas las asignaturas, para la pestaña «próximo.» (solo presentación).
 struct ProximoEstudio: Identifiable, Equatable {
     let item: ItemEstudio
@@ -75,6 +82,13 @@ struct EstudiosView: View {
     @State private var editando: ItemEditando?
     @State private var pestana: Pestana = .proximo
     @State private var hechasAbiertas: Set<String> = []
+    @State private var horario: [String: [ClaseHorario]] = [:]
+    @State private var nombres: [String] = []
+    @State private var diaHorario = LecturaHorario.clave(de: CalendarioBitacora.madrid.dia(de: Date()))
+    @State private var diaElegido = false
+    @State private var clase: ClaseEditando?
+    // Asignaturas recogidas (ids separados por comas): se recuerda entre aperturas.
+    @AppStorage("bitacora-estudios-plegadas") private var plegadasTexto = ""
 
     private var hoy: String { CalendarioBitacora.madrid.dia(de: Date()).iso }
 
@@ -89,6 +103,7 @@ struct EstudiosView: View {
                     Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.negativo)
                         .transition(.opacity)
                 }
+                if asignaturas != nil { seccionHorario }
                 if asignaturas != nil && lista.isEmpty {
                     TarjetaInvitacion(frase: "aún no hay asignaturas.", destacado: "se crean en la web.", boton: "abrir la web.") {
                         c.web = Apartados.webURL("studies")
@@ -119,10 +134,68 @@ struct EstudiosView: View {
         .refreshable { await c.sincronizar() }
         .hoja(item: $creando) { n in EditorEntregaView(nueva: n) { aviso = $0 } }
         .hoja(item: $editando) { e in EditorEntregaView(nueva: e.nueva, existente: e.item) { aviso = $0 } }
+        .hoja(item: $clase) { e in EditorClaseView(editando: e, asignaturas: nombres) { aviso = $0 } }
         .task(id: c.revision) {
             let doc = await c.documentoVisible()
-            guard let nuevo = await ultimaGana({ doc.map { LecturaEstudios.vista($0) } }) else { return }
-            asignaturas = nuevo
+            guard let nuevo = await ultimaGana({ doc.map { d in
+                DatosEstudios(asignaturas: LecturaEstudios.vista(d), horario: LecturaHorario.vista(d), nombres: LecturaHorario.asignaturas(d))
+            } }) else { return }
+            asignaturas = nuevo?.asignaturas
+            horario = nuevo?.horario ?? [:]
+            nombres = nuevo?.nombres ?? []
+            elegirDiaInicial()
+        }
+    }
+
+    // MARK: - Horario
+
+    private var hayHorario: Bool { horario.values.contains { !$0.isEmpty } }
+
+    @ViewBuilder private var seccionHorario: some View {
+        VStack(alignment: .leading, spacing: Medida.xs) {
+            TituloEstudios(texto: "Horario.", accion: accionHorario)
+            if hayHorario {
+                TimelineView(.everyMinute) { ctx in
+                    TarjetaHorario(horario: horario, dia: $diaHorario,
+                                   hoy: LecturaHorario.clave(de: CalendarioBitacora.madrid.dia(de: ctx.date)),
+                                   ahora: minutosMadrid(ctx.date),
+                                   editar: { clase = $0 }, quitar: quitarClase)
+                }
+            } else {
+                HorarioVacio { clase = ClaseEditando(clase: nil, dia: diaHorario == "sab" || diaHorario == "dom" ? "lun" : diaHorario, hora: "") }
+            }
+        }
+    }
+
+    private var accionHorario: (titulo: String, etiqueta: String, hacer: () -> Void)? {
+        guard hayHorario else { return nil }
+        let dia = diaHorario
+        return (titulo: "+ clase.", etiqueta: "añadir una clase", hacer: { clase = ClaseEditando(clase: nil, dia: dia, hora: "") })
+    }
+
+    private func minutosMadrid(_ d: Date) -> Int {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = CalendarioBitacora.madrid.zona
+        let k = cal.dateComponents([.hour, .minute], from: d)
+        return (k.hour ?? 0) * 60 + (k.minute ?? 0)
+    }
+
+    // Al abrir: hoy, o el siguiente día con clases si hoy no hay (el fin de semana enseña el lunes).
+    private func elegirDiaInicial() {
+        guard !diaElegido, hayHorario else { return }
+        diaElegido = true
+        let hoy = CalendarioBitacora.madrid.dia(de: Date())
+        for n in 0..<7 {
+            let k = LecturaHorario.clave(de: hoy.sumando(dias: n))
+            if !(horario[k] ?? []).isEmpty { diaHorario = k; return }
+        }
+    }
+
+    private func quitarClase(_ cl: ClaseHorario) {
+        Haptica.media()
+        Task {
+            do { try await c.encolar(HorarioOp.opQuitar(cl)); aviso = nil }
+            catch { aviso = "no se pudo borrar en este iPhone." }
         }
     }
 
@@ -159,17 +232,17 @@ struct EstudiosView: View {
                 TarjetaInvitacion(frase: "nada pendiente.", destacado: "todo al día.")
             }
             if futuros.count > 1 {
-                EtiquetaSeccion(texto: "después").padding(.top, Medida.xs)
+                TituloEstudios(texto: "Después.").padding(.top, Medida.xs)
                 ForEach(Array(futuros.dropFirst().enumerated()), id: \.element.id) { i, x in
                     tarjetaItem(x).entradaEscalonada(i + 1)
                 }
             }
             if !vencidos.isEmpty {
-                EtiquetaSeccion(texto: "vencido").padding(.top, Medida.xs)
+                TituloEstudios(texto: "Vencido.").padding(.top, Medida.xs)
                 ForEach(vencidos) { x in tarjetaItem(x) }
             }
             if !sinFecha.isEmpty {
-                EtiquetaSeccion(texto: "sin fecha").padding(.top, Medida.xs)
+                TituloEstudios(texto: "Sin fecha.").padding(.top, Medida.xs)
                 ForEach(sinFecha) { x in tarjetaItem(x) }
             }
         }
@@ -266,20 +339,53 @@ struct EstudiosView: View {
                                     set: { v in if v { hechasAbiertas.insert(s.id) } else { hechasAbiertas.remove(s.id) } })
         let partes: [String] = [s.pendientes.isEmpty ? "al día" : "\(s.pendientes.count) pendientes", media.map { "media \($0)" }].compactMap { $0 }
         let resumen = partes.joined(separator: ", ") + "."
+        let plegada = plegadas.contains(s.id)
+        let nombre = s.nombre.hasSuffix(".") ? s.nombre.lowercased() : s.nombre.lowercased() + "."
         return VStack(alignment: .leading, spacing: Medida.s) {
-            HStack(spacing: Medida.s) {
-                InicialCuadrada(nombre: s.nombre, oscuro: !s.pendientes.isEmpty)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(s.nombre.lowercased() + ".").font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta).lineLimit(1)
-                    Text(resumen).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+            Button {
+                Haptica.ligera()
+                withAnimation(Muelle.o(Muelle.expandir, reducido: sinMovimiento)) { plegar(s.id, !plegada) }
+            } label: {
+                HStack(spacing: Medida.s) {
+                    InicialCuadrada(nombre: s.nombre, oscuro: !s.pendientes.isEmpty)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(nombre).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                        Text(resumen).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                    }
+                    Spacer(minLength: Medida.xs)
+                    if let media { Text(media).font(Letra.numero).foregroundStyle(Lienzo.tinta) }
+                    Image(systemName: "chevron.down").font(Letra.pieFuerte).foregroundStyle(Lienzo.tintaTerciaria)
+                        .rotationEffect(.degrees(plegada ? -90 : 0))
+                        .accessibilityHidden(true)
                 }
-                Spacer(minLength: Medida.xs)
-                if let media { Text(media).font(Letra.numero).foregroundStyle(Lienzo.tinta) }
+                .frame(minHeight: Medida.toque)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.pulsable(0.98))
             .accessibilityElement(children: .combine)
+            .accessibilityValue(plegada ? "recogida" : "abierta")
+            .accessibilityHint(plegada ? "toca para ver sus tareas." : "toca para recoger sus tareas.")
             if total > 0 {
                 BarraFina(valor: Double(s.pasados.count) / Double(total), color: Lienzo.tinta, alto: Medida.barraFina)
             }
+            if !plegada {
+                contenidoAsignatura(s, abierta: abierta)
+                    .transition(.opacity.combined(with: .offset(y: -6)))
+            }
+        }
+        .tarjeta()
+    }
+
+    private var plegadas: Set<String> { Set(plegadasTexto.split(separator: ",").map(String.init)) }
+
+    private func plegar(_ id: String, _ si: Bool) {
+        var p = plegadas
+        if si { p.insert(id) } else { p.remove(id) }
+        plegadasTexto = p.sorted().joined(separator: ",")
+    }
+
+    private func contenidoAsignatura(_ s: AsignaturaVista, abierta: Binding<Bool>) -> some View {
+        VStack(alignment: .leading, spacing: Medida.s) {
             if !s.pendientes.isEmpty {
                 VStack(spacing: 0) {
                     ForEach(Array(s.pendientes.enumerated()), id: \.element.id) { k, i in
@@ -302,7 +408,6 @@ struct EstudiosView: View {
                     .buttonStyle(.capsula(.claro))
             }
         }
-        .tarjeta()
     }
 
     private func filaAsignatura(_ i: ItemEstudio, asignatura s: AsignaturaVista) -> some View {
@@ -319,11 +424,12 @@ struct EstudiosView: View {
             Button { abrir(x) } label: {
                 HStack(spacing: Medida.xs) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(i.titulo).font(Letra.cuerpo)
-                            .foregroundStyle(pasado ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                        (Text(i.titulo).foregroundStyle(pasado ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                            + Text(i.fecha.isEmpty ? "" : " (\(CuentaEstudios.fechaCorta(i.fecha)))").foregroundStyle(TintaEstudios.fecha))
+                            .font(Letra.cuerpo)
                             .strikethrough(i.hecho, color: Lienzo.tintaTerciaria)
                             .lineLimit(2).multilineTextAlignment(.leading)
-                        Text(pasado ? i.estado : detalle(x, conAsignatura: false))
+                        Text(pasado ? i.estado : detalleFila(i))
                             .font(Letra.pie).foregroundStyle(i.estado == "vencido." ? Lienzo.naranjaProfundo : Lienzo.tintaSecundaria)
                             .lineLimit(1)
                     }
@@ -342,11 +448,16 @@ struct EstudiosView: View {
         }
     }
 
+    // En la lista de una asignatura la fecha ya va entre paréntesis junto al título.
+    private func detalleFila(_ i: ItemEstudio) -> String {
+        (i.esTrabajo ? "trabajo" : "examen") + (i.hora.isEmpty ? "" : ", a las \(i.hora)") + (i.estado == "vencido." ? ", vencido." : ".")
+    }
+
     // MARK: - Web
 
     private var accesosWeb: some View {
         VStack(alignment: .leading, spacing: Medida.xs) {
-            EtiquetaSeccion(texto: "en la web").padding(.top, Medida.m)
+            TituloEstudios(texto: "En la web.").padding(.top, Medida.m)
             VStack(spacing: 0) {
                 Button { c.web = Apartados.webURL("estudiar") } label: {
                     FilaTarjeta(icono: "estudios", titulo: "repaso.", detalle: "tarjetas, tests y pomodoro.") { FlechaFila() }

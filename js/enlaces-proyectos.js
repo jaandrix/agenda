@@ -756,6 +756,33 @@
             return null;
         }
 
+        // La fusión entre dispositivos va día a día: mover la tarea de un trabajo a otro día es quitarla de uno y ponerla en
+        // otro, y si el otro dispositivo había tocado la copia vieja (arrastrarla, renombrarla), esa copia sobrevivía y se
+        // arrastraba cada día con la hora de entrega (inglés a las 17:45 el 25-11, entregándose el 27). Queda una sola: la
+        // de la fecha del trabajo (o la que se arrastró desde ella).
+        function limpiarCopiasDeTrabajos(p) {
+            if (!p || !p.days || typeof p.days !== 'object' || typeof studies === 'undefined' || !studies?.subjects) return p;
+            const sitios = new Map();
+            Object.keys(p.days).forEach(dia => (Array.isArray(p.days[dia]) ? p.days[dia] : []).forEach(t => {
+                if (t && typeof t.id === 'string' && t.id.startsWith('planner_assign_')) {
+                    if (!sitios.has(t.id)) sitios.set(t.id, []);
+                    sitios.get(t.id).push({ dia, t });
+                }
+            }));
+            const sobran = new Set();
+            sitios.forEach((copias, id) => {
+                if (copias.length < 2) return;
+                const trabajo = findAssignmentById(copias[0].t.linkedAssignmentId || id.slice('planner_assign_'.length));
+                if (!trabajo?.date) return;
+                const buena = copias.find(c => c.dia === trabajo.date) || copias.find(c => c.t.fechaPrevista === trabajo.date) || copias[copias.length - 1];
+                copias.forEach(c => { if (c !== buena) sobran.add(c.t); });
+            });
+            if (!sobran.size) return p;
+            const days = {};
+            Object.keys(p.days).forEach(dia => { days[dia] = Array.isArray(p.days[dia]) ? p.days[dia].filter(t => !sobran.has(t)) : p.days[dia]; });
+            return { ...p, days };
+        }
+
         function removeLinkedPlannerItem(itemId) {
             if (!dayPlanner || !dayPlanner.days) return;
             const plannerId = 'planner_assign_' + itemId;
