@@ -317,20 +317,26 @@ struct OcioView: View {
     }
 
     private func celda(_ e: EntradaOcio) -> some View {
+        let cinco = BibliotecaOcio.cinco(e)
         return Button { modal = .ficha(e) } label: {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 PortadaOcio(url: e.portada, titulo: e.titulo, ancho: nil,
-                            radio: Medida.concentrico(Medida.radioFila, relleno: Medida.xs), cinco: BibliotecaOcio.cinco(e))
+                            radio: Medida.concentrico(Medida.radioFila, relleno: Medida.xs))
                 Text(MayusculaOcio.inicial(e.titulo)).font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta)
                     .lineLimit(2, reservesSpace: true).multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                HStack(spacing: Medida.xxs) {
+                // 3.2: con chapa de 5 estrellas no se repite la nota debajo.
+                HStack(alignment: .center, spacing: Medida.xxs) {
                     Text(Self.meta(e)).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
                     Spacer(minLength: 0)
-                    if e.valoracion > 0 { NotaDiscretaOcio(valor: e.valoracion) }
+                    if e.valoracion > 0, !cinco { NotaDiscretaOcio(valor: e.valoracion) }
                 }
             }
             .tarjeta(relleno: Medida.xs, radio: Medida.radioFila)
+            // 3.2: la chapa de 5 estrellas en la esquina de la tarjeta, asomando por fuera.
+            .overlay(alignment: .topTrailing) {
+                if cinco { ChapaCincoOcio(lado: 26).offset(x: 7, y: -7) }
+            }
         }
         .buttonStyle(.pulsable(0.96))
         .contextMenu { menuEntrada(e) }

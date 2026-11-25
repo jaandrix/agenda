@@ -67,11 +67,12 @@ struct NotaDiscretaOcio: View {
     var sobreOscuro = false
 
     var body: some View {
-        HStack(spacing: 3) {
-            Image(systemName: "star.fill").font(.system(size: 9, weight: .bold)).foregroundStyle(Lienzo.naranja)
+        // 3.2: estrella más gruesa y número en negrita, centrados entre sí.
+        HStack(alignment: .center, spacing: 3) {
+            Image(systemName: "star.fill").font(.system(size: 11, weight: .heavy)).foregroundStyle(Lienzo.naranja)
             Text(valor == valor.rounded() ? "\(Int(valor))" : String(format: "%.1f", valor).replacingOccurrences(of: ".", with: ","))
-                .font(Letra.pieFuerte).monospacedDigit()
-                .foregroundStyle(sobreOscuro ? Lienzo.sobreOscuroSuave : Lienzo.tintaSecundaria)
+                .font(Letra.pieFuerte.bold()).monospacedDigit()
+                .foregroundStyle(sobreOscuro ? Lienzo.sobreOscuro : Lienzo.tinta)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(LecturaOcio.textoNota(valor))

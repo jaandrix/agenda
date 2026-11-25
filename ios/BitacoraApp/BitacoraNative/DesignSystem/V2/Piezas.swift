@@ -229,23 +229,40 @@ struct CabeceraPagina<Derecha: View>: View {
     @ViewBuilder var derecha: () -> Derecha
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Medida.s) {
-            if volver != nil || Derecha.self != EmptyView.self {
-                HStack {
-                    if let volver { BotonRedondo(sistema: "chevron.left", tono: .oscuro, etiqueta: "volver", accion: volver) }
-                    Spacer()
+        Group {
+            if volver == nil, Derecha.self != EmptyView.self {
+                // 3.2 (petición de Alejandro): sin volver, las acciones van a la altura del título y no en una fila
+                // propia encima; se recupera ese hueco en todos los apartados.
+                HStack(alignment: .center, spacing: Medida.s) {
+                    titulos(enFila: true)
+                    Spacer(minLength: 0)
                     derecha()
                 }
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(titulo).font(Letra.titulo).foregroundStyle(Lienzo.tinta).kerning(-0.4)
-                    .accessibilityAddTraits(.isHeader)
-                if let subtitulo, !subtitulo.isEmpty {
-                    Text(subtitulo).font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+            } else {
+                VStack(alignment: .leading, spacing: Medida.s) {
+                    if let volver {
+                        HStack {
+                            BotonRedondo(sistema: "chevron.left", tono: .oscuro, etiqueta: "volver", accion: volver)
+                            Spacer()
+                            derecha()
+                        }
+                    }
+                    titulos(enFila: false)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func titulos(enFila: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(titulo).font(Letra.titulo).foregroundStyle(Lienzo.tinta).kerning(-0.4)
+                .lineLimit(enFila ? 1 : nil).minimumScaleFactor(enFila ? 0.7 : 1)
+                .accessibilityAddTraits(.isHeader)
+            if let subtitulo, !subtitulo.isEmpty {
+                Text(subtitulo).font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(enFila ? 1 : nil)
+            }
+        }
     }
 }
 
