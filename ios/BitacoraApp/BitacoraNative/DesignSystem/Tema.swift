@@ -70,13 +70,14 @@ struct TemaTokens {
         switch t {
         case .sistema: return de(sistemaOscuro ? .asfalto : .papel, sistemaOscuro: sistemaOscuro)
         case .tinta: return sistemaOscuro ? Grises.noche : Grises.dia
-        // 2.0: el tema único. Mismos valores que Lienzo (Lienzo.Hex); el acento de los controles heredados es el naranja
-        // profundo (sobre él, texto carbón: 5:1) y el lienzo se separa de las tarjetas blancas (1,11).
+        // 2.0: el tema único. Mismos valores que Lienzo (Lienzo.Hex) y el lienzo se separa de las tarjetas blancas (1,11).
+        // 3.3: el acento de los controles heredados es el naranja de relleno (sobre él, texto carbón: 6:1); el profundo
+        // se oscureció para el texto sobre blanco y con carbón encima ya no llegaba a 4,5:1.
         case .bitacora:
             return TemaTokens(fondo: Lienzo.Hex.fondo, superficie: Lienzo.Hex.tarjeta, texto: Lienzo.Hex.tinta,
-                              secundario: Lienzo.Hex.tintaSecundaria, acento: Lienzo.Hex.naranjaProfundo,
+                              secundario: Lienzo.Hex.tintaSecundaria, acento: Lienzo.Hex.naranja,
                               sobreAcento: Lienzo.Hex.oscuro, punto: Lienzo.Hex.sutil, oscuro: false)
-                .con(Lienzo.Hex.fondo, Lienzo.Hex.tinta, Lienzo.Hex.naranjaProfundo, Lienzo.Hex.oscuro, Lienzo.Hex.rojo)
+                .con(Lienzo.Hex.fondo, Lienzo.Hex.tinta, Lienzo.Hex.naranja, Lienzo.Hex.oscuro, Lienzo.Hex.rojo)
                 .estilo(titulo: Lienzo.Hex.tinta, barra: Lienzo.Hex.tarjeta, filo: Lienzo.Hex.oscuro, bordeAlfa: 0.07, aroAlfa: 0.5)
         // Retoque de la 0.20 (pedido de Alejandro: «que tengan un poco más de personalidad, que se diferencien más»).
         // Texto y secundario cumplen AA (4,5:1) sobre fondo y superficie en todos.
