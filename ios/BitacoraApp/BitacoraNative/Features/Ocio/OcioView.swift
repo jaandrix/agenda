@@ -62,7 +62,8 @@ struct OcioView: View {
     @State private var filtro: FiltroOcio = PreferenciasOcio.filtro("book")
     @State private var plataforma = PreferenciasOcio.plataforma("book")
 
-    private let columnas = Array(repeating: GridItem(.flexible(), spacing: Medida.s, alignment: .top), count: 3)
+    // 3.3 (petición de Alejandro): cuatro por fila en vez de tres, para ver más de un vistazo.
+    private let columnas = Array(repeating: GridItem(.flexible(), spacing: Medida.xs, alignment: .top), count: 4)
 
     var body: some View {
         ScrollView {
@@ -238,7 +239,7 @@ struct OcioView: View {
     }
 
     private func rejilla(_ lista: [EntradaOcio]) -> some View {
-        LazyVGrid(columns: columnas, alignment: .leading, spacing: Medida.s) {
+        LazyVGrid(columns: columnas, alignment: .leading, spacing: Medida.xs) {
             ForEach(Array(lista.enumerated()), id: \.element.id) { i, e in
                 celda(e).modifier(AparicionOcio(indice: i, activa: primeraCarga && i < 12))
             }
@@ -324,23 +325,25 @@ struct OcioView: View {
     private func celda(_ e: EntradaOcio) -> some View {
         let cinco = BibliotecaOcio.cinco(e)
         return Button { modal = .ficha(e) } label: {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 PortadaOcio(url: e.portada, titulo: e.titulo, ancho: nil,
-                            radio: Medida.concentrico(Medida.radioFila, relleno: Medida.xs))
+                            radio: Medida.concentrico(Medida.radioIcono + 2, relleno: Medida.xxs + 1))
                 Text(MayusculaOcio.inicial(e.titulo)).font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta)
                     .lineLimit(2, reservesSpace: true).multilineTextAlignment(.leading)
+                    .minimumScaleFactor(0.9)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                // 3.2: con chapa de 5 estrellas no se repite la nota debajo.
+                // 3.2: con chapa de 5 estrellas no se repite la nota debajo. 3.3: en cuatro columnas el dato se corta
+                // antes que la nota.
                 HStack(alignment: .center, spacing: Medida.xxs) {
                     Text(Self.meta(e)).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
                     Spacer(minLength: 0)
-                    if e.valoracion > 0, !cinco { NotaDiscretaOcio(valor: e.valoracion) }
+                    if e.valoracion > 0, !cinco { NotaDiscretaOcio(valor: e.valoracion).layoutPriority(1) }
                 }
             }
-            .tarjeta(relleno: Medida.xs, radio: Medida.radioFila)
+            .tarjeta(relleno: Medida.xxs + 1, radio: Medida.radioIcono + 2)
             // 3.2: la chapa de 5 estrellas en la esquina de la tarjeta, asomando por fuera.
             .overlay(alignment: .topTrailing) {
-                if cinco { ChapaCincoOcio(lado: 26).offset(x: 7, y: -7) }
+                if cinco { ChapaCincoOcio(lado: 20).offset(x: 5, y: -5) }
             }
         }
         .buttonStyle(.pulsable(0.96))
