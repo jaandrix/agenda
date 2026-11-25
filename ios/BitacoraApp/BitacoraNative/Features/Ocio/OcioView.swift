@@ -32,8 +32,10 @@ private enum ModalOcio: Identifiable {
     case ficha(EntradaOcio)
     case entrada(EntradaOcio?, String)
     case lista(ListaOcio?)
+    case escaner
     var id: String {
         switch self {
+        case .escaner: return "escaner"
         case .ficha(let e): return "ficha-\(e.id)"
         case .entrada(let e, let tipo): return "entrada-\(e?.id ?? tipo)"
         case .lista(let l): return "lista-\(l?.id ?? "nueva")"
@@ -55,6 +57,10 @@ struct OcioView: View {
     @State private var mostrarImportador = false
     @State private var aviso: String?
     @State private var primeraCarga = true
+    // 3.2: orden, filtro y plataforma de la pestaña (PreferenciasOcio los recuerda por tipo).
+    @State private var orden: OrdenOcio = PreferenciasOcio.orden("book")
+    @State private var filtro: FiltroOcio = PreferenciasOcio.filtro("book")
+    @State private var plataforma = PreferenciasOcio.plataforma("book")
 
     private let columnas = Array(repeating: GridItem(.flexible(), spacing: Medida.s, alignment: .top), count: 3)
 
@@ -94,7 +100,16 @@ struct OcioView: View {
         .fondoLienzo()
         .refreshable { await c.sincronizar() }
         .task(id: c.revision) { await cargar() }
-        .onChange(of: pestana) { _, _ in busqueda = "" }
+        .onChange(of: pestana) { _, p in
+            busqueda = ""
+            orden = PreferenciasOcio.orden(p.rawValue)
+            filtro = PreferenciasOcio.filtro(p.rawValue)
+            plataforma = PreferenciasOcio.plataforma(p.rawValue)
+            Task { await precargar() }
+        }
+        .onChange(of: orden) { _, _ in recordar() }
+        .onChange(of: filtro) { _, _ in recordar() }
+        .onChange(of: plataforma) { _, _ in recordar() }
         .hoja(item: $modal) { m in
             switch m {
             case .ficha(let entrada):
@@ -107,6 +122,8 @@ struct OcioView: View {
                     .environment(c)
             case .lista(let lista):
                 EditorListaOcio(lista: lista, entradas: vista?.entradas ?? []) { nombre, ids in Task { await guardarLista(lista, nombre, ids) } }
+            case .escaner:
+                HojaEscanerOcio(existentes: librosExistentes) { libro, estado in Task { await anadirEscaneado(libro, estado: estado) } }
             }
         }
         .fileImporter(isPresented: $mostrarImportador, allowedContentTypes: [.commaSeparatedText, .plainText]) { resultado in
@@ -120,6 +137,15 @@ struct OcioView: View {
 
     private var acciones: some View {
         HStack(spacing: Medida.xxs) {
+            if pestana == .book {
+                Button { Haptica.ligera(); modal = .escaner } label: {
+                    Label("escáner.", systemImage: "barcode.viewfinder").labelStyle(.titleAndIcon)
+                }
+                .buttonStyle(EstiloCapsula(tono: .blanco, alto: 40))
+                .frame(minHeight: Medida.toque)
+                .accessibilityLabel("escáner de isbn")
+                .accessibilityHint("añade libros leyendo el código de barras")
+            }
             if let fuente = pestana.importador {
                 BotonRedondo(sistema: "square.and.arrow.down", tono: .blanco, etiqueta: "importar de \(pestana.nombreImportador)") {
                     abrirImportador(fuente)
@@ -153,21 +179,28 @@ struct OcioView: View {
         let tipo = pestana.rawValue
         let q = LecturaOcio.normalizar(busqueda)
         let delTipo = v.entradas.filter { $0.tipo == tipo }
-        let filtradas = q.isEmpty ? delTipo : delTipo.filter { $0.buscable.contains(q) }
+        let buscadas = q.isEmpty ? delTipo : delTipo.filter { $0.buscable.contains(q) }
         let ahora = q.isEmpty ? delTipo.filter(Self.enCurso) : []
-        let resto = ahora.isEmpty ? filtradas : filtradas.filter { !Self.enCurso($0) }
+        // 3.2: debajo de «Ahora mismo.», toda la biblioteca con su orden y su filtro (en los juegos, por plataforma).
+        let filtradas = BibliotecaOcio.ordenar(BibliotecaOcio.filtrar(buscadas, filtro, plataforma: tipo == "game" ? plataforma : ""), orden)
         if delTipo.isEmpty {
             TarjetaInvitacion(frase: "aún no hay \(pestana.titulo) aquí.", destacado: pestana.invitacion, boton: "añadir.") {
                 modal = .entrada(nil, tipo)
             }
             .entradaEscalonada(0)
-            if let fuente = pestana.importador {
-                Button("o importa tu \(pestana.nombreImportador).") { abrirImportador(fuente) }
+            if pestana == .book {
+                Button("o escanea sus códigos de barras.") { modal = .escaner }
                     .buttonStyle(.capsula(.claro))
                     .frame(maxWidth: .infinity)
                     .entradaEscalonada(1)
             }
-        } else if filtradas.isEmpty {
+            if let fuente = pestana.importador {
+                Button("o importa tu \(pestana.nombreImportador).") { abrirImportador(fuente) }
+                    .buttonStyle(.capsula(.claro))
+                    .frame(maxWidth: .infinity)
+                    .entradaEscalonada(2)
+            }
+        } else if buscadas.isEmpty {
             TarjetaInvitacion(frase: "nada coincide con", destacado: "«\(busqueda.trimmingCharacters(in: .whitespaces))».",
                               boton: "borrar búsqueda.") {
                 Haptica.ligera()
@@ -176,17 +209,53 @@ struct OcioView: View {
             .transition(.opacity.combined(with: .scale(scale: 0.98)))
         } else {
             if !ahora.isEmpty {
-                EtiquetaSeccion(texto: "ahora mismo").padding(.top, Medida.xxs)
+                TituloSeccionOcio(texto: "Ahora mismo.").padding(.top, Medida.xxs)
                 filaAhora(ahora)
             }
-            if !resto.isEmpty {
-                EtiquetaSeccion(texto: ahora.isEmpty ? "tu biblioteca" : "el resto")
-                    .padding(.top, ahora.isEmpty ? Medida.xxs : Medida.s)
-                LazyVGrid(columns: columnas, alignment: .leading, spacing: Medida.s) {
-                    ForEach(Array(resto.enumerated()), id: \.element.id) { i, e in
-                        celda(e).modifier(AparicionOcio(indice: i, activa: primeraCarga && i < 12))
-                    }
+            controles(delTipo)
+                .padding(.top, ahora.isEmpty ? 0 : Medida.xs)
+            if filtradas.isEmpty {
+                Text("nada con este filtro.").font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+                    .frame(maxWidth: .infinity).padding(.vertical, Medida.l)
+                    .transition(.opacity)
+            } else if tipo == "game" && plataforma.isEmpty {
+                let grupos = BibliotecaOcio.porPlataforma(filtradas)
+                ForEach(Array(grupos.enumerated()), id: \.element.id) { n, g in
+                    TituloSeccionOcio(texto: g.plataforma.isEmpty ? "Sin plataforma." : g.plataforma + ".", detalle: "\(g.entradas.count)")
+                        .padding(.top, n == 0 ? 0 : Medida.xs)
+                    rejilla(g.entradas)
                 }
+            } else {
+                TituloSeccionOcio(texto: "Tu biblioteca.", detalle: "\(filtradas.count)")
+                rejilla(filtradas)
+            }
+        }
+    }
+
+    private func rejilla(_ lista: [EntradaOcio]) -> some View {
+        LazyVGrid(columns: columnas, alignment: .leading, spacing: Medida.s) {
+            ForEach(Array(lista.enumerated()), id: \.element.id) { i, e in
+                celda(e).modifier(AparicionOcio(indice: i, activa: primeraCarga && i < 12))
+            }
+        }
+    }
+
+    // Filtro en chips y orden en un menú redondo; en los juegos, además, la plataforma.
+    @ViewBuilder private func controles(_ delTipo: [EntradaOcio]) -> some View {
+        let tipo = pestana.rawValue
+        HStack(spacing: Medida.xs) {
+            ChipsEleccion(opciones: FiltroOcio.allCases.map { (valor: $0, titulo: $0.titulo(tipo)) }, elegido: $filtro)
+            MenuRedondo(sistema: "arrow.up.arrow.down", etiqueta: "ordenar: " + orden.titulo) {
+                Picker("ordenar.", selection: $orden) {
+                    ForEach(OrdenOcio.opciones(tipo)) { Text($0.titulo).tag($0) }
+                }
+            }
+        }
+        if tipo == "game" {
+            let plataformas = BibliotecaOcio.plataformas(delTipo)
+            if !plataformas.isEmpty {
+                let opciones: [(valor: String, titulo: String)] = [("", "todas las plataformas.")] + plataformas.map { ($0, $0.lowercased() + ".") }
+                ChipsEleccion(opciones: opciones, elegido: $plataforma)
             }
         }
     }
@@ -219,13 +288,16 @@ struct OcioView: View {
         return Button { modal = .ficha(e) } label: {
             TarjetaOscura {
                 HStack(alignment: .top, spacing: Medida.s) {
-                    PortadaOcio(url: e.portada, titulo: e.titulo, ancho: anchoPortada, radio: Medida.radioIcono)
+                    PortadaOcio(url: e.portada, titulo: e.titulo, ancho: anchoPortada, radio: Medida.radioIcono,
+                                cinco: BibliotecaOcio.cinco(e))
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(e.estado.uppercased()).font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.naranja)
-                        Text(e.titulo.lowercased()).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.sobreOscuro)
+                        Text(e.estado.lowercased() + ".").font(Letra.pieFuerte).foregroundStyle(Lienzo.naranja)
+                        Text(MayusculaOcio.inicial(e.titulo)).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.sobreOscuro)
                             .lineLimit(2).multilineTextAlignment(.leading)
                         if !e.autor.isEmpty {
-                            Text(e.autor.lowercased()).font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave).lineLimit(1)
+                            Text(e.autor).font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave).lineLimit(1)
+                        } else if !e.plataforma.isEmpty {
+                            Text(e.plataforma).font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave).lineLimit(1)
                         }
                         Spacer(minLength: Medida.xs)
                         if let dias {
@@ -245,16 +317,15 @@ struct OcioView: View {
     }
 
     private func celda(_ e: EntradaOcio) -> some View {
-        let meta = e.tipo == "book" && !e.autor.isEmpty ? e.autor.lowercased() : e.anio
         return Button { modal = .ficha(e) } label: {
             VStack(alignment: .leading, spacing: 6) {
                 PortadaOcio(url: e.portada, titulo: e.titulo, ancho: nil,
-                            radio: Medida.concentrico(Medida.radioFila, relleno: Medida.xs))
-                Text(e.titulo.lowercased()).font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta)
+                            radio: Medida.concentrico(Medida.radioFila, relleno: Medida.xs), cinco: BibliotecaOcio.cinco(e))
+                Text(MayusculaOcio.inicial(e.titulo)).font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta)
                     .lineLimit(2, reservesSpace: true).multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 HStack(spacing: Medida.xxs) {
-                    Text(meta).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
+                    Text(Self.meta(e)).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
                     Spacer(minLength: 0)
                     if e.valoracion > 0 { NotaDiscretaOcio(valor: e.valoracion) }
                 }
@@ -265,6 +336,16 @@ struct OcioView: View {
         .contextMenu { menuEntrada(e) }
         .accessibilityElement(children: .combine)
         .accessibilityHint("abre su ficha")
+    }
+
+    // Bajo el título: el autor de un libro, la plataforma y el formato de un juego o el año.
+    static func meta(_ e: EntradaOcio) -> String {
+        if e.tipo == "book", !e.autor.isEmpty { return e.autor }
+        if e.tipo == "game" {
+            let partes = [e.plataforma, BibliotecaOcio.textoFormato(e.formato)].filter { !$0.isEmpty }
+            if !partes.isEmpty { return partes.joined(separator: ", ") }
+        }
+        return e.anio
     }
 
     @ViewBuilder private func menuEntrada(_ e: EntradaOcio) -> some View {
@@ -333,7 +414,7 @@ struct OcioView: View {
                 }
                 .frame(width: 52, alignment: .leading)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(lista.nombre.lowercased() + ".").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                    Text(MayusculaOcio.inicial(lista.nombre) + ".").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).lineLimit(1)
                     Text(lista.entryIds.count == 1 ? "1 elemento." : "\(lista.entryIds.count) elementos.")
                         .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                 }
@@ -354,14 +435,40 @@ struct OcioView: View {
         let doc = await c.documentoVisible()
         guard let nuevo = await ultimaGana({ doc.map { LecturaOcio.vista($0) } }) else { return }
         if vista == nil {
+            // 3.2: las primeras portadas, del disco a la memoria antes de pintar (si no, salían en blanco un momento).
+            await Imagenes.precargar(Self.primerasPortadas(nuevo, tipo: pestana.rawValue), lado: PortadaOcio.ladoRejilla, soloDisco: true)
             vista = nuevo
             Task {
                 try? await Task.sleep(for: .seconds(1))
                 primeraCarga = false
             }
+            Task { await rellenarPortadas() }
         } else if vista != nuevo {
             withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento)) { vista = nuevo }
         }
+    }
+
+    private static func primerasPortadas(_ v: VistaOcio, tipo: String) -> [URL] {
+        Array(v.entradas.lazy.filter { $0.tipo == tipo && !$0.portada.isEmpty }.prefix(12).compactMap { URL(string: $0.portada) })
+    }
+
+    private func precargar() async {
+        guard let vista else { return }
+        await Imagenes.precargar(Self.primerasPortadas(vista, tipo: pestana.rawValue), lado: PortadaOcio.ladoRejilla)
+    }
+
+    private func recordar() {
+        PreferenciasOcio.guardar(pestana.rawValue, orden: orden, filtro: filtro, plataforma: plataforma)
+    }
+
+    // ISBN y títulos de los libros que ya hay, para que el escáner avise de los repetidos.
+    private var librosExistentes: Set<String> {
+        var r = Set<String>()
+        for e in vista?.entradas ?? [] where e.tipo == "book" {
+            if !e.isbn.isEmpty { r.insert(e.isbn) }
+            r.insert("t:" + LecturaOcio.normalizar(e.titulo))
+        }
+        return r
     }
 
     // La misma entrada con otra nota: valorar desde la ficha guarda igual que el editor.
@@ -376,14 +483,55 @@ struct OcioView: View {
             titulo: d.titulo, autor: d.autor, estado: d.estado, fechaInicio: d.fechaInicio, fechaFin: d.fechaFin,
             anio: d.anio, valoracion: String(d.valoracion), notas: d.notas, enlace: d.enlace, portada: portada) }
         var ops = [op(d.portada)]
+        // 3.2: ISBN, plataforma y formato van en su propia operación (nil = no se tocan, como al valorar desde la ficha).
+        if d.isbn != nil || d.plataforma != nil || d.formato != nil {
+            ops.append(OcioDatosOp.op(id: id, isbn: d.isbn, plataforma: d.plataforma, formato: d.formato))
+        }
         // Valorarla da por hecha su tarea «valorar …» (completarTareaValorarPelicula).
         if d.valoracion > 0 { ops.append(OperacionesExtra.op(ValorarOcio.completar, ["entradaId": .string(id)])) }
         do { try await c.encolar(ops); aviso = nil } catch { aviso = "no se pudo guardar en este iPhone."; return }
-        // portadaAuto: sin portada, se busca sola y se pone si el título coincide.
+        // portadaAuto: sin portada, se busca sola; primero la de esa edición por ISBN y, si no, por título, autor y año.
         guard d.portada.isEmpty else { return }
-        let r = await BuscarPortadas.buscar(c, tipo: d.tipo, q: d.tipo == "book" && !d.autor.isEmpty ? d.titulo + " " + d.autor : d.titulo,
-                                            anio: d.tipo == "movie" || d.tipo == "series" ? d.anio : "")
-        if let buena = BuscarPortadas.mejor(r, titulo: d.titulo) { await c.guardar(op(buena.imagen)) }
+        var img: String?
+        if let isbn = d.isbn, !OcioDatosOp.isbnLimpio(isbn).isEmpty { img = await BuscarISBN.portada(OcioDatosOp.isbnLimpio(isbn)) }
+        if img == nil {
+            let r = await BuscarPortadas.buscar(c, tipo: d.tipo, q: d.tipo == "book" && !d.autor.isEmpty ? d.titulo + " " + d.autor : d.titulo,
+                                                anio: d.tipo == "movie" || d.tipo == "series" ? d.anio : "")
+            img = BuscarPortadas.mejor(r, titulo: d.titulo, autor: d.tipo == "book" ? d.autor : "", anio: d.anio)?.imagen
+        }
+        if let img { await c.guardar(OcioDatosOp.op(id: id, portadaSiFalta: img)) }
+    }
+
+    // 3.2: el libro del escáner, con su ISBN y la portada de esa edición.
+    private func anadirEscaneado(_ l: LibroISBN, estado: String) async {
+        let id = OperacionBitacora.nuevoIdProyecto("ocio")
+        let hoy = CalendarioBitacora.madrid.dia(de: Date())
+        let inicio = estado == "Leyendo" ? String(format: "%04d-%02d-%02d", hoy.year, hoy.month, hoy.day) : ""
+        await c.guardar([.guardarOcio(id: id, tipo: "book", titulo: MayusculaOcio.inicial(l.titulo), autor: MayusculaOcio.inicial(l.autor),
+                                      estado: estado, fechaInicio: inicio, fechaFin: "", anio: l.anio, valoracion: "0", notas: "",
+                                      enlace: "", portada: l.portada),
+                         OcioDatosOp.op(id: id, isbn: l.isbn)])
+    }
+
+    // 3.2: portadas que se buscan solas al abrir Ocio (6 por vez; cada entrada se intenta una sola vez por iPhone).
+    private func rellenarPortadas() async {
+        let clave = "ocio.portadasIntentadas"
+        var intentadas = Set(UserDefaults.standard.stringArray(forKey: clave) ?? [])
+        let faltan = (vista?.entradas ?? []).filter { $0.portada.isEmpty && !intentadas.contains($0.id) }.prefix(6)
+        var ops: [OperacionBitacora] = []
+        for e in faltan {
+            intentadas.insert(e.id)
+            var img: String?
+            if !e.isbn.isEmpty { img = await BuscarISBN.portada(e.isbn) }
+            if img == nil {
+                let r = await BuscarPortadas.buscar(c, tipo: e.tipo, q: e.tipo == "book" && !e.autor.isEmpty ? e.titulo + " " + e.autor : e.titulo,
+                                                    anio: e.tipo == "movie" || e.tipo == "series" ? e.anio : "")
+                img = BuscarPortadas.mejor(r, titulo: e.titulo, autor: e.autor, anio: e.anio)?.imagen
+            }
+            if let img { ops.append(OcioDatosOp.op(id: e.id, portadaSiFalta: img)) }
+        }
+        UserDefaults.standard.set(Array(intentadas.suffix(2000)), forKey: clave)
+        if !ops.isEmpty { _ = await c.guardar(ops) }
     }
 
     private func guardarLista(_ previa: ListaOcio?, _ nombre: String, _ ids: [String]) async {
@@ -407,8 +555,8 @@ struct OcioView: View {
             for e in salida.entradas {
                 let clave = e.tipo + "|" + LecturaOcio.normalizar(e.titulo) + "|" + e.anio
                 guard vistos.insert(clave).inserted else { continue }
-                try await c.encolar(.guardarOcio(id: OperacionBitacora.nuevoIdProyecto("ocio"), tipo: e.tipo, titulo: e.titulo,
-                    autor: e.autor, estado: e.estado, fechaInicio: e.fechaInicio, fechaFin: e.fechaFin, anio: e.anio,
+                try await c.encolar(.guardarOcio(id: OperacionBitacora.nuevoIdProyecto("ocio"), tipo: e.tipo, titulo: MayusculaOcio.inicial(e.titulo),
+                    autor: MayusculaOcio.inicial(e.autor), estado: e.estado, fechaInicio: e.fechaInicio, fechaFin: e.fechaFin, anio: e.anio,
                     valoracion: e.valoracion, notas: e.notas, enlace: e.enlace, portada: ""))
                 anadidas += 1
             }
@@ -421,6 +569,7 @@ struct OcioView: View {
 private struct DatosEditorOcio {
     let tipo: String; let titulo: String; let autor: String; let estado: String; let fechaInicio: String; let fechaFin: String
     let anio: String; let valoracion: Double; let notas: String; let enlace: String; let portada: String
+    var isbn: String? = nil; var plataforma: String? = nil; var formato: String? = nil
 }
 
 // MARK: - Ficha
@@ -444,7 +593,11 @@ private struct FichaOcio: View {
         _nota = State(initialValue: entrada.valoracion)
     }
 
-    private var meta: String { [entrada.autor.lowercased(), entrada.anio].filter { !$0.isEmpty }.joined(separator: ", ") }
+    private var meta: String {
+        let isbn = entrada.isbn.isEmpty ? "" : "isbn \(entrada.isbn)"
+        return [entrada.autor, entrada.plataforma, BibliotecaOcio.textoFormato(entrada.formato), entrada.anio, isbn]
+            .filter { !$0.isEmpty }.joined(separator: ", ")
+    }
     private var enlace: URL? { entrada.enlace.isEmpty ? nil : URL(string: entrada.enlace) }
     private var cambiada: Bool { nota != entrada.valoracion }
 
@@ -455,12 +608,13 @@ private struct FichaOcio: View {
                     Spacer()
                     BotonRedondo(sistema: "xmark", tono: .sutil, etiqueta: "cerrar") { cerrar() }
                 }
-                PortadaOcio(url: entrada.portada, titulo: entrada.titulo, ancho: 164, radio: Medida.radioControl)
+                PortadaOcio(url: entrada.portada, titulo: entrada.titulo, ancho: 164, radio: Medida.radioControl,
+                            cinco: BibliotecaOcio.cinco(entrada))
                     .sombra(.flotante)
                     .scaleEffect(dentro || sinMovimiento ? 1 : 0.9)
                     .opacity(dentro ? 1 : 0)
                 VStack(spacing: Medida.xxs) {
-                    Text(entrada.titulo.lowercased() + ".").font(Letra.titulo).foregroundStyle(Lienzo.tinta).kerning(-0.4)
+                    Text(MayusculaOcio.inicial(entrada.titulo) + ".").font(Letra.titulo).foregroundStyle(Lienzo.tinta).kerning(-0.4)
                         .multilineTextAlignment(.center)
                         .accessibilityAddTraits(.isHeader)
                     if !meta.isEmpty { Text(meta).font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria) }
@@ -469,7 +623,7 @@ private struct FichaOcio: View {
                 valoracion
                 if !entrada.notas.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     VStack(alignment: .leading, spacing: Medida.xs) {
-                        EtiquetaSeccion(texto: "notas").padding(.horizontal, -Medida.xxs)
+                        TituloSeccionOcio(texto: "Notas.").padding(.horizontal, -Medida.xxs)
                         Text(entrada.notas).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -484,7 +638,7 @@ private struct FichaOcio: View {
         }
         .scrollIndicators(.hidden)
         .fondoLienzo()
-        .confirmationDialog("¿eliminar «\(entrada.titulo.lowercased())»?", isPresented: $confirmarBorrar, titleVisibility: .visible) {
+        .confirmationDialog("¿eliminar «\(MayusculaOcio.inicial(entrada.titulo))»?", isPresented: $confirmarBorrar, titleVisibility: .visible) {
             Button("eliminar.", role: .destructive) { Haptica.media(); eliminar(); cerrar() }
             Button("cancelar.", role: .cancel) {}
         }
@@ -553,6 +707,9 @@ private struct EditorOcio: View {
     @State private var conFin: Bool; @State private var fin: Date
     @State private var anio: String
     @State private var valoracion: Double; @State private var notas: String; @State private var enlace: String; @State private var portada: String
+    // 3.2: ISBN (libros), plataforma y formato (juegos).
+    @State private var isbn: String; @State private var plataforma: String; @State private var formato: String
+    private let estadoInicial: String
     @State private var candidatas: [CandidataPortada] = []
     @State private var buscando = false
     @State private var sinResultados = false
@@ -580,6 +737,8 @@ private struct EditorOcio: View {
         _anio = State(initialValue: entrada?.anio ?? "")
         _valoracion = State(initialValue: entrada?.valoracion ?? 0); _notas = State(initialValue: entrada?.notas ?? "")
         _enlace = State(initialValue: entrada?.enlace ?? ""); _portada = State(initialValue: entrada?.portada ?? "")
+        _isbn = State(initialValue: entrada?.isbn ?? ""); _plataforma = State(initialValue: entrada?.plataforma ?? "")
+        _formato = State(initialValue: entrada?.formato ?? ""); estadoInicial = entrada?.estado ?? ""
     }
 
     var body: some View {
@@ -588,8 +747,13 @@ private struct EditorOcio: View {
                 Section {
                     TextField("título.", text: $titulo)
                     if tipo == "book" { TextField("autor.", text: $autor) }
-                    TextField("año.", text: $anio).keyboardType(.numberPad)
+                    TextField(tipo == "book" ? "año de publicación." : "año.", text: $anio).keyboardType(.numberPad)
+                    if tipo == "book" {
+                        TextField("isbn.", text: $isbn).keyboardType(.numberPad).font(Letra.mono)
+                            .accessibilityLabel("isbn")
+                    }
                 }
+                if tipo == "game" { seccionJuego }
                 seccionPortada
                 Section("cuándo.") {
                     if tipo == "movie" {
@@ -632,8 +796,11 @@ private struct EditorOcio: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("guardar.") {
                         let i = conInicio ? Self.iso(inicio) : "", f = tipo != "movie" && conFin ? Self.iso(fin) : ""
-                        guardar(.init(tipo: tipo, titulo: titulo, autor: autor, estado: estado, fechaInicio: i, fechaFin: f, anio: anio,
-                                      valoracion: valoracion, notas: notas, enlace: enlace, portada: portada))
+                        guardar(.init(tipo: tipo, titulo: MayusculaOcio.inicial(titulo), autor: MayusculaOcio.inicial(autor), estado: estado, fechaInicio: i, fechaFin: f, anio: anio,
+                                      valoracion: valoracion, notas: notas, enlace: enlace, portada: portada,
+                                      isbn: tipo == "book" ? isbn : nil,
+                                      plataforma: tipo == "game" ? MayusculaOcio.inicial(plataforma) : nil,
+                                      formato: tipo == "game" ? formato : nil))
                         cerrar()
                     }.disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
@@ -675,7 +842,7 @@ private struct EditorOcio: View {
                                             .strokeBorder(elegida ? Lienzo.naranja : .clear, lineWidth: 2.5))
                                         .scaleEffect(elegida ? 1 : 0.96)
                                         .animation(Muelle.toque, value: elegida)
-                                    Text(k.titulo.lowercased()).font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta).lineLimit(2)
+                                    Text(MayusculaOcio.inicial(k.titulo)).font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta).lineLimit(2)
                                     if !k.anio.isEmpty { Text(k.anio).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
                                 }
                                 .frame(width: 70, alignment: .leading)
@@ -700,8 +867,42 @@ private struct EditorOcio: View {
         if portada.isEmpty, let m = BuscarPortadas.mejor(candidatas, titulo: titulo) { portada = m.imagen; if anio.isEmpty { anio = String(m.anio.prefix(4)) } }
     }
 
+    // 3.2: «Por leer» y «Por jugar» para lo que está en la biblioteca sin empezar. Un estado que no está en la lista
+    // (el vacío de las recomendaciones de la web) se conserva como opción para no cambiarlo sin querer.
     private var estados: [String] {
-        switch tipo { case "book": return ["Leyendo", "Completado", "Abandonado"]; case "series": return ["Viendo", "Completada", "Abandonada"]; case "game": return ["Jugando", "Completado", "Abandonado"]; default: return [] }
+        let base: [String]
+        switch tipo {
+        case "book": base = ["Leyendo", "Por leer", "Completado", "Abandonado"]
+        case "series": base = ["Viendo", "Completada", "Abandonada"]
+        case "game": base = ["Jugando", "Por jugar", "Completado", "Abandonado"]
+        default: base = []
+        }
+        return base.isEmpty || base.contains(estadoInicial) || estadoInicial.isEmpty ? base : base + [estadoInicial]
+    }
+
+    // Plataforma (atajos de las más comunes o escrita) y formato: físico, digital u otro.
+    private var seccionJuego: some View {
+        Section {
+            TextField("plataforma.", text: $plataforma).textInputAutocapitalization(.words)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(PlataformasOcio.comunes, id: \.self) { p in
+                        let on = LecturaOcio.normalizar(p) == LecturaOcio.normalizar(plataforma)
+                        Button { Haptica.seleccion(); plataforma = on ? "" : p } label: {
+                            Chip(texto: p, tono: on ? .oscuro : .sutil).frame(minHeight: Medida.toque).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.pulsable(0.92))
+                        .accessibilityAddTraits(on ? .isSelected : [])
+                    }
+                }
+            }
+            Picker("formato.", selection: $formato) {
+                Text("sin indicar.").tag("")
+                ForEach(OcioDatosOp.formatos, id: \.self) { Text(BibliotecaOcio.textoFormato($0) + ".").tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel("formato")
+        } header: { Text("dónde lo tienes.") }
     }
 }
 
@@ -737,7 +938,7 @@ private struct EditorListaOcio: View {
                             HStack(spacing: Medida.s) {
                                 PortadaOcio(url: e.portada, titulo: e.titulo, ancho: 28, radio: 6)
                                 VStack(alignment: .leading, spacing: 1) {
-                                    Text(e.titulo.lowercased()).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                                    Text(MayusculaOcio.inicial(e.titulo)).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta).lineLimit(1)
                                     Text(LecturaOcio.nombre(e.tipo) + ".").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                                 }
                                 Spacer(minLength: Medida.xs)

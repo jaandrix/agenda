@@ -72,13 +72,40 @@ enum Imagenes {
 
     // Baja (con la caché de URLSession) y reduce fuera del hilo principal.
     static func cargar(_ url: URL, lado: CGFloat) async -> UIImage? {
+        await cargarDetalle(url, lado: lado)?.imagen
+    }
+
+    // 3.2: primero la memoria, luego el disco (`ImagenesDisco`) y solo después la red; lo bajado se guarda en disco.
+    // `deRed` dice si ha hecho falta bajarla (la portada que ya estaba en el iPhone sale sin fundido).
+    static func cargarDetalle(_ url: URL, lado: CGFloat) async -> (imagen: UIImage, deRed: Bool)? {
         let k = clave(url, lado: lado)
-        if let img = guardada(k) { return img }
+        if let img = guardada(k) { return (img, false) }
         let gris = Self.gris
+        let delDisco = await Task.detached(priority: .userInitiated) { () -> UIImage? in
+            guard let datos = ImagenesDisco.leer(url) else { return nil }
+            if let img = Imagenes.reducida(datos, lado: lado, gris: gris) { return img }
+            ImagenesDisco.borrar(url)
+            return nil
+        }.value
+        if let delDisco { guardar(delDisco, k); return (delDisco, false) }
         guard let respuesta = try? await URLSession.shared.data(from: url), let datos = aceptable(respuesta.0, respuesta.1) else { return nil }
-        let img = await Task.detached(priority: .utility) { Imagenes.reducida(datos, lado: lado, gris: gris) }.value
-        if let img { guardar(img, k) }
-        return img
+        let img = await Task.detached(priority: .utility) { () -> UIImage? in
+            let img = Imagenes.reducida(datos, lado: lado, gris: gris)
+            if img != nil { ImagenesDisco.escribir(datos, url) }
+            return img
+        }.value
+        guard let img else { return nil }
+        guardar(img, k)
+        return (img, true)
+    }
+
+    // Deja en memoria las primeras portadas de una lista antes de que se pinten (al abrir Ocio). Con `soloDisco`, solo
+    // las que ya están en el iPhone (no espera a la red), varias a la vez.
+    static func precargar(_ urls: [URL], lado: CGFloat, soloDisco: Bool = false) async {
+        let faltan = urls.filter { guardada(clave($0, lado: lado)) == nil && (!soloDisco || ImagenesDisco.existe($0)) }
+        await withTaskGroup(of: Void.self) { g in
+            for u in faltan { g.addTask { _ = await Imagenes.cargarDetalle(u, lado: lado) } }
+        }
     }
 }
 
