@@ -240,26 +240,29 @@ struct CalendarioView: View {
 
     private func tarjeta(_ e: EventoDia, dia d: LocalDay) -> some View {
         let detalle = e.meta.isEmpty ? e.notas : e.meta
+        // 3.2, «pastel.»: la tarjeta va rellena del pastel de su tipo (lo suave, en blanco) y lo de dentro en blanco translúcido.
+        let tipo: TipoPunto = e.suave ? .otro : TipoPunto.de(e.tipo)
+        let pastel = tipo.relleno != nil
         return Button { c.modal = .ficha(e, dia: d) } label: {
             HStack(spacing: Medida.s) {
                 if let hora = e.hora {
-                    BloqueHoraCalendario(hora: hora, fin: e.fin, tinte: Self.punto(e.tipo))
+                    BloqueHoraCalendario(hora: hora, fin: e.fin, tinte: Self.punto(e.tipo), fondo: pastel ? Lienzo.sobreRelleno : nil)
                 } else {
-                    IconoCuadrado(id: Self.icono(e.tipo), tono: e.tipo == "birthday" ? .suave : .claro)
+                    IconoCuadrado(id: Self.icono(e.tipo), tono: pastel ? .blanco : (e.tipo == "birthday" ? .suave : .claro))
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(e.titulo).font(Letra.tituloTarjeta).foregroundStyle(e.suave ? Lienzo.tintaSecundaria : Lienzo.tinta)
                         .lineLimit(2).multilineTextAlignment(.leading)
                     if !detalle.isEmpty {
-                        Text(detalle).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
+                        Text(detalle).font(Letra.pie).foregroundStyle(tipo.tintaRelleno).lineLimit(1)
                     }
                 }
                 Spacer(minLength: Medida.xs)
-                if e.entradas > 0 { Chip(texto: e.entradas == 1 ? "1 entrada" : "\(e.entradas) entradas", tono: .naranja) }
-                if e.hora != nil { IconoCuadrado(id: Self.icono(e.tipo), tono: .claro, tamano: Medida.iconoPequeno) }
+                if e.entradas > 0 { Chip(texto: e.entradas == 1 ? "1 entrada" : "\(e.entradas) entradas", tono: pastel ? .blanco : .naranja) }
+                if e.hora != nil { IconoCuadrado(id: Self.icono(e.tipo), tono: pastel ? .blanco : .claro, tamano: Medida.iconoPequeno) }
             }
             .frame(minHeight: Medida.toque)
-            .tarjeta(relleno: Medida.s, radio: Medida.radioFila + 4)
+            .tarjetaTipo(tipo, relleno: Medida.s, radio: Medida.radioFila + 4)
             .contentShape(RoundedRectangle(cornerRadius: Medida.radioFila + 4, style: .continuous))
         }
         .buttonStyle(.pulsable(0.97))
@@ -399,15 +402,17 @@ struct BloqueHoraCalendario: View {
     var fin: String?
     // 3.0.1: un tinte muy suave del color de su tipo, para distinguir de un vistazo eventos, cumples, estudios, tareas…
     var tinte: Color = Lienzo.tintaTerciaria
+    // 3.2: dentro de una tarjeta pastel, un fondo liso (blanco translúcido) en vez del tinte, y la hora de fin legible.
+    var fondo: Color?
 
     var body: some View {
         VStack(spacing: 1) {
             Text(hora).font(Letra.hora).foregroundStyle(Lienzo.tinta)
-            if let fin { Text(fin).font(Letra.etiqueta).foregroundStyle(Lienzo.tintaTerciaria).monospacedDigit() }
+            if let fin { Text(fin).font(Letra.etiqueta).foregroundStyle(fondo == nil ? Lienzo.tintaTerciaria : Lienzo.tintaSecundaria).monospacedDigit() }
         }
         .frame(width: 52, height: Medida.icono + 6)
-        .background(tinte.opacity(0.13), in: RoundedRectangle(cornerRadius: Medida.radioIcono, style: .continuous))
-        .background(Lienzo.tarjeta, in: RoundedRectangle(cornerRadius: Medida.radioIcono, style: .continuous))
+        .background(fondo ?? tinte.opacity(0.13), in: RoundedRectangle(cornerRadius: Medida.radioIcono, style: .continuous))
+        .background(fondo == nil ? Lienzo.tarjeta : Color.clear, in: RoundedRectangle(cornerRadius: Medida.radioIcono, style: .continuous))
         .accessibilityHidden(true)
     }
 }

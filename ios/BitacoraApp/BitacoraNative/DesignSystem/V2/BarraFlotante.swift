@@ -50,7 +50,7 @@ struct BarraFlotante: View {
             elegir(p.id)
         } label: {
             HStack(spacing: 5) {
-                Icono(id: p.icono, activo: on, detalle: Lienzo.naranja)
+                Icono(id: p.icono, activo: on, detalle: on ? Lienzo.tintaPildora : Lienzo.naranja)
                     .scaleEffect(0.82)
                     .frame(width: 20, height: 20)
                 if on {
@@ -61,13 +61,13 @@ struct BarraFlotante: View {
                                                 removal: .opacity))
                 }
             }
-            .foregroundStyle(on ? Lienzo.tinta : Lienzo.tintaSecundaria)
+            .foregroundStyle(on ? Lienzo.tintaPildora : Lienzo.tintaSecundaria)
             .padding(.horizontal, on ? 13 : 0)
             .frame(maxWidth: on ? nil : .infinity, maxHeight: .infinity)
             .frame(minWidth: 44)
             .background {
                 if on {
-                    Capsule().fill(Lienzo.tarjeta)
+                    Capsule().fill(Lienzo.pildoraActiva)
                         .shadow(color: .black.opacity(0.07), radius: 6, x: 0, y: 2)
                         .matchedGeometryEffect(id: "pildora", in: espacio)
                 }

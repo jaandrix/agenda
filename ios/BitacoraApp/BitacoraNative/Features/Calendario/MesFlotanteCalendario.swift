@@ -140,9 +140,10 @@ struct MesFlotanteCalendario: View {
             VStack(spacing: 4) {
                 Text("\(d.day)")
                     .font(LetraCalendario.numero(on || esHoy))
-                    .foregroundStyle(esHoy ? Lienzo.naranjaProfundo : (d < hoy && !on ? Lienzo.tintaSecundaria : Lienzo.tinta))
+                    .foregroundStyle(on ? (esHoy ? Lienzo.hoySobreOscuro : Lienzo.sobreOscuro)
+                                     : (esHoy ? Lienzo.naranjaProfundo : (d < hoy ? Lienzo.tintaSecundaria : Lienzo.tinta)))
                 HStack(spacing: 3) {
-                    ForEach(Array(colores.enumerated()), id: \.offset) { _, c in Puntito(color: c, tamano: 4.5) }
+                    ForEach(Array(colores.enumerated()), id: \.offset) { _, c in Puntito(color: on && c == Lienzo.tinta ? Lienzo.sobreOscuro : c, tamano: 4.5) }
                 }
                 .frame(height: 5)
             }
@@ -151,7 +152,7 @@ struct MesFlotanteCalendario: View {
             .background {
                 if on {
                     RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous)
-                        .fill(Lienzo.sutil)
+                        .fill(Lienzo.placaElegido)
                         .matchedGeometryEffect(id: "elegido", in: espacio)
                 }
             }

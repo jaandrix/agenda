@@ -101,12 +101,13 @@ struct SemanaFlotante: View {
             VStack(spacing: 5) {
                 Text(Self.abreviaturas[indice])
                     .font(Tipo.poppins(11, .medium, estilo: .caption))
-                    .foregroundStyle(on ? Lienzo.tintaSecundaria : Lienzo.tintaTerciaria)
+                    .foregroundStyle(on ? Lienzo.sobreOscuroSuave : Lienzo.tintaTerciaria)
                 Text("\(d.day)")
                     .font(Tipo.poppins(16, on || esHoy ? .semibold : .regular, estilo: .headline).monospacedDigit())
-                    .foregroundStyle(esHoy ? Lienzo.naranjaProfundo : (d < hoy && !on ? Lienzo.tintaSecundaria : Lienzo.tinta))
+                    .foregroundStyle(on ? (esHoy ? Lienzo.hoySobreOscuro : Lienzo.sobreOscuro)
+                                     : (esHoy ? Lienzo.naranjaProfundo : (d < hoy ? Lienzo.tintaSecundaria : Lienzo.tinta)))
                 HStack(spacing: 3) {
-                    ForEach(Array(colores.enumerated()), id: \.offset) { _, c in Puntito(color: c, tamano: 4.5) }
+                    ForEach(Array(colores.enumerated()), id: \.offset) { _, c in Puntito(color: on && c == Lienzo.tinta ? Lienzo.sobreOscuro : c, tamano: 4.5) }
                 }
                 .frame(height: 5)
             }
@@ -115,7 +116,7 @@ struct SemanaFlotante: View {
             .background {
                 if on {
                     RoundedRectangle(cornerRadius: Medida.radioFila, style: .continuous)
-                        .fill(Lienzo.sutil)
+                        .fill(Lienzo.placaElegido)
                         .matchedGeometryEffect(id: "elegido", in: espacio)
                 }
             }
