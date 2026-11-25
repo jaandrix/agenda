@@ -116,6 +116,7 @@ const GUIA_IA_RECETAS = [
     ['Dar de alta una suscripción o un gasto fijo', [
         'Finanzas → «planificación.» → «recurrentes.», o Finanzas → «resumen.» → «gestionar suscripciones.» → «+ añadir.».',
         'Añádela con su importe, su día de cobro y la cuenta en la que se cobra.',
+        'No se apunta sola como gasto el día de cobro: cuenta cuando llega su cargo del banco (pendiente o cobrado) o cuando la apuntas a mano. Hasta entonces es un cargo previsto: sale en «próximos cargos.» y en la previsión de fin de mes, pero no suma como gasto.',
         'Activa «avisarme si no aparece en el banco» si quieres que te avise cuando un cargo no llegue.',
         'Si Bitácora detecta un cargo que se repite y no lo tienes dado de alta, te lo propone con «añadir.».',
         'El logo se busca solo. Si no aparece o es otro, edítala y escribe su web en «Web, para el logo».',
@@ -170,7 +171,8 @@ const GUIA_IA_RECETAS = [
         'Activa «despensa.» en Ajustes → «apartados.» si no la ves.',
         'Escribe lo que falta («2 leche, pan, tomates»): se ordena solo por secciones del súper.',
         'En la tienda, toca cada cosa al echarla al carro.',
-        'Al acabar, «terminar la compra.». Si tienes el conector, pásale la foto del ticket a la IA para guardar los precios.',
+        'Al acabar, «terminar la compra.»: la guarda en el historial con su tienda. Si tienes el conector, pásale la foto del ticket a la IA para guardar los precios.',
+        'La Despensa no apunta nada en Finanzas, tampoco con el ticket: el gasto llega con el extracto del banco.',
     ]],
     ['Planificar las comidas de la semana', [
         'Despensa → pestaña «planificación.».',
@@ -251,6 +253,10 @@ const GUIA_IA_PROBLEMAS = [
         'Si es dinero que va o viene de una hucha o bolsillo, márcalo como «va a mis ahorros.» o «viene de mis ahorros.».',
         'Si es una aportación a tu inversión, ponle la categoría «Inversiones».',
         'Si es una transferencia entre tus cuentas, cámbialo a traspaso. Para que no vuelva a pasar al importar, crea una regla en Finanzas → «reglas.».',
+    ]],
+    ['Una suscripción no cuenta como gasto este mes', [
+        'Es un cargo previsto hasta que llega del banco: sale en «próximos cargos.» y en la previsión de fin de mes, pero no suma como gasto.',
+        'Importa el extracto del banco (sirve también con el cargo pendiente) o apúntala a mano.',
     ]],
     ['La ganancia de mi inversión sale muy negativa', [
         'Abre la ficha de la cuenta y mira la columna «aportación.» del histórico: si un mes sale en rojo, lo que guardaste no cuadra con tus traspasos de ese mes.',
