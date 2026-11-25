@@ -791,6 +791,8 @@
         let apartadosConfig = null;
         // Datos del CV (cv.js): contacto, formación, idiomas, habilidades y perfil.
         let perfilLaboral = null;
+        // Lo personal de «mi perfil.» en la app nativa: { cumple: 'AAAA-MM-DD', sinAnio? } (sin año, 2000).
+        let perfilPersonal = null;
         // Cuadrante del curso del apartado profesorado (profesorado.js).
         let profesorado = null;
         // Horario y citas de trabajo (agenda-laboral.js).

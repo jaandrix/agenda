@@ -36,6 +36,7 @@ struct TiempoBarra: View, Equatable {
         }
         .buttonStyle(.pulsable(0.92))
         .accessibilityLabel("\(ciudad): \(Tiempo.texto[tipo] ?? ""), \(temp) grados")
+        .accessibilityHint("abre la previsión y deja cambiar de ciudad")
     }
 }
 

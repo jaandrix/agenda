@@ -232,86 +232,236 @@ struct FichaEventoView: View {
 }
 
 // openTiempo: la previsión de los próximos días y la ciudad (la misma que usa la web, `ciudadTiempo`).
+// 3.2: la ciudad va arriba, en una fila que dice cuál es y «cambiar.»; al tocarla se abre el buscador (Open-Meteo, en
+// español) y elegir un resultado la guarda como siempre (`ponerCiudadTiempo`). Cambiarla también decide si Inicio
+// enseña el bus (ZonaTransporte).
 struct TiempoView: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.dismiss) private var cerrar
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var ciudad = Ciudad.defecto
     @State private var tiempo: Tiempo?
     @State private var busqueda = ""
     @State private var resultados: [Ciudad] = []
+    @State private var buscando = false
+    @State private var cambiando = false
+    @State private var guardando = false
     @State private var error: String?
+    @FocusState private var foco: Bool
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    if let t = tiempo {
-                        HStack(spacing: Espacio.m) {
-                            Image(systemName: Tiempo.simbolo[t.tipo] ?? "cloud.fill").font(.system(size: 44)).foregroundStyle(Paleta.texto)
-                            VStack(alignment: .leading, spacing: 2) {
-                                (Text("\(Int(t.temp.rounded()))°").font(Tipo.poppins(40, .bold, estilo: .largeTitle))
-                                    + Text(t.sensacion.map { " (sensación de \(Int($0.rounded()))°)" } ?? "").font(Tipo.pie).foregroundColor(Paleta.textoSecundario))
-                                    .foregroundStyle(Paleta.texto)
-                                Text((Tiempo.texto[t.tipo] ?? "") + "." + (t.dias.first.map { " máx \(Int($0.max.rounded()))°, mín \(Int($0.min.rounded()))°" } ?? ""))
-                                    .font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario)
-                            }
-                        }
-                        .padding(.top, Espacio.s)
-                        ForEach(t.dias.dropFirst(), id: \.fecha) { d in
-                            HStack {
-                                Text(Self.diaCorto(d.fecha) + ".").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto).frame(width: 60, alignment: .leading)
-                                Image(systemName: Tiempo.simbolo[Tiempo.tipo(d.code, esDia: true)] ?? "cloud.fill").foregroundStyle(Paleta.texto)
-                                Spacer()
-                                Text("\(Int(d.max.rounded()))°").font(Tipo.cuerpoFuerte).foregroundStyle(Paleta.texto)
-                                Text("\(Int(d.min.rounded()))°").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).frame(width: 40, alignment: .trailing)
-                            }
-                            .frame(minHeight: 44)
-                            .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                        }
-                    } else {
-                        Text("cargando la previsión…").font(Tipo.cuerpo).foregroundStyle(Paleta.textoSecundario).padding(.top, Espacio.s)
-                    }
-                    CabeceraSeccion(titulo: "ciudad.", detalle: ciudad.nombre)
-                    TextField("busca tu ciudad…", text: $busqueda).font(Tipo.cuerpo).padding(.vertical, 12)
-                        .overlay(alignment: .bottom) { Rectangle().fill(Paleta.borde).frame(height: 1) }
-                        .submitLabel(.search)
-                    ForEach(resultados, id: \.clave) { r in
-                        Button { elegir(r) } label: { FilaLibro(etiqueta: r.nombre, flecha: true) }.buttonStyle(EstiloFila())
-                    }
-                    if let error { Text(error).font(Tipo.pie).foregroundStyle(Paleta.error).padding(.top, Espacio.s) }
+        ScrollView {
+            VStack(alignment: .leading, spacing: Medida.entreSecciones) {
+                HStack(alignment: .center) {
+                    Text("tiempo.").font(Letra.titulo).foregroundStyle(Lienzo.tinta).kerning(-0.4)
+                        .accessibilityAddTraits(.isHeader)
+                    Spacer()
+                    BotonRedondo(sistema: "xmark", tono: .blanco, etiqueta: "cerrar") { cerrar() }
+                        .frame(minWidth: Medida.toque, minHeight: Medida.toque)
                 }
-                .padding(.horizontal, 20).padding(.bottom, Espacio.xl)
+                seccionCiudad
+                if let error {
+                    Text(error).font(Letra.detalle).foregroundStyle(Lienzo.negativo).transition(.opacity)
+                }
+                if !cambiando { prevision.transition(.opacity) }
             }
-            .background(Paleta.fondo)
-            .navigationTitle("tiempo.")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } } }
+            .padding(.horizontal, Medida.margen)
+            .padding(.top, Medida.l)
+            .padding(.bottom, Medida.xxl)
         }
+        .scrollDismissesKeyboard(.interactively)
+        .fondoLienzo()
+        .animation(Muelle.o(Muelle.expandir, reducido: sinMovimiento), value: cambiando)
+        .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: resultados.map(\.clave))
+        .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: error)
         .presentationDetents([.medium, .large])
         .task {
-            if let doc = await c.documentoVisible() { ciudad = VistaInicio.desde(doc).ciudad }
+            if let doc = await c.documentoVisible() { ciudad = VistaInicio.ciudad(doc) }
             tiempo = c.entorno.servicios.tiempo.guardado(ciudad)
             tiempo = await c.entorno.servicios.tiempo.actual(ciudad) ?? tiempo
         }
         .task(id: busqueda) {
             let q = busqueda.trimmingCharacters(in: .whitespaces)
-            guard q.count >= 2 else { resultados = []; return }
+            guard q.count >= 2 else { resultados = []; buscando = false; return }
+            buscando = true
             try? await Task.sleep(for: .milliseconds(350))
             guard !Task.isCancelled else { return }
-            resultados = await c.entorno.servicios.tiempo.buscar(q)
+            let r = await c.entorno.servicios.tiempo.buscar(q)
+            guard !Task.isCancelled else { return }
+            resultados = r
+            buscando = false
         }
     }
 
-    private func elegir(_ r: Ciudad) {
+    // MARK: - Ciudad
+
+    private var seccionCiudad: some View {
+        VStack(alignment: .leading, spacing: Medida.xs) {
+            TituloSeccion(texto: "ciudad.")
+            TarjetaFilas {
+                Button(action: alternarBuscador) {
+                    HStack(spacing: Medida.s) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(ciudad.nombre.lowercased() + ".").font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                            Text("la del tiempo de inicio y del calendario.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                        }
+                        Spacer(minLength: Medida.xs)
+                        Text(cambiando ? "cancelar." : "cambiar.").font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                    }
+                    .padding(.horizontal, Medida.rellenoTarjeta)
+                    .frame(minHeight: 60)
+                }
+                .buttonStyle(EstiloFila())
+                .disabled(guardando)
+                .accessibilityLabel("ciudad, \(ciudad.nombre)")
+                .accessibilityHint(cambiando ? "cierra el buscador sin cambiarla" : "abre el buscador para elegir otra ciudad")
+            }
+            if cambiando {
+                VStack(alignment: .leading, spacing: Medida.xs) {
+                    BuscadorCapsula(texto: $busqueda, placeholder: "busca una ciudad", enfocar: $foco)
+                        .accessibilityLabel("buscar ciudad")
+                    resultadosBusqueda
+                }
+                .transition(.opacity.combined(with: .offset(y: -6)))
+            }
+        }
+    }
+
+    @ViewBuilder private var resultadosBusqueda: some View {
+        let q = busqueda.trimmingCharacters(in: .whitespaces)
+        if !resultados.isEmpty {
+            TarjetaFilas {
+                ForEach(Array(resultados.enumerated()), id: \.element.clave) { i, r in
+                    if i > 0 { SeparadorFila(sangria: Medida.rellenoTarjeta) }
+                    Button { elegir(r) } label: {
+                        HStack(spacing: Medida.s) {
+                            Text(r.nombre).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).lineLimit(2)
+                                .multilineTextAlignment(.leading)
+                            Spacer(minLength: Medida.xs)
+                            if r.clave == ciudad.clave {
+                                Chip(texto: "la tuya.", tono: .naranja)
+                            } else {
+                                FlechaFila()
+                            }
+                        }
+                        .padding(.horizontal, Medida.rellenoTarjeta)
+                        .frame(minHeight: Medida.toque + Medida.xxs)
+                    }
+                    .buttonStyle(EstiloFila())
+                    .disabled(guardando)
+                    .accessibilityLabel(r.nombre)
+                    .accessibilityHint("la pone como tu ciudad")
+                }
+            }
+        } else if buscando {
+            Text("buscando…").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).padding(.horizontal, Medida.xxs)
+        } else if q.count >= 2 {
+            Text("no hay ninguna ciudad con ese nombre.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).padding(.horizontal, Medida.xxs)
+        } else {
+            Text("escribe al menos dos letras.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).padding(.horizontal, Medida.xxs)
+        }
+    }
+
+    private func alternarBuscador() {
+        Haptica.ligera()
+        cambiando.toggle()
+        busqueda = ""
+        resultados = []
+        error = nil
+        guard cambiando else { foco = false; return }
+        // El campo aparece con la transición: el foco se pide cuando ya está en pantalla.
         Task {
+            try? await Task.sleep(for: .milliseconds(150))
+            if cambiando { foco = true }
+        }
+    }
+
+    // MARK: - Previsión
+
+    @ViewBuilder private var prevision: some View {
+        if let t = tiempo {
+            VStack(alignment: .leading, spacing: Medida.entreSecciones) {
+                VStack(alignment: .leading, spacing: Medida.xs) {
+                    TituloSeccion(texto: "ahora.")
+                    HStack(spacing: Medida.m) {
+                        Image(systemName: Tiempo.simbolo[t.tipo] ?? "cloud.fill").font(Letra.numeroGrande).foregroundStyle(Lienzo.tinta)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(Int(t.temp.rounded()))°").font(Letra.numeroGrande).foregroundStyle(Lienzo.tinta)
+                            Text(resumen(t)).font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .tarjeta()
+                    .accessibilityElement(children: .combine)
+                }
+                if t.dias.count > 1 {
+                    VStack(alignment: .leading, spacing: Medida.xs) {
+                        TituloSeccion(texto: "próximos días.")
+                        VStack(spacing: 0) {
+                            ForEach(Array(t.dias.dropFirst().enumerated()), id: \.element.fecha) { i, d in
+                                if i > 0 { SeparadorFila(sangria: 0) }
+                                filaDia(d)
+                            }
+                        }
+                        .padding(.horizontal, Medida.rellenoTarjeta)
+                        .tarjeta(relleno: 0)
+                    }
+                }
+            }
+        } else {
+            Text("cargando la previsión…").font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+        }
+    }
+
+    private func resumen(_ t: Tiempo) -> String {
+        var r = (Tiempo.texto[t.tipo] ?? "") + "."
+        if let s = t.sensacion { r += " sensación de \(Int(s.rounded()))°." }
+        if let h = t.dias.first { r += " máx \(Int(h.max.rounded()))°, mín \(Int(h.min.rounded()))°." }
+        return r
+    }
+
+    private func filaDia(_ d: Tiempo.Dia) -> some View {
+        let tipo = Tiempo.tipo(d.code, esDia: true)
+        let lluvia = d.lluvia.map { Int($0.rounded()) } ?? 0
+        let etiqueta = "\(Self.diaCorto(d.fecha)), \(Tiempo.texto[tipo] ?? ""), máxima \(Int(d.max.rounded())) grados, mínima \(Int(d.min.rounded()))"
+            + (lluvia >= 20 ? ", \(lluvia) por ciento de lluvia" : "")
+        return HStack(spacing: Medida.s) {
+            Text(Self.diaCorto(d.fecha) + ".").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta)
+                .frame(minWidth: 52, alignment: .leading)
+            Image(systemName: Tiempo.simbolo[tipo] ?? "cloud.fill").foregroundStyle(Lienzo.tinta)
+            if lluvia >= 20 {
+                Text("\(lluvia) %").font(Letra.pie).monospacedDigit().foregroundStyle(Lienzo.tintaSecundaria)
+            }
+            Spacer(minLength: Medida.xs)
+            Text("\(Int(d.max.rounded()))°").font(Letra.numero).foregroundStyle(Lienzo.tinta)
+            Text("\(Int(d.min.rounded()))°").font(Letra.numero).foregroundStyle(Lienzo.tintaSecundaria)
+                .frame(minWidth: 36, alignment: .trailing)
+        }
+        .frame(minHeight: Medida.toque)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(etiqueta)
+    }
+
+    private func elegir(_ r: Ciudad) {
+        guard !guardando else { return }
+        guardando = true
+        Task {
+            defer { guardando = false }
             do {
                 try await c.encolar(.ponerCiudadTiempo(nombre: r.nombre, lat: String(r.lat), lon: String(r.lon)))
+                Haptica.exito()
                 ciudad = r
                 busqueda = ""
                 resultados = []
-                tiempo = await c.entorno.servicios.tiempo.actual(r, forzar: true)
+                cambiando = false
+                foco = false
+                error = nil
+                tiempo = c.entorno.servicios.tiempo.guardado(r)
+                tiempo = await c.entorno.servicios.tiempo.actual(r, forzar: true) ?? tiempo
             } catch {
-                self.error = "no se pudo guardar en este iPhone."
+                self.error = "no se pudo guardar en este iphone."
+                Haptica.error()
             }
         }
     }

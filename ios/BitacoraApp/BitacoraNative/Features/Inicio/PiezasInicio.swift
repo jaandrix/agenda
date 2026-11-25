@@ -10,6 +10,31 @@ enum MedidaInicio {
     static let sinDiaVisibles = 5
 }
 
+// 3.2: título de sección en minúscula con punto, como SeccionPlegable (Letra.seccion), en vez de la etiqueta en
+// MAYÚSCULAS de EtiquetaSeccion. Lo usan Inicio, mi perfil y el tiempo; candidato a DesignSystem/V2.
+struct TituloSeccion: View {
+    let texto: String
+    var detalle: String?
+    var accion: (titulo: String, hacer: () -> Void)?
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: Medida.xs) {
+            Text(texto).font(Letra.seccion).foregroundStyle(Lienzo.tinta)
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: Medida.xs)
+            if let accion {
+                Button(accion.titulo, action: accion.hacer).font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                    .frame(minHeight: Medida.toque)
+                    .contentShape(Rectangle())
+                    .buttonStyle(.pulsable(0.94))
+            } else if let detalle {
+                Text(detalle).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
+            }
+        }
+        .padding(.horizontal, Medida.xxs)
+    }
+}
+
 // Una tarea del día en su tarjeta blanca: casilla a la izquierda (solo marca), el resto abre la tarea.
 struct FilaTareaInicio: View {
     let hora: String?

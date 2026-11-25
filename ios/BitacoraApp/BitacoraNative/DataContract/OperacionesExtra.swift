@@ -29,6 +29,7 @@ enum OperacionesExtra {
         case ColeccionesOp.tipoGuardar, ColeccionesOp.tipoQuitar, ColeccionesOp.tipoCategoria: return ColeccionesOp.claves
         case EtiquetasOp.tipo: return ["entries"]
         case ProfeOp.hecha, ProfeOp.nota, ProfeOp.entregado: return ProfeOp.claves
+        case PerfilPersonalOp.tipo: return PerfilPersonalOp.claves
         default: return ["dayPlanner"]
         }
     }
@@ -121,6 +122,8 @@ enum OperacionesExtra {
             r = EtiquetasOp.aplicar(d, r)
         case ProfeOp.hecha, ProfeOp.nota, ProfeOp.entregado:
             r = ProfeOp.aplicar(tipo, d, r)
+        case PerfilPersonalOp.tipo:
+            r = PerfilPersonalOp.aplicar(d, r)
         default:
             break
         }
