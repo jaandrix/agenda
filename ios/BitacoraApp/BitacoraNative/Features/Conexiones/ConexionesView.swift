@@ -8,6 +8,8 @@ struct ConexionesView: View {
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var centros: [CentroConexion]?
     @State private var elegido: String?
+    // 3.2: plegar la lista de relacionados se recuerda (en este iPhone) hasta que se vuelva a abrir.
+    @AppStorage("bitacora.conexiones.relacionados") private var relacionadosAbiertos = true
 
     var body: some View {
         ScrollViewReader { lector in
@@ -43,9 +45,11 @@ struct ConexionesView: View {
                 .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).padding(.horizontal, Medida.xxs)
         } else if let actual = l.first(where: { $0.id == elegido }) ?? LecturaConexiones.principal(l) {
             tarjetaCentro(actual).entradaEscalonada(0)
-            TarjetaSeccion(titulo: "relacionado", detalle: "\(actual.items.count)", arriba: Medida.xs, enTarjeta: false) {
+            SeccionPlegable(titulo: "Relacionados.", detalle: "\(actual.items.count)", abierta: $relacionadosAbiertos) {
                 TarjetaLista(elementos: actual.items) { e in filaEntrada(e) }
+                    .padding(.top, Medida.xxs)
             }
+            .padding(.top, Medida.xxs)
             .id(actual.id)
             .transition(.opacity)
             .entradaEscalonada(1)
@@ -53,7 +57,7 @@ struct ConexionesView: View {
                 let grupo = LecturaConexiones.delTipo(tipo, l)
                 if !grupo.isEmpty {
                     VStack(alignment: .leading, spacing: Medida.xs) {
-                        EtiquetaSeccion(texto: LecturaConexiones.titulo(tipo))
+                        RotuloPanorama(texto: LecturaConexiones.titulo(tipo))
                         ScrollView(.horizontal) {
                             HStack(spacing: Medida.xs) {
                                 ForEach(grupo.prefix(24)) { centro in
@@ -81,8 +85,8 @@ struct ConexionesView: View {
         VStack(alignment: .leading, spacing: Medida.s) {
             HStack(alignment: .top, spacing: Medida.s) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(LecturaConexiones.titulo(centro.tipo).uppercased()).font(Letra.etiqueta).tracking(Letra.espaciado)
-                        .foregroundStyle(Lienzo.tintaTerciaria)
+                    Text(RotuloPanorama.frase(LecturaConexiones.titulo(centro.tipo))).font(Letra.pieFuerte)
+                        .foregroundStyle(Lienzo.tintaSecundaria)
                     Text(centro.nombre).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta).lineLimit(2)
                     if !centro.sub.isEmpty {
                         Text(centro.sub).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)

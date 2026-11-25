@@ -17,6 +17,7 @@ struct ResumenPanorama: Sendable, Equatable {
     var lo: [Pendiente] = []
     var listasPendientes = 0
     var listas = 0
+    var macro = MacroPanorama()
 
     // Solo lectura: lo mismo que ya pintan Inicio y Listas, resumido.
     static func desde(_ doc: DocumentoBitacora) -> ResumenPanorama {
@@ -30,6 +31,7 @@ struct ResumenPanorama: Sendable, Equatable {
         let l = VistaListas.desde(doc)
         r.listasPendientes = l.pendientes
         r.listas = l.cajas.count
+        r.macro = MacroPanorama.desde(doc)
         return r
     }
 }
@@ -40,6 +42,7 @@ struct PanoramaView: View {
     @State private var r: ResumenPanorama?
     @State private var mes: String?
     @State private var deshacer: DeshacerListas?
+    @State private var saldo: SaldoPanorama?
 
     private let columnas = [GridItem(.flexible(), spacing: Medida.entreTarjetas, alignment: .top),
                             GridItem(.flexible(), spacing: Medida.entreTarjetas, alignment: .top)]
@@ -51,22 +54,28 @@ struct PanoramaView: View {
                     .padding(.bottom, Medida.xxs)
                 if let r {
                     aTenerEnCuenta(r).entradaEscalonada(0)
+                    TarjetaMacroPanorama(m: r.macro).entradaEscalonada(1)
                     LazyVGrid(columns: columnas, spacing: Medida.entreTarjetas) {
                         TarjetaCifraPanorama(icono: "planner", etiqueta: "hoy", cifra: r.pendientesHoy,
-                                             pie: r.hechasHoy == 1 ? "por hacer, 1 hecha." : "por hacer, \(r.hechasHoy) hechas.") { c.abrirApartado("planner") }
+                                             pie: r.hechasHoy == 1 ? "por hacer, 1 hecha." : "por hacer, \(r.hechasHoy) hechas.", fondo: TonoPanorama.melocoton) { c.abrirApartado("planner") }
                             .entradaEscalonada(1)
                         TarjetaCifraPanorama(icono: "planner", etiqueta: "sin día", cifra: r.sinDia,
-                                             pie: r.sinDia == 1 ? "tarea esperando día." : "tareas esperando día.") { c.abrirApartado("planner") }
+                                             pie: r.sinDia == 1 ? "tarea esperando día." : "tareas esperando día.", fondo: TonoPanorama.arena) { c.abrirApartado("planner") }
                             .entradaEscalonada(2)
                         TarjetaCifraPanorama(icono: "listas", etiqueta: "listas", cifra: r.listasPendientes,
-                                             pie: r.listas == 1 ? "por hacer en 1 lista." : "por hacer en \(r.listas) listas.") { c.abrirApartado("listas") }
+                                             pie: r.listas == 1 ? "por hacer en 1 lista." : "por hacer en \(r.listas) listas.", fondo: TonoPanorama.salvia) { c.abrirApartado("listas") }
                             .entradaEscalonada(3)
                         TarjetaCifraPanorama(icono: "home", etiqueta: "puntual", cifra: elegido?.porcentaje, sufijo: " %",
                                              pie: elegido.map { $0.total == 0 ? "sin tareas comparables." : "\($0.puntuales) de \($0.total) a su día." } ?? "aún sin datos.",
-                                             accion: nil)
+                                             fondo: TonoPanorama.niebla, accion: nil)
                             .entradaEscalonada(4)
                     }
-                    puntualidad(r.puntualidad).entradaEscalonada(5)
+                    if let saldo {
+                        GraficaSaldoPanorama(saldo: saldo) { Haptica.ligera(); c.abrirApartado("finances") }
+                            .transition(.opacity)
+                            .entradaEscalonada(5)
+                    }
+                    puntualidad(r.puntualidad).entradaEscalonada(6)
                 } else {
                     ProgressView().tint(Lienzo.tintaSecundaria).frame(maxWidth: .infinity).padding(.vertical, Medida.xxl)
                 }
@@ -92,7 +101,18 @@ struct PanoramaView: View {
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { ResumenPanorama.desde($0) } }) else { return }
             withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento)) { r = nuevo }
+            await cargarSaldo(doc)
         }
+    }
+
+    // La serie de saldo es lo más caro de Panorama: fuera del hilo principal y guardada por revisión y día.
+    private func cargarSaldo(_ doc: DocumentoBitacora?) async {
+        guard doc != nil else { return }
+        let clave = "\(c.revision)-\(CalendarioBitacora.madrid.dia(de: Date()).iso)"
+        if let guardado = CacheSaldoPanorama.leer(clave) { saldo = guardado; return }
+        guard let nuevo = await ultimaGana({ doc.flatMap { SaldoPanorama.desde($0) } }) else { return }
+        CacheSaldoPanorama.guardar(clave, nuevo)
+        withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento)) { saldo = nuevo }
     }
 
     private var elegido: Puntualidad.Mes? { r?.puntualidad.meses.first { $0.mes == mes } ?? r?.puntualidad.meses.last }
@@ -104,7 +124,8 @@ struct PanoramaView: View {
                 VStack(alignment: .leading, spacing: Medida.s) {
                     HStack(spacing: Medida.xs) {
                         IconoCuadrado(id: "planner", tono: .translucido, tamano: Medida.iconoPequeno)
-                        Text("A TENER EN CUENTA").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.sobreOscuroSuave)
+                        Text("A tener en cuenta.").font(Letra.pieFuerte).foregroundStyle(Lienzo.sobreOscuroSuave)
+                            .accessibilityAddTraits(.isHeader)
                         Spacer()
                         Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Lienzo.sobreOscuroTenue)
                     }
@@ -137,7 +158,7 @@ struct PanoramaView: View {
     private func puntualidad(_ p: Puntualidad) -> some View {
         VStack(alignment: .leading, spacing: Medida.s) {
             HStack(alignment: .firstTextBaseline) {
-                Text("PUNTUALIDAD").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.tintaTerciaria)
+                Text("Puntualidad.").font(Letra.pieFuerte).foregroundStyle(Lienzo.tintaSecundaria)
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
                 if let m = elegido { Chip(texto: Self.nombreMes(m.mes)) }
@@ -175,6 +196,7 @@ struct TarjetaCifraPanorama: View {
     let cifra: Int?
     var sufijo = ""
     let pie: String
+    var fondo: Color = Lienzo.tarjeta
     var accion: (() -> Void)?
 
     var body: some View {
@@ -198,12 +220,12 @@ struct TarjetaCifraPanorama: View {
                 .font(Letra.numeroGrande).foregroundStyle(Lienzo.tinta)
                 .contentTransition(.numericText())
                 .padding(.top, Medida.xxs)
-            Text(etiqueta.uppercased()).font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.tintaTerciaria)
+            Text(RotuloPanorama.frase(etiqueta)).font(Letra.pieFuerte).foregroundStyle(Lienzo.tintaSecundaria)
             Text(pie).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, minHeight: MedidaPanorama.altoCifra, alignment: .topLeading)
-        .tarjeta()
+        .tarjetaTono(fondo)
         .contentShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
         .accessibilityElement(children: .combine)
     }
@@ -247,6 +269,7 @@ enum MedidaPanorama {
     static let entreBarras: CGFloat = 6
     static let altoCifra: CGFloat = 132
     static let anchoHora: CGFloat = 40
+    static let altoGrafica: CGFloat = 64
     // Listas
     static let subrayado: CGFloat = 9            // subrayado de rotulador del título de una caja
     static let anchoPlegar: CGFloat = 26         // columna del triángulo de plegar (y sangría del filete)

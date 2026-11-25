@@ -70,7 +70,7 @@ struct EntradaPantallaCompleta: View {
         VStack(spacing: Medida.m) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("ENTRADA").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.tintaTerciaria)
+                    Text("Entrada.").font(Letra.pieFuerte).foregroundStyle(Lienzo.tintaSecundaria)
                     Text(titulo).font(Letra.titulo).kerning(-0.4).foregroundStyle(Lienzo.tinta).lineLimit(2)
                     if !detalle.isEmpty { Text(detalle).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
                 }
