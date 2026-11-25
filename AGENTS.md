@@ -5,6 +5,8 @@ convenciones). Claude Code y OpenCode pueden implementar cambios en este reposit
 los agentes y comandos versionados en `.opencode/`, conservar cualquier cambio ajeno ya presente y entregar siempre
 un diff revisable con las comprobaciones ejecutadas. No debe hacer `push` salvo que la petición actual lo autorice.
 
+Si trabajas con una clave de API o como una de varias sesiones en paralelo, sigue `trabajo-api/LEEME.md`.
+
 Si vienes únicamente a proponer diseño (ChatGPT / Codex):
 
 - No edites el código ni hagas commits. Deja tu propuesta como un único `.md` (más imágenes numeradas) en una
