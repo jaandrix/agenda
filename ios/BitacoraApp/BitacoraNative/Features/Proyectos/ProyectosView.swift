@@ -74,14 +74,18 @@ enum TextoProyectos {
         return ProyectoDetalleView.colina.min { abs((Double($0.0) ?? 0) - v) < abs((Double($1.0) ?? 0) - v) }?.1
     }
 
+    // Dos formateadores para siempre: se creaban dos en cada fase y cada apunte del diario, en cada pintado.
+    private static func formato(_ patron: String) -> DateFormatter {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "es_ES"); f.timeZone = TimeZone(identifier: "Europe/Madrid"); f.dateFormat = patron
+        return f
+    }
+    private static let entrada = formato("yyyy-MM-dd")
+    private static let salida = formato("d MMM yyyy")
+
     // «24 nov. 2026» → «24 nov 2026.»
     static func fecha(_ iso: String) -> String {
-        let madrid = TimeZone(identifier: "Europe/Madrid")
-        let entrada = DateFormatter()
-        entrada.locale = Locale(identifier: "es_ES"); entrada.timeZone = madrid; entrada.dateFormat = "yyyy-MM-dd"
         guard let d = entrada.date(from: String(iso.prefix(10))) else { return iso }
-        let salida = DateFormatter()
-        salida.locale = Locale(identifier: "es_ES"); salida.timeZone = madrid; salida.dateFormat = "d MMM yyyy"
         return salida.string(from: d).lowercased().replacingOccurrences(of: ".", with: "") + "."
     }
 
@@ -92,7 +96,7 @@ enum TextoProyectos {
 struct ProyectosView: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
-    @State private var proyectos: [ProyectoVista]?
+    @State private var leidos: [ProyectoVista]?
     @State private var nuevo = ""
     @State private var idNuevo = OperacionBitacora.nuevoIdProyecto("proy")
     @State private var aviso: String?
@@ -115,7 +119,7 @@ struct ProyectosView: View {
                 if proyectos == nil {
                     ProgressView().tint(Lienzo.tintaSecundaria).frame(maxWidth: .infinity).padding(.top, Medida.xl)
                 } else if filtro == .hechos && !hechos.isEmpty {
-                    ForEach(Array(hechos.enumerated()), id: \.element.id) { n, p in tarjeta(p).entradaEscalonada(n) }
+                    ForEach(Array(hechos.enumerated()), id: \.element.id) { n, p in tarjeta(p).entradaEscalonadaCorta(n) }
                 } else {
                     CampoObjetivos(texto: $nuevo, sugerencia: "nuevo proyecto.", boton: "crear.", accion: crear)
                         .tarjeta(relleno: Medida.s)
@@ -124,7 +128,7 @@ struct ProyectosView: View {
                                           destacado: "ponle nombre al siguiente.")
                             .entradaEscalonada(0)
                     }
-                    ForEach(Array(vivos.enumerated()), id: \.element.id) { n, p in tarjeta(p).entradaEscalonada(n) }
+                    ForEach(Array(vivos.enumerated()), id: \.element.id) { n, p in tarjeta(p).entradaEscalonadaCorta(n) }
                 }
             }
             .padding(.horizontal, Medida.margen)
@@ -138,12 +142,14 @@ struct ProyectosView: View {
         .fondoLienzo()
         .refreshable { await c.sincronizar() }
         .task(id: c.revision) {
-            let doc = await c.documentoVisible()
-            guard let nuevo = await ultimaGana({ doc.map { LecturaProyectos.vista($0) } }) else { return }
-            proyectos = nuevo
+            guard let nuevo = await MemoriaObjetivos.leerProyectos(c) else { return }
+            if leidos != nuevo || leidos == nil { leidos = nuevo }
             if !(nuevo ?? []).contains(where: { $0.estado == "Completado" }) { filtro = .enCurso }
         }
     }
+
+    // Lo leído y, mientras llega, lo último que se leyó de esta cuenta: se pinta al momento, sin spinner.
+    private var proyectos: [ProyectoVista]? { leidos ?? MemoriaObjetivos.valor(MemoriaObjetivos.proyectos, uid: c.sesion?.userId) }
 
     private func tarjeta(_ p: ProyectoVista) -> some View {
         let hecho = p.estado == "Completado"
@@ -217,7 +223,7 @@ struct ProyectoDetalleView: View {
     let id: String
     @Environment(AppCoordinator.self) private var c
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
-    @State private var p: ProyectoVista?
+    @State private var leido: ProyectoVista?
     @State private var aviso: String?
     @State private var marcadas = 0
     @State private var tarea = ""
@@ -255,7 +261,7 @@ struct ProyectoDetalleView: View {
                     }
                     .tarjeta(relleno: Medida.s)
                     .entradaEscalonada(4)
-                    ForEach(Array(p.diario.enumerated()), id: \.element.id) { n, d in apunteDiario(d).entradaEscalonada(n + 5) }
+                    ForEach(Array(p.diario.enumerated()), id: \.element.id) { n, d in apunteDiario(d).entradaEscalonadaCorta(n + 5) }
                 } else {
                     ProgressView().tint(Lienzo.tintaSecundaria).frame(maxWidth: .infinity).padding(.top, Medida.xl)
                 }
@@ -280,11 +286,15 @@ struct ProyectoDetalleView: View {
             Button("cancelar.", role: .cancel) {}
         }
         .task(id: c.revision) {
-            let doc = await c.documentoVisible()
-            let pid = id
-            guard let nuevo = await ultimaGana({ doc.flatMap { LecturaProyectos.vista($0).first { $0.id == pid } } }) else { return }
-            p = nuevo
+            guard let lista = await MemoriaObjetivos.leerProyectos(c) else { return }
+            let nuevo = lista?.first { $0.id == id }
+            if leido != nuevo || leido == nil { leido = nuevo }
         }
+    }
+
+    // Lo leído o, mientras llega, el de la lista ya leída: el gestor se abre con todo pintado.
+    private var p: ProyectoVista? {
+        leido ?? MemoriaObjetivos.valor(MemoriaObjetivos.proyectos, uid: c.sesion?.userId)?.first { $0.id == id }
     }
 
     // MARK: - Siguiente paso
@@ -293,7 +303,7 @@ struct ProyectoDetalleView: View {
         TarjetaOscura {
             VStack(alignment: .leading, spacing: Medida.s) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("SIGUIENTE PASO").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.sobreOscuroSuave)
+                    Text("siguiente paso.").font(Letra.pieFuerte).foregroundStyle(Lienzo.sobreOscuroSuave)
                     Spacer()
                     if s.estado == "curso" { Text("en marcha.").font(Letra.pieFuerte).foregroundStyle(Lienzo.naranja) }
                     else if s.enHoy { Text("en el plan de hoy.").font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave) }

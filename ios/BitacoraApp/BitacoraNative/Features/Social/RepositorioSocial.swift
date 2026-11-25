@@ -172,12 +172,17 @@ enum CuentasSocial {
         return base.map { SocialParte(miembro: $0.id, centimos: $0.c, partes: modo == "partes" ? $0.p : nil) }
     }
 
-    static func dinero(_ centimos: Int) -> String {
+    // Un solo formateador: se creaba uno por cifra en cada pintado (varias por fila de gasto) y era lo que más pesaba.
+    private static let formatoDinero: NumberFormatter = {
         let f = NumberFormatter()
         f.locale = Locale(identifier: "es_ES")
         f.numberStyle = .currency
         f.currencyCode = "EUR"
-        return f.string(from: NSNumber(value: Double(centimos) / 100)) ?? "\(Double(centimos) / 100) €"
+        return f
+    }()
+
+    static func dinero(_ centimos: Int) -> String {
+        formatoDinero.string(from: NSNumber(value: Double(centimos) / 100)) ?? "\(Double(centimos) / 100) €"
     }
 
     static func textoSaldo(_ c: Int) -> String {

@@ -208,6 +208,8 @@ struct MetodoSecciones: View {
                 .accessibilityAction { marcar(k, !hecho) }
                 Button("cambiar el paso.") { cambiarPaso = true }
                     .font(Letra.pieFuerte).foregroundStyle(Lienzo.tintaSecundaria)
+                    .frame(minHeight: Medida.toque)
+                    .contentShape(Rectangle())
                     .buttonStyle(.pulsable(0.94))
                     .padding(.horizontal, Medida.xxs)
             } else {
