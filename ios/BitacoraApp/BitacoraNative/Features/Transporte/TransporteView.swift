@@ -60,7 +60,7 @@ struct TransporteView: View {
         .scrollIndicators(.hidden)
         .fondoLienzo()
         .scrollDismissesKeyboard(.interactively)
-        .task(id: c.revision) {
+        .tareaVisible(id: c.revision) {
             let antes = favoritas
             await leerDocumento()
             if favoritas != antes { await recargar(forzar: false) }

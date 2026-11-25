@@ -39,7 +39,7 @@ struct RutinasView: View {
         }
         .scrollIndicators(.hidden)
         .fondoLienzo()
-        .task(id: c.revision) {
+        .tareaVisible(id: c.revision) {
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { LecturaRutinas.vista($0) } }) else { return }
             vista = nuevo

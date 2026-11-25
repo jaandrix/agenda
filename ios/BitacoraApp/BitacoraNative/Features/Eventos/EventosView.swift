@@ -6,6 +6,7 @@ struct VistaEventos: Sendable, Equatable {
     struct Fila: Sendable, Equatable, Identifiable {
         let evento: EventoDia
         let dia: LocalDay
+        var categoria = "otro"
         var id: String { evento.id + dia.iso }
     }
     var proximos: [Fila] = []
@@ -18,7 +19,8 @@ struct VistaEventos: Sendable, Equatable {
         for x in ((try? doc.valor(de: "entries")) ?? nil)?.lista ?? [] {
             guard let o = x.objeto, o["type"]?.texto == "event", let id = o["id"]?.comoId, !LecturaCalendario.esMarca(o, id: id),
                   let dia = (o["date"]?.texto).flatMap(LocalDay.init(iso:)) else { continue }
-            let f = Fila(evento: LecturaCalendario.evento(o, id: id, tipo: "event", anio: dia.year, categorias: cats), dia: dia)
+            let f = Fila(evento: LecturaCalendario.evento(o, id: id, tipo: "event", anio: dia.year, categorias: cats), dia: dia,
+                         categoria: TonoEventos.categoria(o["eventType"]?.texto))
             if dia >= hoy { v.proximos.append(f) } else { v.pasados.append(f) }
         }
         v.proximos.sort { ($0.dia.iso, $0.evento.hora ?? "") < ($1.dia.iso, $1.evento.hora ?? "") }
@@ -35,6 +37,7 @@ struct EventosView: View {
     @State private var partidosCargados = false
     @State private var hoy = CalendarioBitacora.madrid.dia(de: Date())
     @State private var tramo = Tramo.proximos
+    @State private var qr: QREventoAbierto?
     @Environment(\.scenePhase) private var fase
 
     enum Tramo: Hashable { case proximos, pasados }
@@ -68,7 +71,10 @@ struct EventosView: View {
         .fondoLienzo()
         .refreshable { await c.sincronizar() }
         .onChange(of: fase) { _, f in if f == .active { hoy = CalendarioBitacora.madrid.dia(de: Date()) } }
-        .task(id: "\(c.revision)-\(hoy.iso)") {
+        .fullScreenCover(item: $qr) { q in
+            EntradaPantallaCompleta(titulo: q.titulo, detalle: q.detalle, entradas: q.entradas, indice: 0)
+        }
+        .tareaVisible(id: "\(c.revision)-\(hoy.iso)") {
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { VistaEventos.desde($0) } }) else { return }
             vista = nuevo
@@ -77,7 +83,7 @@ struct EventosView: View {
             hayEquipos = !((((try? doc.valor(de: "servicios")) ?? nil)?["equipos"]?.lista ?? []).isEmpty)
             if hayEquipos {
                 let r = await c.entorno.servicios.deportes.eventos(doc, desde: hoy, dias: 30)
-                partidos = r.flatMap { d, l in l.map { VistaEventos.Fila(evento: $0, dia: d) } }
+                partidos = r.flatMap { d, l in l.map { VistaEventos.Fila(evento: $0, dia: d, categoria: "deportes") } }
                     .sorted { ($0.dia.iso, $0.evento.hora ?? "") < ($1.dia.iso, $1.evento.hora ?? "") }
                 partidosCargados = true
             }
@@ -98,7 +104,7 @@ struct EventosView: View {
             ForEach(Array(resto.enumerated()), id: \.element.id) { n, f in
                 VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
                     if n == 0 || Self.mes(resto[n - 1].dia, hoy) != Self.mes(f.dia, hoy) {
-                        EtiquetaSeccion(texto: Self.mesSinPunto(f.dia, hoy)).padding(.top, Medida.s)
+                        RotuloPanorama(texto: Self.mesSinPunto(f.dia, hoy)).padding(.top, Medida.s)
                     }
                     tarjeta(f, tono: f.dia == hoy ? .naranja : .claro)
                 }
@@ -109,7 +115,7 @@ struct EventosView: View {
                 .entradaEscalonada(0)
         }
         if hayEquipos {
-            EtiquetaSeccion(texto: "tus equipos").padding(.top, Medida.s)
+            RotuloPanorama(texto: "tus equipos").padding(.top, Medida.s)
             if partidos.isEmpty {
                 EstadoVacio(texto: partidosCargados ? "sin partidos en los próximos 30 días." : "cargando sus partidos…")
                     .tarjeta(relleno: Medida.xs)
@@ -132,7 +138,7 @@ struct EventosView: View {
             TarjetaOscura {
                 VStack(alignment: .leading, spacing: Medida.s) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text("EL PRÓXIMO").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.sobreOscuroSuave)
+                        Text("El próximo.").font(Letra.pieFuerte).foregroundStyle(Lienzo.sobreOscuroSuave)
                         Spacer()
                         TimelineView(.periodic(from: .now, by: 60)) { t in
                             Text(CuentaAtras.texto(f.dia, hora: f.evento.hora, hoy: hoy, ahora: t.date))
@@ -149,7 +155,7 @@ struct EventosView: View {
                                 .font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave).lineLimit(2)
                         }
                         Spacer(minLength: 0)
-                        if f.evento.entradas > 0 { Chip(texto: "qr.", tono: .blanco, icono: "qrcode") }
+                        if f.evento.entradas > 0 { Color.clear.frame(width: MedidaEventos.botonQR, height: MedidaEventos.botonQR) }
                     }
                 }
             }
@@ -158,38 +164,88 @@ struct EventosView: View {
         .buttonStyle(.pulsable(0.97))
         .accessibilityElement(children: .combine)
         .accessibilityHint("abre la ficha del evento")
+        // Encima y fuera del botón de la tarjeta: un botón dentro de otro no recibe el toque.
+        .overlay(alignment: .bottomTrailing) {
+            if f.evento.entradas > 0 { botonQR(f, tono: .blanco).padding(Medida.rellenoTarjeta) }
+        }
     }
 
-    // .m-evento: bloque de fecha, título y «día, hora, lugar»; QR si hay entrada.
+    // .m-evento: bloque de fecha (con el velo rojo de cercanía), título y «día, hora, lugar»; fondo palo según el tipo
+    // (los pasados, en blanco) y el QR a mano si hay entrada.
     private func tarjeta(_ f: VistaEventos.Fila, tono: BloqueFecha.Tono) -> some View {
-        Button { abrir(f) } label: {
+        let pasado = tono == .apagado
+        let conQR = f.evento.entradas > 0
+        let dias = hoy.dias(hasta: f.dia)
+        let relleno = pasado ? nil : TonoEventos.relleno(f.categoria)
+        let segunda = relleno == nil ? Lienzo.tintaSecundaria : TonoEventos.tinta(f.categoria)
+        return Button { abrir(f) } label: {
             HStack(spacing: Medida.s) {
                 BloqueFecha(dia: f.dia, tono: tono)
+                    .overlay {
+                        if tono == .claro, TonoEventos.cercania(dias) > 0 {
+                            RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous)
+                                .fill(Lienzo.negativo.opacity(TonoEventos.cercania(dias)))
+                                .blendMode(.multiply)
+                                .allowsHitTesting(false)
+                        }
+                    }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(f.evento.titulo).font(Letra.tituloTarjeta)
-                        .foregroundStyle(tono == .apagado ? Lienzo.tintaSecundaria : Lienzo.tinta)
+                        .foregroundStyle(pasado ? Lienzo.tintaSecundaria : Lienzo.tinta)
                         .lineLimit(2).multilineTextAlignment(.leading)
                     HStack(spacing: Medida.xs) {
-                        Text(Self.diaSemana(f.dia) + ".").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
-                        if let h = f.evento.hora { Text(h).font(Letra.hora).foregroundStyle(Lienzo.tinta) }
+                        Text(Self.diaSemana(f.dia) + ".").font(Letra.pie).foregroundStyle(segunda)
+                        if let h = f.evento.hora { Text(h).font(Letra.hora).foregroundStyle(relleno == nil ? Lienzo.tinta : segunda) }
                         if let lugar = lugar(f) {
-                            Text(lugar).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1)
+                            Text(lugar).font(Letra.pie).foregroundStyle(segunda).lineLimit(1)
                         }
                     }
                 }
                 Spacer(minLength: Medida.xxs)
-                if f.evento.entradas > 0 {
-                    Chip(texto: "qr.", tono: tono == .apagado ? .sutil : .oscuro, icono: "qrcode")
+                if conQR {
+                    Color.clear.frame(width: MedidaEventos.botonQR, height: MedidaEventos.botonQR)
                 } else if f.evento.tipo == "partido" {
                     Chip(texto: "auto.")
                 }
             }
-            .tarjeta(relleno: Medida.s)
+            .tarjetaEvento(relleno, relleno: Medida.s)
             .contentShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
         }
         .buttonStyle(.pulsable(0.97))
         .accessibilityElement(children: .combine)
+        .accessibilityValue(pasado ? "" : CuentaAtras.texto(dias: dias))
         .accessibilityHint("abre la ficha del evento")
+        // Encima y fuera del botón de la tarjeta: un botón dentro de otro no recibe el toque.
+        .overlay(alignment: .trailing) {
+            if conQR { botonQR(f, tono: pasado ? .sutil : .oscuro).padding(.trailing, Medida.s) }
+        }
+    }
+
+    // El QR sin pasar por la ficha: 44 pt, abre la entrada a pantalla completa con el brillo al máximo.
+    private func botonQR(_ f: VistaEventos.Fila, tono: Chip.Tono) -> some View {
+        Button { abrirQR(f) } label: {
+            Image(systemName: "qrcode").font(.system(size: 19, weight: .semibold))
+                .foregroundStyle(tono == .oscuro ? Lienzo.sobreOscuro : Lienzo.tinta)
+                .frame(width: MedidaEventos.botonQR, height: MedidaEventos.botonQR)
+                .background(tono == .oscuro ? Lienzo.oscuro : tono == .blanco ? Lienzo.tarjeta : Lienzo.sutil,
+                            in: RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
+        }
+        .buttonStyle(.pulsable(0.92))
+        .accessibilityLabel(f.evento.entradas == 1 ? "enseñar la entrada" : "enseñar las entradas")
+        .accessibilityHint("abre el código qr a pantalla completa")
+    }
+
+    private func abrirQR(_ f: VistaEventos.Fila) {
+        Haptica.ligera()
+        Task { @MainActor in
+            guard let doc = await c.documentoVisible() else { return }
+            let lista = ((try? doc.valor(de: "entries")) ?? nil)?.lista?.first { $0["id"]?.comoId == f.evento.id }?["entradas"]?.lista ?? []
+            let entradas = lista.compactMap(EntradaQR.desde)
+            // Si ninguna se puede leer, la ficha: allí se ven y se pueden volver a añadir.
+            guard !entradas.isEmpty else { c.modal = .ficha(f.evento, dia: f.dia); return }
+            qr = QREventoAbierto(id: f.id, titulo: f.evento.titulo, detalle: meta(f) ?? "", entradas: entradas)
+        }
     }
 
     private func abrir(_ f: VistaEventos.Fila) {
@@ -233,5 +289,18 @@ struct Etiqueta: View {
             .overlay(alignment: .bottom) { Rectangle().fill(Paleta.texto).frame(height: 2) }
             .padding(.top, 30)
             .accessibilityAddTraits(.isHeader)
+    }
+}
+
+// Como `.tarjetaTipo` de la rama de color: con pastel, rellena y sin filete ni sombra; sin él, la tarjeta blanca.
+extension View {
+    @ViewBuilder func tarjetaEvento(_ color: Color?, relleno: CGFloat = Medida.rellenoTarjeta) -> some View {
+        if let color {
+            padding(relleno)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(color, in: RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+        } else {
+            tarjeta(relleno: relleno)
+        }
     }
 }

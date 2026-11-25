@@ -22,7 +22,8 @@ struct MesFlotanteCalendario: View {
     var accesorio: AnyView?
 
     @State private var visible: YearMonth?
-    @Namespace private var espacio
+    // 3.2: como SemanaFlotante, la placa va primero y el día elegido llega cuando ha terminado de moverse.
+    @State private var marcado: LocalDay?
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
     static let altoDia: CGFloat = 46
@@ -70,7 +71,8 @@ struct MesFlotanteCalendario: View {
             if m != visible { withAnimation(Muelle.o(Muelle.rapido, reducido: sinMovimiento)) { visible = m } }
         }
         .sensoryFeedback(.selection, trigger: visible)
-        .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: elegido)
+        .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: marcado ?? elegido)
+        .onChange(of: elegido) { _, nuevo in if marcado != nil && marcado != nuevo { marcado = nil } }
     }
 
     private var fueraDeHoy: Bool { elegido != hoy || mesVisible != hoy.yearMonth }
@@ -111,6 +113,8 @@ struct MesFlotanteCalendario: View {
         let primero = LocalDay(year: m.year, month: m.month, day: 1)!
         let hueco = primero.indiceSemanaLunes
         let total = Self.diasDe(m)
+        let sel = marcado ?? elegido
+        let pos = sel.yearMonth == m ? hueco + sel.day - 1 : nil
         return VStack(spacing: Self.entreFilas) {
             ForEach(0..<Self.filas(m), id: \.self) { f in
                 HStack(spacing: Self.entreFilas) {
@@ -125,17 +129,38 @@ struct MesFlotanteCalendario: View {
                 }
             }
         }
+        .background(alignment: .topLeading) {
+            // Una sola placa movida con `offset` (no matchedGeometryEffect): animarla no recoloca el calendario.
+            if let pos {
+                GeometryReader { g in
+                    let ancho = (g.size.width - Self.entreFilas * 6) / 7
+                    RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous)
+                        .fill(Lienzo.placaElegido)
+                        .frame(width: ancho, height: Self.altoDia)
+                        .offset(x: CGFloat(pos % 7) * (ancho + Self.entreFilas), y: CGFloat(pos / 7) * (Self.altoDia + Self.entreFilas))
+                }
+                .transition(.opacity)
+            }
+        }
         .frame(maxHeight: .infinity, alignment: .top)
     }
 
     private func dia(_ d: LocalDay) -> some View {
-        let on = d == elegido
+        let on = d == (marcado ?? elegido)
         let esHoy = d == hoy
         let colores = Array(puntos(d).prefix(3))
         return Button {
-            guard d != elegido else { return }
+            guard d != (marcado ?? elegido) else { return }
             Haptica.ligera()
-            elegir(d)
+            marcado = d
+            Task {
+                try? await Task.sleep(nanoseconds: 260_000_000)
+                guard marcado == d else { return }
+                var sinAnimar = Transaction()
+                sinAnimar.disablesAnimations = true
+                withTransaction(sinAnimar) { elegir(d) }
+                marcado = nil
+            }
         } label: {
             VStack(spacing: 4) {
                 Text("\(d.day)")
@@ -149,13 +174,6 @@ struct MesFlotanteCalendario: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: Self.altoDia)
-            .background {
-                if on {
-                    RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous)
-                        .fill(Lienzo.placaElegido)
-                        .matchedGeometryEffect(id: "elegido", in: espacio)
-                }
-            }
             .contentShape(Rectangle())
         }
         .buttonStyle(Pulsable(escala: 0.9, haptica: false))

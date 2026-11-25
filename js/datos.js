@@ -234,6 +234,7 @@
                 hansei = Array.isArray(saved.hansei) ? saved.hansei : [];
                 apartadosConfig = (saved.apartadosConfig && typeof saved.apartadosConfig === 'object') ? saved.apartadosConfig : null;
                 perfilLaboral = (saved.perfilLaboral && typeof saved.perfilLaboral === 'object') ? saved.perfilLaboral : null;
+                perfilPersonal = (saved.perfilPersonal && typeof saved.perfilPersonal === 'object') ? saved.perfilPersonal : null;
                 profesorado = (saved.profesorado && typeof saved.profesorado === 'object') ? saved.profesorado : null;
                 agendaLaboral = (saved.agendaLaboral && typeof saved.agendaLaboral === 'object') ? saved.agendaLaboral : null;
                 listaCompra = (saved.listaCompra && typeof saved.listaCompra === 'object') ? saved.listaCompra : null;
@@ -436,6 +437,7 @@
             hansei: [() => hansei, v => { hansei = v; }],
             apartadosConfig: [() => apartadosConfig, v => { apartadosConfig = v; }],
             perfilLaboral: [() => perfilLaboral, v => { perfilLaboral = v; }],
+            perfilPersonal: [() => perfilPersonal, v => { perfilPersonal = (v && typeof v === 'object') ? v : null; }],
             profesorado: [() => profesorado, v => { profesorado = v; }],
             agendaLaboral: [() => agendaLaboral, v => { agendaLaboral = v; }],
             listaCompra: [() => listaCompra, v => { listaCompra = v; }],
@@ -508,6 +510,7 @@
                 const preparar = PREPARAR_FUSION[k] || (x => x);
                 let v = datosBase ? fusionarTresBandas(preparar(datosBase[k]), preparar(local), preparar(nube[k])) : local;
                 if (v === undefined) v = local;
+                if (k === 'dayPlanner' && typeof limpiarCopiasDeTrabajos === 'function') v = limpiarCopiasDeTrabajos(v);
                 fusion[k] = v;
                 if (v !== local && !mismoValor(v, local)) { escribir(v); cambiado = true; if (k === 'apartadosConfig') renderAllNavs(); }
             });

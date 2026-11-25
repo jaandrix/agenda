@@ -113,7 +113,7 @@ struct EnviosView: View {
         }
         .scrollIndicators(.hidden)
         .fondoLienzo()
-        .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
+        .refreshable { await c.sincronizar() }.tareaVisible(id: c.revision) { await cargar() }
         .hoja(item: $edicion) { e in EditorPedido(pedido: e.pedido).environment(c) }
         .confirmarBorrado($pedidoABorrar, titulo: { "¿borrar el pedido «\($0.titulo)»?" }) { p in Task { await c.guardar(.borrarPedido(id: p.id)) } }
     }

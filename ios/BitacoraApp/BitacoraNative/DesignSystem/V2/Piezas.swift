@@ -229,23 +229,40 @@ struct CabeceraPagina<Derecha: View>: View {
     @ViewBuilder var derecha: () -> Derecha
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Medida.s) {
-            if volver != nil || Derecha.self != EmptyView.self {
-                HStack {
-                    if let volver { BotonRedondo(sistema: "chevron.left", tono: .oscuro, etiqueta: "volver", accion: volver) }
-                    Spacer()
+        Group {
+            if volver == nil, Derecha.self != EmptyView.self {
+                // 3.2 (petición de Alejandro): sin volver, las acciones van a la altura del título y no en una fila
+                // propia encima; se recupera ese hueco en todos los apartados.
+                HStack(alignment: .center, spacing: Medida.s) {
+                    titulos(enFila: true)
+                    Spacer(minLength: 0)
                     derecha()
                 }
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(titulo).font(Letra.titulo).foregroundStyle(Lienzo.tinta).kerning(-0.4)
-                    .accessibilityAddTraits(.isHeader)
-                if let subtitulo, !subtitulo.isEmpty {
-                    Text(subtitulo).font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
+            } else {
+                VStack(alignment: .leading, spacing: Medida.s) {
+                    if let volver {
+                        HStack {
+                            BotonRedondo(sistema: "chevron.left", tono: .oscuro, etiqueta: "volver", accion: volver)
+                            Spacer()
+                            derecha()
+                        }
+                    }
+                    titulos(enFila: false)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func titulos(enFila: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(titulo).font(Letra.titulo).foregroundStyle(Lienzo.tinta).kerning(-0.4)
+                .lineLimit(enFila ? 1 : nil).minimumScaleFactor(enFila ? 0.7 : 1)
+                .accessibilityAddTraits(.isHeader)
+            if let subtitulo, !subtitulo.isEmpty {
+                Text(subtitulo).font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(enFila ? 1 : nil)
+            }
+        }
     }
 }
 
@@ -255,19 +272,28 @@ extension CabeceraPagina where Derecha == EmptyView {
     }
 }
 
-/// Título de sección en etiqueta pequeña («GET INSPIRED» de la foto 3) con acción opcional a la derecha.
+/// Título de sección que precede a una tarjeta, con acción opcional a la derecha.
+/// 3.2 (petición de Alejandro): sin mayúsculas completas ni espaciado de versalitas. Solo la primera letra en mayúscula
+/// («este mes.» → «Este mes.»), en `Letra.rotulo` y tinta secundaria (la terciaria no llegaba a 3:1 sobre el lienzo).
 struct EtiquetaSeccion: View {
     let texto: String
     var accion: (titulo: String, hacer: () -> Void)?
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(texto.uppercased()).font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.tintaTerciaria)
+            Text(texto.conMayusculaInicial).font(Letra.rotulo).foregroundStyle(Lienzo.tintaSecundaria)
                 .accessibilityAddTraits(.isHeader)
             Spacer()
             if let accion {
-                Button(accion.titulo, action: accion.hacer).font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
-                    .buttonStyle(.pulsable(0.94))
+                Button(action: accion.hacer) {
+                    // Área táctil de 44 sin cambiar el alto de la cabecera: el relleno amplía el toque y el negativo lo
+                    // quita del diseño.
+                    Text(accion.titulo).font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                        .padding(.vertical, 14).padding(.horizontal, Medida.xs)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.pulsable(0.94))
+                .padding(.vertical, -14).padding(.horizontal, -Medida.xs)
             }
         }
         .padding(.horizontal, Medida.xxs)

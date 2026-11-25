@@ -25,7 +25,8 @@ struct ModalFlotante<Estado: View, Contenido: View>: View {
         .background(Lienzo.oscuro, in: RoundedRectangle(cornerRadius: Medida.radioModal, style: .continuous))
         .clipShape(RoundedRectangle(cornerRadius: Medida.radioModal, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Medida.radioModal, style: .continuous).strokeBorder(Lienzo.filoOscuro))
-        .sombra(.oscura)
+        // 3.2: la sombra en la forma (sobre el contenido recortado se recalculaba en cada fotograma del arrastre).
+        .background { RoundedRectangle(cornerRadius: Medida.radioModal, style: .continuous).fill(Lienzo.oscuro).sombra(.oscura) }
         .padding(.horizontal, Medida.s - 2)
         .padding(.bottom, Medida.xs)
         .offset(y: arrastre)
@@ -79,6 +80,9 @@ struct ModalFlotante<Estado: View, Contenido: View>: View {
                 let destino = g.translation.height + Elastico.proyeccion(g.velocity.height)
                 if g.translation.height > 110 || destino > 260 {
                     Haptica.suave()
+                    // 3.2: el teclado baja a la vez que la tarjeta. Antes se iba solo cuando el campo salía del árbol, al
+                    // acabar la transición, y se quedaba unos segundos flotando sobre la app ya sin modal.
+                    MainActor.assumeIsolated { TecladoGlobal.cerrar() }
                     cerrar()
                     // El modal sale con su transición; el desplazamiento vuelve a cero para la próxima vez.
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { arrastre = 0 }
@@ -131,7 +135,7 @@ private struct CapaFlotante<C: View>: ViewModifier {
                 if presentado {
                     Lienzo.velo
                         .ignoresSafeArea()
-                        .onTapGesture { Haptica.suave(); cerrar() }
+                        .onTapGesture { Haptica.suave(); MainActor.assumeIsolated { TecladoGlobal.cerrar() }; cerrar() }
                         .transition(.opacity)
                         .accessibilityHidden(true)
                 }
@@ -146,5 +150,7 @@ private struct CapaFlotante<C: View>: ViewModifier {
                 }
             }
             .animation(Muelle.o(Muelle.modal, reducido: sinMovimiento), value: presentado)
+            // Cualquier cierre (arrastre, velo, guardar): el teclado se va ya, no al quitar el campo del árbol.
+            .onChange(of: presentado) { _, abierto in if !abierto { TecladoGlobal.cerrar() } }
     }
 }

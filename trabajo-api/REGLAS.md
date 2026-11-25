@@ -50,6 +50,10 @@ Un encargo está terminado cuando **todas** estas casillas son ciertas y lo demu
    `CLAUDE.md`, con una captura o una comprobación por JS.
 5. `git status` limpio salvo lo que no es tuyo, y un único commit en tu rama.
 
+En Antigravity, `git` no funciona dentro de un worktree (su gitdir queda fuera del espacio de trabajo y el entorno
+aislado no lo ve). No insistas: trabaja sin git, deja los cambios sin commit y dilo en la entrega. El coordinador
+revisa el diff, pasa las pruebas y hace el commit.
+
 Revisión estática antes del push (es barata y evita una vuelta de CI de 10 minutos): por cada tipo, función o vista
 nueva que uses, comprueba con `Grep` que existe con esa firma exacta. En la 3.2, dos ramas no compilaban por un `func`
 en lugar de `var` y por dos vistas que nunca se escribieron.

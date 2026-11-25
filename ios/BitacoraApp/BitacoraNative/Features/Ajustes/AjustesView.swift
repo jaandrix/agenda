@@ -65,7 +65,7 @@ struct AjustesView: View {
         // El título va en la cabecera grande; la barra solo lo lleva para el botón de volver de las páginas.
         .navigationTitle("ajustes")
         .toolbar { ToolbarItem(placement: .principal) { EmptyView() } }
-        .task(id: c.revision) { await cargarDocumento() }
+        .tareaVisible(id: c.revision) { await cargarDocumento() }
         .task { await cargarRemoto() }
         .confirmationDialog("¿cerrar sesión?", isPresented: $confirmarSalida, titleVisibility: .visible) {
             Button("cerrar sesión.", role: .destructive) { Task { await c.salir() } }

@@ -67,11 +67,12 @@ struct NotaDiscretaOcio: View {
     var sobreOscuro = false
 
     var body: some View {
-        HStack(spacing: 3) {
-            Image(systemName: "star.fill").font(.system(size: 9, weight: .bold)).foregroundStyle(Lienzo.naranja)
+        // 3.2: estrella más gruesa y número en negrita, centrados entre sí.
+        HStack(alignment: .center, spacing: 3) {
+            Image(systemName: "star.fill").font(.system(size: 11, weight: .heavy)).foregroundStyle(Lienzo.naranja)
             Text(valor == valor.rounded() ? "\(Int(valor))" : String(format: "%.1f", valor).replacingOccurrences(of: ".", with: ","))
-                .font(Letra.pieFuerte).monospacedDigit()
-                .foregroundStyle(sobreOscuro ? Lienzo.sobreOscuroSuave : Lienzo.tintaSecundaria)
+                .font(Letra.pieFuerte.bold()).monospacedDigit()
+                .foregroundStyle(sobreOscuro ? Lienzo.sobreOscuro : Lienzo.tinta)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(LecturaOcio.textoNota(valor))
@@ -106,13 +107,35 @@ enum BuscarPortadas {
         }
     }
 
-    // portadaAuto (js/ocio.js): la candidata con el mismo título o, si no, la primera si lo contiene.
-    static func mejor(_ r: [CandidataPortada], titulo: String) -> CandidataPortada? {
-        let n = { (t: String) in LecturaOcio.normalizar(t).replacingOccurrences(of: #"[^a-z0-9]+"#, with: " ", options: .regularExpression).trimmingCharacters(in: .whitespaces) }
-        let t = n(titulo)
-        if let igual = r.first(where: { n($0.titulo) == t }) { return igual }
-        if let p = r.first, t.count > 3, n(p.titulo).contains(t) { return p }
-        return nil
+    // portadaAuto (js/ocio.js), con más acierto (3.2): cada candidata puntúa por el título (igual, con subtítulo o que
+    // lo contiene; si no, se descarta), por el autor (un apellido en común suma, otro autor resta) y por el año (el mismo
+    // o uno de diferencia suma, lejos resta). Desempata el orden de la fuente. Sin autor ni año, lo de siempre: el mismo
+    // título o, si no, la primera que lo contiene.
+    static func mejor(_ r: [CandidataPortada], titulo: String, autor: String = "", anio: String = "") -> CandidataPortada? {
+        let t = clave(titulo)
+        guard !t.isEmpty else { return nil }
+        let palabrasAutor = clave(autor).split(separator: " ").filter { $0.count > 2 }
+        let y = Int(anio.prefix(4))
+        var elegida: (candidata: CandidataPortada, puntos: Int)?
+        for (i, k) in r.enumerated() {
+            let kt = clave(k.titulo)
+            var p: Int
+            if kt == t { p = 100 }
+            else if kt.hasPrefix(t + " ") || t.hasPrefix(kt + " ") { p = 70 }
+            else if t.count > 3, kt.contains(t) { p = 40 }
+            else { continue }
+            let ka = clave(k.autor)
+            if !palabrasAutor.isEmpty, !ka.isEmpty { p += palabrasAutor.contains { ka.contains($0) } ? 30 : -25 }
+            if let y, let ky = Int(k.anio.prefix(4)) { p += ky == y ? 25 : abs(ky - y) <= 1 ? 10 : -15 }
+            p -= i
+            if elegida.map({ p > $0.puntos }) ?? true { elegida = (k, p) }
+        }
+        return elegida?.candidata
+    }
+
+    static func clave(_ texto: String) -> String {
+        LecturaOcio.normalizar(texto).lowercased().replacingOccurrences(of: #"[^a-z0-9]+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespaces)
     }
 }
 
@@ -124,8 +147,12 @@ struct PortadaOcio: View {
     let titulo: String
     var ancho: CGFloat? = 48
     var radio: CGFloat = 8
+    // 3.2: las de 5 estrellas llevan `ChapaCincoOcio` arriba a la derecha (solo en portadas de 40 pt o más).
+    var cinco = false
 
     static let proporcion: CGFloat = 1.45
+    // El lado al que se decodifican las de la rejilla (ancho nil), para precargarlas con la misma clave.
+    static let ladoRejilla: CGFloat = 124 * proporcion
 
     @State private var cargada: (url: URL, imagen: UIImage)? = nil
     @State private var visible = false
@@ -133,7 +160,7 @@ struct PortadaOcio: View {
 
     private var direccion: URL? { url.isEmpty ? nil : URL(string: url) }
     // Lado al que se decodifica: el alto de la portada (en la rejilla, unos 180 pt bastan para tres columnas).
-    private var lado: CGFloat { (ancho ?? 124) * Self.proporcion }
+    private var lado: CGFloat { ancho.map { $0 * Self.proporcion } ?? Self.ladoRejilla }
 
     var body: some View {
         Color.clear
@@ -144,14 +171,20 @@ struct PortadaOcio: View {
             .overlay { imagen }
             .clipShape(RoundedRectangle(cornerRadius: radio, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: radio, style: .continuous).strokeBorder(Lienzo.filo))
+            .overlay(alignment: .topTrailing) {
+                if cinco, (ancho ?? 100) >= 40 {
+                    ChapaCincoOcio(lado: (ancho ?? 100) >= 120 ? 24 : 18).padding((ancho ?? 100) >= 120 ? 8 : 5)
+                }
+            }
             .accessibilityHidden(true)
             .task(id: url) {
                 guard let u = direccion, cargada?.url != u else { return }
                 if let ya = Imagenes.guardada(Imagenes.clave(u, lado: lado)) { cargada = (u, ya); visible = true; return }
                 visible = false
-                guard let img = await Imagenes.cargar(u, lado: lado) else { return }
-                cargada = (u, img)
-                withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento)) { visible = true }
+                guard let r = await Imagenes.cargarDetalle(u, lado: lado) else { return }
+                cargada = (u, r.imagen)
+                // 3.2: la que ya estaba en el iPhone sale al momento; solo la que llega de la red entra fundida.
+                if r.deRed { withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento)) { visible = true } } else { visible = true }
             }
     }
 
@@ -165,7 +198,7 @@ struct PortadaOcio: View {
 
     private var inicial: some View {
         Lienzo.sutil.overlay(
-            Text(String(titulo.prefix(1)).lowercased())
+            Text(String(titulo.prefix(1)).uppercased())
                 .font((ancho ?? 100) < 60 ? Letra.seccion : Letra.titulo)
                 .foregroundStyle(Lienzo.tintaTerciaria))
     }

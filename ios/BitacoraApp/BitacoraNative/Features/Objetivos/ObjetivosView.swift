@@ -48,11 +48,13 @@ enum LecturaObjetivos {
         }
     }
 
-    // goalNumber: hasta dos decimales, con la coma.
-    static func cifra(_ d: Decimal) -> String {
+    // goalNumber: hasta dos decimales, con la coma. Un solo formateador (crearlo en cada tarjeta pesaba al pintar).
+    private static let formatoCifra: NumberFormatter = {
         let f = NumberFormatter(); f.locale = Locale(identifier: "es_ES"); f.maximumFractionDigits = 2; f.numberStyle = .decimal
-        return f.string(from: NSDecimalNumber(decimal: d)) ?? "\(d)"
-    }
+        return f
+    }()
+
+    static func cifra(_ d: Decimal) -> String { formatoCifra.string(from: NSDecimalNumber(decimal: d)) ?? "\(d)" }
 }
 
 private struct ObjetivoAbierto: Identifiable { let id: String }
@@ -65,7 +67,7 @@ enum FiltroObjetivos: String { case enCurso, cumplidos, tablero }
 struct ObjetivosView: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
-    @State private var objetivos: [Objetivo]?
+    @State private var leida: PantallaObjetivos?
     @State private var abierto: ObjetivoAbierto?
     @State private var edicion: EdicionObjetivo?
     @AppStorage("bitacora.objetivos.filtro") private var filtro: FiltroObjetivos = .enCurso
@@ -77,8 +79,8 @@ struct ObjetivosView: View {
                     BotonRedondo(sistema: "plus", tono: .oscuro, etiqueta: "nuevo objetivo") { nuevo() }
                 }
                 .padding(.bottom, Medida.xxs)
-                if let objetivos {
-                    if objetivos.isEmpty {
+                if let pantalla {
+                    if pantalla.todos.isEmpty {
                         TarjetaInvitacion(frase: "aún no persigues nada aquí.", destacado: "empieza por uno pequeño.", boton: "nuevo objetivo.") { nuevo() }
                             .entradaEscalonada(0)
                     } else {
@@ -88,10 +90,10 @@ struct ObjetivosView: View {
                                         elegido: $filtro, sobreBlanco: false)
                         Group {
                             switch filtro {
-                            case .enCurso: enCurso(objetivos)
-                            case .cumplidos: cumplidos(objetivos)
+                            case .enCurso: enCurso(pantalla)
+                            case .cumplidos: cumplidos(pantalla)
                             case .tablero:
-                                TableroObjetivos(objetivos: objetivos, abrir: { abrir($0) },
+                                TableroObjetivos(objetivos: pantalla.todos, abrir: { abrir($0) },
                                                  mover: { g, e in Task { await c.guardar(MetodoOp.opEstado(objetivo: g.id, estado: e)) } })
                             }
                         }
@@ -105,42 +107,33 @@ struct ObjetivosView: View {
             .padding(.horizontal, Medida.margen)
             .padding(.top, Medida.xs)
             .padding(.bottom, Medida.xl)
-            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: objetivos)
+            .animation(Muelle.o(Muelle.suave, reducido: sinMovimiento), value: pantalla)
         }
         .scrollIndicators(.hidden)
         .fondoLienzo()
         .refreshable { await c.sincronizar() }
-        .task(id: c.revision) { await cargar() }
+        .tareaVisible(id: c.revision) { await cargar() }
         .hoja(item: $abierto) { a in FichaObjetivo(id: a.id).environment(c) }
         .hoja(item: $edicion) { e in EditorObjetivo(objetivo: e.objetivo).environment(c) }
     }
 
+    // Lo leído y, mientras llega, lo último que se leyó de esta cuenta: se pinta al momento, sin spinner.
+    private var pantalla: PantallaObjetivos? { leida ?? MemoriaObjetivos.valor(MemoriaObjetivos.objetivos, uid: c.sesion?.userId) }
+
     private var subtitulo: String? {
-        guard let objetivos else { return nil }
-        return objetivos.isEmpty ? "lo que persigues." : "\(objetivos.filter(\.cumplido).count) de \(objetivos.count) cumplidos."
+        guard let pantalla else { return nil }
+        return pantalla.todos.isEmpty ? "lo que persigues." : "\(pantalla.cumplidos.count) de \(pantalla.todos.count) cumplidos."
     }
 
     // MARK: - En curso
 
-    // El principal: el primero en progreso y, si no hay, el de plazo más corto.
-    private static func elegirPrincipal(_ vivos: [Objetivo]) -> Objetivo? {
-        let orden = LecturaObjetivos.plazos.map(\.0)
-        return vivos.first { $0.estado == "En progreso" }
-            ?? vivos.min { (orden.firstIndex(of: $0.plazo) ?? 9) < (orden.firstIndex(of: $1.plazo) ?? 9) }
-    }
-
-    @ViewBuilder private func enCurso(_ todos: [Objetivo]) -> some View {
-        let vivos = todos.filter { !$0.cumplido }
-        if let p = Self.elegirPrincipal(vivos) {
+    @ViewBuilder private func enCurso(_ pantalla: PantallaObjetivos) -> some View {
+        if let p = pantalla.principal {
             principal(p).entradaEscalonada(0)
-            let resto = vivos.filter { $0.id != p.id }
-            ForEach(LecturaObjetivos.plazos, id: \.0) { plazo in
-                let grupo = resto.filter { $0.plazo == plazo.0 }
-                if !grupo.isEmpty {
-                    EtiquetaSeccion(texto: plazo.1).padding(.top, Medida.s)
-                    ForEach(grupo) { g in
-                        tarjeta(g).entradaEscalonada((resto.firstIndex { $0.id == g.id } ?? 0) + 1)
-                    }
+            ForEach(pantalla.grupos, id: \.plazo) { grupo in
+                EtiquetaSeccion(texto: grupo.titulo).padding(.top, Medida.s)
+                ForEach(Array(grupo.objetivos.enumerated()), id: \.element.id) { n, g in
+                    tarjeta(g).entradaEscalonadaCorta(grupo.desde + n + 1)
                 }
             }
         } else {
@@ -155,7 +148,7 @@ struct ObjetivosView: View {
                 Button { abrir(g) } label: {
                     VStack(alignment: .leading, spacing: Medida.s) {
                         HStack(alignment: .firstTextBaseline) {
-                            Text("EL PRINCIPAL").font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.sobreOscuroSuave)
+                            Text("el principal.").font(Letra.pieFuerte).foregroundStyle(Lienzo.sobreOscuroSuave)
                             Spacer()
                             Text(plazo(g)).font(Letra.pie).foregroundStyle(Lienzo.sobreOscuroSuave)
                         }
@@ -191,6 +184,9 @@ struct ObjetivosView: View {
                         Spacer(minLength: 0)
                     }
                     .padding(.leading, -Medida.s)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityValue("pendiente")
+                    .accessibilityAction { marcarHito(g, h) }
                 }
             }
         }
@@ -238,12 +234,15 @@ struct ObjetivosView: View {
             Spacer(minLength: 0)
         }
         .padding(.leading, -Medida.s)
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(h.hecho ? "hecho" : "pendiente")
+        .accessibilityAction { marcarHito(g, h) }
     }
 
     // MARK: - Cumplidos
 
-    @ViewBuilder private func cumplidos(_ todos: [Objetivo]) -> some View {
-        let hechos = todos.filter(\.cumplido)
+    @ViewBuilder private func cumplidos(_ pantalla: PantallaObjetivos) -> some View {
+        let hechos = pantalla.cumplidos
         if hechos.isEmpty {
             EstadoVacio(texto: "aún ninguno cumplido. el primero llegará.").tarjeta(relleno: Medida.xs).entradaEscalonada(0)
         }
@@ -263,7 +262,7 @@ struct ObjetivosView: View {
             }
             .buttonStyle(.pulsable(0.97))
             .contextMenu { menu(g) }
-            .entradaEscalonada(n)
+            .entradaEscalonadaCorta(n)
         }
     }
 
@@ -299,9 +298,17 @@ struct ObjetivosView: View {
     }
 
     private func cargar() async {
+        let uid = c.sesion?.userId ?? ""
+        let r = c.revision
+        if let m = MemoriaObjetivos.valor(MemoriaObjetivos.objetivos, uid: uid, revision: r) {
+            if leida != m { leida = m }
+            return
+        }
         let doc = await c.documentoVisible()
-        guard let nuevo = await ultimaGana({ doc.map { LecturaObjetivos.objetivos($0) } }) else { return }
-        objetivos = nuevo
+        guard let nuevo = await ultimaGana({ doc.map { PantallaObjetivos(LecturaObjetivos.objetivos($0)) } }) else { return }
+        if let nuevo { MemoriaObjetivos.objetivos = MemoriaObjetivos.Hueco(uid: uid, revision: r, valor: nuevo) }
+        // Solo si cambió: cada revisión (de cualquier apartado) repintaba la pantalla entera.
+        if leida != nuevo || leida == nil { leida = nuevo }
     }
 }
 
@@ -311,7 +318,7 @@ private struct FichaObjetivo: View {
     @Environment(\.dismiss) private var cerrar
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     let id: String
-    @State private var objetivo: Objetivo?
+    @State private var leido: Objetivo?
     @State private var nuevoHito = ""
     @State private var actual = ""
     @State private var editando = false
@@ -344,15 +351,20 @@ private struct FichaObjetivo: View {
                 ToolbarItem(placement: .primaryAction) { Button("editar.") { editando = true }.disabled(objetivo == nil) }
             }
             .hoja(isPresented: $editando) { EditorObjetivo(objetivo: objetivo).environment(c) }
-            .task(id: c.revision) { await cargar() }
+            .tareaVisible(id: c.revision) { await cargar() }
         }
+    }
+
+    // Lo leído o, mientras llega, el de la lista ya leída: la ficha se abre con todo pintado.
+    private var objetivo: Objetivo? {
+        leido ?? MemoriaObjetivos.valor(MemoriaObjetivos.objetivos, uid: c.sesion?.userId)?.todos.first { $0.id == id }
     }
 
     private func cabecera(_ g: Objetivo) -> some View {
         TarjetaOscura {
             VStack(alignment: .leading, spacing: Medida.s) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(g.estado.uppercased()).font(Letra.etiqueta).tracking(Letra.espaciado)
+                    Text(g.estado.lowercased() + ".").font(Letra.pieFuerte)
                         .foregroundStyle(g.cumplido ? Lienzo.naranja : Lienzo.sobreOscuroSuave)
                     Spacer()
                     Text((LecturaObjetivos.plazos.first { $0.0 == g.plazo }?.1 ?? g.plazo) + ".").font(Letra.pie)
@@ -451,10 +463,19 @@ private struct FichaObjetivo: View {
     private func enviar(_ cambio: CambioObjetivo) { Task { await c.guardar(.cambiarObjetivo(objetivoId: id, cambio: cambio)) } }
 
     private func cargar() async {
-        let doc = await c.documentoVisible()
+        let uid = c.sesion?.userId ?? ""
+        let r = c.revision
         let gid = id
-        guard let nuevo = await ultimaGana({ doc.flatMap { LecturaObjetivos.objetivos($0).first { $0.id == gid } } }) else { return }
-        objetivo = nuevo
+        if let m = MemoriaObjetivos.valor(MemoriaObjetivos.objetivos, uid: uid, revision: r) {
+            let g = m.todos.first { $0.id == gid }
+            if leido != g || leido == nil { leido = g }
+            return
+        }
+        let doc = await c.documentoVisible()
+        guard let nuevo = await ultimaGana({ doc.map { PantallaObjetivos(LecturaObjetivos.objetivos($0)) } }) else { return }
+        if let nuevo { MemoriaObjetivos.objetivos = MemoriaObjetivos.Hueco(uid: uid, revision: r, valor: nuevo) }
+        let g = nuevo?.todos.first { $0.id == gid }
+        if leido != g || leido == nil { leido = g }
     }
 }
 

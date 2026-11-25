@@ -99,7 +99,7 @@ struct MasView: View {
         .navigationTitle("menú")
         .navigationDestination(for: String.self) { destino($0).huecoDeBarra().toolbar(.visible, for: .navigationBar).navigationBarTitleDisplayMode(.inline) }
         .onChange(of: c.rutaMas) { if !c.rutaMas.isEmpty { focoFiltro = false } }
-        .task(id: c.revision) {
+        .tareaVisible(id: c.revision) {
             let t0 = Medidas.ahora
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { MenuMas.desde($0) } }) else { return }

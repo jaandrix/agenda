@@ -15,7 +15,9 @@ struct SemanaFlotante: View {
     var accesorio: AnyView?
 
     @State private var visible: LocalDay?
-    @Namespace private var espacio
+    // 3.2 (lag de la placa): la placa sigue a `marcado` al momento y `elegir` llega cuando ya ha llegado. Si el día
+    // nuevo se pintaba durante el viaje (lista, puntos, carga), el muelle de la placa daba tirones.
+    @State private var marcado: LocalDay?
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
     private static let abreviaturas = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
@@ -46,16 +48,16 @@ struct SemanaFlotante: View {
         .padding(.top, Medida.s)
         .padding(.bottom, Medida.xs)
         .padding(.horizontal, 6)
-        .background(Lienzo.tarjeta, in: RoundedRectangle(cornerRadius: Medida.radioTarjeta + 2, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Medida.radioTarjeta + 2, style: .continuous).strokeBorder(Lienzo.filo))
-        .sombra(.flotante)
+        .fondoConSombra(Lienzo.tarjeta, en: RoundedRectangle(cornerRadius: Medida.radioTarjeta + 2, style: .continuous),
+                        sombra: .flotante, filo: Lienzo.filo)
         .onAppear { visible = elegido.inicioSemanaLunes }
         .onChange(of: elegido) { _, nuevo in
+            if marcado != nil && marcado != nuevo { marcado = nil }
             let l = nuevo.inicioSemanaLunes
             if l != visible { withAnimation(Muelle.o(Muelle.rapido, reducido: sinMovimiento)) { visible = l } }
         }
         .sensoryFeedback(.selection, trigger: visible)
-        .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: elegido)
+        .animation(Muelle.o(Muelle.rapido, reducido: sinMovimiento), value: marcado ?? elegido)
     }
 
     private var cabecera: some View {
@@ -69,8 +71,12 @@ struct SemanaFlotante: View {
                 Button {
                     elegir(hoy)
                     withAnimation(Muelle.o(Muelle.rapido, reducido: sinMovimiento)) { visible = lunesDeHoy }
-                } label: { Chip(texto: "hoy", tono: .naranja) }
+                } label: {
+                    // 3.2: 44 de toque sin cambiar el alto de la cabecera (28).
+                    Chip(texto: "hoy", tono: .naranja).padding(10).contentShape(Rectangle())
+                }
                 .buttonStyle(.pulsable(0.9))
+                .padding(-10)
                 .transition(.scale(scale: 0.7).combined(with: .opacity))
                 .accessibilityLabel("volver a hoy")
             }
@@ -81,22 +87,45 @@ struct SemanaFlotante: View {
         .animation(Muelle.rapido, value: elegido != hoy || semanaVisible != lunesDeHoy)
     }
 
+    // Una sola placa por semana movida con `offset` (no matchedGeometryEffect): animarla no recoloca nada más.
     private func semana(_ l: LocalDay) -> some View {
-        HStack(spacing: 2) {
+        let sel = marcado ?? elegido
+        let posicion: Int? = sel.inicioSemanaLunes == l ? (0..<7).first(where: { l.sumando(dias: $0) == sel }) : nil
+        return HStack(spacing: 2) {
             ForEach(0..<7, id: \.self) { i in
                 dia(l.sumando(dias: i), indice: i)
+            }
+        }
+        .background(alignment: .leading) {
+            if let posicion {
+                GeometryReader { g in
+                    let ancho = (g.size.width - 2 * 6) / 7
+                    RoundedRectangle(cornerRadius: Medida.radioFila, style: .continuous)
+                        .fill(Lienzo.placaElegido)
+                        .frame(width: ancho, height: g.size.height)
+                        .offset(x: CGFloat(posicion) * (ancho + 2))
+                }
+                .transition(.opacity)
             }
         }
     }
 
     private func dia(_ d: LocalDay, indice: Int) -> some View {
-        let on = d == elegido
+        let on = d == (marcado ?? elegido)
         let esHoy = d == hoy
         let colores = Array(puntos(d).prefix(3))
         return Button {
-            guard d != elegido else { return }
+            guard d != (marcado ?? elegido) else { return }
             Haptica.ligera()
-            elegir(d)
+            marcado = d
+            Task {
+                try? await Task.sleep(nanoseconds: 260_000_000)
+                guard marcado == d else { return }
+                var sinAnimar = Transaction()
+                sinAnimar.disablesAnimations = true
+                withTransaction(sinAnimar) { elegir(d) }
+                marcado = nil
+            }
         } label: {
             VStack(spacing: 5) {
                 Text(Self.abreviaturas[indice])
@@ -113,13 +142,6 @@ struct SemanaFlotante: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
-            .background {
-                if on {
-                    RoundedRectangle(cornerRadius: Medida.radioFila, style: .continuous)
-                        .fill(Lienzo.placaElegido)
-                        .matchedGeometryEffect(id: "elegido", in: espacio)
-                }
-            }
             .contentShape(Rectangle())
         }
         .buttonStyle(Pulsable(escala: 0.9, haptica: false))

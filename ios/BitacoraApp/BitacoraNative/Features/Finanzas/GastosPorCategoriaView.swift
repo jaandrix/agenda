@@ -58,7 +58,7 @@ struct GastosPorCategoriaView: View {
                 }
             }
         }
-        .task(id: "\(c.revision)|\(mes)") { await cargar() }
+        .tareaVisible(id: "\(c.revision)|\(mes)") { await cargar() }
     }
 
     private func flecha(_ icono: String, _ destino: String, _ etiqueta: String) -> some View {

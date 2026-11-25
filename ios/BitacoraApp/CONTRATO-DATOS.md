@@ -75,6 +75,7 @@ Tipo y valor por defecto según `loadData`. «id» = sus listas se fusionan elem
 | `hansei` | lista, `[]` | `id` | | metodo.js | | |
 | `apartadosConfig` | objeto o `null` | | | ajustes | | `perfil`, `opcionales`, `panorama` |
 | `perfilLaboral` | objeto o `null` | | | cv.js | | |
+| `perfilPersonal` | objeto o `null` | | | nativa (mi perfil.): `cumple` AAAA-MM-DD, `sinAnio` (año 2000) | | |
 | `profesorado` | objeto o `null` | `clases`, `sesiones` con `id` | civiles | profesorado*.js, conector | | |
 | `agendaLaboral` | objeto o `null` | `citas[].id` (`lab_`) | civiles | agenda-laboral.js | | |
 | `listaCompra` | objeto o `null` | listas, `recetas`, `plan["AAAA-MM-DD"][]` con `id` | civiles | compra.js, conector | | Los productos no llevan sección: sale de `aprendido[compraClave]` y COMPRA_SECCIONES (`SeccionCompra`, 0.21). Marcar solo cambia `hecho` (op `marcarCompra`); editar escribe la sección en `aprendido` (op `editarCompra`). |

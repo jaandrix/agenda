@@ -227,19 +227,14 @@
         return { gasto: g1, antes: antes, dif: g1 - antes, dia: dia, mesPasado: MESES[pasado.getMonth()], previsto: dia >= 5 ? Math.round(g1 / dia * diasMes) : null };
     }
 
+    // 3.2: suscripcionesPrevistas (como mobileFinCargos): los de este mes que el banco aún no ha cobrado, «por cobrar».
     function cargos(max) {
-        var ahora = new Date(), dia = ahora.getDate();
-        var l = entries.filter(function (e) { return (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0; }).map(function (e) {
-            var diaCobro = Number(e.renewalDay) || 1;
-            var fecha = new Date(ahora.getFullYear(), ahora.getMonth() + (diaCobro < dia ? 1 : 0), 1);
-            fecha.setDate(Math.min(diaCobro, new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate()));
-            return { e: e, fecha: fecha, faltan: Math.round((fecha - new Date(ahora.getFullYear(), ahora.getMonth(), dia)) / 864e5) };
-        }).filter(function (x) { return x.faltan <= 14; }).sort(function (a, b) { return a.faltan - b.faltan; });
+        var l = suscripcionesPrevistas(14);
         return {
             total: l.reduce(function (t, x) { return t + Number(x.e.amount); }, 0),
             lista: l.slice(0, max).map(function (x) {
                 return { id: String(x.e.id), titulo: String(x.e.title || ''), importe: Number(x.e.amount),
-                    cuando: x.faltan === 0 ? 'hoy' : x.faltan === 1 ? 'mañana' : x.fecha.getDate() + ' ' + MESES[x.fecha.getMonth()].slice(0, 3) };
+                    cuando: x.faltan < 0 ? 'por cobrar' : x.faltan === 0 ? 'hoy' : x.faltan === 1 ? 'mañana' : x.fecha.getDate() + ' ' + MESES[x.fecha.getMonth()].slice(0, 3) };
             })
         };
     }
@@ -262,6 +257,18 @@
         };
     }
 
+    // 3.2: lo que ha cambiado el saldo de cada cuenta en los últimos 60 días (con lo mismo que cuenta en el saldo).
+    function tendencias() {
+        var desde = isoLocal(new Date(Date.now() - 60 * 864e5)), r = {};
+        financePro.transactions.forEach(function (t) {
+            if (!t.date || t.date <= desde || !financeProCuentaEnSaldo(t)) return;
+            var v = Number(t.amount) || 0;
+            if (t.type === 'transfer') { r[t.account] = (r[t.account] || 0) - v; if (t.transferTo) r[t.transferTo] = (r[t.transferTo] || 0) + v; }
+            else r[t.account] = (r[t.account] || 0) + (t.type === 'income' ? v : -v);
+        });
+        return r;
+    }
+
     function logo(e) { return typeof e.logo === 'string' && e.logo.indexOf('data:image/') === 0 ? e.logo : ''; }
 
     var pestanas = {
@@ -273,7 +280,15 @@
                 ingresos: t.income, gastos: t.expense,
                 ratio: t.income > 0 ? t.expense / t.income : (t.expense > 0 ? 1 : 0),
                 ritmo: ritmo(),
-                cuentas: financeProCuentas().map(function (k) { return { id: k, nombre: String(nombreCuenta(k)).toLowerCase(), saldo: financeProAccountBalance(k) }; }),
+                cuentas: (function () {
+                    var t = tendencias();
+                    return financeProCuentas().map(function (k) {
+                        var saldo = financeProAccountBalance(k), d = n2(t[k] || 0);
+                        // Estable si cambió menos de 10 € o del 2 % de lo que había hace 60 días.
+                        var dir = Math.abs(d) >= Math.max(10, Math.abs(saldo - d) * 0.02) ? (d > 0 ? 1 : -1) : 0;
+                        return { id: k, nombre: String(nombreCuenta(k)).toLowerCase(), saldo: saldo, cambio60: d, tendencia: dir };
+                    });
+                })(),
                 cargos: cargos(3),
                 ultimos: financeProOrdenados().slice(0, 5).map(fila),
                 salud: saludResumen()
@@ -319,7 +334,7 @@
             // Fin de mes: lo mismo que finResPanelPrevision.
             var mes = financeMonthKey(), saldo = saldoLiquido();
             var diasMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
-            var fijos = entries.filter(function (e) { return (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0 && Math.min(Number(e.renewalDay) || 1, diasMes) > dia && (e.type !== 'subscription' || suscripcionVigente(e, todayISO())); }).reduce(function (s, e) { return s + Number(e.amount); }, 0);
+            var fijos = suscripcionesPorCobrarMes();
             var variable = 0;
             try { var r = financeRitmoDatos(); if (r.suficiente) variable = Math.max(0, r.proyeccion - r.llevas); } catch (e) {}
             var porEntrar = finResSueldoPorEntrar(mes);

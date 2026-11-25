@@ -49,7 +49,7 @@ struct NotasView: View {
         .fondoLienzo()
         .toolbarBackground(.hidden, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
-        .task(id: c.revision) {
+        .tareaVisible(id: c.revision) {
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { LecturaNotas.fichas($0) } }) else { return }
             recibir(nuevo)

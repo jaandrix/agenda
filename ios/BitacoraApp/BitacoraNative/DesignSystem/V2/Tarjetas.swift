@@ -24,8 +24,11 @@ struct BuscadorCapsula: View {
                 Button { withAnimation(Muelle.rapido) { texto = "" } } label: {
                     Image(systemName: "xmark.circle.fill").font(.system(size: 16)).foregroundStyle(Lienzo.tintaTerciaria)
                         .frame(width: 32, height: 32)
+                        // 3.2: 44 de toque sin ensanchar la cápsula.
+                        .padding(6).contentShape(Rectangle())
                 }
                 .buttonStyle(.pulsable(0.85))
+                .padding(-6)
                 .accessibilityLabel("borrar búsqueda")
                 .transition(.scale(scale: 0.5).combined(with: .opacity))
             }
@@ -43,6 +46,7 @@ struct BuscadorCapsula: View {
             .foregroundStyle(Lienzo.tinta)
             .submitLabel(.search)
             .autocorrectionDisabled()
+            .accessibilityLabel(placeholder)
         if let enfocar { t.focused(enfocar) } else { t.focused($foco) }
     }
 }
@@ -111,10 +115,13 @@ struct SegmentoCapsula<Valor: Hashable>: View {
     @Binding var elegido: Valor
     var sobreBlanco = true
 
-    @Namespace private var espacio
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
+    // 3.2 (lag de la píldora, visto en el iPhone): una sola píldora que se mueve con `offset` en vez de
+    // matchedGeometryEffect. El offset no cambia el diseño de nada, así que animarlo no recoloca la página entera
+    // (Finanzas, Plan) en cada fotograma; con matchedGeometryEffect sí, y daba tirones aunque el contenido esperase.
     var body: some View {
+        let indice = opciones.firstIndex { $0.valor == elegido } ?? 0
         HStack(spacing: 2) {
             ForEach(opciones) { o in
                 let on = o.valor == elegido
@@ -129,13 +136,19 @@ struct SegmentoCapsula<Valor: Hashable>: View {
                     }
                     .foregroundStyle(on ? Lienzo.sobreOscuro : Lienzo.tintaSecundaria)
                     .frame(maxWidth: .infinity, minHeight: 36)
-                    .background {
-                        if on { Capsule().fill(Lienzo.oscuro).matchedGeometryEffect(id: "segmento", in: espacio) }
-                    }
                     .contentShape(Capsule())
                 }
                 .buttonStyle(Pulsable(escala: 0.94, haptica: false))
                 .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .background(alignment: .leading) {
+            GeometryReader { g in
+                let n = CGFloat(max(opciones.count, 1))
+                let ancho = (g.size.width - 2 * (n - 1)) / n
+                Capsule().fill(Lienzo.oscuro)
+                    .frame(width: ancho, height: g.size.height)
+                    .offset(x: CGFloat(indice) * (ancho + 2))
             }
         }
         .padding(4)
@@ -173,6 +186,7 @@ struct SeccionPlegable<Contenido: View>: View {
             }
             .buttonStyle(Pulsable(escala: 0.98, haptica: false))
             .accessibilityValue(abierta ? "abierta" : "plegada")
+            .accessibilityAddTraits(.isHeader)
             if abierta {
                 contenido()
                     .transition(.opacity.combined(with: .offset(y: -6)))
@@ -233,6 +247,8 @@ struct SeparadorFila: View {
 /// Casilla cuadrada de marcar (foto 4): cuadrado de esquinas suaves; marcada, negra con el check blanco y un sello.
 struct CasillaMarcar: View {
     let hecha: Bool
+    /// 3.2: qué se marca («comprar pan»), para VoiceOver. Sin ella dice solo «hecha» o «pendiente».
+    var etiqueta: String? = nil
     let marcar: () -> Void
     @State private var sello = false
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
@@ -263,7 +279,8 @@ struct CasillaMarcar: View {
         .animation(Muelle.toque, value: hecha)
         .animation(Muelle.toque, value: sello)
         .sensoryFeedback(.success, trigger: hecha) { antes, ahora in !antes && ahora }
-        .accessibilityLabel(hecha ? "hecha" : "pendiente")
+        .accessibilityLabel(etiqueta ?? (hecha ? "hecha" : "pendiente"))
+        .accessibilityValue(etiqueta == nil ? "" : (hecha ? "hecha" : "pendiente"))
         .accessibilityHint(hecha ? "desmarcar" : "marcar como hecha")
     }
 }
@@ -316,7 +333,6 @@ struct TarjetaOscura<Contenido: View>: View {
             .padding(Medida.rellenoTarjeta)
             .frame(maxWidth: .infinity, alignment: .leading)
             .foregroundStyle(Lienzo.sobreOscuro)
-            .background(Lienzo.oscuro, in: RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
-            .sombra(.oscura)
+            .fondoConSombra(Lienzo.oscuro, en: RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous), sombra: .oscura)
     }
 }

@@ -100,7 +100,7 @@ struct AjustesApartadosView: View {
             }
             PieGrupo(texto: "ocultar un apartado no borra nada: vuelve con sus datos al encenderlo. el menú cambia al momento.")
         }
-        .task(id: c.revision) {
+        .tareaVisible(id: c.revision) {
             guard let doc = await c.documentoVisible() else { return }
             guard let r = await ultimaGana({ () -> ([String: Bool], String) in
                 var v: [String: Bool] = [:]
@@ -138,7 +138,7 @@ struct AjustesAvisosView: View {
                 }
             }
         }
-        .task(id: c.revision) {
+        .tareaVisible(id: c.revision) {
             guard let doc = await c.documentoVisible() else { return }
             guard let nuevo = await ultimaGana({ OperacionesAjustes.leer(doc).avisosApagados }) else { return }
             apagados = nuevo

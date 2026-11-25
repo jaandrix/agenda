@@ -48,7 +48,7 @@ struct ListasSeccion: View {
             }
         }
         .animation(Muelle.suave, value: vista?.cajas.map(\.id))
-        .task(id: c.revision) {
+        .tareaVisible(id: c.revision) {
             let doc = await c.documentoVisible()
             guard let nueva = await ultimaGana({ doc.map { VistaListas.desde($0) } }) else { return }
             vista = nueva

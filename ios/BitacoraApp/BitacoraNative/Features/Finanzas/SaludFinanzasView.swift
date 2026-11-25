@@ -215,7 +215,7 @@ struct SaludFinanzasView: View {
             .alert("finanzas.", isPresented: Binding(get: { e.aviso != nil }, set: { if !$0 { e.aviso = nil } })) {
                 Button("aceptar.", role: .cancel) { e.aviso = nil }
             } message: { Text(e.aviso ?? "") }
-            .task(id: c.revision) { await e.recargar(c) }
+            .tareaVisible(id: c.revision) { await e.recargar(c) }
         }
     }
 
@@ -427,12 +427,20 @@ private struct FilaPropuestaSalud: View {
         VStack(alignment: .leading, spacing: 4) {
             FilaMovSalud(f: p.f, oculto: oculto)
             Text(p.motivo).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
-            HStack(spacing: Medida.m) {
+            // 3.2: cápsulas de 44 pt bien separadas (antes dos textos pequeños juntos, difíciles de acertar). Con estilo
+            // propio cada botón recibe su toque aunque compartan la fila del formulario.
+            HStack(spacing: Medida.s) {
                 Button("sí.") { Task { await e.accion(c, "propuestas", ["ids": [p.f.id]], callado: true) } }
+                    .buttonStyle(.capsula(.oscuro))
+                    .accessibilityLabel("sí, aceptar la propuesta.")
                 Button("no, está bien así.") { Task { await e.accion(c, "resolver", ["id": p.f.id, "como": "bien"], callado: true) } }
+                    .buttonStyle(.capsula(.claro, ancho: true))
+                    .accessibilityLabel("no, dejarlo como está.")
             }
-            .buttonStyle(.pulsable).font(Letra.pie).disabled(e.trabajando)
+            .padding(.top, Medida.xs)
+            .disabled(e.trabajando)
         }
+        .padding(.vertical, Medida.xxs)
     }
 }
 
@@ -477,8 +485,8 @@ struct FechasTraspasoSaludView: View {
                                 Text(oculto ? "•••" : FormatoFin.dinero(t.importe)).monospacedDigit()
                             }
                             Text("del \(t.dia) al \(t.nuevoDia)" + (t.meta.isEmpty ? "." : ", \(t.meta).")).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
-                            Button("sí.") { Task { await e.accion(c, "fechaTraspaso", ["ids": [t.id]], callado: true) } }
-                                .buttonStyle(.pulsable).font(Letra.pie).frame(minHeight: 44).disabled(e.trabajando)
+                            Button("sí, cambiar la fecha.") { Task { await e.accion(c, "fechaTraspaso", ["ids": [t.id]], callado: true) } }
+                                .buttonStyle(.capsula(.claro)).padding(.top, Medida.xxs).disabled(e.trabajando)
                         }
                     }
                     Button("aceptar \(lista.count == 1 ? "este" : "los \(lista.count)").") {
@@ -555,7 +563,7 @@ struct PorRevisarSaludView: View {
             if tipo == "income" { Button("devolución de una compra...") { devolucion = p } }
             Button("está bien así.") { Task { await e.accion(c, "resolver", ["id": p.f.id, "como": "bien"], callado: true) } }
         } label: {
-            Text("resolver.").font(Letra.pie).foregroundStyle(Lienzo.naranjaProfundo)
+            Text("resolver.").font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo).frame(minWidth: Medida.toque, minHeight: Medida.toque).contentShape(Rectangle())
         }
         .disabled(e.trabajando)
     }

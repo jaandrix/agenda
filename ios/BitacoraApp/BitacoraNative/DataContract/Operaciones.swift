@@ -408,8 +408,10 @@ enum AplicarOperaciones {
                 let sitio = buscar(pid, en: p)
                 let existente = sitio.flatMap { tareaEn($0, p) }
                 let fechaN = x["date"]?.texto ?? ""
+                // Todas las copias: una fusión vieja pudo dejar dos y la que sobraba se arrastraba cada día (25-11).
+                let copias = (p["days"]?.objeto ?? [:]).values.reduce(0) { n, l in n + (l.lista ?? []).filter { $0["id"]?.comoId == pid }.count }
                 if fechaN.isEmpty || x["fueraDelPlanificador"]?.booleano == true {
-                    if let sitio { _ = quitar(sitio, de: &p) }
+                    while let s = buscar(pid, en: p), quitar(s, de: &p) != nil {}
                 } else {
                     let horaN = [x["time"]?.texto, existente?["time"]?.texto].compactMap { $0 }.first { !$0.isEmpty } ?? "23:59"
                     let nombre = s["name"]?.texto ?? ""
@@ -418,9 +420,9 @@ enum AplicarOperaciones {
                                                         "notes": .string(nombre.isEmpty ? "" : "Asignatura: " + nombre),
                                                         "done": .bool(x["done"]?.booleano == true), "arrastrado": .bool(false), "linkedAssignmentId": .string(id)]
                     var igual = false
-                    if case let .dia(d, _)? = sitio, d == fechaN, existente == deseada { igual = true }
+                    if case let .dia(d, _)? = sitio, d == fechaN, existente == deseada, copias == 1 { igual = true }
                     if !igual {
-                        if let sitio { _ = quitar(sitio, de: &p) }
+                        while let s = buscar(pid, en: p), quitar(s, de: &p) != nil {}
                         _ = poner(deseada, en: fechaN, de: &p)
                     }
                 }

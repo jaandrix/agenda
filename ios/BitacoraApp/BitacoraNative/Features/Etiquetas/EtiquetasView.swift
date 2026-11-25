@@ -39,7 +39,7 @@ struct EtiquetasView: View {
         .scrollDismissesKeyboard(.interactively)
         .fondoLienzo()
         .refreshable { await c.sincronizar() }
-        .task(id: c.revision) { await cargar() }
+        .tareaVisible(id: c.revision) { await cargar() }
         .hoja(item: $renombrar) { r in
             EditorNombreEtiqueta(ruta: r.ruta) { nueva in elegida = nueva }.environment(c)
         }

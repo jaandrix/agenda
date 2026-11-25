@@ -100,8 +100,8 @@ struct CalendarioView: View {
         .fondoLienzo()
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
-        .task(id: "\(c.revision)-\(modelo.mes.iso)-\(hoy.iso)") { await modelo.cargar(c) }
-        .task(id: "\(c.revision)-\(modelo.elegido.iso)") { await cargarTareas(modelo.elegido) }
+        .tareaVisible(id: "\(c.revision)-\(modelo.mes.iso)-\(hoy.iso)") { await modelo.cargar(c) }
+        .tareaVisible(id: "\(c.revision)-\(modelo.elegido.iso)") { await cargarTareas(modelo.elegido) }
         .onChange(of: modelo.vista) { _, v in if let v { vistas[v.mes] = v } }
         .onChange(of: c.revision) { _, _ in vistas = vistas.filter { $0.key == modelo.mes } }
         .onChange(of: fase) { _, f in if f == .active { hoy = CalendarioBitacora.madrid.dia(de: Date()) } }

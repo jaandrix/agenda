@@ -188,7 +188,7 @@ struct ViajesView: View {
         .fondoLienzo()
         .refreshable { await c.sincronizar() }
         .onChange(of: fase) { _, f in if f == .active { hoy = CalendarioBitacora.madrid.dia(de: Date()) } }
-        .task(id: "\(c.revision)-\(hoy.iso)") { await cargar() }
+        .tareaVisible(id: "\(c.revision)-\(hoy.iso)") { await cargar() }
         .hoja(item: $abierto) { a in FichaViaje(id: a.id).environment(c) }
         .hoja(item: $edicion) { e in
             if case .viaje(let v) = e { EditorViaje(viaje: v).environment(c) }
@@ -446,7 +446,7 @@ private struct FichaViaje: View {
             Button("eliminar.", role: .destructive) { if let l = listaABorrar { enviar(.quitarLista(id: l.id)) }; listaABorrar = nil }
             Button("cancelar.", role: .cancel) { listaABorrar = nil }
         }
-        .task(id: c.revision) { await cargar() }
+        .tareaVisible(id: c.revision) { await cargar() }
     }
 
     private func numero(_ n: Int) -> String? { n == 0 ? nil : "\(n)" }

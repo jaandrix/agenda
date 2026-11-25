@@ -99,6 +99,7 @@ actor SyncEngine {
         guard gen == generacion else { return }
         self.uid = uid
         visible = nil
+        enCalculo = nil
         aplicado = nil
         intentos = 0
         informe = InformeSync()
@@ -123,6 +124,7 @@ actor SyncEngine {
         await detenerCiclos()
         // 0.23 (auditoría): la cuenta que sale no deja su documento en memoria.
         visible = nil
+        enCalculo = nil
         aplicado = nil
         var ok = true
         if let borrar { ok = await almacen.borrarUsuario(borrar) }
@@ -187,10 +189,26 @@ actor SyncEngine {
     // entera (con treinta movimientos en cola, marcar algo en Despensa rehacía financePro treinta veces).
     private var aplicado: (uid: String, versionBase: Int, ids: [UUID], doc: DocumentoBitacora)?
 
+    // 3.2: cálculo en curso del documento visible. Tras cada cambio de `revision` todas las pantallas vivas (las cinco
+    // pestañas y lo apilado) piden el documento a la vez; el actor es reentrante y, mientras la primera esperaba al
+    // almacén, las demás encontraban la caché vacía y repetían el mismo cálculo (analizar la base, aplicar la cola).
+    // Ahora las que llegan durante el cálculo esperan al mismo.
+    private var enCalculo: (uid: String, version: Int, tarea: Task<DocumentoBitacora?, Never>)?
+
     func documentoVisible() async -> DocumentoBitacora? {
         guard let uid else { return nil }
         let v = await almacen.version
+        guard self.uid == uid else { return nil }
         if let c = visible, c.uid == uid, c.version == v { return c.doc }
+        if let e = enCalculo, e.uid == uid, e.version == v { return await e.tarea.value }
+        let tarea = Task { await self.calcularVisible(uid: uid, version: v) }
+        enCalculo = (uid, v, tarea)
+        let doc = await tarea.value
+        if let e = enCalculo, e.uid == uid, e.version == v { enCalculo = nil }
+        return doc
+    }
+
+    private func calcularVisible(uid: String, version v: Int) async -> DocumentoBitacora? {
         let senal = Registro.senales.beginInterval("documento visible")
         let vb = await almacen.versionBase
         let pendientes = (try? await almacen.estado(uid: uid))?.pendientes ?? []
@@ -205,10 +223,12 @@ actor SyncEngine {
                 Registro.senales.endInterval("documento visible", senal, "sin base")
                 return nil
             }
+            // 3.2: lo que no cambió respecto a lo último calculado ya estaba analizado (solo claves con los mismos bytes).
+            base.heredarAnalizados(de: visible?.uid == uid ? visible?.doc : aplicado?.uid == uid ? aplicado?.doc : nil)
             doc = AplicarOperaciones.sobre(base, pendientes.map(\.operacion)).0
             Registro.senales.endInterval("documento visible", senal, "completo \(pendientes.count)")
         }
-        if await almacen.version == v {
+        if await almacen.version == v, self.uid == uid {
             visible = (uid, v, doc)
             aplicado = (uid, vb, ids, doc)
         }
@@ -341,6 +361,8 @@ actor SyncEngine {
         }
         // A partir de aquí el servidor ya tiene el cambio: aunque la vista ya no sea vigente, se guarda la base y se
         // quita el lote de la cola para no dejarlo a medias. Lo que se encoló mientras tanto se queda.
+        // Lo último que vieron las pantallas, para no subir `revision` si tras confirmar el documento es idéntico.
+        let vistoAntes = visible?.uid == uid ? visible?.doc : nil
         try await almacen.guardarBase(lote.isEmpty ? fila.datos : base.serializado(), uid: uid)
         // La base nueva ya está analizada (y con lo heredado): documentoVisible parte de ella y aplica solo lo que se
         // encoló durante el ciclo, en vez de volver a leer y analizar base.json.
@@ -361,7 +383,10 @@ actor SyncEngine {
         informe.ultimaSincronizacion = ahora
         if lote.isEmpty { informe.actualizadoNube = fila.actualizado }
         informe.pendientes = quedan
-        informe.revision += 1
+        // 3.2: cada cambio subía `revision` dos veces (al encolar y al confirmarlo la nube) y todas las pantallas vivas se
+        // recalculaban otra vez para pintar lo mismo. Si no queda nada en cola y el documento confirmado tiene los mismos
+        // bytes que el que ya se veía, no hay nada nuevo que pintar.
+        if !(quedan == 0 && vistoAntes == base) { informe.revision += 1 }
         // El resumen de «estado.», fuera del actor (recorre todos los bytes); sale con el informe que publica el ciclo.
         let guardada = base
         let resumen = await Task.detached(priority: .utility) { ResumenDocumento(guardada) }.value

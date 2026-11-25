@@ -101,7 +101,7 @@ struct EstadoView: View {
         .fondoLienzo()
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await c.sincronizar() }
-        .task(id: c.revision) { conserva = await c.comprobarConservacion() }
+        .tareaVisible(id: c.revision) { conserva = await c.comprobarConservacion() }
     }
 
     private var enError: Bool {

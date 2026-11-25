@@ -73,7 +73,7 @@ struct DespensaView: View {
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
         .fondoLienzo()
-        .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
+        .refreshable { await c.sincronizar() }.tareaVisible(id: c.revision) { await cargar() }
         .alert(listaEditando == nil ? "nueva lista." : "editar lista.", isPresented: $mostrarNuevaLista) {
             TextField("nombre.", text: $nombreLista)
             Button(listaEditando == nil ? "crear." : "guardar.") { Task { await guardarLista() } }.disabled(nombreLista.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -97,7 +97,7 @@ struct DespensaView: View {
             case .receta(let receta): EditorRecetaDespensa(receta: receta) { nombre, raciones, ingredientes, pasos, notas in
                 Task { await guardarReceta(receta, nombre, raciones, ingredientes, pasos, notas) }
             }
-            case .terminar: TerminarCompraView { tienda, total, finanzas in Task { await terminar(tienda, total, finanzas) } }
+            case .terminar: TerminarCompraView { tienda, total in Task { await terminar(tienda, total) } }
             case .plato(let dia): EditorPlatoView(dia: dia, recetas: vista?.recetas ?? []) { momento, nombre, receta in
                 Task { await guardarPlato(dia, momento, nombre, receta) }
             }
@@ -537,7 +537,9 @@ struct DespensaView: View {
         return "\(d.day) " + ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"][d.month - 1]
     }
     private func guardarPlato(_ dia: String, _ momento: String, _ nombre: String, _ receta: RecetaDespensa?) async { await c.guardar(.guardarPlatoCompra(dia: dia, id: OperacionBitacora.nuevoIdProyecto("plato"), momento: momento, nombre: nombre, recetaId: receta?.id, ingredientes: receta?.ingredientes.map(\.texto) ?? [])) }
-    private func terminar(_ tienda: String, _ total: String, _ finanzas: Bool) async { guard let l = vista?.listaActual else { return }; let id = OperacionBitacora.nuevoIdProyecto("compra"), tx = finanzas ? OperacionBitacora.nuevoIdMovimiento() : nil; let hoy = CalendarioBitacora.madrid.dia(de: Date()).iso; await c.guardar(.terminarCompra(listaId: l.id, compraId: id, fecha: hoy, tienda: tienda, total: total, txId: tx)); if let tx, let d = Dinero.decimal(texto: total), d > 0 { await c.guardar(.crearMovimiento(id: tx, tipo: "expense", importe: NSDecimalNumber(decimal: d).stringValue, cuenta: "bancos", categoria: nil, fecha: hoy, hora: "", concepto: tienda.isEmpty ? "Compra" : "Compra (\(tienda))")) } }
+    // 3.2: la Despensa nunca toca Finanzas (pedido de Alejandro): terminar la compra guarda el historial y nada más; el
+    // gasto llega con el extracto del banco.
+    private func terminar(_ tienda: String, _ total: String) async { guard let l = vista?.listaActual else { return }; let id = OperacionBitacora.nuevoIdProyecto("compra"); let hoy = CalendarioBitacora.madrid.dia(de: Date()).iso; await c.guardar(.terminarCompra(listaId: l.id, compraId: id, fecha: hoy, tienda: tienda, total: total, txId: nil)) }
     private func planALista(_ v: VistaDespensa) async { guard let l = v.listaActual else { return }; let textos = semanaActual().flatMap { v.plan[$0.iso] ?? [] }.flatMap(\.ingredientes); let presentes = Set(l.items.filter { !$0.hecho }.map { RecetaALista.clave($0.texto) }); var vistos = Set<String>(); let faltan = textos.filter { let k = RecetaALista.clave($0); return !presentes.contains(k) && vistos.insert(k).inserted }; await c.guardar(.anadirCompra(listaId: l.id, textos: faltan, ids: faltan.map { _ in OperacionBitacora.nuevoIdProyecto("cmp") })) }
     private func semanaActual() -> [LocalDay] { CalendarioBitacora.madrid.dia(de: Date()).semanaLunesDomingo }
     private func etiquetaDia(_ d: LocalDay) -> String { let n = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]; return n[d.indiceSemanaLunes] + " \(d.day)." }
@@ -574,8 +576,8 @@ private struct EditorRecetaDespensa: View {
     }
 }
 private struct TerminarCompraView: View {
-    @Environment(\.dismiss) private var cerrar; let guardar: (String, String, Bool) -> Void; @State private var tienda = ""; @State private var total = ""; @State private var finanzas = true
-    var body: some View { NavigationStack { FormCasa { TextField("tienda.", text: $tienda); TextField("total real.", text: $total).keyboardType(.decimalPad); Toggle("registrar gasto en Finanzas.", isOn: $finanzas) }.formularioCasa().navigationTitle("terminar compra.").toolbar { ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }; ToolbarItem(placement: .confirmationAction) { Button("terminar.") { guardar(tienda, total, finanzas); cerrar() } } } } }
+    @Environment(\.dismiss) private var cerrar; let guardar: (String, String) -> Void; @State private var tienda = ""; @State private var total = ""
+    var body: some View { NavigationStack { FormCasa { TextField("tienda.", text: $tienda); TextField("total real.", text: $total).keyboardType(.decimalPad) }.formularioCasa().navigationTitle("terminar compra.").toolbar { ToolbarItem(placement: .cancellationAction) { Button("cancelar.") { cerrar() } }; ToolbarItem(placement: .confirmationAction) { Button("terminar.") { guardar(tienda, total); cerrar() } } } } }
 }
 private struct EditorPlatoView: View {
     @Environment(\.dismiss) private var cerrar; let dia: String; let recetas: [RecetaDespensa]; let guardar: (String, String, RecetaDespensa?) -> Void; @State private var momento = "comida"; @State private var nombre = ""; @State private var recetaId = ""

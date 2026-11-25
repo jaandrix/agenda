@@ -127,6 +127,10 @@
                 fields+=detailField('Lugar',escapeHtml(entry.place||entry.destination||'')); fields+=detailField('Notas',entry.notes?linkifyText(entry.notes):'');
                 if(entry.tags?.length)fields+=detailField('Etiquetas',entry.tags.map(t=>escapeHtml(t)).join(', '));
                 if(entry.author)fields+=detailField('Autor',escapeHtml(entry.author));
+                // 3.2: lo que el iPhone guarda en Ocio (escáner de ISBN y de cajas de juegos, editor nativo).
+                if(entry.platform)fields+=detailField('Plataforma',escapeHtml(entry.platform));
+                if(entry.format)fields+=detailField('Formato',escapeHtml(({fisico:'físico',digital:'digital',otro:'otro'})[entry.format]||entry.format));
+                if(entry.isbn)fields+=detailField('ISBN',escapeHtml(entry.isbn));
                 if(entry.company)fields+=detailField('Empresa',escapeHtml(entry.company));
                 if(entry.position)fields+=detailField('Cargo',escapeHtml(entry.position));
             }

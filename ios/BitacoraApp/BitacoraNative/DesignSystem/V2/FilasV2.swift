@@ -62,7 +62,8 @@ struct TarjetaFilas<Contenido: View>: View {
             .background(Lienzo.tarjeta)
             .clipShape(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous).strokeBorder(Lienzo.filo))
-            .sombra(.suave)
+            // 3.2: la sombra en la forma, detrás (sobre el contenido recortado obligaba a un pase aparte por tarjeta).
+            .fondoConSombra(Lienzo.tarjeta, en: RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous), sombra: .suave)
     }
 }
 

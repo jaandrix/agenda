@@ -20,7 +20,8 @@ struct SocialGrupoView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Medida.entreTarjetas) {
+            // Perezosa: un grupo con muchos días de gastos pintaba todas las tarjetas al entrar.
+            LazyVStack(alignment: .leading, spacing: Medida.entreTarjetas) {
                 if let d = estado.datos, let g = estado.grupo(id) {
                     contenido(g, d)
                 } else {
@@ -66,7 +67,7 @@ struct SocialGrupoView: View {
     }
 
     @ViewBuilder private func contenido(_ g: SocialGrupo, _ d: SocialDatos) -> some View {
-        let t = CuentasSocial.totales(g, yo: d.yo)
+        let t = estado.totales[g.id] ?? CuentasSocial.totales(g, yo: d.yo)
         let sub = [g.descripcion ?? "", SocialTexto.cuenta(g.miembros.count, "persona", "personas")].filter { !$0.isEmpty }.joined(separator: ", ")
         CabeceraPagina(titulo: g.nombre.lowercased() + ".", subtitulo: sub + ".") {
             MenuRedondo(etiqueta: "opciones del grupo") {
@@ -155,6 +156,7 @@ struct SocialGrupoView: View {
                         }
                         Spacer(minLength: Medida.xs)
                         Button("pagado.") { pago = p }.buttonStyle(.capsula(.claro))
+                            .accessibilityLabel("marcar como pagado: " + frase(g, d, p))
                     }
                     .frame(minHeight: 56)
                 }

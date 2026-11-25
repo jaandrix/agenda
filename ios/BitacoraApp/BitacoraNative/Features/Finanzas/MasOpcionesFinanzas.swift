@@ -115,7 +115,7 @@ struct MasOpcionesView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("cerrar.") { cerrar() } } }
             .disabled(trabajando)
-            .task(id: c.revision) { await recargar() }
+            .tareaVisible(id: c.revision) { await recargar() }
             .alert("finanzas.", isPresented: Binding(get: { aviso != nil }, set: { if !$0 { aviso = nil } })) {
                 Button("aceptar.", role: .cancel) { aviso = nil }
             } message: { Text(aviso ?? "") }
@@ -240,7 +240,7 @@ struct MasOpcionesView: View {
             }
             .disabled(marcados.isEmpty || destinoNombre.trimmingCharacters(in: .whitespaces).isEmpty)
         }
-        .task(id: "\(origen)|\(palabras)|\(c.revision)") {
+        .tareaVisible(id: "\(origen)|\(palabras)|\(c.revision)") {
             if origen.isEmpty { origen = m.categorias.first { $0.tipo == "expense" && $0.nombre.lowercased().contains("comida") }?.id ?? m.categorias.first { $0.tipo == "expense" }?.id ?? "" }
             guard !origen.isEmpty else { return }
             fuera = []

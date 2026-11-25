@@ -116,6 +116,8 @@ test('las cuatro pestañas, la búsqueda y el gestor salen sin errores', () => {
     }
     const cuentas = JSON.parse(run(`__fin.pestana('cuentas', '{"rango":"all"}')`));
     assert.equal(cuentas.cuentas.find(c => c.id === 'online').saldo, run(`financeProAccountBalance('online')`));
+    // 3.2: la flecha de cada cuenta (60 días): -1, 0 o 1, y el cambio con dos decimales.
+    cuentas.cuentas.forEach(c => { assert.ok([-1, 0, 1].includes(c.tendencia), c.id); assert.equal(typeof c.cambio60, 'number'); });
     assert.ok(JSON.parse(run(`__fin.buscar('{"search":"a"}')`)).total > 0);
     assert.equal(JSON.parse(run('__fin.gestor()')).activas.length, 1);
     const baja = JSON.parse(run(`__fin.suscripcion('sub_1', 'baja')`));

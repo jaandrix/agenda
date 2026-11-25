@@ -358,45 +358,35 @@
             return cambios;
         }
 
-        // Cada suscripción (y cada gasto fijo con cuenta PRO) se registra
-        // sola como movimiento el día de cargo de cada mes, una vez por mes
-        // (_proLastCharged). Las suscripciones sin cuenta elegida van a
-        // Bancos: casi siempre se cobran con tarjeta. Queda sin categoría,
-        // igual que un movimiento importado, para no adivinar mal. También
-        // se recupera el mes anterior si la app no se abrió entre el día de
-        // cargo y fin de mes — solo para gastos que ya se cargaban solos,
-        // para no rellenar de golpe meses que nunca se registraron.
+        // 3.2 (pedido de Alejandro): una suscripción o un gasto fijo ya no se apunta solo como gasto el día de cargo.
+        // Cuenta cuando llega su cargo del banco (pendiente o cobrado): el importador lo une (financeProBuscarRecurrente)
+        // y, si ya estaba antes de que se supiera, aquí se une al de este mes o el anterior. Hasta entonces es un cargo
+        // previsto (suscripcionesPrevistas, suscripcionesPorCobrarMes). Los provisionales que se creaban antes (ptx_rec_
+        // sin conciliar) de esos dos meses se quitan: contaban como gasto sin que el banco hubiera cobrado nada; los más
+        // viejos se quedan, son historia ya cerrada.
         function ensureRecurringProCharges() {
             if (!Array.isArray(financePro.programados)) financePro.programados = [];
             const today = new Date();
             const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
             let changed = financeProAplicarProgramados();
+            const desde = financeMonthKey(prev);
+            const antes = financePro.transactions.length;
+            financePro.transactions = financePro.transactions.filter(t => !(suscripcionEsProvisional(t) && t.recurringEntryId && financeProCicloMes(t) >= desde));
+            if (financePro.transactions.length !== antes) changed = true;
             entries.forEach(e => {
-                if (!(e.type === 'subscription' || e.type === 'fixed_expense')) return;
-                if (e.active === false) return;
-                const account = financeProCuentaRecurrente(e);
-                if (!account) return;
-                const meses = [];
-                if (e._proLastCharged && e._proLastCharged < financeMonthKey(prev)) meses.push(prev);
-                meses.push(today);
-                meses.forEach(ref => {
+                if (!(e.type === 'subscription' || e.type === 'fixed_expense') || e.active === false || !(Number(e.amount) > 0)) return;
+                [prev, today].forEach(ref => {
                     const monthKey = financeMonthKey(ref);
-                    if (e._proLastCharged && e._proLastCharged >= monthKey) return;
                     const daysInMonth = new Date(ref.getFullYear(), ref.getMonth() + 1, 0).getDate();
-                    const chargeDay = Math.min(Number(e.renewalDay) || 1, daysInMonth);
-                    if (ref === today && today.getDate() < chargeDay) return;
-                    // Antes apuntaba un gasto de días anteriores al dar de alta, y el mes de baja al reactivar.
-                    if (!suscripcionVigente(e, monthKey + '-' + String(chargeDay).padStart(2, '0'))) return;
-                    financeProRegistrarAuto({
-                        id: 'ptx_rec_' + e.id + '_' + monthKey,
-                        date: monthKey + '-' + String(chargeDay).padStart(2, '0'),
-                        account,
-                        type: 'expense',
-                        amount: Number(e.amount) || 0,
-                        note: e.title || (e.type === 'subscription' ? 'Suscripción' : 'Gasto fijo'),
-                        recurringEntryId: e.id
-                    });
-                    e._proLastCharged = monthKey;
+                    const fecha = monthKey + '-' + String(Math.min(Number(e.renewalDay) || 1, daysInMonth)).padStart(2, '0');
+                    if (!suscripcionVigente(e, fecha) || suscripcionCargoDelCiclo(e, monthKey)) return;
+                    const previsto = { date: fecha, account: financeProCuentaRecurrente(e), type: 'expense', amount: Number(e.amount) || 0, note: e.title || '', recurringEntryId: e.id };
+                    const real = financePro.transactions.find(t => !t.recurringEntryId && !t.programadoId && !t.conciliado && !financeProNeutro(t) && financeProMismoCargo(previsto, t));
+                    if (!real) return;
+                    if (!real.manual) real.conciliado = true;
+                    real.recurringEntryId = e.id;
+                    real.cicloMes = monthKey;
+                    if (!real.manual) financeProAprenderConcepto(e.id, real.bankNote ?? real.note);
                     changed = true;
                 });
             });
