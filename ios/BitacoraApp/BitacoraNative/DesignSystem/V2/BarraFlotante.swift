@@ -87,7 +87,11 @@ struct BarraFlotante: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { if largo == p.id { largo = nil } }
         })
 
-        if p.id == anclada {
+        if p.id == anclada, let mantener {
+            // 3.2: la pulsación larga no existe para VoiceOver; se ofrece como acción.
+            base.anchorPreference(key: AnclaMenuKey.self, value: .bounds) { $0 }
+                .accessibilityAction(named: "más usados") { mantener(p.id) }
+        } else if p.id == anclada {
             base.anchorPreference(key: AnclaMenuKey.self, value: .bounds) { $0 }
         } else {
             base

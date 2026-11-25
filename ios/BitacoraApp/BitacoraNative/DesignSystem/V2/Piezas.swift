@@ -255,19 +255,28 @@ extension CabeceraPagina where Derecha == EmptyView {
     }
 }
 
-/// Título de sección en etiqueta pequeña («GET INSPIRED» de la foto 3) con acción opcional a la derecha.
+/// Título de sección que precede a una tarjeta, con acción opcional a la derecha.
+/// 3.2 (petición de Alejandro): sin mayúsculas completas ni espaciado de versalitas. Solo la primera letra en mayúscula
+/// («este mes.» → «Este mes.»), en `Letra.rotulo` y tinta secundaria (la terciaria no llegaba a 3:1 sobre el lienzo).
 struct EtiquetaSeccion: View {
     let texto: String
     var accion: (titulo: String, hacer: () -> Void)?
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(texto.uppercased()).font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.tintaTerciaria)
+            Text(texto.conMayusculaInicial).font(Letra.rotulo).foregroundStyle(Lienzo.tintaSecundaria)
                 .accessibilityAddTraits(.isHeader)
             Spacer()
             if let accion {
-                Button(accion.titulo, action: accion.hacer).font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
-                    .buttonStyle(.pulsable(0.94))
+                Button(action: accion.hacer) {
+                    // Área táctil de 44 sin cambiar el alto de la cabecera: el relleno amplía el toque y el negativo lo
+                    // quita del diseño.
+                    Text(accion.titulo).font(Letra.pieFuerte).foregroundStyle(Lienzo.naranjaProfundo)
+                        .padding(.vertical, 14).padding(.horizontal, Medida.xs)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.pulsable(0.94))
+                .padding(.vertical, -14).padding(.horizontal, -Medida.xs)
             }
         }
         .padding(.horizontal, Medida.xxs)
