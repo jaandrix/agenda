@@ -436,7 +436,7 @@ struct OcioView: View {
         guard let nuevo = await ultimaGana({ doc.map { LecturaOcio.vista($0) } }) else { return }
         if vista == nil {
             // 3.2: las primeras portadas, del disco a la memoria antes de pintar (si no, salían en blanco un momento).
-            await Imagenes.precargar(Self.primerasPortadas(nuevo, tipo: pestana.rawValue), lado: PortadaOcio.ladoRejilla, soloDisco: true)
+            if let nuevo { await Imagenes.precargar(Self.primerasPortadas(nuevo, tipo: pestana.rawValue), lado: PortadaOcio.ladoRejilla, soloDisco: true) }
             vista = nuevo
             Task {
                 try? await Task.sleep(for: .seconds(1))
