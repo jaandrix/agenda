@@ -112,7 +112,7 @@ struct EnlacesView: View {
             .transition(.opacity.combined(with: .scale(scale: 0.98)))
         }
         if !favoritos.isEmpty {
-            EtiquetaSeccion(texto: "favoritos")
+            RotuloPanorama(texto: "favoritos")
                 .padding(.top, Medida.xs)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Medida.s) {
@@ -139,7 +139,7 @@ struct EnlacesView: View {
         }
         let sueltos = visibles.filter { e in e.categoriaId == nil || !cats.contains { $0.id == e.categoriaId } }
         if !sueltos.isEmpty {
-            EtiquetaSeccion(texto: "sin categoría")
+            RotuloPanorama(texto: "sin categoría")
                 .padding(.top, Medida.xs)
             grupoTarjeta(sueltos, cats).entradaEscalonada(cats.count + 1)
         }
@@ -154,10 +154,11 @@ struct EnlacesView: View {
     private func cabeceraCategoria(_ cat: CategoriaEnlace, cuantos: Int) -> some View {
         HStack(spacing: Medida.xs) {
             Puntito(color: colorHex(cat.color) ?? Lienzo.tintaTerciaria, tamano: 7)
-            Text(cat.nombre.uppercased()).font(Letra.etiqueta).tracking(Letra.espaciado).foregroundStyle(Lienzo.tintaTerciaria)
+            Text(RotuloPanorama.frase(cat.nombre)).font(Letra.pieFuerte).foregroundStyle(Lienzo.tintaSecundaria)
                 .lineLimit(1)
                 .accessibilityAddTraits(.isHeader)
-            Text("\(cuantos)").font(Letra.pie).foregroundStyle(Lienzo.tintaTerciaria).monospacedDigit()
+            Text("\(cuantos)").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).monospacedDigit()
+                .accessibilityLabel(cuantos == 1 ? "1 enlace" : "\(cuantos) enlaces")
             Spacer()
             Menu {
                 Button("editar categoría.") { modal = .categoria(cat) }
@@ -234,14 +235,14 @@ struct EnlacesView: View {
             Button { favorito(e) } label: {
                 Image(systemName: e.favorito ? "star.fill" : "star").font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(e.favorito ? Lienzo.naranja : Lienzo.tintaTerciaria)
-                    .frame(width: 36, height: Medida.toque).contentShape(Rectangle())
+                    .frame(width: Medida.toque, height: Medida.toque).contentShape(Rectangle())
                     .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(.pulsable(0.85))
             .accessibilityLabel(e.favorito ? "quitar de favoritos" : "marcar como favorito")
             Menu { menuEnlace(e) } label: {
                 Image(systemName: "ellipsis").font(.system(size: 14, weight: .bold)).foregroundStyle(Lienzo.tintaSecundaria)
-                    .frame(width: 36, height: Medida.toque).contentShape(Rectangle())
+                    .frame(width: Medida.toque, height: Medida.toque).contentShape(Rectangle())
             }
             .accessibilityLabel("opciones de " + e.titulo)
         }
@@ -390,13 +391,15 @@ private func colorHex(_ h: String) -> Color? {
     return Color.deUsuario(v)
 }
 
-// La inicial del enlace en un cuadrado de esquinas continuas, como IconoCuadrado. Sin favicon a propósito: pedirlo a un
-// servicio externo le contaría qué webs guardas, y la web tampoco lo usa.
+// El logo de la web (FaviconEnlaces) en un squircle blanco; mientras carga, o si la web no tiene, la inicial en un
+// cuadrado de esquinas continuas, como IconoCuadrado.
 struct InicialEnlace: View {
     let titulo: String
     let url: String
     var oscuro = false
     var tamano: CGFloat = Medida.icono
+    @State private var logo: (url: String, imagen: UIImage)?
+    @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
     private var inicial: String {
         let base = titulo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? LecturaEnlaces.dominio(url) : titulo
@@ -404,13 +407,26 @@ struct InicialEnlace: View {
     }
 
     var body: some View {
-        RoundedRectangle(cornerRadius: tamano * 0.3, style: .continuous)
-            .fill(oscuro ? Lienzo.oscuro : Lienzo.sutil)
-            .frame(width: tamano, height: tamano)
-            .overlay {
+        let imagen = logo.flatMap { $0.url == url ? $0.imagen : nil } ?? FaviconEnlaces.enMemoria(url)
+        let forma = RoundedRectangle(cornerRadius: tamano * 0.3, style: .continuous)
+        ZStack {
+            forma.fill(imagen != nil ? Lienzo.tarjeta : oscuro ? Lienzo.oscuro : Lienzo.sutil)
+            if let imagen {
+                Image(uiImage: imagen).resizable().interpolation(.high).scaledToFit()
+                    .clipShape(RoundedRectangle(cornerRadius: tamano * 0.18, style: .continuous))
+                    .padding(tamano * 0.14)
+                    .transition(.opacity)
+            } else {
                 Text(inicial).font(Letra.tituloTarjeta).foregroundStyle(oscuro ? Lienzo.sobreOscuro : Lienzo.tinta)
                     .minimumScaleFactor(0.6).lineLimit(1)
             }
-            .accessibilityHidden(true)
+        }
+        .frame(width: tamano, height: tamano)
+        .overlay { if imagen != nil { forma.strokeBorder(Lienzo.filo) } }
+        .task(id: url) {
+            guard imagen == nil, let img = await FaviconEnlaces.imagen(url: url, lado: tamano) else { return }
+            withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento)) { logo = (url, img) }
+        }
+        .accessibilityHidden(true)
     }
 }
