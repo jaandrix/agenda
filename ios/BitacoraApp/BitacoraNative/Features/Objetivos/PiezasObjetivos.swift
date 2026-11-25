@@ -69,6 +69,7 @@ struct CampoObjetivos: View {
                 .keyboardType(decimal ? .decimalPad : .default)
                 .submitLabel(.done)
                 .onSubmit(accion)
+                .accessibilityLabel(sugerencia)
                 .padding(.horizontal, Medida.s)
                 .padding(.vertical, Medida.xs + 2)
                 .frame(minHeight: Medida.alturaControl)
@@ -108,7 +109,8 @@ struct MandalaObjetivo: View {
                     .multilineTextAlignment(.center).lineLimit(4).minimumScaleFactor(0.8)
                     .padding(Medida.xs)
             }
-            .accessibilityElement(children: .combine)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("objetivo, " + titulo.lowercased())
     }
 
     private func casilla(_ i: Int) -> some View {
@@ -144,5 +146,80 @@ struct MandalaObjetivo: View {
         .accessibilityLabel(vacio ? "pilar \(i + 1), vacío" : "pilar \(i + 1), \(p.texto)")
         .accessibilityValue(vacio ? "" : "\(p.hechas) de 8 acciones")
         .accessibilityHint(vacio ? "añadir un pilar" : "editar el pilar")
+    }
+}
+
+// 3.2 (lag de Objetivos y Proyectos): cada entrada empezaba con el spinner, releía el documento entero en cada revisión
+// y repintaba aunque no hubiera cambiado nada. Aquí queda lo último leído, por cuenta y revisión: al volver a entrar se
+// pinta al momento y, si la revisión es la misma, no se relee. Solo vive en memoria.
+@MainActor
+enum MemoriaObjetivos {
+    struct Hueco<T> { let uid: String; let revision: Int; let valor: T; var dia = "" }
+    static var objetivos: Hueco<PantallaObjetivos>?
+    static var proyectos: Hueco<[ProyectoVista]>?
+
+    // Sin `revision`, vale cualquiera de la misma cuenta (para pintar mientras se lee lo nuevo).
+    static func valor<T>(_ h: Hueco<T>?, uid: String?, revision: Int? = nil) -> T? {
+        guard let h, let uid, h.uid == uid else { return nil }
+        if let revision, revision != h.revision { return nil }
+        return h.valor
+    }
+}
+
+extension MemoriaObjetivos {
+    // Los proyectos de esta revisión, de la memoria o leídos fuera del hilo principal. nil: llegó otra lectura después y no
+    // hay que publicar nada. `archivo` y `linea` son los del que llama: la lista y el gestor no deben quitarse el turno.
+    static func leerProyectos(_ c: AppCoordinator, archivo: String = #fileID, linea: Int = #line) async -> [ProyectoVista]?? {
+        let uid = c.sesion?.userId ?? ""
+        let r = c.revision
+        let hoy = CalendarioBitacora.madrid.diaLogico(Date()).iso
+        if let h = proyectos, h.uid == uid, h.revision == r, h.dia == hoy { return h.valor }
+        let doc = await c.documentoVisible()
+        guard let nuevo = await ultimaGana({ doc.map { LecturaProyectos.vista($0, hoy: hoy) } }, archivo: archivo, linea: linea) else { return nil }
+        if let nuevo { proyectos = Hueco(uid: uid, revision: r, valor: nuevo, dia: hoy) }
+        return nuevo
+    }
+}
+
+// Lo que pinta Objetivos, ya repartido fuera del hilo principal (antes se filtraba y se buscaba en cada pintado).
+struct PantallaObjetivos: Sendable, Equatable {
+    struct Grupo: Sendable, Equatable {
+        let plazo: String
+        let titulo: String
+        let desde: Int
+        let objetivos: [Objetivo]
+    }
+
+    let todos: [Objetivo]
+    let principal: Objetivo?
+    let grupos: [Grupo]
+    let cumplidos: [Objetivo]
+
+    init(_ todos: [Objetivo]) {
+        self.todos = todos
+        let vivos = todos.filter { !$0.cumplido }
+        let orden = LecturaObjetivos.plazos.map(\.0)
+        // El principal: el primero en progreso y, si no hay, el de plazo más corto.
+        let p = vivos.first { $0.estado == "En progreso" }
+            ?? vivos.min { (orden.firstIndex(of: $0.plazo) ?? 9) < (orden.firstIndex(of: $1.plazo) ?? 9) }
+        principal = p
+        let resto = vivos.filter { $0.id != p?.id }
+        var grupos: [Grupo] = []
+        var n = 0
+        for (clave, titulo) in LecturaObjetivos.plazos {
+            let lista = resto.filter { $0.plazo == clave }
+            guard !lista.isEmpty else { continue }
+            grupos.append(Grupo(plazo: clave, titulo: titulo, desde: n, objetivos: lista))
+            n += lista.count
+        }
+        self.grupos = grupos
+        cumplidos = todos.filter(\.cumplido)
+    }
+}
+
+extension View {
+    // La entrada escalonada solo en las primeras filas: en listas largas, cada fila con su animación pesaba al entrar.
+    @ViewBuilder func entradaEscalonadaCorta(_ indice: Int) -> some View {
+        if indice < 8 { entradaEscalonada(indice) } else { self }
     }
 }

@@ -3,21 +3,51 @@ import UIKit
 
 // Social nativo (vista web `friends`, js/social.js): pestañas gastos, eventos y amigos. Los datos se piden al servidor al
 // entrar y tras cada cambio (como pintarSocial tras cargar); nada se guarda en el documento salvo el evento que se añade.
+// 3.2 (lag de Social): cada vez que se entraba se creaba el estado de cero y se pedía todo al servidor con el spinner
+// delante, también al volver de un grupo. Aquí queda lo último traído por cuenta: se pinta al momento y solo se vuelve a
+// pedir si tiene más de un minuto (o al tirar hacia abajo, o tras un cambio). Solo vive en memoria.
+@MainActor
+enum MemoriaSocial {
+    static var ultimo: (uid: String, datos: SocialDatos, cuando: Date)?
+    static let vigencia: TimeInterval = 60
+}
+
 @MainActor
 @Observable
 final class SocialEstado {
-    var datos: SocialDatos?
+    private(set) var datos: SocialDatos?
+    // El resumen de cada grupo, calculado una vez por carga (se rehacía en cada pintado, dos veces por grupo).
+    private(set) var totales: [String: CuentasSocial.Totales] = [:]
     var aviso: String?
     @ObservationIgnored private(set) var repo: RepositorioSocial?
+    @ObservationIgnored private var uid: String?
+    @ObservationIgnored private var cargando = false
 
     func preparar(_ c: AppCoordinator) {
         if repo == nil { repo = RepositorioSocial(cliente: c.entorno.cliente, auth: c.entorno.auth) }
+        uid = c.sesion?.userId
+        if datos == nil, let m = MemoriaSocial.ultimo, m.uid == uid { poner(m.datos) }
     }
 
-    func recargar() async {
+    private func poner(_ d: SocialDatos) {
+        guard d != datos else { return }
+        datos = d
+        totales = Dictionary(d.grupos.map { ($0.id, CuentasSocial.totales($0, yo: d.yo)) }, uniquingKeysWith: { a, _ in a })
+    }
+
+    // `siHaceFalta`: al aparecer; no pide nada si lo de la memoria es reciente o ya hay una carga en marcha.
+    func recargar(siHaceFalta: Bool = false) async {
         guard let repo else { return }
+        if siHaceFalta {
+            if cargando { return }
+            if datos != nil, let m = MemoriaSocial.ultimo, m.uid == uid, Date().timeIntervalSince(m.cuando) < MemoriaSocial.vigencia { return }
+        }
+        cargando = true
+        defer { cargando = false }
         do {
-            datos = try await repo.cargar()
+            let d = try await repo.cargar()
+            poner(d)
+            MemoriaSocial.ultimo = (uid: d.yo, datos: d, cuando: Date())
             aviso = nil
         } catch ErrorRed.sinConexion {
             aviso = "sin conexión: social necesita internet."
@@ -57,11 +87,15 @@ enum SocialTexto {
         return f
     }()
 
-    static func fecha(_ iso: String) -> String {
-        guard let d = LocalDay(iso: iso) else { return iso }
+    private static let calendario: Calendar = {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = CalendarioBitacora.madrid.zona
-        guard let f = cal.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12)) else { return iso }
+        return cal
+    }()
+
+    static func fecha(_ iso: String) -> String {
+        guard let d = LocalDay(iso: iso) else { return iso }
+        guard let f = calendario.date(from: DateComponents(year: d.year, month: d.month, day: d.day, hour: 12)) else { return iso }
         return formato.string(from: f)
     }
 
@@ -130,9 +164,10 @@ struct SocialView: View {
         .scrollIndicators(.hidden)
         .fondoLienzo()
         .refreshable { await estado.recargar() }
+        .onAppear { estado.preparar(c) }
         .task {
             estado.preparar(c)
-            await estado.recargar()
+            await estado.recargar(siHaceFalta: true)
         }
         .hoja(isPresented: $nuevoGrupo) { SocialEditorGrupo(estado: estado, grupo: nil).environment(c) }
         .confirmarBorrado($amigoABorrar, titulo: { "¿eliminar a \($0.nombre)? dejaréis de estar conectados en bitácora." }, boton: "eliminar.") { a in
@@ -144,7 +179,7 @@ struct SocialView: View {
 
     // El saldo de todos los grupos juntos (renderFriendsView, social-resumen).
     private func resumen(_ d: SocialDatos) -> some View {
-        let total = d.grupos.reduce(0) { $0 + CuentasSocial.totales($1, yo: d.yo).saldo }
+        let total = d.grupos.reduce(0) { $0 + (estado.totales[$1.id] ?? CuentasSocial.totales($1, yo: d.yo)).saldo }
         let etiqueta = abs(total) < 1 ? "estás en paz con todos." : total > 0 ? "te deben en total." : "debes en total."
         let pie = [SocialTexto.cuenta(d.grupos.count, "grupo", "grupos"),
                    recibidas(d).isEmpty ? "" : SocialTexto.cuenta(recibidas(d).count, "solicitud", "solicitudes"),
@@ -178,7 +213,7 @@ struct SocialView: View {
     }
 
     private func filaGrupo(_ g: SocialGrupo, _ d: SocialDatos) -> some View {
-        let t = CuentasSocial.totales(g, yo: d.yo)
+        let t = estado.totales[g.id] ?? CuentasSocial.totales(g, yo: d.yo)
         let nombres = g.miembros.map { CuentasSocial.nombre(g, $0.id, yo: d.yo, amigos: d.amigos) }.joined(separator: ", ")
         return HStack(spacing: Medida.s) {
             IconoCuadrado(id: "social", tono: abs(t.saldo) >= 1 ? .oscuro : .claro)
@@ -227,8 +262,10 @@ struct SocialView: View {
             if let n = e.nota, !n.isEmpty { Text("«\(n)»").font(Letra.detalle).foregroundStyle(Lienzo.tinta).padding(.top, 2) }
             HStack(spacing: Medida.xs) {
                 Button("añadir.") { Task { await anadir(e) } }.buttonStyle(.capsula)
+                    .accessibilityLabel("añadir " + (ev["title"] ?? "evento") + " a tu calendario")
                 Button("descartar.") { Task { await estado.hacer("no se pudo descartar.") { try await $0.descartarEvento(e.id) } } }
                     .buttonStyle(.capsula(.claro))
+                    .accessibilityLabel("descartar " + (ev["title"] ?? "evento"))
             }
             .disabled(ocupado)
             .padding(.top, Medida.xs)
@@ -268,7 +305,9 @@ struct SocialView: View {
                         Text(s.nombre).font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).lineLimit(1)
                         Spacer(minLength: Medida.xs)
                         Button("aceptar.") { responder(s, true) }.buttonStyle(.capsula)
+                            .accessibilityLabel("aceptar a \(s.nombre)")
                         Button("rechazar.") { responder(s, false) }.buttonStyle(.capsula(.claro))
+                            .accessibilityLabel("rechazar a \(s.nombre)")
                     }
                     .frame(minHeight: 52)
                 }
@@ -280,6 +319,7 @@ struct SocialView: View {
                 .font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
             HStack(spacing: Medida.xs) {
                 TextField("código de amigo.", text: $codigoAmigo)
+                    .accessibilityLabel("código de amigo")
                     .font(Letra.mono).textInputAutocapitalization(.characters).autocorrectionDisabled()
                     .submitLabel(.send).onSubmit(enviarSolicitud)
                     .padding(.horizontal, Medida.s).frame(height: Medida.alturaControl)
@@ -304,6 +344,7 @@ struct SocialView: View {
                     Chip(texto: "pendiente.")
                 }
                 .frame(minHeight: 52)
+                .accessibilityElement(children: .combine)
             }
             ForEach(Array(d.amigos.enumerated()), id: \.element.id) { i, a in
                 if i > 0 || !enviadas.isEmpty { SeparadorFila() }
@@ -323,6 +364,7 @@ struct SocialView: View {
             HStack(spacing: Medida.xs) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(codigo).font(Letra.diaBloqueGrande).foregroundStyle(Lienzo.tinta).kerning(2).textSelection(.enabled)
+                        .accessibilityLabel("tu código, " + codigo.map(String.init).joined(separator: " "))
                     Text("compártelo para que te añadan.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                 }
                 Spacer(minLength: Medida.xs)
