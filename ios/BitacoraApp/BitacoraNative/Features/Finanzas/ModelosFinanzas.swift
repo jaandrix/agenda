@@ -56,7 +56,8 @@ struct ModeloCuentas: Decodable, Equatable {
     struct Propuesta: Decodable, Equatable, Identifiable { let clave, nombre: String; let importe: Double; let dia, meses: Int; var id: String { clave } }
     struct Detectadas: Decodable, Equatable { let siguenCobrando: [SigueCobrando]; let propuestas: [Propuesta] }
     struct Ritmo: Decodable, Equatable { let gasto, antes, dif: Double; let dia: Int; let mesPasado: String; let previsto: Double? }
-    struct Cuenta: Decodable, Equatable, Identifiable { let id, nombre: String; let saldo: Double }
+    // 3.2: `cambio60` (lo que cambió el saldo en 60 días) y `tendencia` (1 sube, -1 baja, 0 estable) para la flecha.
+    struct Cuenta: Decodable, Equatable, Identifiable { let id, nombre: String; let saldo: Double; let cambio60: Double?; let tendencia: Int? }
     struct Cargo: Decodable, Equatable, Identifiable { let id, titulo, cuando: String; let importe: Double }
     struct Cargos: Decodable, Equatable { let total: Double; let lista: [Cargo] }
     let grafica: GraficaFin
@@ -185,9 +186,23 @@ struct FiltroBusqueda: Equatable {
 
 enum FormatoFin {
     // financeMoney: «1.234,56 €» con el signo menos tipográfico.
+    // 3.2: cada cifra se formatea una vez. Decimal, redondeo y FormatStyle con su Locale costaban en cada fila de cada
+    // pintado (Movimientos tiene cientos y se vuelven a pintar al hacer scroll). La clave es el mismo texto con dos
+    // decimales del que sale el resultado, así que es exactamente lo de antes.
+    private static let cerrojo = NSLock()
+    nonisolated(unsafe) private static var hechos: [String: String] = [:]
     static func dinero(_ v: Double) -> String {
-        let d = Decimal(string: String(format: "%.2f", v), locale: Locale(identifier: "en_US_POSIX")) ?? Decimal(v)
-        return Dinero.formato(d)
+        let clave = String(format: "%.2f", v)
+        cerrojo.lock()
+        if let r = hechos[clave] { cerrojo.unlock(); return r }
+        cerrojo.unlock()
+        let d = Decimal(string: clave, locale: Locale(identifier: "en_US_POSIX")) ?? Decimal(v)
+        let r = Dinero.formato(d)
+        cerrojo.lock()
+        if hechos.count > 5000 { hechos.removeAll(keepingCapacity: true) }
+        hechos[clave] = r
+        cerrojo.unlock()
+        return r
     }
     static func pct(_ v: Double) -> String {
         (v > 0 ? "+" : v < 0 ? "−" : "") + String(format: "%.1f", abs(v)).replacingOccurrences(of: ".", with: ",") + " %"

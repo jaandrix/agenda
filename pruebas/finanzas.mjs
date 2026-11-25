@@ -281,13 +281,63 @@ test('preparar Finanzas es un paso aparte, idempotente y que no guarda solo (F-0
     const { run } = cargarApp();
     run(PREPARAR_PINTADO);
     assert.equal(run('prepararFinanzas()'), true);
-    assert.equal(run(`financePro.transactions.filter(t => t.id === 'ptx_prog_p1' || t.recurringEntryId === 's1').length`), 2);
+    assert.equal(run(`financePro.transactions.filter(t => t.id === 'ptx_prog_p1').length`), 1);
+    assert.equal(run(`financePro.transactions.filter(t => t.recurringEntryId === 's1').length`), 0, 'la suscripción no se apunta sola (3.2)');
     assert.equal(run(`financeProfile.history.length`), 1);
     assert.equal(run(`financeProfile.investmentAccounts[0].contributions.length`), 1);
     const despues = run('JSON.stringify([financePro, financeProfile.investmentAccounts, entries])');
     assert.equal(run('prepararFinanzas()'), false);
     assert.equal(run('JSON.stringify([financePro, financeProfile.investmentAccounts, entries])'), despues);
     assert.equal(run('__guardados'), 0);
+});
+
+// 3.2: una suscripción o un gasto fijo solo es gasto cuando llega su cargo del banco (pendiente o cobrado).
+const SUSCRIPCION_SIN_AUTO = `
+    __vaciar({ bancos: 1000 });
+    globalThis.__hoy = todayISO(); globalThis.__mes = financeMonthKey();
+    globalThis.__dia = Number(__hoy.slice(8));
+    entries = [{ id: 's1', type: 'subscription', title: 'Netflix', amount: 12.99, renewalDay: __dia, active: true, proAccount: 'bancos' },
+               { id: 'f1', type: 'fixed_expense', title: 'Gimnasio', amount: 30, renewalDay: __dia, active: true }];
+    financeProfile.investmentAccounts = []; financeProfile.history = [];`;
+
+test('una suscripción sin cargo del banco no es gasto: se ve como prevista y cuenta en lo que falta por cobrar (3.2)', () => {
+    const { run } = cargarApp();
+    run(SUSCRIPCION_SIN_AUTO);
+    run('prepararFinanzas()');
+    assert.equal(run('financePro.transactions.length'), 0);
+    assert.equal(run('financeProMonthTotals(__mes).expense'), 0);
+    assert.equal(run('saldoLiquido()'), 1000);
+    assert.equal(run('Math.round(suscripcionesPorCobrarMes() * 100)'), 4299);
+    assert.deepEqual(JSON.parse(run('JSON.stringify(suscripcionesPrevistas(14).map(x => [x.e.id, x.faltan]))')), [['s1', 0], ['f1', 0]]);
+});
+
+test('el cargo del banco, pendiente o cobrado, se une a su suscripción y deja de estar por cobrar (3.2)', () => {
+    const { run } = cargarApp();
+    run(SUSCRIPCION_SIN_AUTO);
+    run(`financePro.transactions.push({ id: 'b1', date: __hoy, type: 'expense', amount: 12.99, account: 'bancos', note: 'NETFLIX.COM 866', pendiente: true },
+                                        { id: 'b2', date: __hoy, type: 'expense', amount: 30, account: 'bancos', note: 'GYM CENTRO' });`);
+    assert.equal(run('prepararFinanzas()'), true);
+    assert.equal(run(`financePro.transactions.find(t => t.id === 'b1').recurringEntryId`), 's1');
+    assert.equal(run(`financePro.transactions.find(t => t.id === 'b1').conciliado`), true);
+    assert.equal(run(`financePro.transactions.find(t => t.id === 'b2').recurringEntryId`), undefined, 'sin nombre parecido ni céntimos, no se adivina');
+    assert.equal(run('financePro.transactions.length'), 2, 'unir no crea movimientos');
+    assert.equal(run('Math.round(suscripcionesPorCobrarMes() * 100)'), 3000);
+    assert.equal(run(`suscripcionesPrevistas(40).find(x => x.e.id === 's1').faltan > 0`), true, 'cobrada este mes, la siguiente es la del mes que viene');
+    assert.equal(run('prepararFinanzas()'), false, 'idempotente');
+});
+
+test('los cargos provisionales de antes se quitan de este mes y el anterior, no los conciliados ni los viejos (3.2)', () => {
+    const { run } = cargarApp();
+    run(SUSCRIPCION_SIN_AUTO);
+    run(`const viejo = financeMonthKey(new Date(new Date().getFullYear(), new Date().getMonth() - 4, 1));
+        financePro.transactions.push(
+            { id: 'ptx_rec_s1_' + __mes, date: __hoy, type: 'expense', amount: 12.99, account: 'bancos', note: 'Netflix', recurringEntryId: 's1' },
+            { id: 'ptx_rec_f1_' + __mes, date: __hoy, type: 'expense', amount: 30, account: 'bancos', note: 'Gimnasio', recurringEntryId: 'f1', conciliado: true },
+            { id: 'ptx_rec_s1_' + viejo, date: viejo + '-01', type: 'expense', amount: 12.99, account: 'bancos', note: 'Netflix', recurringEntryId: 's1' });`);
+    assert.equal(run('prepararFinanzas()'), true);
+    assert.deepEqual(JSON.parse(run('JSON.stringify(financePro.transactions.map(t => t.id.split("_").slice(0, 3).join("_")))')), ['ptx_rec_f1', 'ptx_rec_s1']);
+    assert.equal(run(`financePro.transactions.some(t => t.id === 'ptx_rec_s1_' + __mes)`), false);
+    assert.equal(run('Math.round(suscripcionesPorCobrarMes() * 100)'), 1299, 'el gimnasio conciliado ya está cobrado');
 });
 
 // Cada escritura de Finanzas, con un guardado que falla y con uno que funciona.

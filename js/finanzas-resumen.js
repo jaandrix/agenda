@@ -262,9 +262,8 @@
             const hoy = new Date(), dia = hoy.getDate(), mes = financeMonthKey();
             const saldo = saldoLiquido();
             const diasMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
-            // El día efectivo del cargo (un 31 cae el 30 en un mes de 30 días, como en ensureRecurringProCharges).
-            const fijos = entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0 && Math.min(Number(e.renewalDay) || 1, diasMes) > dia
-                && (e.type !== 'subscription' || typeof suscripcionVigente !== 'function' || suscripcionVigente(e, todayISO()))).reduce((s, e) => s + Number(e.amount), 0);
+            // 3.2: los fijos que el banco aún no ha cobrado este mes (hasta que llega el cargo no están en el saldo).
+            const fijos = suscripcionesPorCobrarMes();
             let variable = 0;
             try { const r = financeRitmoDatos(); if (r.suficiente) variable = Math.max(0, r.proyeccion - r.llevas); } catch (e) { /* sin ritmo: solo los fijos */ }
             const porEntrar = finResSueldoPorEntrar(mes);
