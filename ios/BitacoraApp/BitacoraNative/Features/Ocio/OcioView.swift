@@ -32,10 +32,10 @@ private enum ModalOcio: Identifiable {
     case ficha(EntradaOcio)
     case entrada(EntradaOcio?, String)
     case lista(ListaOcio?)
-    case escaner
+    case escaner(String)
     var id: String {
         switch self {
-        case .escaner: return "escaner"
+        case .escaner(let tipo): return "escaner-\(tipo)"
         case .ficha(let e): return "ficha-\(e.id)"
         case .entrada(let e, let tipo): return "entrada-\(e?.id ?? tipo)"
         case .lista(let l): return "lista-\(l?.id ?? "nueva")"
@@ -122,8 +122,8 @@ struct OcioView: View {
                     .environment(c)
             case .lista(let lista):
                 EditorListaOcio(lista: lista, entradas: vista?.entradas ?? []) { nombre, ids in Task { await guardarLista(lista, nombre, ids) } }
-            case .escaner:
-                HojaEscanerOcio(existentes: librosExistentes) { libro, estado in Task { await anadirEscaneado(libro, estado: estado) } }
+            case .escaner(let tipo):
+                HojaEscanerOcio(tipo: tipo, existentes: existentes(tipo)) { item, estado in Task { await anadirEscaneado(item, estado: estado) } }
             }
         }
         .fileImporter(isPresented: $mostrarImportador, allowedContentTypes: [.commaSeparatedText, .plainText]) { resultado in
@@ -137,8 +137,8 @@ struct OcioView: View {
 
     private var acciones: some View {
         HStack(spacing: Medida.xxs) {
-            if pestana == .book {
-                Button { Haptica.ligera(); modal = .escaner } label: {
+            if pestana == .book || pestana == .game {
+                Button { Haptica.ligera(); modal = .escaner(pestana.rawValue) } label: {
                     Label("escáner.", systemImage: "barcode.viewfinder").labelStyle(.titleAndIcon)
                         .lineLimit(1)
                 }
@@ -146,8 +146,8 @@ struct OcioView: View {
                 // 3.2: con las acciones a la altura del título, el botón cedía ancho y salía «e...»; ahora encoge el título.
                 .fixedSize()
                 .frame(minHeight: Medida.toque)
-                .accessibilityLabel("escáner de isbn")
-                .accessibilityHint("añade libros leyendo el código de barras")
+                .accessibilityLabel(pestana == .game ? "escáner de juegos" : "escáner de isbn")
+                .accessibilityHint(pestana == .game ? "añade juegos leyendo el código de barras de la caja" : "añade libros leyendo el código de barras")
             }
             if let fuente = pestana.importador {
                 BotonRedondo(sistema: "square.and.arrow.down", tono: .blanco, etiqueta: "importar de \(pestana.nombreImportador)") {
@@ -191,8 +191,8 @@ struct OcioView: View {
                 modal = .entrada(nil, tipo)
             }
             .entradaEscalonada(0)
-            if pestana == .book {
-                Button("o escanea sus códigos de barras.") { modal = .escaner }
+            if pestana == .book || pestana == .game {
+                Button("o escanea sus códigos de barras.") { modal = .escaner(pestana.rawValue) }
                     .buttonStyle(.capsula(.claro))
                     .frame(maxWidth: .infinity)
                     .entradaEscalonada(1)
@@ -470,10 +470,10 @@ struct OcioView: View {
         PreferenciasOcio.guardar(pestana.rawValue, orden: orden, filtro: filtro, plataforma: plataforma)
     }
 
-    // ISBN y títulos de los libros que ya hay, para que el escáner avise de los repetidos.
-    private var librosExistentes: Set<String> {
+    // ISBN y títulos de lo que ya hay de ese tipo, para que el escáner avise de los repetidos.
+    private func existentes(_ tipo: String) -> Set<String> {
         var r = Set<String>()
-        for e in vista?.entradas ?? [] where e.tipo == "book" {
+        for e in vista?.entradas ?? [] where e.tipo == tipo {
             if !e.isbn.isEmpty { r.insert(e.isbn) }
             r.insert("t:" + LecturaOcio.normalizar(e.titulo))
         }
@@ -511,11 +511,25 @@ struct OcioView: View {
         if let img { await c.guardar(OcioDatosOp.op(id: id, portadaSiFalta: img)) }
     }
 
-    // 3.2: el libro del escáner, con su ISBN y la portada de esa edición.
-    private func anadirEscaneado(_ l: LibroISBN, estado: String) async {
-        let id = OperacionBitacora.nuevoIdProyecto("ocio")
+    // 3.2: lo que llega del escáner. Un juego entra en físico, con su plataforma, y su portada es la de Steam si la hay
+    // (vertical, como las demás) o, si no, la foto del producto.
+    private func anadirEscaneado(_ item: EscaneadoOcio, estado: String) async {
         let hoy = CalendarioBitacora.madrid.dia(de: Date())
-        let inicio = estado == "Leyendo" ? String(format: "%04d-%02d-%02d", hoy.year, hoy.month, hoy.day) : ""
+        let inicio = estado == "Leyendo" || estado == "Jugando" ? String(format: "%04d-%02d-%02d", hoy.year, hoy.month, hoy.day) : ""
+        guard case .libro(let l) = item else {
+            guard case .juego(let j) = item else { return }
+            let id = OperacionBitacora.nuevoIdProyecto("ocio")
+            let titulo = MayusculaOcio.inicial(j.titulo)
+            await c.guardar([.guardarOcio(id: id, tipo: "game", titulo: titulo, autor: "", estado: estado, fechaInicio: inicio,
+                                          fechaFin: "", anio: "", valoracion: "0", notas: "", enlace: "", portada: ""),
+                             OcioDatosOp.op(id: id, plataforma: j.plataforma.isEmpty ? nil : j.plataforma, formato: "fisico")])
+            let r = await BuscarPortadas.buscar(c, tipo: "game", q: j.titulo)
+            if let img = BuscarPortadas.mejor(r, titulo: j.titulo)?.imagen ?? (j.imagen.isEmpty ? nil : j.imagen) {
+                await c.guardar(OcioDatosOp.op(id: id, portadaSiFalta: img))
+            }
+            return
+        }
+        let id = OperacionBitacora.nuevoIdProyecto("ocio")
         await c.guardar([.guardarOcio(id: id, tipo: "book", titulo: MayusculaOcio.inicial(l.titulo), autor: MayusculaOcio.inicial(l.autor),
                                       estado: estado, fechaInicio: inicio, fechaFin: "", anio: l.anio, valoracion: "0", notas: "",
                                       enlace: "", portada: l.portada),

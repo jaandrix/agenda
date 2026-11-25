@@ -3,7 +3,7 @@ import UIKit
 import VisionKit
 import Vision
 
-// 3.2: escáner de ISBN, como Libib. La cámara lee el código de barras de la contraportada (EAN-13 que empieza por 978 o
+// 3.2: escáner de ISBN, como Libib (y de cajas de videojuegos: ver BuscarJuegoEAN). La cámara lee el código de barras de la contraportada (EAN-13 que empieza por 978 o
 // 979), se busca esa edición en Open Library y Google Books (las dos sin clave, desde el iPhone; solo viaja el ISBN) y
 // se añade el libro con su portada. Sin cámara compatible (DataScannerViewController pide un A12 o posterior) o sin
 // permiso, se puede escribir el ISBN a mano.
@@ -97,6 +97,87 @@ enum BuscarISBN {
     }
 }
 
+// 3.2: cajas de videojuegos. Su código es un EAN de producto (no un ISBN), así que se busca en UPCitemdb (su API de
+// prueba, sin clave y con unas 100 consultas al día; solo viaja el código). De ahí salen el título y la plataforma; la
+// portada se busca luego en la función `portadas` y, si no hay, se usa la foto del producto.
+struct JuegoEAN: Equatable {
+    let ean: String
+    let titulo: String
+    let plataforma: String
+    let imagen: String
+}
+
+enum BuscarJuegoEAN {
+    private static let sesion: URLSession = {
+        let c = URLSessionConfiguration.default
+        c.timeoutIntervalForRequest = 10
+        c.httpAdditionalHeaders = ["User-Agent": "Bitacora/1.0 (iOS)", "Accept": "application/json"]
+        return URLSession(configuration: c)
+    }()
+
+    // EAN-13, UPC-A (12) o EAN-8 que no sea de libro.
+    static func deCodigo(_ codigo: String) -> String? {
+        let s = codigo.filter(\.isNumber)
+        guard [8, 12, 13].contains(s.count), BuscarISBN.deCodigo(s) == nil else { return nil }
+        return s
+    }
+
+    static func buscar(_ ean: String) async -> JuegoEAN? {
+        guard let url = URL(string: "https://api.upcitemdb.com/prod/trial/lookup?upc=\(ean)"),
+              let res = try? await sesion.data(from: url), (res.1 as? HTTPURLResponse)?.statusCode == 200,
+              let j = (try? JSONSerialization.jsonObject(with: res.0)) as? [String: Any],
+              let item = (j["items"] as? [[String: Any]])?.first,
+              let crudo = item["title"] as? String else { return nil }
+        let titulo = limpiar(crudo)
+        guard !titulo.isEmpty else { return nil }
+        let imagen = ((item["images"] as? [String]) ?? [])
+            .map { $0.replacingOccurrences(of: "http://", with: "https://") }
+            .first { $0.hasPrefix("https://") } ?? ""
+        return JuegoEAN(ean: ean, titulo: titulo, plataforma: plataforma(de: crudo), imagen: imagen)
+    }
+
+    // Los nombres de plataforma que usa el filtro de la biblioteca. El orden importa: «switch 2» antes que «switch».
+    private static let plataformas: [(nombre: String, patron: String)] = [
+        ("Switch 2", #"switch\s*2"#), ("Switch", #"\bswitch\b"#),
+        ("PS5", #"\bps\s*5\b|playstation\s*5"#), ("PS4", #"\bps\s*4\b|playstation\s*4"#),
+        ("Xbox Series", #"xbox\s*series"#), ("Xbox One", #"xbox\s*one"#), ("PC", #"\bpc\b"#)
+    ]
+
+    static func plataforma(de texto: String) -> String {
+        plataformas.first { texto.range(of: $0.patron, options: [.regularExpression, .caseInsensitive]) != nil }?.nombre ?? ""
+    }
+
+    // «Nintendo Switch - Mario Kart 8 Deluxe (Videojuego) [PEGI 3]» → «Mario Kart 8 Deluxe».
+    static func limpiar(_ texto: String) -> String {
+        var t = texto.replacingOccurrences(of: #"\([^)]*\)|\[[^\]]*\]"#, with: " ", options: .regularExpression)
+        let ruido = [#"nintendo\s*switch(\s*2)?"#, #"\bswitch(\s*2)?\b"#, #"(sony\s*)?playstation\s*\d"#, #"\bps\s*\d\b"#,
+                     #"(microsoft\s*)?xbox(\s*(series\s*[xs](\s*[|/]\s*[xs])?|one|360))?"#, #"\bpc(\s*(dvd|cd)(-rom)?)?\b"#,
+                     #"\b(videojuego|video\s*game|pegi\s*\d+)\b"#, #"\b(nintendo|sony|microsoft)\b"#]
+        for r in ruido { t = t.replacingOccurrences(of: r, with: " ", options: [.regularExpression, .caseInsensitive]) }
+        t = t.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+        // Separadores que se quedan colgando o repetidos al quitar la plataforma.
+        t = t.replacingOccurrences(of: #"\s*[-–|,:/](\s*[-–|,:/])+"#, with: " -", options: .regularExpression)
+        return t.trimmingCharacters(in: CharacterSet(charactersIn: "-–|,:/").union(.whitespaces))
+    }
+}
+
+// Lo que encuentra el escáner, libro o juego, para pintarlo igual en la tarjeta.
+enum EscaneadoOcio: Equatable {
+    case libro(LibroISBN)
+    case juego(JuegoEAN)
+
+    var codigo: String { switch self { case .libro(let l): return l.isbn; case .juego(let j): return j.ean } }
+    var titulo: String { switch self { case .libro(let l): return l.titulo; case .juego(let j): return j.titulo } }
+    var detalle: String { switch self { case .libro(let l): return l.autor; case .juego(let j): return j.plataforma } }
+    var portada: String { switch self { case .libro(let l): return l.portada; case .juego(let j): return j.imagen } }
+    var pie: String {
+        switch self {
+        case .libro(let l): return [l.anio, "isbn \(l.isbn)"].filter { !$0.isEmpty }.joined(separator: ", ")
+        case .juego(let j): return "código \(j.ean)"
+        }
+    }
+}
+
 // La cámara de VisionKit leyendo códigos de barras. `activo` la pausa mientras se busca o se enseña el libro.
 @MainActor
 struct CamaraISBNOcio: UIViewControllerRepresentable {
@@ -109,7 +190,7 @@ struct CamaraISBNOcio: UIViewControllerRepresentable {
     func makeCoordinator() -> Coordinador { Coordinador(leido: leido) }
 
     func makeUIViewController(context: Context) -> DataScannerViewController {
-        let vc = DataScannerViewController(recognizedDataTypes: [.barcode(symbologies: [.ean13])],
+        let vc = DataScannerViewController(recognizedDataTypes: [.barcode(symbologies: [.ean13, .ean8, .upce])],
                                            qualityLevel: .balanced, recognizesMultipleItems: false,
                                            isHighFrameRateTrackingEnabled: false, isPinchToZoomEnabled: true,
                                            isGuidanceEnabled: false, isHighlightingEnabled: true)
@@ -153,24 +234,38 @@ struct HojaEscanerOcio: View {
     enum Paso: Equatable {
         case escaneando
         case buscando(String)
-        case encontrado(LibroISBN)
+        case encontrado(EscaneadoOcio)
         case noEncontrado(String)
     }
 
     @Environment(\.dismiss) private var cerrar
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
-    @AppStorage("ocio.escanerVisto") private var visto = false
+    @AppStorage private var visto: Bool
+    /// "book" o "game".
+    let tipo: String
     let existentes: Set<String>
-    let anadir: (LibroISBN, String) -> Void
+    let anadir: (EscaneadoOcio, String) -> Void
 
     @State private var paso: Paso = .escaneando
-    @State private var estado = "Por leer"
+    @State private var estado: String
     @State private var manual = ""
     @State private var anadidos = 0
     @State private var aviso: String?
     @FocusState private var escribiendo: Bool
 
-    private let estados = [("Por leer", "por leer."), ("Leyendo", "leyendo."), ("Completado", "leído.")]
+    init(tipo: String = "book", existentes: Set<String>, anadir: @escaping (EscaneadoOcio, String) -> Void) {
+        self.tipo = tipo
+        self.existentes = existentes
+        self.anadir = anadir
+        _visto = AppStorage(wrappedValue: false, tipo == "game" ? "ocio.escanerJuegosVisto" : "ocio.escanerVisto")
+        _estado = State(initialValue: tipo == "game" ? "Por jugar" : "Por leer")
+    }
+
+    private var esJuego: Bool { tipo == "game" }
+    private var estados: [(String, String)] {
+        esJuego ? [("Por jugar", "por jugar."), ("Jugando", "jugando."), ("Completado", "completado.")]
+                : [("Por leer", "por leer."), ("Leyendo", "leyendo."), ("Completado", "leído.")]
+    }
 
     var body: some View {
         ZStack {
@@ -178,7 +273,7 @@ struct HojaEscanerOcio: View {
             if visto && CamaraISBNOcio.disponible {
                 CamaraISBNOcio(activo: paso == .escaneando && !escribiendo) { leido($0) }
                     .ignoresSafeArea()
-                    .accessibilityLabel("cámara. apunta al código de barras de la contraportada.")
+                    .accessibilityLabel(esJuego ? "cámara. apunta al código de barras de la caja." : "cámara. apunta al código de barras de la contraportada.")
                 marco
             }
             VStack(spacing: Medida.s) {
@@ -229,9 +324,10 @@ struct HojaEscanerOcio: View {
                 .background(Lienzo.naranja, in: RoundedRectangle(cornerRadius: Medida.radioControl + 6, style: .continuous))
                 .accessibilityHidden(true)
             VStack(spacing: Medida.xxs) {
-                Text("Escanea tus libros.").font(Letra.titulo).foregroundStyle(Lienzo.tinta)
+                Text(esJuego ? "Escanea tus juegos." : "Escanea tus libros.").font(Letra.titulo).foregroundStyle(Lienzo.tinta)
                     .accessibilityAddTraits(.isHeader)
-                Text("apunta la cámara al código de barras de la contraportada. buscamos esa edición y la añadimos a tu biblioteca con su portada.")
+                Text(esJuego ? "apunta la cámara al código de barras de la caja. buscamos el juego y su plataforma y lo añadimos a tu biblioteca, en físico."
+                             : "apunta la cámara al código de barras de la contraportada. buscamos esa edición y la añadimos a tu biblioteca con su portada.")
                     .font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -274,16 +370,16 @@ struct HojaEscanerOcio: View {
                     .fixedSize(horizontal: false, vertical: true)
                 if let aviso { Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
                 campoManual
-            case .buscando(let isbn):
+            case .buscando(let codigo):
                 HStack(spacing: Medida.s) {
                     ProgressView().tint(Lienzo.tintaTerciaria)
-                    Text("buscando \(isbn)…").font(Letra.cuerpo).foregroundStyle(Lienzo.tinta).monospacedDigit()
+                    Text("buscando \(codigo)…").font(Letra.cuerpo).foregroundStyle(Lienzo.tinta).monospacedDigit()
                 }
                 .frame(minHeight: Medida.toque)
-            case .encontrado(let libro):
-                encontrado(libro)
-            case .noEncontrado(let isbn):
-                Text("no encuentro el \(isbn).").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta)
+            case .encontrado(let item):
+                encontrado(item)
+            case .noEncontrado(let codigo):
+                Text(esJuego ? "no encuentro el juego \(codigo)." : "no encuentro el \(codigo).").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta)
                 Text("puedes añadirlo a mano con el +, o probar con otro.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                 Button("escanear otro.") { seguir() }.buttonStyle(.capsula(.oscuro, ancho: true))
             }
@@ -294,39 +390,44 @@ struct HojaEscanerOcio: View {
 
     private var textoSinCamara: String {
         CamaraISBNOcio.compatible
-            ? "la cámara no está disponible. permite el acceso en ajustes, o escribe el isbn."
-            : "este iPhone no puede leer códigos con la cámara. escribe el isbn."
+            ? "la cámara no está disponible. permite el acceso en ajustes, o escribe \(esJuego ? "el código" : "el isbn")."
+            : "este iPhone no puede leer códigos con la cámara. escribe \(esJuego ? "el código" : "el isbn")."
     }
 
     private var campoManual: some View {
         HStack(spacing: Medida.xs) {
-            TextField("o escribe el isbn.", text: $manual)
+            TextField(esJuego ? "o escribe el código." : "o escribe el isbn.", text: $manual)
                 .keyboardType(.numberPad)
                 .font(Letra.cuerpo)
                 .focused($escribiendo)
                 .padding(.horizontal, Medida.s)
                 .frame(minHeight: Medida.alturaControl)
                 .background(Lienzo.sutil, in: RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
-                .accessibilityLabel("isbn")
+                .accessibilityLabel(esJuego ? "código de barras" : "isbn")
             Button("buscar.") {
                 escribiendo = false
-                let limpio = OcioDatosOp.isbnLimpio(manual)
-                if limpio.isEmpty { aviso = "un isbn tiene 10 o 13 cifras."; Haptica.error() } else { manual = ""; Task { await buscar(limpio) } }
+                if esJuego {
+                    if let ean = BuscarJuegoEAN.deCodigo(manual) { manual = ""; Task { await buscar(ean) } }
+                    else { aviso = "un código de barras tiene 8, 12 o 13 cifras."; Haptica.error() }
+                } else {
+                    let limpio = OcioDatosOp.isbnLimpio(manual)
+                    if limpio.isEmpty { aviso = "un isbn tiene 10 o 13 cifras."; Haptica.error() } else { manual = ""; Task { await buscar(limpio) } }
+                }
             }
             .buttonStyle(.capsula(.oscuro))
-            .disabled(manual.filter(\.isNumber).count < 10)
+            .disabled(manual.filter(\.isNumber).count < (esJuego ? 8 : 10))
         }
     }
 
-    private func encontrado(_ libro: LibroISBN) -> some View {
-        let repetido = existentes.contains(libro.isbn) || existentes.contains("t:" + LecturaOcio.normalizar(libro.titulo))
+    private func encontrado(_ item: EscaneadoOcio) -> some View {
+        let repetido = existentes.contains(item.codigo) || existentes.contains("t:" + LecturaOcio.normalizar(item.titulo))
         return VStack(alignment: .leading, spacing: Medida.s) {
             HStack(alignment: .top, spacing: Medida.s) {
-                PortadaOcio(url: libro.portada, titulo: libro.titulo, ancho: 58, radio: Medida.radioIcono)
+                PortadaOcio(url: item.portada, titulo: item.titulo, ancho: 58, radio: Medida.radioIcono)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(MayusculaOcio.inicial(libro.titulo)).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta).lineLimit(3)
-                    if !libro.autor.isEmpty { Text(libro.autor).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1) }
-                    Text([libro.anio, "isbn \(libro.isbn)"].filter { !$0.isEmpty }.joined(separator: ", "))
+                    Text(MayusculaOcio.inicial(item.titulo)).font(Letra.tituloTarjeta).foregroundStyle(Lienzo.tinta).lineLimit(3)
+                    if !item.detalle.isEmpty { Text(item.detalle).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1) }
+                    Text(item.pie)
                         .font(Letra.pie).foregroundStyle(Lienzo.tintaTerciaria).monospacedDigit()
                     if repetido { Chip(texto: "ya está en tu biblioteca.", tono: .naranja).padding(.top, Medida.xxs) }
                 }
@@ -338,7 +439,7 @@ struct HojaEscanerOcio: View {
                 Button("otro.") { seguir() }.buttonStyle(.capsula(.claro, ancho: true))
                 Button("añadir.") {
                     Haptica.exito()
-                    anadir(libro, estado)
+                    anadir(item, estado)
                     anadidos += 1
                     seguir()
                 }
@@ -351,19 +452,23 @@ struct HojaEscanerOcio: View {
 
     private func leido(_ codigo: String) {
         guard paso == .escaneando else { return }
-        guard let isbn = BuscarISBN.deCodigo(codigo) else {
-            if aviso == nil { aviso = "ese código no es de un libro."; Haptica.tope() }
+        let valido = esJuego ? BuscarJuegoEAN.deCodigo(codigo) : BuscarISBN.deCodigo(codigo)
+        guard let valido else {
+            if aviso == nil { aviso = esJuego ? "ese código es de un libro." : "ese código no es de un libro."; Haptica.tope() }
             return
         }
         Haptica.media()
-        Task { await buscar(isbn) }
+        Task { await buscar(valido) }
     }
 
-    private func buscar(_ isbn: String) async {
+    private func buscar(_ codigo: String) async {
         aviso = nil
-        paso = .buscando(isbn)
-        if let libro = await BuscarISBN.buscar(isbn) { paso = .encontrado(libro); Haptica.ligera() }
-        else { paso = .noEncontrado(isbn); Haptica.error() }
+        paso = .buscando(codigo)
+        let item: EscaneadoOcio?
+        if esJuego { item = await BuscarJuegoEAN.buscar(codigo).map(EscaneadoOcio.juego) }
+        else { item = await BuscarISBN.buscar(codigo).map(EscaneadoOcio.libro) }
+        if let item { paso = .encontrado(item); Haptica.ligera() }
+        else { paso = .noEncontrado(codigo); Haptica.error() }
     }
 
     private func seguir() {
