@@ -72,24 +72,32 @@ struct FilaEventoInicio: View {
     var entradas = 0
     var abrir: (() -> Void)?
 
+    // 3.2, «pastel.»: el evento va en la tarjeta rellena de su tipo y la segunda línea en el tono oscuro de ese color.
+    // Lo suave (pagos) sigue en blanco.
+    private var tipoTarjeta: TipoPunto { suave ? .otro : tipo }
+    private var tintaDetalle: Color { tipoTarjeta.tintaRelleno }
+
     private var contenido: some View {
         HStack(spacing: 0) {
             Puntito(color: suave ? Lienzo.tintaTerciaria : tipo.color, tamano: MedidaInicio.puntoFila)
+                .frame(width: Medida.iconoPequeno, height: Medida.iconoPequeno)
+                .background(tipoTarjeta.relleno == nil ? Color.clear : Lienzo.sobreRelleno,
+                            in: RoundedRectangle(cornerRadius: Medida.concentrico(Medida.radioFila, relleno: Medida.xs), style: .continuous))
                 .frame(width: Medida.toque, height: Medida.toque)
             VStack(alignment: .leading, spacing: 2) {
                 Text(titulo).font(Letra.cuerpoFuerte).foregroundStyle(suave ? Lienzo.tintaSecundaria : Lienzo.tinta)
                     .lineLimit(2).multilineTextAlignment(.leading)
                 if !detalle.isEmpty {
-                    Text(detalle).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria).lineLimit(2)
+                    Text(detalle).font(Letra.pie).foregroundStyle(tintaDetalle).lineLimit(2)
                 }
             }
             Spacer(minLength: Medida.xs)
-            if entradas > 0 { Chip(texto: "qr.", tono: .sutil, icono: "qrcode").padding(.trailing, Medida.xs) }
-            if let hora { Text(hora).font(Letra.hora).foregroundStyle(Lienzo.tintaSecundaria) }
+            if entradas > 0 { Chip(texto: "qr.", tono: tipoTarjeta.relleno == nil ? .sutil : .blanco, icono: "qrcode").padding(.trailing, Medida.xs) }
+            if let hora { Text(hora).font(Letra.hora).foregroundStyle(tintaDetalle) }
         }
         .frame(minHeight: Medida.toque)
         .padding(.trailing, Medida.s)
-        .tarjeta(relleno: Medida.xxs, radio: Medida.radioFila)
+        .tarjetaTipo(tipoTarjeta, relleno: Medida.xxs, radio: Medida.radioFila)
         .contentShape(RoundedRectangle(cornerRadius: Medida.radioFila, style: .continuous))
         .accessibilityElement(children: .combine)
     }

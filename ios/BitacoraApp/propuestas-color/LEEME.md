@@ -65,7 +65,7 @@ Tokens en `Lienzo.Hex`:
 Nuevos: `Lienzo.Relleno` (fondo de tarjeta, tinta de su detalle) `evento #FFE9E2 / #A8401F`,
 `estudio #E3EAFF / #2F4FA8`, `cumple #FFF2D1 / #80590A`, `viaje #EEE7FF / #5B3FA0`, `dinero #DDF3E7 / #1C6E4D`
 (todas ≥ 4,5:1); dentro, el bloque de hora y los iconos van en blanco al 75 %. `Lienzo.pildoraActiva #FFE4DB` con texto
-`#C2441F` (barra flotante). Día elegido: `Lienzo.oscuro` con el número en `#FF8A6E` y el punto de tarea en blanco.
+`#A8401F` (barra flotante; el `#C2441F` de la maqueta daba 4,2:1). Día elegido: `Lienzo.oscuro` con el número en `#FF8A6E` y el punto de tarea en blanco.
 Degradado de portada: `#FF6B4A` 92 % → `#FFA082` 55 % (34 %) → `#FFCDBE` 30 % (58 %) → lienzo.
 
 Piezas que cambiarían: `FilaEventoInicio` y la tarjeta de evento de `CalendarioView` (relleno por tipo),
@@ -76,3 +76,8 @@ Piezas que cambiarían: `FilaEventoInicio` y la tarjeta de evento de `Calendario
 Todo pasa por `DesignSystem/V2/Lienzo.swift` (tokens) y las cinco piezas citadas; ningún apartado usa hex sueltos, así
 que el resto de pantallas hereda el lienzo y los tintes solo. `TemaTokens.bitacora` (Tema.swift) lee los mismos
 `Lienzo.Hex`, así que lo que aún usa `Paleta` también cambiaría.
+
+## Aplicada
+
+Alejandro eligió la B el 25-11-2026 y está aplicada en `Lienzo.swift` (tokens, `TipoPunto.relleno` / `tintaRelleno`,
+`.tarjetaTipo`), `SemanaFlotante`, `BarraFlotante`, la semana de Inicio, `FilaEventoInicio`, el mes y la agenda del Calendario.

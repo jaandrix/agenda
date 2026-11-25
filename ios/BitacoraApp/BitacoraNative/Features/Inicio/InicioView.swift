@@ -677,7 +677,8 @@ struct SemanaCarrusel: View, Equatable {
     // Sin la lectura por tipos (pruebas, capturas), un día con cosas lleva un puntito gris.
     private func colores(_ d: LocalDay) -> [Color] {
         let t = tipos[d] ?? (conCosas.contains(d) ? [.otro] : [])
-        return t.prefix(3).map(\.color)
+        // 3.2: sobre la placa carbón del día elegido, el punto negro de tarea va en claro.
+        return t.prefix(3).map { d == marcado && $0 == .tarea ? Lienzo.sobreOscuro : $0.color }
     }
 
     private func celda(_ d: LocalDay) -> some View {
@@ -688,10 +689,11 @@ struct SemanaCarrusel: View, Equatable {
             VStack(spacing: 5) {
                 Text(CarruselDias.letras[d.indiceSemanaLunes]).font(Letra.pie)
                     .lineLimit(1).minimumScaleFactor(0.65)
-                    .foregroundStyle(sel ? Lienzo.tintaSecundaria : Lienzo.tintaTerciaria)
+                    .foregroundStyle(sel ? Lienzo.sobreOscuroSuave : Lienzo.tintaTerciaria)
                 Text("\(d.day)").font(sel || esHoy ? Letra.numero : Letra.dia)
                     .lineLimit(1).minimumScaleFactor(0.65)
-                    .foregroundStyle(esHoy ? Lienzo.naranjaProfundo : (d < hoy && !sel ? Lienzo.tintaSecundaria : Lienzo.tinta))
+                    .foregroundStyle(sel ? (esHoy ? Lienzo.hoySobreOscuro : Lienzo.sobreOscuro)
+                                     : (esHoy ? Lienzo.naranjaProfundo : (d < hoy ? Lienzo.tintaSecundaria : Lienzo.tinta)))
                 HStack(spacing: 3) {
                     ForEach(Array(puntos.enumerated()), id: \.offset) { _, c in Puntito(color: c, tamano: MedidaInicio.puntoSemana) }
                 }
@@ -702,7 +704,7 @@ struct SemanaCarrusel: View, Equatable {
             .background {
                 if sel {
                     RoundedRectangle(cornerRadius: Medida.radioFila, style: .continuous)
-                        .fill(Lienzo.sutil)
+                        .fill(Lienzo.placaElegido)
                         .matchedGeometryEffect(id: "elegido", in: espacio)
                 }
             }

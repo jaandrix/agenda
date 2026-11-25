@@ -10,27 +10,35 @@ import UIKit
 // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 enum Lienzo {
-    private static func c(_ v: UInt32, _ a: CGFloat = 1) -> Color { Color(uiColor: UIColor(rgb: v, alfa: a)) }
+    fileprivate static func c(_ v: UInt32, _ a: CGFloat = 1) -> Color { Color(uiColor: UIColor(rgb: v, alfa: a)) }
 
     // Valores crudos: los comparten Lienzo y TemaTokens.bitacora (Tema.swift). Nadie más debe leerlos.
     enum Hex {
-        static let fondo: UInt32 = 0xF2F3F5
+        static let fondo: UInt32 = 0xF3F4F7
         static let tarjeta: UInt32 = 0xFFFFFF
         static let oscuro: UInt32 = 0x111315
         static let oscuroElevado: UInt32 = 0x1D2024
-        static let sutil: UInt32 = 0xE8E9EC
+        static let sutil: UInt32 = 0xE9EBEF
         static let naranja: UInt32 = 0xFF6B4A
         static let naranjaClaro: UInt32 = 0xFF9A7A
         static let naranjaProfundo: UInt32 = 0xE8572F
         static let tinta: UInt32 = 0x111315
-        static let tintaSecundaria: UInt32 = 0x5F6672
+        static let tintaSecundaria: UInt32 = 0x5D6470
         static let tintaTerciaria: UInt32 = 0x9AA0AA
         static let sobreOscuro: UInt32 = 0xF4F4F2
         static let verde: UInt32 = 0x23986A
         static let rojo: UInt32 = 0xCC3A26
         static let azul: UInt32 = 0x4A72E8
-        static let ambar: UInt32 = 0xE9A21F
+        static let ambar: UInt32 = 0xE3A21F
         static let violeta: UInt32 = 0x8A63D2
+        // 3.2, «pastel.»: relleno de la tarjeta de cada tipo y el tono oscuro de su texto (≥ 4,5:1 sobre su relleno).
+        static let rellenoEvento: UInt32 = 0xFFE9E2, tintaEvento: UInt32 = 0xA8401F
+        static let rellenoEstudio: UInt32 = 0xE3EAFF, tintaEstudio: UInt32 = 0x2F4FA8
+        static let rellenoCumple: UInt32 = 0xFFF2D1, tintaCumple: UInt32 = 0x80590A
+        static let rellenoViaje: UInt32 = 0xEEE7FF, tintaViaje: UInt32 = 0x5B3FA0
+        static let rellenoDinero: UInt32 = 0xDDF3E7, tintaDinero: UInt32 = 0x1C6E4D
+        static let pildoraActiva: UInt32 = 0xFFE4DB
+        static let hoySobreOscuro: UInt32 = 0xFF8A6E
     }
 
     // Superficies
@@ -47,6 +55,13 @@ enum Lienzo {
     static let naranjaProfundo = c(Hex.naranjaProfundo)     // texto o icono naranja sobre blanco (más contraste)
     static let naranjaSuave = c(Hex.naranja, 0.12)          // tinte de fondo (seleccionado, chip naranja)
     static let naranjaBrillo = c(Hex.naranja, 0.45)         // sombra luminosa de la banda naranja
+
+    // 3.2: el día elegido va en una placa carbón; la pestaña activa de la barra, teñida de coral.
+    static let placaElegido = c(Hex.oscuro)
+    static let hoySobreOscuro = c(Hex.hoySobreOscuro)       // número de hoy sobre la placa carbón (8:1)
+    static let pildoraActiva = c(Hex.pildoraActiva)
+    static let tintaPildora = c(Hex.tintaEvento)            // texto e icono de la pestaña activa (5:1 sobre la píldora)
+    static let sobreRelleno = Color.white.opacity(0.75)     // bloque de hora e iconos dentro de una tarjeta pastel
 
     // Tinta
     static let tinta = c(Hex.tinta)                         // títulos y texto principal
@@ -85,10 +100,38 @@ enum Lienzo {
         colors: [c(Hex.naranjaProfundo), c(Hex.naranja, 0.95)], startPoint: .top, endPoint: .bottom)
 
     static let degradadoCabecera = LinearGradient(
-        stops: [.init(color: c(Hex.naranja, 0.95), location: 0),
-                .init(color: c(Hex.naranjaClaro, 0.55), location: 0.38),
+        stops: [.init(color: c(Hex.naranja, 0.92), location: 0),
+                .init(color: c(0xFFA082, 0.55), location: 0.34),
+                .init(color: c(0xFFCDBE, 0.3), location: 0.58),
                 .init(color: c(Hex.fondo, 0), location: 1)],
         startPoint: .top, endPoint: .bottom)
+}
+
+// 3.2, «pastel.»: cada tipo de evento lleva su tarjeta rellena; las tareas y lo demás siguen blancas.
+extension TipoPunto {
+    /// Relleno pastel de la tarjeta de este tipo; nil, tarjeta blanca (tarea, otro).
+    var relleno: Color? {
+        switch self {
+        case .evento: Lienzo.c(Lienzo.Hex.rellenoEvento)
+        case .estudio: Lienzo.c(Lienzo.Hex.rellenoEstudio)
+        case .cumple: Lienzo.c(Lienzo.Hex.rellenoCumple)
+        case .viaje: Lienzo.c(Lienzo.Hex.rellenoViaje)
+        case .dinero: Lienzo.c(Lienzo.Hex.rellenoDinero)
+        case .tarea, .otro: nil
+        }
+    }
+
+    /// Texto secundario (detalle, hora) sobre el relleno; sin relleno, la tinta secundaria de siempre.
+    var tintaRelleno: Color {
+        switch self {
+        case .evento: Lienzo.c(Lienzo.Hex.tintaEvento)
+        case .estudio: Lienzo.c(Lienzo.Hex.tintaEstudio)
+        case .cumple: Lienzo.c(Lienzo.Hex.tintaCumple)
+        case .viaje: Lienzo.c(Lienzo.Hex.tintaViaje)
+        case .dinero: Lienzo.c(Lienzo.Hex.tintaDinero)
+        case .tarea, .otro: Lienzo.tintaSecundaria
+        }
+    }
 }
 
 // Medidas: radios, márgenes y alturas. Radios concéntricos: interior = max(exterior - relleno, 8).
@@ -197,6 +240,17 @@ extension View {
             .background(Lienzo.tarjeta, in: RoundedRectangle(cornerRadius: radio, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: radio, style: .continuous).strokeBorder(Lienzo.filo))
             .sombra(.suave)
+    }
+
+    // Tarjeta de un tipo (3.2): rellena de su pastel, sin filete ni sombra; sin pastel, la tarjeta blanca de siempre.
+    @ViewBuilder func tarjetaTipo(_ tipo: TipoPunto, relleno: CGFloat = Medida.rellenoTarjeta, radio: CGFloat = Medida.radioTarjeta) -> some View {
+        if let color = tipo.relleno {
+            padding(relleno)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(color, in: RoundedRectangle(cornerRadius: radio, style: .continuous))
+        } else {
+            tarjeta(relleno: relleno, radio: radio)
+        }
     }
 
     // Fondo de página: el lienzo hasta los bordes.
