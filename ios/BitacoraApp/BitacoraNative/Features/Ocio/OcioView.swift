@@ -511,6 +511,12 @@ struct OcioView: View {
                                       estado: estado, fechaInicio: inicio, fechaFin: "", anio: l.anio, valoracion: "0", notas: "",
                                       enlace: "", portada: l.portada),
                          OcioDatosOp.op(id: id, isbn: l.isbn)])
+        // Muchas ediciones españolas no tienen portada por ISBN: como el editor, se busca por título y autor.
+        guard l.portada.isEmpty else { return }
+        let r = await BuscarPortadas.buscar(c, tipo: "book", q: l.autor.isEmpty ? l.titulo : l.titulo + " " + l.autor)
+        if let img = BuscarPortadas.mejor(r, titulo: l.titulo, autor: l.autor, anio: l.anio)?.imagen {
+            await c.guardar(OcioDatosOp.op(id: id, portadaSiFalta: img))
+        }
     }
 
     // 3.2: portadas que se buscan solas al abrir Ocio (6 por vez; cada entrada se intenta una sola vez por iPhone).

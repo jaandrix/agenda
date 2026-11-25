@@ -334,7 +334,7 @@
 
             // ===== GAME =====
             else if (type === 'game') {
-                const statuses = ['Jugando', 'Completado', 'Abandonado'];
+                const statuses = ['Jugando', 'Por jugar', 'Completado', 'Abandonado'];
                 extraFields = `
                     <div class="modal-label">Fecha de inicio</div>
                     <input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : today}">
@@ -657,7 +657,11 @@
                     entry.endDate = '';
                     entry.rating = 0;
                 }
-                entry.status = entry.endDate ? 'Completado' : 'Leyendo';
+                // 3.2: «Por leer» (escáner del iPhone) y «Abandonado» no tienen selector aquí; editar no los pisa.
+                const estadoAntes = editId ? entries.find(e => e.id === editId)?.status : '';
+                if (estadoAntes === 'Abandonado') entry.status = 'Abandonado';
+                else if (entry.endDate) entry.status = 'Completado';
+                else entry.status = estadoAntes === 'Por leer' && !entry.startDate ? 'Por leer' : 'Leyendo';
             } else if (type === 'movie') {
                 entry.date = document.getElementById('modal-date')?.value || '';
                 if (editId) {
