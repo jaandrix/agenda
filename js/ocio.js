@@ -619,24 +619,24 @@
             const { items: books, banner } = applyMonthFilterTo('book', allBooks);
             if (!books.length) return banner + `<div class="empty-state"><div class="empty-title">ningún libro ese mes.</div></div>`;
 
-            const reading = books.filter(b => b.status === 'Leyendo');
+            // 3.2: «Por leer» llega del escáner del iPhone y «Abandonado» del editor nativo; antes contaban en el total
+            // pero no salían en ninguna sección.
             const completed = books.filter(b => b.status === 'Completado');
+            const porLeer = books.filter(b => b.status === 'Por leer');
+            const abandonados = books.filter(b => b.status === 'Abandonado');
+            const reading = books.filter(b => b.status === 'Leyendo');
+            const cifra = (t, n) => `<div class="card" style="flex:1;padding:10px 12px"><div class="card-title" style="font-size:10px">${t}</div><div class="card-value" style="font-size:17px">${n}</div></div>`;
 
             let html = banner + `<div>
-                <div class="culture-cifras" style="display:flex;gap:10px;margin-bottom:16px;max-width:280px">
-                    <div class="card" style="flex:1;padding:10px 12px"><div class="card-title" style="font-size:10px">leyendo.</div><div class="card-value" style="font-size:17px">${reading.length}</div></div>
-                    <div class="card" style="flex:1;padding:10px 12px"><div class="card-title" style="font-size:10px">completados.</div><div class="card-value" style="font-size:17px">${completed.length}</div></div>
+                <div class="culture-cifras" style="display:flex;gap:10px;margin-bottom:16px;max-width:${porLeer.length ? 420 : 280}px">
+                    ${cifra('leyendo.', reading.length)}${porLeer.length ? cifra('por leer.', porLeer.length) : ''}${cifra('completados.', completed.length)}
                 </div>`;
 
-            if (reading.length) {
-                html += `<div class="media-card-section-title">leyendo.</div>`;
-                html += renderMediaCardGrid(reading, b => b.author || 'Sin autor');
-            }
-
-            if (completed.length) {
-                html += `<div class="media-card-section-title">completados.</div>`;
-                html += renderMediaCardGrid(completed, b => b.author || 'Sin autor');
-            }
+            [['leyendo.', reading], ['por leer.', porLeer], ['completados.', completed], ['abandonados.', abandonados]].forEach(([titulo, lista]) => {
+                if (!lista.length) return;
+                html += `<div class="media-card-section-title">${titulo}</div>`;
+                html += renderMediaCardGrid(lista, b => b.author || 'Sin autor');
+            });
 
             html += `</div>`;
             return html;
@@ -942,7 +942,7 @@
                 return `<div class="empty-state"><div class="empty-title">ningún videojuego todavía.</div><div class="empty-sub"><span class="solo-escritorio">Pulsa el botón + y selecciona "Videojuego"</span><span class="solo-movil">Añade el primero con el botón de arriba.</span></div></div>`;
             }
 
-            const statusOrder = { 'Jugando': 0, 'Completado': 1, 'Abandonado': 2 };
+            const statusOrder = { 'Jugando': 0, 'Por jugar': 1, 'Completado': 2, 'Abandonado': 3 };
             const sorted = [...games].sort((a, b) => (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0));
 
             // Sin badge de estado: muchos juegos no tienen fecha de finalización.
