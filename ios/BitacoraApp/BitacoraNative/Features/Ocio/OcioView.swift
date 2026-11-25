@@ -483,14 +483,23 @@ struct OcioView: View {
             titulo: d.titulo, autor: d.autor, estado: d.estado, fechaInicio: d.fechaInicio, fechaFin: d.fechaFin,
             anio: d.anio, valoracion: String(d.valoracion), notas: d.notas, enlace: d.enlace, portada: portada) }
         var ops = [op(d.portada)]
+        // 3.2: ISBN, plataforma y formato van en su propia operación (nil = no se tocan, como al valorar desde la ficha).
+        if d.isbn != nil || d.plataforma != nil || d.formato != nil {
+            ops.append(OcioDatosOp.op(id: id, isbn: d.isbn, plataforma: d.plataforma, formato: d.formato))
+        }
         // Valorarla da por hecha su tarea «valorar …» (completarTareaValorarPelicula).
         if d.valoracion > 0 { ops.append(OperacionesExtra.op(ValorarOcio.completar, ["entradaId": .string(id)])) }
         do { try await c.encolar(ops); aviso = nil } catch { aviso = "no se pudo guardar en este iPhone."; return }
-        // portadaAuto: sin portada, se busca sola y se pone si el título coincide.
+        // portadaAuto: sin portada, se busca sola; primero la de esa edición por ISBN y, si no, por título, autor y año.
         guard d.portada.isEmpty else { return }
-        let r = await BuscarPortadas.buscar(c, tipo: d.tipo, q: d.tipo == "book" && !d.autor.isEmpty ? d.titulo + " " + d.autor : d.titulo,
-                                            anio: d.tipo == "movie" || d.tipo == "series" ? d.anio : "")
-        if let buena = BuscarPortadas.mejor(r, titulo: d.titulo) { await c.guardar(op(buena.imagen)) }
+        var img: String?
+        if let isbn = d.isbn, !OcioDatosOp.isbnLimpio(isbn).isEmpty { img = await BuscarISBN.portada(OcioDatosOp.isbnLimpio(isbn)) }
+        if img == nil {
+            let r = await BuscarPortadas.buscar(c, tipo: d.tipo, q: d.tipo == "book" && !d.autor.isEmpty ? d.titulo + " " + d.autor : d.titulo,
+                                                anio: d.tipo == "movie" || d.tipo == "series" ? d.anio : "")
+            img = BuscarPortadas.mejor(r, titulo: d.titulo, autor: d.tipo == "book" ? d.autor : "", anio: d.anio)?.imagen
+        }
+        if let img { await c.guardar(OcioDatosOp.op(id: id, portadaSiFalta: img)) }
     }
 
     // 3.2: el libro del escáner, con su ISBN y la portada de esa edición.
@@ -546,8 +555,8 @@ struct OcioView: View {
             for e in salida.entradas {
                 let clave = e.tipo + "|" + LecturaOcio.normalizar(e.titulo) + "|" + e.anio
                 guard vistos.insert(clave).inserted else { continue }
-                try await c.encolar(.guardarOcio(id: OperacionBitacora.nuevoIdProyecto("ocio"), tipo: e.tipo, titulo: e.titulo,
-                    autor: e.autor, estado: e.estado, fechaInicio: e.fechaInicio, fechaFin: e.fechaFin, anio: e.anio,
+                try await c.encolar(.guardarOcio(id: OperacionBitacora.nuevoIdProyecto("ocio"), tipo: e.tipo, titulo: MayusculaOcio.inicial(e.titulo),
+                    autor: MayusculaOcio.inicial(e.autor), estado: e.estado, fechaInicio: e.fechaInicio, fechaFin: e.fechaFin, anio: e.anio,
                     valoracion: e.valoracion, notas: e.notas, enlace: e.enlace, portada: ""))
                 anadidas += 1
             }
@@ -560,6 +569,7 @@ struct OcioView: View {
 private struct DatosEditorOcio {
     let tipo: String; let titulo: String; let autor: String; let estado: String; let fechaInicio: String; let fechaFin: String
     let anio: String; let valoracion: Double; let notas: String; let enlace: String; let portada: String
+    var isbn: String? = nil; var plataforma: String? = nil; var formato: String? = nil
 }
 
 // MARK: - Ficha
@@ -583,7 +593,11 @@ private struct FichaOcio: View {
         _nota = State(initialValue: entrada.valoracion)
     }
 
-    private var meta: String { [entrada.autor.lowercased(), entrada.anio].filter { !$0.isEmpty }.joined(separator: ", ") }
+    private var meta: String {
+        let isbn = entrada.isbn.isEmpty ? "" : "isbn \(entrada.isbn)"
+        return [entrada.autor, entrada.plataforma, BibliotecaOcio.textoFormato(entrada.formato), entrada.anio, isbn]
+            .filter { !$0.isEmpty }.joined(separator: ", ")
+    }
     private var enlace: URL? { entrada.enlace.isEmpty ? nil : URL(string: entrada.enlace) }
     private var cambiada: Bool { nota != entrada.valoracion }
 
@@ -594,12 +608,13 @@ private struct FichaOcio: View {
                     Spacer()
                     BotonRedondo(sistema: "xmark", tono: .sutil, etiqueta: "cerrar") { cerrar() }
                 }
-                PortadaOcio(url: entrada.portada, titulo: entrada.titulo, ancho: 164, radio: Medida.radioControl)
+                PortadaOcio(url: entrada.portada, titulo: entrada.titulo, ancho: 164, radio: Medida.radioControl,
+                            cinco: BibliotecaOcio.cinco(entrada))
                     .sombra(.flotante)
                     .scaleEffect(dentro || sinMovimiento ? 1 : 0.9)
                     .opacity(dentro ? 1 : 0)
                 VStack(spacing: Medida.xxs) {
-                    Text(entrada.titulo.lowercased() + ".").font(Letra.titulo).foregroundStyle(Lienzo.tinta).kerning(-0.4)
+                    Text(MayusculaOcio.inicial(entrada.titulo) + ".").font(Letra.titulo).foregroundStyle(Lienzo.tinta).kerning(-0.4)
                         .multilineTextAlignment(.center)
                         .accessibilityAddTraits(.isHeader)
                     if !meta.isEmpty { Text(meta).font(Letra.detalle).foregroundStyle(Lienzo.tintaSecundaria) }
@@ -608,7 +623,7 @@ private struct FichaOcio: View {
                 valoracion
                 if !entrada.notas.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     VStack(alignment: .leading, spacing: Medida.xs) {
-                        EtiquetaSeccion(texto: "notas").padding(.horizontal, -Medida.xxs)
+                        TituloSeccionOcio(texto: "Notas.").padding(.horizontal, -Medida.xxs)
                         Text(entrada.notas).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -623,7 +638,7 @@ private struct FichaOcio: View {
         }
         .scrollIndicators(.hidden)
         .fondoLienzo()
-        .confirmationDialog("¿eliminar «\(entrada.titulo.lowercased())»?", isPresented: $confirmarBorrar, titleVisibility: .visible) {
+        .confirmationDialog("¿eliminar «\(MayusculaOcio.inicial(entrada.titulo))»?", isPresented: $confirmarBorrar, titleVisibility: .visible) {
             Button("eliminar.", role: .destructive) { Haptica.media(); eliminar(); cerrar() }
             Button("cancelar.", role: .cancel) {}
         }
@@ -692,6 +707,9 @@ private struct EditorOcio: View {
     @State private var conFin: Bool; @State private var fin: Date
     @State private var anio: String
     @State private var valoracion: Double; @State private var notas: String; @State private var enlace: String; @State private var portada: String
+    // 3.2: ISBN (libros), plataforma y formato (juegos).
+    @State private var isbn: String; @State private var plataforma: String; @State private var formato: String
+    private let estadoInicial: String
     @State private var candidatas: [CandidataPortada] = []
     @State private var buscando = false
     @State private var sinResultados = false
@@ -719,6 +737,8 @@ private struct EditorOcio: View {
         _anio = State(initialValue: entrada?.anio ?? "")
         _valoracion = State(initialValue: entrada?.valoracion ?? 0); _notas = State(initialValue: entrada?.notas ?? "")
         _enlace = State(initialValue: entrada?.enlace ?? ""); _portada = State(initialValue: entrada?.portada ?? "")
+        _isbn = State(initialValue: entrada?.isbn ?? ""); _plataforma = State(initialValue: entrada?.plataforma ?? "")
+        _formato = State(initialValue: entrada?.formato ?? ""); estadoInicial = entrada?.estado ?? ""
     }
 
     var body: some View {
@@ -727,8 +747,13 @@ private struct EditorOcio: View {
                 Section {
                     TextField("título.", text: $titulo)
                     if tipo == "book" { TextField("autor.", text: $autor) }
-                    TextField("año.", text: $anio).keyboardType(.numberPad)
+                    TextField(tipo == "book" ? "año de publicación." : "año.", text: $anio).keyboardType(.numberPad)
+                    if tipo == "book" {
+                        TextField("isbn.", text: $isbn).keyboardType(.numberPad).font(Letra.mono)
+                            .accessibilityLabel("isbn")
+                    }
                 }
+                if tipo == "game" { seccionJuego }
                 seccionPortada
                 Section("cuándo.") {
                     if tipo == "movie" {
@@ -772,7 +797,10 @@ private struct EditorOcio: View {
                     Button("guardar.") {
                         let i = conInicio ? Self.iso(inicio) : "", f = tipo != "movie" && conFin ? Self.iso(fin) : ""
                         guardar(.init(tipo: tipo, titulo: MayusculaOcio.inicial(titulo), autor: MayusculaOcio.inicial(autor), estado: estado, fechaInicio: i, fechaFin: f, anio: anio,
-                                      valoracion: valoracion, notas: notas, enlace: enlace, portada: portada))
+                                      valoracion: valoracion, notas: notas, enlace: enlace, portada: portada,
+                                      isbn: tipo == "book" ? isbn : nil,
+                                      plataforma: tipo == "game" ? MayusculaOcio.inicial(plataforma) : nil,
+                                      formato: tipo == "game" ? formato : nil))
                         cerrar()
                     }.disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
@@ -814,7 +842,7 @@ private struct EditorOcio: View {
                                             .strokeBorder(elegida ? Lienzo.naranja : .clear, lineWidth: 2.5))
                                         .scaleEffect(elegida ? 1 : 0.96)
                                         .animation(Muelle.toque, value: elegida)
-                                    Text(k.titulo.lowercased()).font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta).lineLimit(2)
+                                    Text(MayusculaOcio.inicial(k.titulo)).font(Letra.pieFuerte).foregroundStyle(Lienzo.tinta).lineLimit(2)
                                     if !k.anio.isEmpty { Text(k.anio).font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria) }
                                 }
                                 .frame(width: 70, alignment: .leading)
@@ -839,8 +867,42 @@ private struct EditorOcio: View {
         if portada.isEmpty, let m = BuscarPortadas.mejor(candidatas, titulo: titulo) { portada = m.imagen; if anio.isEmpty { anio = String(m.anio.prefix(4)) } }
     }
 
+    // 3.2: «Por leer» y «Por jugar» para lo que está en la biblioteca sin empezar. Un estado que no está en la lista
+    // (el vacío de las recomendaciones de la web) se conserva como opción para no cambiarlo sin querer.
     private var estados: [String] {
-        switch tipo { case "book": return ["Leyendo", "Completado", "Abandonado"]; case "series": return ["Viendo", "Completada", "Abandonada"]; case "game": return ["Jugando", "Completado", "Abandonado"]; default: return [] }
+        let base: [String]
+        switch tipo {
+        case "book": base = ["Leyendo", "Por leer", "Completado", "Abandonado"]
+        case "series": base = ["Viendo", "Completada", "Abandonada"]
+        case "game": base = ["Jugando", "Por jugar", "Completado", "Abandonado"]
+        default: base = []
+        }
+        return base.isEmpty || base.contains(estadoInicial) || estadoInicial.isEmpty ? base : base + [estadoInicial]
+    }
+
+    // Plataforma (atajos de las más comunes o escrita) y formato: físico, digital u otro.
+    private var seccionJuego: some View {
+        Section {
+            TextField("plataforma.", text: $plataforma).textInputAutocapitalization(.words)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(PlataformasOcio.comunes, id: \.self) { p in
+                        let on = LecturaOcio.normalizar(p) == LecturaOcio.normalizar(plataforma)
+                        Button { Haptica.seleccion(); plataforma = on ? "" : p } label: {
+                            Chip(texto: p, tono: on ? .oscuro : .sutil).frame(minHeight: Medida.toque).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.pulsable(0.92))
+                        .accessibilityAddTraits(on ? .isSelected : [])
+                    }
+                }
+            }
+            Picker("formato.", selection: $formato) {
+                Text("sin indicar.").tag("")
+                ForEach(OcioDatosOp.formatos, id: \.self) { Text(BibliotecaOcio.textoFormato($0) + ".").tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel("formato")
+        } header: { Text("dónde lo tienes.") }
     }
 }
 
@@ -876,7 +938,7 @@ private struct EditorListaOcio: View {
                             HStack(spacing: Medida.s) {
                                 PortadaOcio(url: e.portada, titulo: e.titulo, ancho: 28, radio: 6)
                                 VStack(alignment: .leading, spacing: 1) {
-                                    Text(e.titulo.lowercased()).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta).lineLimit(1)
+                                    Text(MayusculaOcio.inicial(e.titulo)).font(Letra.cuerpo).foregroundStyle(Lienzo.tinta).lineLimit(1)
                                     Text(LecturaOcio.nombre(e.tipo) + ".").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
                                 }
                                 Spacer(minLength: Medida.xs)

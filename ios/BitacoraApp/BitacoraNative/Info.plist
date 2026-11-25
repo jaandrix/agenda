@@ -48,6 +48,8 @@
     </array>
     <key>LSSupportsOpeningDocumentsInPlace</key>
     <false/>
+    <key>NSCameraUsageDescription</key>
+    <string>Bitácora usa la cámara para leer el código de barras de tus libros y añadirlos a tu biblioteca.</string>
     <key>NSFaceIDUsageDescription</key>
     <string>Bitácora usa Face ID para abrirse, solo si lo activas en ajustes.</string>
     <key>UIAppFonts</key>

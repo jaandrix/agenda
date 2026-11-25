@@ -197,7 +197,7 @@ struct PortadaOcio: View {
 
     private var inicial: some View {
         Lienzo.sutil.overlay(
-            Text(String(titulo.prefix(1)).lowercased())
+            Text(String(titulo.prefix(1)).uppercased())
                 .font((ancho ?? 100) < 60 ? Letra.seccion : Letra.titulo)
                 .foregroundStyle(Lienzo.tintaTerciaria))
     }
