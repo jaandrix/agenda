@@ -69,10 +69,28 @@ async function series(q: string, anio?: string): Promise<Candidata[]> {
 }
 
 async function juegos(q: string): Promise<Candidata[]> {
-    const d = await pedir(`https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(q)}&cc=es&l=spanish`);
-    return (d.items || []).filter((x: any) => x.type === 'app').slice(0, 12).map((x: any) => ({
-        titulo: x.name, imagen: `https://cdn.cloudflare.steamstatic.com/steam/apps/${x.id}/library_600x900.jpg`, fuente: 'Steam',
-    }));
+    const steam = (async () => {
+        try {
+            const d = await pedir(`https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(q)}&cc=es&l=spanish`);
+            return (d.items || []).filter((x: any) => x.type === 'app').slice(0, 12).map((x: any) => ({
+                titulo: x.name, imagen: `https://cdn.cloudflare.steamstatic.com/steam/apps/${x.id}/library_600x900.jpg`, fuente: 'Steam',
+            }));
+        } catch (_) { return []; }
+    })();
+    // 3.3: lo que no está en Steam (consolas). La imagen del artículo de un videojuego en Wikipedia es su carátula;
+    // son imágenes no libres y solo se dan con pilicense=any.
+    const wiki = async (idioma: string, extra: string): Promise<Candidata[]> => {
+        try {
+            const u = `https://${idioma}.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrlimit=6&prop=pageimages&piprop=thumbnail&pithumbsize=600&pilicense=any&gsrsearch=${encodeURIComponent(q + ' ' + extra)}`;
+            const d = await pedir(u);
+            return Object.values(d?.query?.pages || {}).sort((a: any, b: any) => (a.index ?? 99) - (b.index ?? 99))
+                .filter((p: any) => p.thumbnail?.source?.startsWith('https://') && !/\.svg/i.test(p.thumbnail.source))
+                .map((p: any) => ({ titulo: String(p.title).replace(/\s*\((video ?game|videojuego)[^)]*\)/i, ''), imagen: p.thumbnail.source, fuente: 'Wikipedia' }));
+        } catch (_) { return []; }
+    };
+    const [a, b, c] = await Promise.all([steam, wiki('en', 'video game'), wiki('es', 'videojuego')]);
+    const vistas = new Set<string>();
+    return [...a, ...b, ...c].filter(x => !vistas.has(x.imagen) && vistas.add(x.imagen));
 }
 
 // El logo de una marca: su web (la que manda la app, la que da DuckDuckGo o, si se pide adivinar, nombre.com / .es)

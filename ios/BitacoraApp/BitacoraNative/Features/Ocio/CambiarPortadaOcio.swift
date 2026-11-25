@@ -17,6 +17,8 @@ struct CambiarPortadaOcio: View {
     @State private var buscando = false
     // Solo vale la última búsqueda: si se lanza otra antes de que acabe, la anterior se descarta.
     @State private var turno = 0
+    @State private var comprobando: String?
+    @State private var aviso: String?
 
     private let columnas = Array(repeating: GridItem(.flexible(), spacing: Medida.s, alignment: .top), count: 3)
 
@@ -59,6 +61,9 @@ struct CambiarPortadaOcio: View {
                         .buttonStyle(.capsula(.oscuro))
                         .disabled(buscando || consulta.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
+                if let aviso {
+                    Text(aviso).font(Letra.pie).foregroundStyle(Lienzo.negativo)
+                }
                 resultados
             }
             .padding(.horizontal, Medida.margen)
@@ -96,9 +101,19 @@ struct CambiarPortadaOcio: View {
         let elegida = actual == k.imagen
         let esISBN = deISBN?.imagen == k.imagen
         return Button {
-            Haptica.exito()
-            elegir(k.imagen)
-            cerrar()
+            // 3.3 («a veces no se aplica»): se guarda solo si la imagen carga. Algunas candidatas (la vertical de Steam
+            // de un juego que no la tiene, un enlace caducado) dan error y dejaban la portada en blanco.
+            guard comprobando == nil else { return }
+            comprobando = k.imagen
+            aviso = nil
+            Task {
+                let vale = await BuscarPortadas.cargaBien(k.imagen)
+                comprobando = nil
+                guard vale else { Haptica.error(); aviso = "esa portada no se puede cargar. prueba otra."; return }
+                Haptica.exito()
+                elegir(k.imagen)
+                cerrar()
+            }
         } label: {
             VStack(alignment: .leading, spacing: 4) {
                 PortadaOcio(url: k.imagen, titulo: k.titulo.isEmpty ? entrada.titulo : k.titulo, ancho: nil)

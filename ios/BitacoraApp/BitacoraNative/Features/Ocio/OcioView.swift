@@ -511,7 +511,7 @@ struct OcioView: View {
         if img == nil {
             let r = await BuscarPortadas.buscar(c, tipo: d.tipo, q: d.tipo == "book" && !d.autor.isEmpty ? d.titulo + " " + d.autor : d.titulo,
                                                 anio: d.tipo == "movie" || d.tipo == "series" ? d.anio : "")
-            img = BuscarPortadas.mejor(r, titulo: d.titulo, autor: d.tipo == "book" ? d.autor : "", anio: d.anio)?.imagen
+            img = await BuscarPortadas.primeraQueCarga(BuscarPortadas.ordenadas(r, titulo: d.titulo, autor: d.tipo == "book" ? d.autor : "", anio: d.anio))
         }
         if let img { await c.guardar(OcioDatosOp.op(id: id, portadaSiFalta: img)) }
     }
@@ -529,9 +529,10 @@ struct OcioView: View {
                                           fechaFin: "", anio: "", valoracion: "0", notas: "", enlace: "", portada: ""),
                              OcioDatosOp.op(id: id, plataforma: j.plataforma.isEmpty ? nil : j.plataforma, formato: "fisico")])
             let r = await BuscarPortadas.buscar(c, tipo: "game", q: j.titulo)
-            if let img = BuscarPortadas.mejor(r, titulo: j.titulo)?.imagen ?? (j.imagen.isEmpty ? nil : j.imagen) {
-                await c.guardar(OcioDatosOp.op(id: id, portadaSiFalta: img))
-            }
+            // 3.3: solo una portada que carga (la vertical de Steam no existe para todos los juegos).
+            let img = await BuscarPortadas.primeraQueCarga(BuscarPortadas.ordenadas(r, titulo: j.titulo))
+                ?? (j.imagen.isEmpty ? nil : j.imagen)
+            if let img { await c.guardar(OcioDatosOp.op(id: id, portadaSiFalta: img)) }
             return
         }
         let id = OperacionBitacora.nuevoIdProyecto("ocio")
@@ -542,7 +543,7 @@ struct OcioView: View {
         // Muchas ediciones españolas no tienen portada por ISBN: como el editor, se busca por título y autor.
         guard l.portada.isEmpty else { return }
         let r = await BuscarPortadas.buscar(c, tipo: "book", q: l.autor.isEmpty ? l.titulo : l.titulo + " " + l.autor)
-        if let img = BuscarPortadas.mejor(r, titulo: l.titulo, autor: l.autor, anio: l.anio)?.imagen {
+        if let img = await BuscarPortadas.primeraQueCarga(BuscarPortadas.ordenadas(r, titulo: l.titulo, autor: l.autor, anio: l.anio)) {
             await c.guardar(OcioDatosOp.op(id: id, portadaSiFalta: img))
         }
     }
@@ -560,7 +561,7 @@ struct OcioView: View {
             if img == nil {
                 let r = await BuscarPortadas.buscar(c, tipo: e.tipo, q: e.tipo == "book" && !e.autor.isEmpty ? e.titulo + " " + e.autor : e.titulo,
                                                     anio: e.tipo == "movie" || e.tipo == "series" ? e.anio : "")
-                img = BuscarPortadas.mejor(r, titulo: e.titulo, autor: e.autor, anio: e.anio)?.imagen
+                img = await BuscarPortadas.primeraQueCarga(BuscarPortadas.ordenadas(r, titulo: e.titulo, autor: e.autor, anio: e.anio))
             }
             if let img { ops.append(OcioDatosOp.op(id: e.id, portadaSiFalta: img)) }
         }

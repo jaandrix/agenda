@@ -90,7 +90,41 @@ struct CandidataPortada: Identifiable, Equatable {
 }
 
 enum BuscarPortadas {
+    // 3.3: en los juegos, a las de Steam (solo lo que se vende en Steam) se suman las carátulas de Wikipedia, que tiene
+    // también los de consola. Se piden a la vez.
     static func buscar(_ c: AppCoordinator, tipo: String, q: String, anio: String = "") async -> [CandidataPortada] {
+        guard tipo == "game" else { return await deLaFuncion(c, tipo: tipo, q: q, anio: anio) }
+        async let funcion = deLaFuncion(c, tipo: tipo, q: q, anio: anio)
+        async let wiki = PortadasWikipedia.juegos(q)
+        let a = await funcion, b = await wiki
+        var vistas = Set<String>()
+        return (a + b).filter { vistas.insert($0.imagen).inserted }
+    }
+
+    // La primera candidata cuya imagen se puede cargar de verdad. Steam da una dirección para cualquier juego, pero
+    // muchos no tienen la portada vertical y responde 404: guardarla dejaba la entrada con la inicial.
+    static func primeraQueCarga(_ candidatas: [CandidataPortada]) async -> String? {
+        for k in candidatas.prefix(4) where await cargaBien(k.imagen) { return k.imagen }
+        return nil
+    }
+
+    static func cargaBien(_ imagen: String) async -> Bool {
+        guard let u = URL(string: imagen) else { return false }
+        return await Imagenes.cargar(u, lado: PortadaOcio.ladoRejilla) != nil
+    }
+
+    // Las candidatas por orden de acierto (la mejor primero), para probar la siguiente si una no carga.
+    static func ordenadas(_ r: [CandidataPortada], titulo: String, autor: String = "", anio: String = "") -> [CandidataPortada] {
+        var resto = r
+        var salida: [CandidataPortada] = []
+        while let m = mejor(resto, titulo: titulo, autor: autor, anio: anio) {
+            salida.append(m)
+            resto.removeAll { $0.imagen == m.imagen }
+        }
+        return salida
+    }
+
+    private static func deLaFuncion(_ c: AppCoordinator, tipo: String, q: String, anio: String) async -> [CandidataPortada] {
         let q = q.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty, let s = try? await c.entorno.auth.sesionValida() else { return [] }
         var cuerpo: [String: Any] = ["tipo": tipo, "q": q]
