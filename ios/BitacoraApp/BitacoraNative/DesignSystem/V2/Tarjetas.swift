@@ -115,10 +115,13 @@ struct SegmentoCapsula<Valor: Hashable>: View {
     @Binding var elegido: Valor
     var sobreBlanco = true
 
-    @Namespace private var espacio
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
+    // 3.2 (lag de la píldora, visto en el iPhone): una sola píldora que se mueve con `offset` en vez de
+    // matchedGeometryEffect. El offset no cambia el diseño de nada, así que animarlo no recoloca la página entera
+    // (Finanzas, Plan) en cada fotograma; con matchedGeometryEffect sí, y daba tirones aunque el contenido esperase.
     var body: some View {
+        let indice = opciones.firstIndex { $0.valor == elegido } ?? 0
         HStack(spacing: 2) {
             ForEach(opciones) { o in
                 let on = o.valor == elegido
@@ -133,13 +136,19 @@ struct SegmentoCapsula<Valor: Hashable>: View {
                     }
                     .foregroundStyle(on ? Lienzo.sobreOscuro : Lienzo.tintaSecundaria)
                     .frame(maxWidth: .infinity, minHeight: 36)
-                    .background {
-                        if on { Capsule().fill(Lienzo.oscuro).matchedGeometryEffect(id: "segmento", in: espacio) }
-                    }
                     .contentShape(Capsule())
                 }
                 .buttonStyle(Pulsable(escala: 0.94, haptica: false))
                 .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .background(alignment: .leading) {
+            GeometryReader { g in
+                let n = CGFloat(max(opciones.count, 1))
+                let ancho = (g.size.width - 2 * (n - 1)) / n
+                Capsule().fill(Lienzo.oscuro)
+                    .frame(width: ancho, height: g.size.height)
+                    .offset(x: CGFloat(indice) * (ancho + 2))
             }
         }
         .padding(4)

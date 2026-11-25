@@ -15,10 +15,9 @@ struct SemanaFlotante: View {
     var accesorio: AnyView?
 
     @State private var visible: LocalDay?
-    // 3.2 (lag de la placa): la placa sigue a `marcado` al momento y `elegir` llega cuando ya casi ha llegado. Si el día
-    // nuevo se pintaba en el mismo fotograma del toque (lista, puntos, carga), el muelle de la placa daba tirones.
+    // 3.2 (lag de la placa): la placa sigue a `marcado` al momento y `elegir` llega cuando ya ha llegado. Si el día
+    // nuevo se pintaba durante el viaje (lista, puntos, carga), el muelle de la placa daba tirones.
     @State private var marcado: LocalDay?
-    @Namespace private var espacio
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
     private static let abreviaturas = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
@@ -88,10 +87,25 @@ struct SemanaFlotante: View {
         .animation(Muelle.rapido, value: elegido != hoy || semanaVisible != lunesDeHoy)
     }
 
+    // Una sola placa por semana movida con `offset` (no matchedGeometryEffect): animarla no recoloca nada más.
     private func semana(_ l: LocalDay) -> some View {
-        HStack(spacing: 2) {
+        let sel = marcado ?? elegido
+        let posicion: Int? = sel.inicioSemanaLunes == l ? (0..<7).first(where: { l.sumando(dias: $0) == sel }) : nil
+        return HStack(spacing: 2) {
             ForEach(0..<7, id: \.self) { i in
                 dia(l.sumando(dias: i), indice: i)
+            }
+        }
+        .background(alignment: .leading) {
+            if let posicion {
+                GeometryReader { g in
+                    let ancho = (g.size.width - 2 * 6) / 7
+                    RoundedRectangle(cornerRadius: Medida.radioFila, style: .continuous)
+                        .fill(Lienzo.placaElegido)
+                        .frame(width: ancho, height: g.size.height)
+                        .offset(x: CGFloat(posicion) * (ancho + 2))
+                }
+                .transition(.opacity)
             }
         }
     }
@@ -105,7 +119,7 @@ struct SemanaFlotante: View {
             Haptica.ligera()
             marcado = d
             Task {
-                try? await Task.sleep(nanoseconds: 160_000_000)
+                try? await Task.sleep(nanoseconds: 260_000_000)
                 guard marcado == d else { return }
                 var sinAnimar = Transaction()
                 sinAnimar.disablesAnimations = true
@@ -128,13 +142,6 @@ struct SemanaFlotante: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
-            .background {
-                if on {
-                    RoundedRectangle(cornerRadius: Medida.radioFila, style: .continuous)
-                        .fill(Lienzo.placaElegido)
-                        .matchedGeometryEffect(id: "elegido", in: espacio)
-                }
-            }
             .contentShape(Rectangle())
         }
         .buttonStyle(Pulsable(escala: 0.9, haptica: false))

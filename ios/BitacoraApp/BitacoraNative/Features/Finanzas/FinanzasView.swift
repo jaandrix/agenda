@@ -70,7 +70,7 @@ struct FinanzasView: View {
                                         segmento = p
                                         scroll.scrollTo("arriba", anchor: .top)
                                         Task {
-                                            try? await Task.sleep(nanoseconds: 180_000_000)
+                                            try? await Task.sleep(nanoseconds: 260_000_000)
                                             guard segmento == p else { return }
                                             withAnimation(sinMovimiento ? nil : .easeOut(duration: 0.14)) {
                                                 pestanaGuardada = p.rawValue

@@ -116,7 +116,9 @@ struct OcioView: View {
                 FichaOcio(entrada: entrada,
                           valorar: { v in Task { await guardar(Self.datos(entrada, valoracion: v), previo: entrada) } },
                           editar: { modal = .entrada(entrada, entrada.tipo) },
-                          eliminar: { Task { await c.guardar(.borrarEntrada(id: entrada.id)) } })
+                          eliminar: { Task { await c.guardar(.borrarEntrada(id: entrada.id)) } },
+                          cambiarPortada: { url in Task { await c.guardar(OcioDatosOp.op(id: entrada.id, portada: url)) } })
+                    .environment(c)
             case .entrada(let entrada, let tipo):
                 EditorOcio(entrada: entrada, tipo: tipo) { datos in Task { await guardar(datos, previo: entrada) } }
                     .environment(c)
@@ -609,17 +611,25 @@ private struct FichaOcio: View {
     @Environment(\.dismiss) private var cerrar
     @Environment(\.openURL) private var abrirURL
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
+    @Environment(AppCoordinator.self) private var c
     let entrada: EntradaOcio
     let valorar: (Double) -> Void
     let editar: () -> Void
     let eliminar: () -> Void
+    let cambiarPortada: (String) -> Void
     @State private var nota: Double
     @State private var dentro = false
     @State private var confirmarBorrar = false
+    // La ficha llega con la entrada de cuando se abrió: la portada nueva se ve al momento sin esperar a la recarga.
+    @State private var portada: String
+    @State private var cambiandoPortada = false
 
-    init(entrada: EntradaOcio, valorar: @escaping (Double) -> Void, editar: @escaping () -> Void, eliminar: @escaping () -> Void) {
+    init(entrada: EntradaOcio, valorar: @escaping (Double) -> Void, editar: @escaping () -> Void, eliminar: @escaping () -> Void,
+         cambiarPortada: @escaping (String) -> Void) {
         self.entrada = entrada; self.valorar = valorar; self.editar = editar; self.eliminar = eliminar
+        self.cambiarPortada = cambiarPortada
         _nota = State(initialValue: entrada.valoracion)
+        _portada = State(initialValue: entrada.portada)
     }
 
     private var meta: String {
@@ -637,7 +647,7 @@ private struct FichaOcio: View {
                     Spacer()
                     BotonRedondo(sistema: "xmark", tono: .sutil, etiqueta: "cerrar") { cerrar() }
                 }
-                PortadaOcio(url: entrada.portada, titulo: entrada.titulo, ancho: 164, radio: Medida.radioControl,
+                PortadaOcio(url: portada, titulo: entrada.titulo, ancho: 164, radio: Medida.radioControl,
                             cinco: BibliotecaOcio.cinco(entrada))
                     .sombra(.flotante)
                     .scaleEffect(dentro || sinMovimiento ? 1 : 0.9)
@@ -670,6 +680,13 @@ private struct FichaOcio: View {
         .confirmationDialog("¿eliminar «\(MayusculaOcio.inicial(entrada.titulo))»?", isPresented: $confirmarBorrar, titleVisibility: .visible) {
             Button("eliminar.", role: .destructive) { Haptica.media(); eliminar(); cerrar() }
             Button("cancelar.", role: .cancel) {}
+        }
+        .hoja(isPresented: $cambiandoPortada) {
+            CambiarPortadaOcio(entrada: entrada, actual: portada) { url in
+                portada = url
+                cambiarPortada(url)
+            }
+            .environment(c)
         }
         .onAppear {
             withAnimation(Muelle.o(Muelle.modal, reducido: sinMovimiento).delay(0.06)) { dentro = true }
@@ -716,6 +733,8 @@ private struct FichaOcio: View {
                     Button("abrir enlace.") { abrirURL(enlace) }.buttonStyle(.capsula(.blanco, ancho: true))
                 }
             }
+            Button(portada.isEmpty ? "añadir portada." : "cambiar portada.") { cambiandoPortada = true }
+                .buttonStyle(.capsula(.blanco, ancho: true))
             Button("eliminar.") { confirmarBorrar = true }.buttonStyle(.capsula(.claro, ancho: true))
         }
     }
