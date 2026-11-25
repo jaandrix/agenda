@@ -227,19 +227,14 @@
         return { gasto: g1, antes: antes, dif: g1 - antes, dia: dia, mesPasado: MESES[pasado.getMonth()], previsto: dia >= 5 ? Math.round(g1 / dia * diasMes) : null };
     }
 
+    // 3.2: suscripcionesPrevistas (como mobileFinCargos): los de este mes que el banco aún no ha cobrado, «por cobrar».
     function cargos(max) {
-        var ahora = new Date(), dia = ahora.getDate();
-        var l = entries.filter(function (e) { return (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0; }).map(function (e) {
-            var diaCobro = Number(e.renewalDay) || 1;
-            var fecha = new Date(ahora.getFullYear(), ahora.getMonth() + (diaCobro < dia ? 1 : 0), 1);
-            fecha.setDate(Math.min(diaCobro, new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate()));
-            return { e: e, fecha: fecha, faltan: Math.round((fecha - new Date(ahora.getFullYear(), ahora.getMonth(), dia)) / 864e5) };
-        }).filter(function (x) { return x.faltan <= 14; }).sort(function (a, b) { return a.faltan - b.faltan; });
+        var l = suscripcionesPrevistas(14);
         return {
             total: l.reduce(function (t, x) { return t + Number(x.e.amount); }, 0),
             lista: l.slice(0, max).map(function (x) {
                 return { id: String(x.e.id), titulo: String(x.e.title || ''), importe: Number(x.e.amount),
-                    cuando: x.faltan === 0 ? 'hoy' : x.faltan === 1 ? 'mañana' : x.fecha.getDate() + ' ' + MESES[x.fecha.getMonth()].slice(0, 3) };
+                    cuando: x.faltan < 0 ? 'por cobrar' : x.faltan === 0 ? 'hoy' : x.faltan === 1 ? 'mañana' : x.fecha.getDate() + ' ' + MESES[x.fecha.getMonth()].slice(0, 3) };
             })
         };
     }
@@ -319,7 +314,7 @@
             // Fin de mes: lo mismo que finResPanelPrevision.
             var mes = financeMonthKey(), saldo = saldoLiquido();
             var diasMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
-            var fijos = entries.filter(function (e) { return (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0 && Math.min(Number(e.renewalDay) || 1, diasMes) > dia && (e.type !== 'subscription' || suscripcionVigente(e, todayISO())); }).reduce(function (s, e) { return s + Number(e.amount); }, 0);
+            var fijos = suscripcionesPorCobrarMes();
             var variable = 0;
             try { var r = financeRitmoDatos(); if (r.suficiente) variable = Math.max(0, r.proyeccion - r.llevas); } catch (e) {}
             var porEntrar = finResSueldoPorEntrar(mes);

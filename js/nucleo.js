@@ -2157,18 +2157,12 @@ ${escapeHtml(String(e?.stack || '').split('\n').slice(0, 3).join('\n'))}</pre></
         }
 
         function mobileFinCargos(max, conTotal) {
-            const ahora = new Date();
-            const dia = ahora.getDate();
-            const cargos = entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0).map(e => {
-                const diaCobro = Number(e.renewalDay) || 1;
-                const fecha = new Date(ahora.getFullYear(), ahora.getMonth() + (diaCobro < dia ? 1 : 0), 1);
-                fecha.setDate(Math.min(diaCobro, new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate()));
-                return { e, fecha, faltan: Math.round((fecha - new Date(ahora.getFullYear(), ahora.getMonth(), dia)) / 864e5) };
-            }).filter(x => x.faltan <= 14).sort((a, b) => a.faltan - b.faltan);
+            // 3.2: los de este mes que el banco aún no ha cobrado salen como «por cobrar».
+            const cargos = suscripcionesPrevistas(14);
             if (!cargos.length) return '';
             return `
                 <div class="m-bloque-cab"><div class="m-etiqueta">próximos cargos.</div>${conTotal ? `<span class="m-fila-meta">${financeMoney(cargos.reduce((t, x) => t + Number(x.e.amount), 0))} en 14 días.</span>` : ''}</div>
-                <div class="m-lista">${cargos.slice(0, max).map(x => `<div class="m-fila"><span class="m-fila-hora">${x.faltan === 0 ? 'hoy' : x.faltan === 1 ? 'mañana' : `${x.fecha.getDate()} ${MOBILE_MESES[x.fecha.getMonth()].slice(0, 3)}`}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(x.e.title || '')}</div></div><span class="m-fila-cifra">${financeMoney(Number(x.e.amount))}</span></div>`).join('')}</div>`;
+                <div class="m-lista">${cargos.slice(0, max).map(x => `<div class="m-fila"><span class="m-fila-hora">${x.faltan < 0 ? 'por cobrar' : x.faltan === 0 ? 'hoy' : x.faltan === 1 ? 'mañana' : `${x.fecha.getDate()} ${MOBILE_MESES[x.fecha.getMonth()].slice(0, 3)}`}</span><div class="m-fila-cuerpo"><div class="m-fila-titulo">${escapeHtml(x.e.title || '')}</div></div><span class="m-fila-cifra">${financeMoney(Number(x.e.amount))}</span></div>`).join('')}</div>`;
         }
 
         function mobileFinPorAjustar() {

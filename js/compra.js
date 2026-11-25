@@ -3,7 +3,7 @@
 //  Listas de la compra ordenadas por secciones del súper (como se recorre
 //  la tienda), con lo que ya está en el carro abajo y tachado, lo que más
 //  compras a un toque y un total estimado. Al terminar, la compra pasa al
-//  historial y, si se quiere, el gasto a Finanzas.
+//  historial (3.2: la Despensa nunca apunta gastos en Finanzas; el cargo llega con el extracto del banco).
 //  El ticket (foto a Claude o ChatGPT con el conector, op 'ticket') se une
 //  a la compra de ese día: cada línea con su precio y su tienda, lo que
 //  estaba en la lista y lo que se añadió en la tienda. Del historial
@@ -562,27 +562,17 @@ function compraTiendasConocidas() {
 
 // Al terminar: lo del carro sale de la lista, cuenta para "lo de
 // siempre", se guarda en el historial (con su tienda, para unirle luego el
-// ticket) y, si se quiere, se apunta el gasto en Finanzas.
+// ticket). Nada va a Finanzas (3.2).
 function openCompraTerminar() {
     const l = compraListaActual();
     const carro = l.items.filter(i => i.hecho);
     const tienda = compraTiendaDeLista(l) || datosCompra().historial.slice(-1)[0]?.tienda || '';
-    const importe = compraImporte(carro, tienda);
-    const cuentas = typeof FINANCE_PRO_ACCOUNT_KEYS !== 'undefined' ? FINANCE_PRO_ACCOUNT_KEYS : [];
     showModal(`
         <div class="modal-title">terminar la compra.</div>
         <p class="finance-modal-note" style="margin-top:0">${carro.length} ${carro.length === 1 ? 'producto sale' : 'productos salen'} de la lista y se guardan en el historial. Lo que quede sin coger se queda para la próxima.</p>
         <div class="modal-label">tienda</div>
         <input id="compra-tienda" class="modal-input" list="compra-tiendas" value="${escapeHtml(tienda)}" placeholder="Mercadona, Lidl, el mercado...">
         <datalist id="compra-tiendas">${compraTiendasConocidas().map(t => `<option value="${escapeHtml(t)}">`).join('')}</datalist>
-        <label class="finance-tx-marca"><input type="checkbox" id="compra-a-finanzas" onchange="document.getElementById('compra-gasto').hidden=!this.checked"><span><b>apuntar también el gasto en finanzas.</b><small>Normalmente no hace falta: el cargo llega con el extracto del banco.</small></span></label>
-        <div id="compra-gasto" hidden>
-            <div class="lab-horas">
-                <div><div class="modal-label">importe</div><input id="compra-importe" class="modal-input" inputmode="decimal" value="${importe ? importe.toFixed(2).replace('.', ',') : ''}" placeholder="0,00"></div>
-                <div><div class="modal-label">cuenta</div><select id="compra-cuenta" class="modal-input">${cuentas.map(k => `<option value="${k}" ${k === (financePro.cuentaImport || 'bancos') ? 'selected' : ''}>${escapeHtml(financePro.accounts[k]?.name || k)}</option>`).join('')}</select></div>
-            </div>
-            <div class="finance-modal-note">Si luego importas el extracto del banco, este gasto se emparejará con el cargo real.</div>
-        </div>
         <button class="btn-modal-primary" onclick="terminarCompra()">terminar.</button>
     `);
 }
@@ -594,28 +584,17 @@ async function terminarCompra() {
     const tienda = (document.getElementById('compra-tienda')?.value || '').trim();
     carro.forEach(i => { const k = i.texto.toLowerCase(); d.frecuentes[k] = (d.frecuentes[k] || 0) + 1; });
     l.items = l.items.filter(i => !i.hecho);
-    let gasto = '', txId = null, total = 0;
-    const importe = Number(String(document.getElementById('compra-importe')?.value || '').replace(',', '.'));
-    if (document.getElementById('compra-a-finanzas')?.checked) {
-        if (importe > 0) {
-            total = Math.round(importe * 100) / 100;
-            const cat = financePro.categories.find(c => c.type === 'expense' && /comida/i.test(c.name));
-            txId = 'ptx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
-            financePro.transactions.push({ id: txId, date: todayISO(), account: document.getElementById('compra-cuenta')?.value || 'bancos', type: 'expense', amount: total, category: cat?.id, note: `Compra${tienda ? ` (${tienda})` : l.nombre && l.nombre.toLowerCase() !== 'casa' ? ` (${l.nombre})` : ''}`, manual: true });
-            gasto = ` y ${financeMoney(importe)} en finanzas`;
-        }
-    }
     if (carro.length) {
         d.historial.push({
-            id: 'cmpr_' + Date.now(), fecha: todayISO(), tienda, listaId: l.id, fuente: 'manual', txId,
-            total: total || (importe > 0 ? Math.round(importe * 100) / 100 : Math.round(compraImporte(carro, tienda) * 100) / 100),
+            id: 'cmpr_' + Date.now(), fecha: todayISO(), tienda, listaId: l.id, fuente: 'manual',
+            total: Math.round(compraImporte(carro, tienda) * 100) / 100,
             items: carro.map(i => { const p = compraPrecioItem(i, tienda); return { texto: i.texto, clave: compraClave(i.texto), deLista: i.texto, cantidad: i.cantidad || '', precio: p && !p.estimado ? p.precio : null, importe: p && !p.estimado ? Math.round(p.precio * compraUnidades(i) * 100) / 100 : null, planeado: true, seccion: compraSeccion(i.texto) }; }),
         });
     }
     closeModal();
     render();
     await guardarCompra();
-    showToast(`Compra terminada${gasto}.`);
+    showToast('Compra terminada.');
 }
 
 // ---- el ticket que llega por el conector (op 'ticket') ----
@@ -721,28 +700,9 @@ function compraAplicarTicket(op, ref) {
         if (!previa) { const k = q.item.texto.toLowerCase(); d.frecuentes[k] = (d.frecuentes[k] || 0) + 1; }
     });
 
-    // Finanzas solo si se pide expresamente (gasto: true): el gasto real ya
-    // llega con el extracto del banco y el ticket es para Despensa. Si se
-    // pide, cada ticket va con su gasto exacto y el estimado que se apuntó al
-    // terminar a mano se corrige (ticket completo) o se le resta lo de este
-    // ticket (parcial); si se queda en nada, se quita.
-    let txCreado = null, txAntes = null, txQuitado = null;
-    if (op.gasto === true && total > 0) {
-        const tx = previa?.txId ? financePro.transactions.find(t => t.id === previa.txId) : null;
-        if (tx && completa) { txAntes = { id: tx.id, amount: tx.amount }; tx.amount = total; }
-        else {
-            if (tx) {
-                const queda = Math.round((tx.amount - total) * 100) / 100;
-                if (queda >= 0.5) { txAntes = { id: tx.id, amount: tx.amount }; tx.amount = queda; }
-                else { txQuitado = { ...tx }; financePro.transactions = financePro.transactions.filter(t => t.id !== tx.id); previa.txId = null; }
-            }
-            const cat = financePro.categories.find(c => c.type === 'expense' && /comida/i.test(c.name));
-            const cuenta = tx?.account || (() => { const ultima = [...(financePro.transactions || [])].reverse().find(t => t.manual && t.account)?.account; return FINANCE_PRO_ACCOUNT_KEYS.includes(ultima) ? ultima : FINANCE_PRO_ACCOUNT_KEYS.includes('bancos') ? 'bancos' : FINANCE_PRO_ACCOUNT_KEYS[0]; })();
-            txCreado = `ptx_${ref || Date.now()}`;
-            financePro.transactions.push({ id: txCreado, date: fechaOk, account: cuenta, type: 'expense', amount: total, category: cat?.id, note: `Compra${tienda ? ` (${tienda})` : ''}`, manual: true, needsReview: !cat });
-            entrada.txId = txCreado;
-        }
-    }
+    // 3.2: el ticket es solo para Despensa, aunque llegue con gasto: true (la Despensa nunca toca Finanzas; el cargo
+    // real llega con el extracto del banco). Los tx* se quedan en el deshacer por los tickets de antes.
+    const txCreado = null, txAntes = null, txQuitado = null;
 
     const plan = items.filter(i => i.planeado), extras = items.filter(i => !i.planeado);
     const sumaExtras = extras.reduce((s, i) => s + (i.importe || 0), 0);

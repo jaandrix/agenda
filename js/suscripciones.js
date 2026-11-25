@@ -11,6 +11,37 @@ function suscripcionVigente(e, fecha) {
     return true;
 }
 
+// 3.2: una suscripción o un gasto fijo solo es gasto cuando llega su cargo (del banco, pendiente o cobrado, o apuntado
+// a mano). Hasta entonces es un cargo previsto: se ve en «próximos cargos.» y en la previsión de fin de mes, pero no
+// suma. Los provisionales que se creaban solos el día de cargo (ptx_rec_ sin conciliar) no cuentan como cargo.
+function suscripcionEsProvisional(t) {
+    return String(t?.id || '').startsWith('ptx_rec_') && !t.conciliado;
+}
+
+function suscripcionCargoDelCiclo(e, mes) {
+    return (financePro.transactions || []).find(t => t.recurringEntryId === e.id && financeProCicloMes(t) === mes && !suscripcionEsProvisional(t)) || null;
+}
+
+// Los cargos previstos de los próximos `dias` días y, de este mes, los que el banco aún no ha cobrado (faltan < 0).
+// Lo que ya tiene su cargo este mes pasa al mes siguiente.
+function suscripcionesPrevistas(dias) {
+    const ahora = new Date(), mes = financeMonthKey();
+    const hoy0 = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+    return entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0).map(e => {
+        const diaCobro = Number(e.renewalDay) || 1;
+        const enMes = m => { const f = new Date(ahora.getFullYear(), ahora.getMonth() + m, 1); f.setDate(Math.min(diaCobro, new Date(f.getFullYear(), f.getMonth() + 1, 0).getDate())); return f; };
+        const fecha = suscripcionCargoDelCiclo(e, mes) ? enMes(1) : enMes(0);
+        return { e, fecha, faltan: Math.round((fecha - hoy0) / 864e5) };
+    }).filter(x => x.faltan <= dias && (x.e.type !== 'subscription' || suscripcionVigente(x.e, isoLocal(x.fecha)))).sort((a, b) => a.faltan - b.faltan);
+}
+
+// Lo que queda por cobrar este mes de suscripciones y gastos fijos vigentes (la previsión de fin de mes).
+function suscripcionesPorCobrarMes() {
+    const mes = financeMonthKey(), hoy = todayISO();
+    return entries.filter(e => (e.type === 'subscription' || e.type === 'fixed_expense') && e.active !== false && Number(e.amount) > 0
+        && (e.type !== 'subscription' || suscripcionVigente(e, hoy)) && !suscripcionCargoDelCiclo(e, mes)).reduce((s, e) => s + Number(e.amount), 0);
+}
+
 function suscripcionBajaAbierta(e) {
     return (e.bajas || []).find(b => !b.hasta);
 }

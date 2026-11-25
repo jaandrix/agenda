@@ -662,7 +662,12 @@ private struct PestanaMovimientos: View {
                 }
                 VStack(alignment: .leading, spacing: Medida.xs) {
                     HStack(alignment: .firstTextBaseline) {
-                        EtiquetaSeccion(texto: tituloDia(g.0, g.1))
+                        // 3.2: «Lunes 21.» y no «LUNES 21.».
+                        Text(tituloDia(g.0, g.1).prefix(1).uppercased() + tituloDia(g.0, g.1).dropFirst())
+                            .font(Letra.pieFuerte).foregroundStyle(Lienzo.tintaSecundaria)
+                            .accessibilityAddTraits(.isHeader)
+                            .padding(.leading, Medida.xxs)
+                        Spacer()
                         if let n = netoDia(g.1) {
                             Text(n).font(Letra.pie).monospacedDigit().foregroundStyle(Lienzo.tintaSecundaria).padding(.trailing, Medida.xxs)
                         }
