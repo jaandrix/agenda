@@ -200,6 +200,14 @@ tranquilo y propio. Es un proyecto personal en producción real, no una maqueta.
   un checkbox a medida), hay que declararlo explícitamente en ese elemento o los
   cálculos de posición salen mal.
 
+## Sesiones con clave de API o en paralelo
+
+Si esta sesión trabaja con una clave de API (no la cuenta Pro de Alejandro), o es una de varias sesiones a la vez sobre
+encargos sueltos, **antes de nada lee `trabajo-api/LEEME.md`** y sigue su ciclo: ficha `API-NNN` confirmada en el chat,
+worktree propio, solo los archivos permitidos, CI en verde si hay Swift y entrega en el chat sin informes `.md`. En esas
+sesiones no se hace push a `main` ni se sube la versión `?v=`: lo hace el coordinador al integrar (esto prevalece sobre el
+paso 7 de «Cómo se prueba un cambio»).
+
 ## Skills de diseño instaladas (en `~/.claude/skills`, no en el repo)
 
 - **Emil Kowalski** (`emil-design-eng`, `animate`, `review-animations`,
