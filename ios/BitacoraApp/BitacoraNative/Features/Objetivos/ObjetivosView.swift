@@ -112,7 +112,7 @@ struct ObjetivosView: View {
         .scrollIndicators(.hidden)
         .fondoLienzo()
         .refreshable { await c.sincronizar() }
-        .task(id: c.revision) { await cargar() }
+        .tareaVisible(id: c.revision) { await cargar() }
         .hoja(item: $abierto) { a in FichaObjetivo(id: a.id).environment(c) }
         .hoja(item: $edicion) { e in EditorObjetivo(objetivo: e.objetivo).environment(c) }
     }
@@ -351,7 +351,7 @@ private struct FichaObjetivo: View {
                 ToolbarItem(placement: .primaryAction) { Button("editar.") { editando = true }.disabled(objetivo == nil) }
             }
             .hoja(isPresented: $editando) { EditorObjetivo(objetivo: objetivo).environment(c) }
-            .task(id: c.revision) { await cargar() }
+            .tareaVisible(id: c.revision) { await cargar() }
         }
     }
 

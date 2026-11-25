@@ -210,7 +210,7 @@ struct BandejaView: View {
         .fondoLienzo().scrollIndicators(.hidden)
         .refreshable { await c.sincronizar(); await BandejaConector.revisar(c, forzar: true) }
         .task { await BandejaConector.revisar(c, forzar: true) }
-        .task(id: c.revision) { await cargarRegistro() }
+        .tareaVisible(id: c.revision) { await cargarRegistro() }
         .disabled(trabajando)
     }
 

@@ -141,7 +141,7 @@ struct ProyectosView: View {
         .scrollDismissesKeyboard(.interactively)
         .fondoLienzo()
         .refreshable { await c.sincronizar() }
-        .task(id: c.revision) {
+        .tareaVisible(id: c.revision) {
             guard let nuevo = await MemoriaObjetivos.leerProyectos(c) else { return }
             if leidos != nuevo || leidos == nil { leidos = nuevo }
             if !(nuevo ?? []).contains(where: { $0.estado == "Completado" }) { filtro = .enCurso }
@@ -285,7 +285,7 @@ struct ProyectoDetalleView: View {
             }
             Button("cancelar.", role: .cancel) {}
         }
-        .task(id: c.revision) {
+        .tareaVisible(id: c.revision) {
             guard let lista = await MemoriaObjetivos.leerProyectos(c) else { return }
             let nuevo = lista?.first { $0.id == id }
             if leido != nuevo || leido == nil { leido = nuevo }

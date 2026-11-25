@@ -165,7 +165,7 @@ struct InicioView: View {
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar(); await cargarServicios(forzar: true) }
         .hoja(isPresented: $perfilAbierto, onDismiss: { if let uid = c.sesion?.userId { foto = c.entorno.servicios.perfil.guardada(uid) } }) { PerfilHoja() }
-        .task(id: "\(c.revision)-\(elegido?.iso ?? "")") { await cargar() }
+        .tareaVisible(id: "\(c.revision)-\(elegido?.iso ?? "")") { await cargar() }
         .task(id: vista?.ciudad.clave) { await cargarServicios(forzar: false) }
         // Nada se repinta cada 30 s: solo el bloque «siguiente.» cada minuto (su TimelineView) y la portada al cambiar
         // de día lógico (4:00). El bus, cada 30 s y solo mientras se ve Inicio. Los servicios (foto, tiempo) no dependen

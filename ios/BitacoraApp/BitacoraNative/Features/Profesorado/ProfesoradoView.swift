@@ -48,7 +48,7 @@ struct ProfesoradoView: View {
         .scrollIndicators(.hidden)
         .fondoLienzo()
         .refreshable { await c.sincronizar() }
-        .task(id: c.revision) { await cargar() }
+        .tareaVisible(id: c.revision) { await cargar() }
         .hoja(item: $modal) { m in
             switch m {
             case .clase(let id): FichaClaseProfe(claseId: id, vista: vista ?? VistaProfesorado(), hoy: hoy) { modal = .nota(clase: id, fecha: $0) }.environment(c)

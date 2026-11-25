@@ -112,7 +112,7 @@ struct PlanView: View {
         .fondoLienzo()
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await c.sincronizar() }
-        .task(id: "\(c.revision)-\(modelo.desplazamiento)") {
+        .tareaVisible(id: "\(c.revision)-\(modelo.desplazamiento)") {
             let t0 = Medidas.ahora
             await modelo.cargar(c)
             if !Task.isCancelled { await Medidas.anotar("pestaña plan (cargar)", desde: t0) }

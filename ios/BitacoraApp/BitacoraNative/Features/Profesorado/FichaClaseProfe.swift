@@ -39,7 +39,7 @@ struct FichaClaseProfe: View {
         }
         .scrollIndicators(.hidden)
         .fondoLienzo()
-        .task(id: c.revision) { await cargar() }
+        .tareaVisible(id: c.revision) { await cargar() }
     }
 
     @ViewBuilder private func contenido(_ clase: ClaseProfe) -> some View {

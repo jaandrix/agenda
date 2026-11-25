@@ -337,7 +337,7 @@ private struct VigiaFinanzas: View {
     let accion: () async -> Void
 
     var body: some View {
-        Color.clear.task(id: "\(c.revision)|\(clave)") { await accion() }
+        Color.clear.tareaVisible(id: "\(c.revision)|\(clave)") { await accion() }
     }
 }
 

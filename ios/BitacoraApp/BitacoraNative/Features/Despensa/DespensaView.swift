@@ -73,7 +73,7 @@ struct DespensaView: View {
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
         .fondoLienzo()
-        .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
+        .refreshable { await c.sincronizar() }.tareaVisible(id: c.revision) { await cargar() }
         .alert(listaEditando == nil ? "nueva lista." : "editar lista.", isPresented: $mostrarNuevaLista) {
             TextField("nombre.", text: $nombreLista)
             Button(listaEditando == nil ? "crear." : "guardar.") { Task { await guardarLista() } }.disabled(nombreLista.trimmingCharacters(in: .whitespaces).isEmpty)

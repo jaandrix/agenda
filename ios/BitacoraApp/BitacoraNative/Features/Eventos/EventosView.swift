@@ -74,7 +74,7 @@ struct EventosView: View {
         .fullScreenCover(item: $qr) { q in
             EntradaPantallaCompleta(titulo: q.titulo, detalle: q.detalle, entradas: q.entradas, indice: 0)
         }
-        .task(id: "\(c.revision)-\(hoy.iso)") {
+        .tareaVisible(id: "\(c.revision)-\(hoy.iso)") {
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { VistaEventos.desde($0) } }) else { return }
             vista = nuevo

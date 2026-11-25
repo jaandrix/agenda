@@ -51,7 +51,7 @@ struct ColeccionablesView: View {
         .scrollDismissesKeyboard(.interactively)
         .fondoLienzo()
         .refreshable { await c.sincronizar() }
-        .task(id: c.revision) { await cargar() }
+        .tareaVisible(id: c.revision) { await cargar() }
         .hoja(item: $modal) { m in
             switch m {
             case .pieza(let p, let cat): EditorColeccionable(pieza: p, categoriaInicial: cat, categorias: datos?.1 ?? []).environment(c)

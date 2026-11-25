@@ -79,7 +79,7 @@ struct DocumentosView: View {
         .scrollDismissesKeyboard(.interactively)
         .fondoLienzo()
         .refreshable { await c.sincronizar(); await cargarArchivos() }
-        .task(id: c.revision) { await cargar() }
+        .tareaVisible(id: c.revision) { await cargar() }
         .task { await cargarArchivos() }
         .quickLookPreview($vista)
         .onChange(of: vista) { antes, ahora in if ahora == nil { ArchivosTemporales.borrar(antes) } }

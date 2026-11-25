@@ -88,7 +88,7 @@ struct EnlacesView: View {
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
         .fondoLienzo()
-        .refreshable { await c.sincronizar() }.task(id: c.revision) { await cargar() }
+        .refreshable { await c.sincronizar() }.tareaVisible(id: c.revision) { await cargar() }
         .confirmarBorrado($enlaceABorrar, titulo: { "¿eliminar «\($0.titulo)»?" }, boton: "eliminar.") { e in Task { await c.guardar(.borrarEnlace(id: e.id)) } }
         .hoja(item: $modal) { m in
             switch m {

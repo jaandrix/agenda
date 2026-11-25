@@ -99,7 +99,7 @@ struct OcioView: View {
         .scrollDismissesKeyboard(.interactively)
         .fondoLienzo()
         .refreshable { await c.sincronizar() }
-        .task(id: c.revision) { await cargar() }
+        .tareaVisible(id: c.revision) { await cargar() }
         .onChange(of: pestana) { _, p in
             busqueda = ""
             orden = PreferenciasOcio.orden(p.rawValue)

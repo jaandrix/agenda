@@ -215,7 +215,7 @@ struct SaludFinanzasView: View {
             .alert("finanzas.", isPresented: Binding(get: { e.aviso != nil }, set: { if !$0 { e.aviso = nil } })) {
                 Button("aceptar.", role: .cancel) { e.aviso = nil }
             } message: { Text(e.aviso ?? "") }
-            .task(id: c.revision) { await e.recargar(c) }
+            .tareaVisible(id: c.revision) { await e.recargar(c) }
         }
     }
 

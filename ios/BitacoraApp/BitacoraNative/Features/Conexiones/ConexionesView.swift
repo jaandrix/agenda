@@ -31,7 +31,7 @@ struct ConexionesView: View {
         }
         .fondoLienzo()
         .refreshable { await c.sincronizar() }
-        .task(id: c.revision) { await cargar() }
+        .tareaVisible(id: c.revision) { await cargar() }
     }
 
     @ViewBuilder private func contenido(_ l: [CentroConexion], _ lector: ScrollViewProxy) -> some View {

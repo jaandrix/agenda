@@ -106,7 +106,7 @@ struct EmpleoView: View {
         .scrollIndicators(.hidden)
         .fondoLienzo()
         .refreshable { await c.sincronizar() }
-        .task(id: c.revision) { await cargar() }
+        .tareaVisible(id: c.revision) { await cargar() }
         .confirmarBorrado($citaABorrar, titulo: { "¿eliminar la cita «\($0.titulo)»?" }, boton: "eliminar.") { x in Task { await c.guardar(.borrarCitaLaboral(id: x.id)) } }
         .hoja(item: $modal) { m in
             switch m {

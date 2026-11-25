@@ -135,7 +135,7 @@ struct EstudiosView: View {
         .hoja(item: $creando) { n in EditorEntregaView(nueva: n) { aviso = $0 } }
         .hoja(item: $editando) { e in EditorEntregaView(nueva: e.nueva, existente: e.item) { aviso = $0 } }
         .hoja(item: $clase) { e in EditorClaseView(editando: e, asignaturas: nombres) { aviso = $0 } }
-        .task(id: c.revision) {
+        .tareaVisible(id: c.revision) {
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { d in
                 DatosEstudios(asignaturas: LecturaEstudios.vista(d), horario: LecturaHorario.vista(d), nombres: LecturaHorario.asignaturas(d))

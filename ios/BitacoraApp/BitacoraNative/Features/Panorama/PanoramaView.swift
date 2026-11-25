@@ -97,7 +97,7 @@ struct PanoramaView: View {
         .safeAreaInset(edge: .bottom) { BarraDeshacerListas(deshacer: $deshacer) }
         .animation(Muelle.modal, value: deshacer?.id)
         .refreshable { await c.sincronizar() }
-        .task(id: c.revision) {
+        .tareaVisible(id: c.revision) {
             let doc = await c.documentoVisible()
             guard let nuevo = await ultimaGana({ doc.map { ResumenPanorama.desde($0) } }) else { return }
             withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento)) { r = nuevo }

@@ -379,7 +379,7 @@ struct RecientesApuntarView: View {
         }
         .scrollIndicators(.hidden)
         .fondoLienzo()
-        .task(id: c.revision) { await leer() }
+        .tareaVisible(id: c.revision) { await leer() }
     }
 
     private func leer() async {
