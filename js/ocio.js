@@ -911,6 +911,15 @@
             reader.readAsText(file);
         }
 
+        // 3.4: «2 de 3 temp.», «2 temp. vistas» o «3 temp.» (lo mismo que el iPhone).
+        function textoTemporadas(s) {
+            const v = Number(s.seasonsSeen) || 0, t = Number(s.seasonsTotal) || 0;
+            if (!v && !t) return '';
+            if (!t) return `${v} temp. vistas`;
+            if (!v || v >= t) return `${t} temp.`;
+            return `${v} de ${t} temp.`;
+        }
+
         function renderSeries() {
             const allSeries = entries.filter(e => e.type === 'series');
             if (!allSeries.length) {
@@ -927,7 +936,7 @@
 
             let html = banner + `<div>`;
             html += renderMediaCardGrid(sorted,
-                null,
+                s => textoTemporadas(s),
                 s => effectiveStatus(s));
             html += `</div>`;
             return html;

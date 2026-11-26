@@ -131,6 +131,7 @@
                 if(entry.platform)fields+=detailField('Plataforma',escapeHtml(entry.platform));
                 if(entry.format)fields+=detailField('Formato',escapeHtml(({fisico:'físico',digital:'digital',otro:'otro'})[entry.format]||entry.format));
                 if(entry.isbn)fields+=detailField('ISBN',escapeHtml(entry.isbn));
+                if(entry.type==='series'&&(entry.seasonsSeen||entry.seasonsTotal))fields+=detailField('Temporadas',escapeHtml(textoTemporadas(entry)));
                 if(entry.company)fields+=detailField('Empresa',escapeHtml(entry.company));
                 if(entry.position)fields+=detailField('Cargo',escapeHtml(entry.position));
             }
@@ -318,7 +319,9 @@
             // ===== SERIES =====
             else if (type === 'series') {
                 const statuses = ['Viendo', 'Completada', 'Abandonada'];
-                extraFields = `
+                // 3.4: «tiene 3 temporadas pero solo vi 2» (vacío = sin indicar).
+                const temporadas = `<div style="display:flex;gap:10px"><div style="flex:1"><div class="modal-label">temporadas vistas</div><input type="number" min="0" max="99" id="modal-seasons-seen" class="modal-input" value="${isEdit && entry.seasonsSeen ? entry.seasonsSeen : ''}"></div><div style="flex:1"><div class="modal-label">temporadas en total</div><input type="number" min="0" max="99" id="modal-seasons-total" class="modal-input" value="${isEdit && entry.seasonsTotal ? entry.seasonsTotal : ''}"></div></div>`;
+                extraFields = `${temporadas}
                     <div class="modal-label">Fecha de inicio</div>
                     <input type="date" id="modal-start" class="modal-input" value="${isEdit ? entry.startDate || '' : today}">
                     ${isEdit ? `
@@ -679,6 +682,10 @@
             } else if (type === 'series') {
                 entry.startDate = document.getElementById('modal-start')?.value || '';
                 entry.date = entry.startDate;
+                for (const [campo, id] of [['seasonsSeen', 'modal-seasons-seen'], ['seasonsTotal', 'modal-seasons-total']]) {
+                    const n = parseInt(document.getElementById(id)?.value, 10);
+                    if (n > 0) entry[campo] = Math.min(n, 99); else delete entry[campo];
+                }
                 if (editId) {
                     entry.endDate = document.getElementById('modal-end')?.value || '';
                     let status = document.getElementById('modal-status')?.value || 'Viendo';
