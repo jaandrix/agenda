@@ -92,11 +92,12 @@ struct CandidataPortada: Identifiable, Equatable {
 enum BuscarPortadas {
     // 3.3: en los juegos, a las de Steam (solo lo que se vende en Steam) se suman las carátulas de Wikipedia, que tiene
     // también los de consola. Se piden a la vez.
+    // 3.4: en los libros, también Apple Books (las novedades que Open Library y Google Books aún no tienen).
     static func buscar(_ c: AppCoordinator, tipo: String, q: String, anio: String = "") async -> [CandidataPortada] {
-        guard tipo == "game" else { return await deLaFuncion(c, tipo: tipo, q: q, anio: anio) }
+        guard tipo == "game" || tipo == "book" else { return await deLaFuncion(c, tipo: tipo, q: q, anio: anio) }
         async let funcion = deLaFuncion(c, tipo: tipo, q: q, anio: anio)
-        async let wiki = PortadasWikipedia.juegos(q)
-        let a = await funcion, b = await wiki
+        async let extra = tipo == "game" ? PortadasWikipedia.juegos(q) : PortadasApple.libros(q)
+        let a = await funcion, b = await extra
         var vistas = Set<String>()
         return (a + b).filter { vistas.insert($0.imagen).inserted }
     }

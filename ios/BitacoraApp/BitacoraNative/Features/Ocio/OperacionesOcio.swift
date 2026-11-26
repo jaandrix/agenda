@@ -13,8 +13,12 @@ enum OcioDatosOp {
     static let formatos = ["fisico", "digital", "otro"]
 
     static func op(id: String, isbn: String? = nil, plataforma: String? = nil, formato: String? = nil,
-                   portadaSiFalta: String? = nil, portada: String? = nil) -> OperacionBitacora {
+                   portadaSiFalta: String? = nil, portada: String? = nil,
+                   temporadasVistas: Int? = nil, temporadasTotal: Int? = nil) -> OperacionBitacora {
         var d: [String: JSONValue] = ["id": .string(id)]
+        // 3.4: series, «tiene 3 temporadas y vi 2» (0 = sin indicar, quita la clave).
+        if let temporadasVistas { d["seasonsSeen"] = .number(String(temporadasVistas)) }
+        if let temporadasTotal { d["seasonsTotal"] = .number(String(temporadasTotal)) }
         if let portada { d["portada"] = .string(portada) }
         if let portadaSiFalta { d["portada"] = .string(portadaSiFalta); d["soloSiFalta"] = .bool(true) }
         if let isbn { d["isbn"] = .string(isbn) }
@@ -24,6 +28,14 @@ enum OcioDatosOp {
     }
 
     // «978-84-376-0494-7» → «9788437604947». Vacío si no tiene 10 o 13 caracteres válidos.
+    static func entero(_ v: JSONValue?) -> Int? {
+        switch v {
+        case .number(let s)?: return Double(s).flatMap { $0 >= 0 ? Int($0) : nil }
+        case .string(let s)?: return Int(s).flatMap { $0 >= 0 ? $0 : nil }
+        default: return nil
+        }
+    }
+
     static func isbnLimpio(_ texto: String) -> String {
         let s = texto.uppercased().filter { $0.isNumber || $0 == "X" }
         guard s.count == 10 || s.count == 13, !s.dropLast().contains("X") else { return "" }
@@ -43,6 +55,10 @@ enum OcioDatosOp {
             if let v = d["platform"]?.texto {
                 let limpio = String(v.trimmingCharacters(in: .whitespacesAndNewlines).prefix(60))
                 if limpio.isEmpty { e.removeValue(forKey: "platform") } else { e["platform"] = .string(limpio) }
+            }
+            for clave in ["seasonsSeen", "seasonsTotal"] {
+                guard let n = entero(d[clave]) else { continue }
+                if n > 0 { e[clave] = .number(String(min(n, 99))) } else { e.removeValue(forKey: clave) }
             }
             if let v = d["format"]?.texto {
                 if formatos.contains(v) { e["format"] = .string(v) } else { e.removeValue(forKey: "format") }

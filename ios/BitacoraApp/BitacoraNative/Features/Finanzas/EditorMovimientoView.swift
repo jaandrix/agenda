@@ -31,6 +31,8 @@ struct EditorMovimientoView: View {
     @State private var error: String?
     @State private var guardando = false
     @State private var confirmarBorrado = false
+    // 3.4 (petición de Alejandro): con los años la lista de viajes no acaba; se ven los cinco más recientes y el elegido.
+    @State private var todosLosViajes = false
     @FocusState private var enfocado: Bool
 
     private static let iso: DateFormatter = {
@@ -191,8 +193,13 @@ struct EditorMovimientoView: View {
                             fila("viaje.") {
                                 Picker("viaje.", selection: b.viajeId) {
                                     Text("sin un viaje concreto").tag("")
-                                    ForEach(x.viajes) { Text($0.nombre).tag($0.id) }
+                                    ForEach(viajesVisibles(x)) { Text($0.nombre).tag($0.id) }
                                 }
+                            }
+                            if x.viajes.count > 5 && !todosLosViajes {
+                                Button("mostrar todos los viajes.") { todosLosViajes = true }
+                                    .font(Letra.pieFuerte).estiloEnlace()
+                                    .frame(maxWidth: .infinity, minHeight: Medida.toque, alignment: .leading)
                             }
                         }
                         SeparadorFila(sangria: 0)
@@ -264,5 +271,15 @@ struct EditorMovimientoView: View {
             let r = try await MotorFinanzas.compartido.crudo("borrarMovimiento", [id])
             if await encolarCambiosFinanzas(r, c) { cerrar() } else { error = "no se pudo borrar en este iPhone." }
         } catch { self.error = mensajeMotor(error, "no se pudo borrar.") }
+    }
+}
+
+extension EditorMovimientoView {
+    // Los viajes llegan del más reciente al más antiguo (financeProViajesConFecha).
+    func viajesVisibles(_ x: Borrador) -> [Opcion] {
+        guard !todosLosViajes, x.viajes.count > 5 else { return x.viajes }
+        let primeros = Array(x.viajes.prefix(5))
+        guard !x.viajeId.isEmpty, !primeros.contains(where: { $0.id == x.viajeId }) else { return primeros }
+        return primeros + x.viajes.filter { $0.id == x.viajeId }
     }
 }

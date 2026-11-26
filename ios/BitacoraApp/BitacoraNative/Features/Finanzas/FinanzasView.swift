@@ -634,6 +634,8 @@ private struct PestanaMovimientos: View {
     enum Filtro: Hashable { case todo, gastos, ingresos }
     @State private var filtro = Filtro.todo
     @State private var texto = ""
+    // 3.4: filtrar por categoría (id de la categoría; vacío = todas).
+    @State private var categoria = ""
 
     private static let meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
     private static let iso: DateFormatter = {
@@ -655,6 +657,7 @@ private struct PestanaMovimientos: View {
             case .gastos: guard f.tipo == "expense" else { return false }
             case .ingresos: guard f.tipo == "income" else { return false }
             }
+            if !categoria.isEmpty, f.categoria != categoria { return false }
             guard !q.isEmpty else { return true }
             return Self.plano([f.titulo, f.meta, f.categoriaNombre, f.nota, f.cifra].joined(separator: " ")).contains(q)
         }
@@ -693,6 +696,41 @@ private struct PestanaMovimientos: View {
         return abs(n) < 0.005 ? nil : CifraFin.texto(n, oculto: false, signo: true)
     }
 
+    // Las categorías de los movimientos cargados, por nombre.
+    struct CategoriaFiltro: Identifiable { let id, nombre: String }
+    private var categoriasCargadas: [CategoriaFiltro] {
+        var vistas = Set<String>()
+        return m.filas.compactMap { f in
+            guard !f.categoria.isEmpty, !f.categoriaNombre.isEmpty, vistas.insert(f.categoria).inserted else { return nil }
+            return CategoriaFiltro(id: f.categoria, nombre: f.categoriaNombre)
+        }
+        .sorted { $0.nombre.localizedCaseInsensitiveCompare($1.nombre) == .orderedAscending }
+    }
+
+    private var filtroCategoria: some View {
+        let nombre = categoriasCargadas.first { $0.id == categoria }?.nombre
+        return Menu {
+            Button { categoria = "" } label: {
+                if categoria.isEmpty { Label("todas las categorías.", systemImage: "checkmark") } else { Text("todas las categorías.") }
+            }
+            ForEach(categoriasCargadas) { c in
+                Button { categoria = c.id } label: {
+                    if c.id == categoria { Label(c.nombre, systemImage: "checkmark") } else { Text(c.nombre) }
+                }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "line.3.horizontal.decrease").font(.system(size: 13, weight: .semibold))
+                if let nombre { Text(nombre.lowercased()).font(Letra.pieFuerte).lineLimit(1) }
+            }
+            .foregroundStyle(categoria.isEmpty ? Lienzo.tinta : Lienzo.sobreOscuro)
+            .padding(.horizontal, Medida.s)
+            .frame(minWidth: Medida.toque, minHeight: Medida.toque)
+            .background(categoria.isEmpty ? Lienzo.tarjeta : Lienzo.oscuro, in: Capsule())
+        }
+        .accessibilityLabel(nombre.map { "filtrando por \($0)" } ?? "filtrar por categoría")
+    }
+
     private var mesActual: String { String(Self.iso.string(from: Date()).prefix(7)) }
 
     var body: some View {
@@ -709,7 +747,10 @@ private struct PestanaMovimientos: View {
                                            SegmentoCapsula<Filtro>.Opcion(valor: .gastos, titulo: "gastos."),
                                            SegmentoCapsula<Filtro>.Opcion(valor: .ingresos, titulo: "ingresos.")],
                                 elegido: $filtro, sobreBlanco: false)
-                BuscadorCapsula(texto: $texto, placeholder: "buscar en estos movimientos")
+                HStack(spacing: Medida.xs) {
+                    BuscadorCapsula(texto: $texto, placeholder: "buscar en estos movimientos")
+                    filtroCategoria
+                }
             }
             .padding(.top, Medida.m)
         }

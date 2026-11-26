@@ -131,7 +131,9 @@ struct GrupoPlataformaOcio: Identifiable {
 
 // Las plataformas que salen como atajo en el editor de juegos (se puede escribir cualquier otra).
 enum PlataformasOcio {
-    static let comunes = ["PS5", "PS4", "Switch 2", "Switch", "Xbox Series", "PC", "Steam Deck", "Móvil"]
+    // 3.4 (petición de Alejandro): todas las de su colección, de la NDS a la PS5, y PC (también los antiguos).
+    static let comunes = ["PS5", "PS4", "PS3", "PS2", "PS1", "Switch 2", "Switch", "3DS", "NDS", "Xbox Series", "Xbox One",
+                          "Xbox 360", "PC", "Steam Deck", "Móvil"]
 }
 
 // Lo guardado en Ocio empieza por mayúscula: «la invitación» → «La invitación». Solo cambia la primera letra, y no si

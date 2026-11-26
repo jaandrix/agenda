@@ -35,11 +35,17 @@ enum BuscarISBN {
         async let ol = openLibrary(isbn)
         async let gb = googleBooks(isbn)
         let a = await ol, b = await gb
-        let titulo = a?.titulo ?? b?.titulo ?? ""
+        var titulo = a?.titulo ?? b?.titulo ?? ""
+        // 3.4: si ni Open Library ni Google Books conocen el ISBN (pasa con novedades), Apple Books.
+        var apple: CandidataPortada?
+        if titulo.isEmpty, let x = await PortadasApple.libroPorISBN(isbn) { apple = x; titulo = x.titulo }
         guard !titulo.isEmpty else { return nil }
+        if let apple { return LibroISBN(isbn: isbn, titulo: titulo, autor: apple.autor, anio: apple.anio, portada: apple.imagen) }
         var portada = a?.portada ?? ""
         if portada.isEmpty { portada = b?.portada ?? "" }
         if portada.isEmpty { portada = await portadaPorISBN(isbn) ?? "" }
+        // 3.4: los libros recientes a menudo solo tienen portada en Apple Books.
+        if portada.isEmpty { portada = await PortadasApple.porISBN(isbn) ?? "" }
         let autor = (a?.autor).flatMap { $0.isEmpty ? nil : $0 } ?? b?.autor ?? ""
         let anio = (a?.anio).flatMap { $0.isEmpty ? nil : $0 } ?? b?.anio ?? ""
         return LibroISBN(isbn: isbn, titulo: titulo, autor: autor, anio: anio, portada: portada)
@@ -49,7 +55,8 @@ enum BuscarISBN {
     static func portada(_ isbn: String) async -> String? {
         if let p = await portadaPorISBN(isbn) { return p }
         let g = await googleBooks(isbn)?.portada ?? ""
-        return g.isEmpty ? nil : g
+        if !g.isEmpty { return g }
+        return await PortadasApple.porISBN(isbn)
     }
 
     static func anio(_ texto: String) -> String {
@@ -139,8 +146,12 @@ enum BuscarJuegoEAN {
     // Los nombres de plataforma que usa el filtro de la biblioteca. El orden importa: «switch 2» antes que «switch».
     private static let plataformas: [(nombre: String, patron: String)] = [
         ("Switch 2", #"switch\s*2"#), ("Switch", #"\bswitch\b"#),
+        ("3DS", #"\b(new\s*)?(nintendo\s*)?[23]ds\b|\b3ds\b"#), ("NDS", #"\bn?ds\b|nintendo\s*ds\b"#),
         ("PS5", #"\bps\s*5\b|playstation\s*5"#), ("PS4", #"\bps\s*4\b|playstation\s*4"#),
-        ("Xbox Series", #"xbox\s*series"#), ("Xbox One", #"xbox\s*one"#), ("PC", #"\bpc\b"#)
+        ("PS3", #"\bps\s*3\b|playstation\s*3"#), ("PS2", #"\bps\s*2\b|playstation\s*2"#),
+        ("PS1", #"\bps\s*1\b|\bpsx\b|\bpsone\b|playstation\s*1\b|playstation\s*(?!\s*\d)"#),
+        ("Xbox Series", #"xbox\s*series"#), ("Xbox One", #"xbox\s*one"#), ("Xbox 360", #"xbox\s*360"#),
+        ("PC", #"\bpc\b|windows|cd-?rom"#)
     ]
 
     static func plataforma(de texto: String) -> String {
@@ -150,7 +161,8 @@ enum BuscarJuegoEAN {
     // «Nintendo Switch - Mario Kart 8 Deluxe (Videojuego) [PEGI 3]» → «Mario Kart 8 Deluxe».
     static func limpiar(_ texto: String) -> String {
         var t = texto.replacingOccurrences(of: #"\([^)]*\)|\[[^\]]*\]"#, with: " ", options: .regularExpression)
-        let ruido = [#"nintendo\s*switch(\s*2)?"#, #"\bswitch(\s*2)?\b"#, #"(sony\s*)?playstation\s*\d"#, #"\bps\s*\d\b"#,
+        let ruido = [#"nintendo\s*switch(\s*2)?"#, #"\bswitch(\s*2)?\b"#, #"\b(new\s*)?(nintendo\s*)?[23]?ds\b"#,
+                     #"(sony\s*)?playstation(\s*\d)?"#, #"\bps\s*\d\b|\bpsx\b|\bpsone\b"#,
                      #"(microsoft\s*)?xbox(\s*(series\s*[xs](\s*[|/]\s*[xs])?|one|360))?"#, #"\bpc(\s*(dvd|cd)(-rom)?)?\b"#,
                      #"\b(videojuego|video\s*game|pegi\s*\d+)\b"#, #"\b(nintendo|sony|microsoft)\b"#]
         for r in ruido { t = t.replacingOccurrences(of: r, with: " ", options: [.regularExpression, .caseInsensitive]) }
@@ -248,6 +260,10 @@ struct HojaEscanerOcio: View {
 
     @State private var paso: Paso = .escaneando
     @State private var estado: String
+    // 3.4: la plataforma del juego (la que se adivina del producto, o la que se toque) y el título a mano si el código
+    // no aparece en el catálogo.
+    @State private var plataforma = ""
+    @State private var tituloAMano = ""
     @State private var manual = ""
     @State private var anadidos = 0
     @State private var aviso: String?
@@ -380,8 +396,20 @@ struct HojaEscanerOcio: View {
                 encontrado(item)
             case .noEncontrado(let codigo):
                 Text(esJuego ? "no encuentro el juego \(codigo)." : "no encuentro el \(codigo).").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta)
-                Text("puedes añadirlo a mano con el +, o probar con otro.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
-                Button("escanear otro.") { seguir() }.buttonStyle(.capsula(.oscuro, ancho: true))
+                Text("escribe el título y lo añadimos con su portada, o prueba con otro.").font(Letra.pie).foregroundStyle(Lienzo.tintaSecundaria)
+                HStack(spacing: Medida.xs) {
+                    TextField(esJuego ? "título del juego." : "título del libro.", text: $tituloAMano)
+                        .font(Letra.cuerpo)
+                        .focused($escribiendo)
+                        .submitLabel(.done)
+                        .padding(.horizontal, Medida.s)
+                        .frame(minHeight: Medida.alturaControl)
+                        .background(Lienzo.sutil, in: RoundedRectangle(cornerRadius: Medida.radioControl, style: .continuous))
+                    Button("seguir.") { porTitulo(codigo) }
+                        .buttonStyle(.capsula(.oscuro))
+                        .disabled(tituloAMano.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+                Button("escanear otro.") { seguir() }.buttonStyle(.capsula(.claro, ancho: true))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -435,11 +463,19 @@ struct HojaEscanerOcio: View {
             }
             .accessibilityElement(children: .combine)
             ChipsEleccion(opciones: estados.map { (valor: $0.0, titulo: $0.1) }, elegido: $estado)
+            if case .juego = item {
+                ChipsEleccion(opciones: [(valor: "", titulo: "sin plataforma.")] + PlataformasOcio.comunes.map { (valor: $0, titulo: $0) },
+                              elegido: $plataforma)
+            }
             HStack(spacing: Medida.xs) {
                 Button("otro.") { seguir() }.buttonStyle(.capsula(.claro, ancho: true))
                 Button("añadir.") {
                     Haptica.exito()
-                    anadir(item, estado)
+                    if case .juego(let j) = item {
+                        anadir(.juego(JuegoEAN(ean: j.ean, titulo: j.titulo, plataforma: plataforma, imagen: j.imagen)), estado)
+                    } else {
+                        anadir(item, estado)
+                    }
                     anadidos += 1
                     seguir()
                 }
@@ -467,8 +503,19 @@ struct HojaEscanerOcio: View {
         let item: EscaneadoOcio?
         if esJuego { item = await BuscarJuegoEAN.buscar(codigo).map(EscaneadoOcio.juego) }
         else { item = await BuscarISBN.buscar(codigo).map(EscaneadoOcio.libro) }
+        if case .juego(let j) = item { plataforma = j.plataforma }
         if let item { paso = .encontrado(item); Haptica.ligera() }
-        else { paso = .noEncontrado(codigo); Haptica.error() }
+        else { tituloAMano = ""; paso = .noEncontrado(codigo); Haptica.error() }
+    }
+
+    // El código no está en el catálogo: con el título que se escribe, la portada se busca al añadir (como en el editor).
+    private func porTitulo(_ codigo: String) {
+        let t = tituloAMano.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty else { return }
+        escribiendo = false
+        plataforma = ""
+        paso = .encontrado(esJuego ? .juego(JuegoEAN(ean: codigo, titulo: t, plataforma: "", imagen: ""))
+                                   : .libro(LibroISBN(isbn: codigo, titulo: t, autor: "", anio: "", portada: "")))
     }
 
     private func seguir() {

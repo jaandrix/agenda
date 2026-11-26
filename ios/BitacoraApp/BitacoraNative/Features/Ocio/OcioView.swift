@@ -352,9 +352,20 @@ struct OcioView: View {
         .accessibilityHint("abre su ficha")
     }
 
+    // «2 de 3 temp.», «2 temp.» o, sin vistas, «3 temp.».
+    static func textoTemporadas(_ e: EntradaOcio) -> String? {
+        switch (e.temporadasVistas, e.temporadasTotal) {
+        case (0, 0): return nil
+        case (let v, 0): return "\(v) temp. vistas"
+        case (0, let t): return "\(t) temp."
+        case (let v, let t): return v >= t ? "\(t) temp." : "\(v) de \(t) temp."
+        }
+    }
+
     // Bajo el título: el autor de un libro, la plataforma y el formato de un juego o el año.
     static func meta(_ e: EntradaOcio) -> String {
         if e.tipo == "book", !e.autor.isEmpty { return e.autor }
+        if e.tipo == "series", let t = textoTemporadas(e) { return t }
         if e.tipo == "game" {
             let partes = [e.plataforma, BibliotecaOcio.textoFormato(e.formato)].filter { !$0.isEmpty }
             if !partes.isEmpty { return partes.joined(separator: ", ") }
@@ -498,8 +509,9 @@ struct OcioView: View {
             anio: d.anio, valoracion: String(d.valoracion), notas: d.notas, enlace: d.enlace, portada: portada) }
         var ops = [op(d.portada)]
         // 3.2: ISBN, plataforma y formato van en su propia operación (nil = no se tocan, como al valorar desde la ficha).
-        if d.isbn != nil || d.plataforma != nil || d.formato != nil {
-            ops.append(OcioDatosOp.op(id: id, isbn: d.isbn, plataforma: d.plataforma, formato: d.formato))
+        if d.isbn != nil || d.plataforma != nil || d.formato != nil || d.temporadasVistas != nil || d.temporadasTotal != nil {
+            ops.append(OcioDatosOp.op(id: id, isbn: d.isbn, plataforma: d.plataforma, formato: d.formato,
+                                      temporadasVistas: d.temporadasVistas, temporadasTotal: d.temporadasTotal))
         }
         // Valorarla da por hecha su tarea «valorar …» (completarTareaValorarPelicula).
         if d.valoracion > 0 { ops.append(OperacionesExtra.op(ValorarOcio.completar, ["entradaId": .string(id)])) }
@@ -605,6 +617,7 @@ private struct DatosEditorOcio {
     let tipo: String; let titulo: String; let autor: String; let estado: String; let fechaInicio: String; let fechaFin: String
     let anio: String; let valoracion: Double; let notas: String; let enlace: String; let portada: String
     var isbn: String? = nil; var plataforma: String? = nil; var formato: String? = nil
+    var temporadasVistas: Int? = nil; var temporadasTotal: Int? = nil
 }
 
 // MARK: - Ficha
@@ -761,6 +774,8 @@ private struct EditorOcio: View {
     @State private var valoracion: Double; @State private var notas: String; @State private var enlace: String; @State private var portada: String
     // 3.2: ISBN (libros), plataforma y formato (juegos).
     @State private var isbn: String; @State private var plataforma: String; @State private var formato: String
+    // 3.4: series, temporadas vistas y en total.
+    @State private var vistas: Int; @State private var totales: Int
     private let estadoInicial: String
     @State private var candidatas: [CandidataPortada] = []
     @State private var buscando = false
@@ -791,6 +806,7 @@ private struct EditorOcio: View {
         _enlace = State(initialValue: entrada?.enlace ?? ""); _portada = State(initialValue: entrada?.portada ?? "")
         _isbn = State(initialValue: entrada?.isbn ?? ""); _plataforma = State(initialValue: entrada?.plataforma ?? "")
         _formato = State(initialValue: entrada?.formato ?? ""); estadoInicial = entrada?.estado ?? ""
+        _vistas = State(initialValue: entrada?.temporadasVistas ?? 0); _totales = State(initialValue: entrada?.temporadasTotal ?? 0)
     }
 
     var body: some View {
@@ -806,6 +822,7 @@ private struct EditorOcio: View {
                     }
                 }
                 if tipo == "game" { seccionJuego }
+                if tipo == "series" { seccionTemporadas }
                 seccionPortada
                 Section("cuándo.") {
                     if tipo == "movie" {
@@ -852,7 +869,9 @@ private struct EditorOcio: View {
                                       valoracion: valoracion, notas: notas, enlace: enlace, portada: portada,
                                       isbn: tipo == "book" ? isbn : nil,
                                       plataforma: tipo == "game" ? MayusculaOcio.inicial(plataforma) : nil,
-                                      formato: tipo == "game" ? formato : nil))
+                                      formato: tipo == "game" ? formato : nil,
+                                      temporadasVistas: tipo == "series" ? vistas : nil,
+                                      temporadasTotal: tipo == "series" ? totales : nil))
                         cerrar()
                     }.disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
@@ -930,6 +949,21 @@ private struct EditorOcio: View {
         default: base = []
         }
         return base.isEmpty || base.contains(estadoInicial) || estadoInicial.isEmpty ? base : base + [estadoInicial]
+    }
+
+    // 3.4 (petición de Alejandro): «tiene 3 temporadas pero solo vi 2». Con «abandonada» no cuenta ni como viendo ni
+    // como terminada.
+    private var seccionTemporadas: some View {
+        Section {
+            Stepper(value: $vistas, in: 0...99) {
+                Text(vistas == 0 ? "temporadas vistas: sin indicar." : "temporadas vistas: \(vistas).").monospacedDigit()
+            }
+            Stepper(value: $totales, in: 0...99) {
+                Text(totales == 0 ? "temporadas en total: sin indicar." : "temporadas en total: \(totales).").monospacedDigit()
+            }
+        } header: { Text("temporadas.") } footer: {
+            Text("si la dejaste a medias, pon «abandonada» arriba: no saldrá ni en viendo ni en terminadas.")
+        }
     }
 
     // Plataforma (atajos de las más comunes o escrita) y formato: físico, digital u otro.

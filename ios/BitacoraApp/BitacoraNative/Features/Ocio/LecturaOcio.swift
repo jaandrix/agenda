@@ -21,6 +21,9 @@ struct EntradaOcio: Sendable, Identifiable, Equatable {
     var plataforma = ""
     var formato = ""
     var creada = ""
+    // 3.4: series, temporadas vistas y en total (0 = sin indicar).
+    var temporadasVistas = 0
+    var temporadasTotal = 0
 }
 
 struct ListaOcio: Sendable, Identifiable, Equatable {
@@ -54,7 +57,9 @@ enum LecturaOcio {
                 portada: valor["portada"]?.texto ?? "",
                 buscable: normalizar((valor["title"]?.texto ?? "") + " " + (valor["author"]?.texto ?? "") + " " + (valor["platform"]?.texto ?? "")),
                 isbn: valor["isbn"]?.texto ?? "", plataforma: valor["platform"]?.texto ?? "",
-                formato: valor["format"]?.texto ?? "", creada: valor["createdAt"]?.texto ?? ""
+                formato: valor["format"]?.texto ?? "", creada: valor["createdAt"]?.texto ?? "",
+                temporadasVistas: OcioDatosOp.entero(valor["seasonsSeen"]) ?? 0,
+                temporadasTotal: OcioDatosOp.entero(valor["seasonsTotal"]) ?? 0
             )
         }.sorted { a, b in
             let fa = a.fechaFin.isEmpty ? a.fechaInicio : a.fechaFin

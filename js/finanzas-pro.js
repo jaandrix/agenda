@@ -4148,6 +4148,23 @@
             return entries.filter(e => e.type === 'travel' && e.startDate).sort((a, b) => b.startDate.localeCompare(a.startDate));
         }
 
+        // 3.4: con los años la lista no acaba; se ven los cinco más recientes (y el elegido) y «mostrar todos.» abre el resto.
+        function financeProOpcionesViaje(viajes, elegido, todos) {
+            let lista = viajes;
+            if (!todos && viajes.length > 5) {
+                lista = viajes.slice(0, 5);
+                if (elegido && !lista.some(v => v.id === elegido)) lista = lista.concat(viajes.filter(v => v.id === elegido));
+            }
+            return `<option value="">sin un viaje concreto</option>${lista.map(v => `<option value="${escapeHtml(v.id)}" ${elegido === v.id ? 'selected' : ''}>${escapeHtml(financeProNombreViaje(v))}</option>`).join('')}${lista.length < viajes.length ? '<option value="__todos">mostrar todos.</option>' : ''}`;
+        }
+
+        function financeProTodosLosViajes(sel) {
+            const elegido = window._financeProTxDraft?.viajeId || '';
+            sel.innerHTML = financeProOpcionesViaje(financeProViajesConFecha(), elegido, true);
+            sel.value = elegido;
+            try { sel.showPicker?.(); } catch (_) { /* no todos los navegadores */ }
+        }
+
         function financeProNombreViaje(v) {
             return `${v.destination || v.title || 'viaje'}${v.startDate ? `, ${formatTravelRange(v.startDate, v.endDate)}` : ''}`;
         }
@@ -4157,7 +4174,7 @@
             return `
                 ${d.type === 'expense' ? `
                 <label class="finance-tx-marca"><input type="checkbox" ${d.viaje ? 'checked' : ''} onchange="financeProDraftSet('viaje',this.checked);document.getElementById('finance-tx-viaje').hidden=!this.checked"><span><b>gasto de viaje.</b><small>Cuenta como gasto, pero no entra en los presupuestos ni en el ritmo del mes.</small></span></label>
-                ${viajes.length ? `<div id="finance-tx-viaje" ${d.viaje ? '' : 'hidden'}><select class="modal-input" onchange="financeProDraftSet('viajeId',this.value)"><option value="">sin un viaje concreto</option>${viajes.map(v => `<option value="${v.id}" ${d.viajeId === v.id ? 'selected' : ''}>${escapeHtml(financeProNombreViaje(v))}</option>`).join('')}</select></div>` : '<div id="finance-tx-viaje" hidden></div>'}` : ''}
+                ${viajes.length ? `<div id="finance-tx-viaje" ${d.viaje ? '' : 'hidden'}><select class="modal-input" onchange="if(this.value==='__todos'){financeProTodosLosViajes(this)}else{financeProDraftSet('viajeId',this.value)}">${financeProOpcionesViaje(viajes, d.viajeId, false)}</select></div>` : '<div id="finance-tx-viaje" hidden></div>'}` : ''}
                 ${d.type !== 'transfer' ? `
                 <label class="finance-tx-marca"><input type="checkbox" ${d.ahorro ? 'checked' : ''} onchange="financeProDraftSet('ahorro',this.checked);const c=document.getElementById('finance-tx-categoria');if(c)c.hidden=this.checked"><span><b>${d.type === 'income' ? 'viene de mis ahorros.' : 'va a mis ahorros.'}</b><small>${d.type === 'income' ? 'Sube el saldo, pero no cuenta como ingreso (lo que sacas de una hucha o un bolsillo).' : 'Baja el saldo, pero no cuenta como gasto (lo que apartas a una hucha o un bolsillo).'}</small></span></label>` : ''}`;
         }
