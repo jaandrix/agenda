@@ -430,7 +430,7 @@ struct InicioCuerpo: View {
                             subtareas: t.subtareas, subHechas: t.subHechas, marcar: { marcar(t) }, abrir: { abrir(t) })
         } else if let e = cosa.evento {
             FilaEventoInicio(hora: cosa.hora, titulo: cosa.titulo, detalle: cosa.notas, tipo: TipoPunto.de(e.tipo), suave: cosa.suave,
-                             entradas: cosa.entradas, abrir: { abrirEvento(e) })
+                             entradas: cosa.entradas, evento: e, dia: vista?.dia, abrir: { abrirEvento(e) })
         } else {
             FilaEventoInicio(hora: cosa.hora, titulo: cosa.titulo, detalle: cosa.notas, suave: cosa.suave, entradas: cosa.entradas)
         }

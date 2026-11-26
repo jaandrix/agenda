@@ -95,6 +95,9 @@ struct FilaEventoInicio: View {
     var tipo: TipoPunto = .evento
     var suave = false
     var entradas = 0
+    // 3.4: con el evento y su día, la pastilla «qr.» abre las entradas sin pasar por la ficha.
+    var evento: EventoDia?
+    var dia: LocalDay?
     var abrir: (() -> Void)?
 
     // 3.2, «pastel.»: el evento va en la tarjeta rellena de su tipo y la segunda línea en el tono oscuro de ese color.
@@ -117,7 +120,13 @@ struct FilaEventoInicio: View {
                 }
             }
             Spacer(minLength: Medida.xs)
-            if entradas > 0 { Chip(texto: "qr.", tono: tipoTarjeta.relleno == nil ? .sutil : .blanco, icono: "qrcode").padding(.trailing, Medida.xs) }
+            if entradas > 0 {
+                if let evento, let dia {
+                    BotonQRDirecto(evento: evento, dia: dia, texto: "qr.", tono: tipoTarjeta.relleno == nil ? .sutil : .blanco).padding(.trailing, Medida.xs)
+                } else {
+                    Chip(texto: "qr.", tono: tipoTarjeta.relleno == nil ? .sutil : .blanco, icono: "qrcode").padding(.trailing, Medida.xs)
+                }
+            }
             if let hora { Text(hora).font(Letra.hora).foregroundStyle(tintaDetalle) }
         }
         .frame(minHeight: Medida.toque)

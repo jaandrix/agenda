@@ -258,7 +258,9 @@ struct CalendarioView: View {
                     }
                 }
                 Spacer(minLength: Medida.xs)
-                if e.entradas > 0 { Chip(texto: e.entradas == 1 ? "1 entrada" : "\(e.entradas) entradas", tono: pastel ? .blanco : .naranja) }
+                if e.entradas > 0 {
+                    BotonQRDirecto(evento: e, dia: d, texto: e.entradas == 1 ? "1 entrada" : "\(e.entradas) entradas", tono: pastel ? .blanco : .naranja)
+                }
                 if e.hora != nil { IconoCuadrado(id: Self.icono(e.tipo), tono: pastel ? .blanco : .claro, tamano: Medida.iconoPequeno) }
             }
             .frame(minHeight: Medida.toque)
