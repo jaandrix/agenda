@@ -520,7 +520,10 @@ private struct PestanaCuentas: View {
         }
         if !m.cuentas.isEmpty {
             TarjetaSeccion(titulo: "cuentas.", enTarjeta: false) {
-                TarjetaLista(elementos: m.cuentas) { cta in FilaCuentaFin(cta: cta, oculto: oculto) }
+                // 3.4 (petición de Alejandro: «es lo que más se mira»): las cuentas como tarjetas de cartera, dos por fila.
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: Medida.s), GridItem(.flexible(), spacing: Medida.s)], spacing: Medida.s) {
+                    ForEach(Array(m.cuentas.enumerated()), id: \.element.id) { i, cta in TarjetaCuentaFin(cta: cta, oculto: oculto, indice: i) }
+                }
             }
         }
         if !m.cargos.lista.isEmpty {
@@ -583,10 +586,19 @@ private struct PestanaCuentas: View {
     }
 }
 
-// 3.2: la fila de una cuenta: su icono, el nombre con lo que cambió en 60 días y el saldo con la flecha de tendencia.
-private struct FilaCuentaFin: View {
+// 3.4: cada cuenta es una tarjeta de cartera. La primera (la principal) va en carbón, como una tarjeta del banco; las
+// demás, en los pastel de la app. Arriba su icono y la tendencia; abajo el nombre, el saldo grande y lo que cambió en 60 días.
+private struct TarjetaCuentaFin: View {
     let cta: ModeloCuentas.Cuenta
     let oculto: Bool
+    let indice: Int
+
+    private static let tonos: [TipoPunto] = [.dinero, .estudio, .viaje, .cumple, .evento]
+    private var oscura: Bool { indice == 0 }
+    private var tono: TipoPunto { Self.tonos[max(indice - 1, 0) % Self.tonos.count] }
+    private var relleno: Color { oscura ? Lienzo.oscuro : (tono.relleno ?? Lienzo.tarjeta) }
+    private var tinta: Color { oscura ? Lienzo.sobreOscuro : Lienzo.tinta }
+    private var tintaSuave: Color { oscura ? Lienzo.sobreOscuroSuave : tono.tintaRelleno }
 
     private var icono: String {
         switch cta.id {
@@ -597,25 +609,33 @@ private struct FilaCuentaFin: View {
     }
     private var detalle: String {
         guard let d = cta.cambio60, !oculto else { return "" }
-        if abs(d) < 0.005 { return "sin cambios en 60 días." }
+        if abs(d) < 0.005 { return "igual que hace 60 días." }
         return CifraFin.texto(d, oculto: false, signo: true) + " en 60 días."
     }
 
     var body: some View {
-        HStack(spacing: Medida.s) {
-            IconoFinanzas(clave: icono)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(cta.nombre + ".").font(Letra.cuerpoFuerte).foregroundStyle(Lienzo.tinta).lineLimit(1)
-                if !detalle.isEmpty { Text(detalle).font(Letra.pie).monospacedDigit().foregroundStyle(Lienzo.tintaSecundaria).lineLimit(1) }
-            }
-            Spacer(minLength: Medida.xs)
-            HStack(spacing: Medida.xxs) {
+        VStack(alignment: .leading, spacing: Medida.xxs) {
+            HStack {
+                IconoFinanzas(clave: icono)
+                Spacer(minLength: 0)
                 if !oculto { FlechaTendencia(tendencia: cta.tendencia ?? 0) }
-                Text(CifraFin.texto(cta.saldo, oculto: oculto)).font(Letra.numero).foregroundStyle(cta.saldo < 0 ? Lienzo.negativo : Lienzo.tinta)
-                    .contentTransition(.numericText())
+            }
+            Spacer(minLength: Medida.s)
+            Text(cta.nombre.lowercased() + ".").font(Letra.pieFuerte).foregroundStyle(tintaSuave).lineLimit(1)
+            Text(CifraFin.texto(cta.saldo, oculto: oculto)).font(Letra.numeroGrande)
+                .foregroundStyle(cta.saldo < 0 ? Lienzo.negativo : tinta)
+                .lineLimit(1).minimumScaleFactor(0.55)
+                .contentTransition(.numericText())
+            if !detalle.isEmpty {
+                Text(detalle).font(Letra.pie).monospacedDigit().foregroundStyle(tintaSuave).lineLimit(1).minimumScaleFactor(0.8)
             }
         }
-        .frame(minHeight: 58)
+        .padding(Medida.rellenoTarjeta)
+        .frame(maxWidth: .infinity, minHeight: 140, alignment: .topLeading)
+        .background(relleno, in: RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous))
+        .overlay {
+            if !oscura { RoundedRectangle(cornerRadius: Medida.radioTarjeta, style: .continuous).strokeBorder(Lienzo.filo) }
+        }
         .accessibilityElement(children: .combine)
     }
 }

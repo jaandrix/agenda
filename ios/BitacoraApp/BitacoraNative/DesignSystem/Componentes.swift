@@ -457,10 +457,11 @@ struct SelectorMasUsados: View {
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
 
     var body: some View {
+        // 3.4 (petición de Alejandro: «el último eslabón de la versión anterior»): con las piezas de V2, la tarjeta blanca,
+        // el rótulo de sección y la sombra flotante, como el resto de la app.
         VStack(alignment: .leading, spacing: 0) {
-            Text("más usados.").font(Tipo.poppins(13, .bold, estilo: .footnote)).foregroundStyle(Paleta.textoSecundario)
-                .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 6)
-                .accessibilityAddTraits(.isHeader)
+            EtiquetaSeccion(texto: "más usados.")
+                .padding(.horizontal, Medida.rellenoTarjeta).padding(.top, Medida.s).padding(.bottom, Medida.xxs)
             ForEach(Array(apartados.enumerated()), id: \.element.id) { n, a in
                 if n > 0 { SeparadorMenu() }
                 Button { elegir(a.vista) } label: { FilaMenu(nombre: a.nombre, inicial: a.vista) }
@@ -476,11 +477,11 @@ struct SelectorMasUsados: View {
         .background {
             GeometryReader { g in
                 let x = picoCentroX ?? (g.size.width - 34)
-                FormaBocadillo(picoCentroX: x).fill(Paleta.superficie)
-                    .overlay(FormaBocadillo(picoCentroX: x).stroke(Paleta.borde))
+                FormaBocadillo(radio: Medida.radioTarjeta, picoCentroX: x).fill(Lienzo.tarjeta)
+                    .overlay(FormaBocadillo(radio: Medida.radioTarjeta, picoCentroX: x).stroke(Lienzo.filo))
+                    .sombra(.flotante)
             }
         }
-        .shadow(color: .black.opacity(0.14), radius: 14, y: 4)
         .accessibilityAction(.escape, cerrar)
     }
 }
