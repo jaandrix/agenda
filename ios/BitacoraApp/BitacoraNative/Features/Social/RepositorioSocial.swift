@@ -463,3 +463,47 @@ actor RepositorioSocial {
         _ = try await exigir("rest/v1/eventos_compartidos", consulta: [Self.q("id", "eq.\(id)")], metodo: "DELETE")
     }
 }
+
+// 3.4 (petición de Alejandro): recomendaciones de Ocio también desde el iPhone, las mismas de la web (js/ocio.js:
+// enviarRecomendacion, cargarRecomendaciones y quitarRecomendacion). Viajan con la portada para que llegue completa.
+struct RecomendacionOcio: Sendable, Identifiable, Equatable {
+    let id, tipo, titulo, autor, portada, anio, nota, de: String
+}
+
+extension RepositorioSocial {
+    func listaAmigos() async throws -> [SocialAmigo] {
+        let s = try await auth.sesionValida()
+        return await amigos(s.userId)
+    }
+
+    func recomendar(a amigo: String, tipo: String, titulo: String, autor: String, portada: String, anio: String, nota: String) async throws {
+        let s = try await auth.sesionValida()
+        var entrada: [String: Any] = ["title": titulo]
+        if !autor.isEmpty { entrada["author"] = autor }
+        if portada.hasPrefix("https://") { entrada["portada"] = portada }
+        if !anio.isEmpty { entrada["year"] = anio }
+        let n = nota.trimmingCharacters(in: .whitespacesAndNewlines)
+        _ = try await exigir("rest/v1/recomendaciones", metodo: "POST",
+                             cuerpo: ["remitente_id": s.userId, "destinatario_id": amigo, "tipo": tipo, "entrada": entrada,
+                                      "nota": n.isEmpty ? NSNull() as Any : n as Any])
+    }
+
+    func recomendaciones() async -> [RecomendacionOcio] {
+        guard let s = try? await auth.sesionValida(),
+              let f = await filas("rest/v1/recomendaciones", [Self.q("select", "id,remitente_id,tipo,entrada,nota"),
+                                                              Self.q("destinatario_id", "eq.\(s.userId)"), Self.q("order", "creado_en.desc")]),
+              !f.isEmpty else { return [] }
+        let porId = await nombres(f.compactMap { $0["remitente_id"] as? String })
+        return f.compactMap { r in
+            guard let id = Self.texto(r["id"]), let tipo = r["tipo"] as? String else { return nil }
+            let e = r["entrada"] as? [String: Any] ?? [:]
+            return RecomendacionOcio(id: id, tipo: tipo, titulo: (e["title"] as? String) ?? "sin título", autor: (e["author"] as? String) ?? "",
+                                     portada: (e["portada"] as? String) ?? "", anio: Self.texto(e["year"]) ?? "",
+                                     nota: (r["nota"] as? String) ?? "", de: (r["remitente_id"] as? String).flatMap { porId[$0] } ?? "un amigo")
+        }
+    }
+
+    func quitarRecomendacion(_ id: String) async throws {
+        _ = try await exigir("rest/v1/recomendaciones", consulta: [Self.q("id", "eq.\(id)")], metodo: "DELETE")
+    }
+}

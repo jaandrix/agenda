@@ -1284,7 +1284,8 @@
                     remitente_id: user.id,
                     destinatario_id: destinatarioId,
                     tipo: entry.type,
-                    entrada: { title: entry.title, author: entry.author || null },
+                    // 3.4: con la portada, como desde el iPhone.
+                    entrada: { title: entry.title, author: entry.author || null, ...(entry.portada ? { portada: entry.portada } : {}) },
                     nota
                 });
                 if (error) throw error;
@@ -1345,6 +1346,7 @@
                 type: rec.tipo,
                 title: entrada.title || 'Sin título',
                 author: entrada.author || '',
+                ...(entrada.portada ? { portada: entrada.portada } : {}),
                 status: '',
                 date: todayISO(),
                 notes: rec.nota ? `Recomendado por ${rec.remitente_nombre || 'un amigo'}: ${rec.nota}` : `Recomendado por ${rec.remitente_nombre || 'un amigo'}`,

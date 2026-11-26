@@ -50,6 +50,8 @@ struct OcioView: View {
     @Environment(AppCoordinator.self) private var c
     @Environment(\.accessibilityReduceMotion) private var sinMovimiento
     @State private var vista: VistaOcio?
+    // 3.4: lo que los amigos te han recomendado (todas las pestañas; se filtra por tipo al pintar).
+    @State private var recomendadas: [RecomendacionOcio] = []
     @State private var pestana: PestanaOcio = .book
     @State private var modal: ModalOcio?
     @State private var busqueda = ""
@@ -101,6 +103,7 @@ struct OcioView: View {
         .fondoLienzo()
         .refreshable { await c.sincronizar() }
         .tareaVisible(id: c.revision) { await cargar() }
+        .task { await cargarRecomendadas() }
         .onChange(of: pestana) { _, p in
             busqueda = ""
             orden = PreferenciasOcio.orden(p.rawValue)
@@ -183,6 +186,12 @@ struct OcioView: View {
 
     @ViewBuilder private func biblioteca(_ v: VistaOcio) -> some View {
         let tipo = pestana.rawValue
+        let paraMi = recomendadas.filter { $0.tipo == tipo }
+        if !paraMi.isEmpty {
+            FranjaRecomendacionesOcio(lista: paraMi, anadir: { r in Task { await aceptar(r) } },
+                                      descartar: { r in Task { await quitarRecomendada(r) } })
+                .padding(.top, Medida.xs)
+        }
         let q = LecturaOcio.normalizar(busqueda)
         let delTipo = v.entradas.filter { $0.tipo == tipo }
         let buscadas = q.isEmpty ? delTipo : delTipo.filter { $0.buscable.contains(q) }
@@ -528,6 +537,30 @@ struct OcioView: View {
         if let img { await c.guardar(OcioDatosOp.op(id: id, portadaSiFalta: img)) }
     }
 
+    // 3.4: recomendaciones de los amigos (las mismas que en la web).
+    private func cargarRecomendadas() async {
+        let repo = RepositorioSocial(cliente: c.entorno.cliente, auth: c.entorno.auth)
+        let r = await repo.recomendaciones()
+        if r != recomendadas { recomendadas = r }
+    }
+
+    // Como anadirRecomendacionABiblioteca (js/ocio.js): entra sin empezar, con quién la recomendó en las notas.
+    private func aceptar(_ r: RecomendacionOcio) async {
+        let id = OperacionBitacora.nuevoIdProyecto("ocio")
+        let estado = r.tipo == "book" ? "Por leer" : r.tipo == "game" ? "Por jugar" : ""
+        let notas = r.nota.isEmpty ? "Recomendado por \(r.de)" : "Recomendado por \(r.de): \(r.nota)"
+        let ok = await c.guardar([.guardarOcio(id: id, tipo: r.tipo, titulo: MayusculaOcio.inicial(r.titulo), autor: r.autor, estado: estado,
+                                               fechaInicio: "", fechaFin: "", anio: r.anio, valoracion: "0", notas: notas, enlace: "",
+                                               portada: r.portada.hasPrefix("https://") ? r.portada : "")])
+        if ok { Haptica.exito(); await quitarRecomendada(r) }
+    }
+
+    private func quitarRecomendada(_ r: RecomendacionOcio) async {
+        withAnimation(Muelle.o(Muelle.suave, reducido: sinMovimiento)) { recomendadas.removeAll { $0.id == r.id } }
+        let repo = RepositorioSocial(cliente: c.entorno.cliente, auth: c.entorno.auth)
+        try? await repo.quitarRecomendacion(r.id)
+    }
+
     // 3.2: lo que llega del escáner. Un juego entra en físico, con su plataforma, y su portada es la de Steam si la hay
     // (vertical, como las demás) o, si no, la foto del producto.
     private func anadirEscaneado(_ item: EscaneadoOcio, estado: String) async {
@@ -640,6 +673,7 @@ private struct FichaOcio: View {
     // La ficha llega con la entrada de cuando se abrió: la portada nueva se ve al momento sin esperar a la recarga.
     @State private var portada: String
     @State private var cambiandoPortada = false
+    @State private var recomendando = false
 
     init(entrada: EntradaOcio, valorar: @escaping (Double) -> Void, editar: @escaping () -> Void, eliminar: @escaping () -> Void,
          cambiarPortada: @escaping (String) -> Void) {
@@ -698,6 +732,9 @@ private struct FichaOcio: View {
             Button("eliminar.", role: .destructive) { Haptica.media(); eliminar(); cerrar() }
             Button("cancelar.", role: .cancel) {}
         }
+        .hoja(isPresented: $recomendando) {
+            RecomendarOcioView(entrada: entrada, portada: portada).environment(c)
+        }
         .hoja(isPresented: $cambiandoPortada) {
             CambiarPortadaOcio(entrada: entrada, actual: portada) { url in
                 portada = url
@@ -750,8 +787,12 @@ private struct FichaOcio: View {
                     Button("abrir enlace.") { abrirURL(enlace) }.buttonStyle(.capsula(.blanco, ancho: true))
                 }
             }
-            Button(portada.isEmpty ? "añadir portada." : "cambiar portada.") { cambiandoPortada = true }
-                .buttonStyle(.capsula(.blanco, ancho: true))
+            HStack(spacing: Medida.xs) {
+                Button(portada.isEmpty ? "añadir portada." : "cambiar portada.") { cambiandoPortada = true }
+                    .buttonStyle(.capsula(.blanco, ancho: true))
+                Button("recomendar.") { recomendando = true }
+                    .buttonStyle(.capsula(.blanco, ancho: true))
+            }
             Button("eliminar.") { confirmarBorrar = true }.buttonStyle(.capsula(.claro, ancho: true))
         }
     }
