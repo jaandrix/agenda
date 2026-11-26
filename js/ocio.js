@@ -947,7 +947,8 @@
 
             // Sin badge de estado: muchos juegos no tienen fecha de finalización.
             let html = `<div>`;
-            html += renderMediaCardGrid(sorted, g => g.endDate ? `terminado el ${new Date(g.endDate + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}` : '');
+            // 3.2: sin fecha de fin, la plataforma y el formato que guarda el iPhone.
+            html += renderMediaCardGrid(sorted, g => g.endDate ? `terminado el ${new Date(g.endDate + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}` : [g.platform, g.format === 'fisico' ? 'físico' : g.format].filter(Boolean).join(', '));
             html += `</div>`;
             return html;
         }
