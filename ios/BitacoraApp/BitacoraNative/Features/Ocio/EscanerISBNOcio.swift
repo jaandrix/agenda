@@ -275,9 +275,13 @@ struct HojaEscanerOcio: View {
         self.anadir = anadir
         _visto = AppStorage(wrappedValue: false, tipo == "game" ? "ocio.escanerJuegosVisto" : "ocio.escanerVisto")
         _estado = State(initialValue: tipo == "game" ? "Por jugar" : "Por leer")
+        _modoJuego = State(initialValue: tipo == "game")
     }
 
-    private var esJuego: Bool { tipo == "game" }
+    // 3.4 (Alejandro escaneaba cajas de juegos desde Libros y no las aceptaba): un solo escáner para los dos. Empieza en
+    // el modo de la pestaña y cambia solo según el código: un ISBN (978/979) es un libro; otro EAN, UPC o EAN-8, un juego.
+    @State private var modoJuego: Bool
+    private var esJuego: Bool { modoJuego }
     private var estados: [(String, String)] {
         esJuego ? [("Por jugar", "por jugar."), ("Jugando", "jugando."), ("Completado", "completado.")]
                 : [("Por leer", "por leer."), ("Leyendo", "leyendo."), ("Completado", "leído.")]
@@ -434,16 +438,18 @@ struct HojaEscanerOcio: View {
                 .accessibilityLabel(esJuego ? "código de barras" : "isbn")
             Button("buscar.") {
                 escribiendo = false
-                if esJuego {
-                    if let ean = BuscarJuegoEAN.deCodigo(manual) { manual = ""; Task { await buscar(ean) } }
-                    else { aviso = "un código de barras tiene 8, 12 o 13 cifras."; Haptica.error() }
+                // Como con la cámara: un ISBN es un libro y cualquier otro código de producto, un juego.
+                let limpio = OcioDatosOp.isbnLimpio(manual)
+                if BuscarISBN.deCodigo(manual) != nil || limpio.count == 10 {
+                    cambiarModo(juego: false); manual = ""; Task { await buscar(limpio) }
+                } else if let ean = BuscarJuegoEAN.deCodigo(manual) {
+                    cambiarModo(juego: true); manual = ""; Task { await buscar(ean) }
                 } else {
-                    let limpio = OcioDatosOp.isbnLimpio(manual)
-                    if limpio.isEmpty { aviso = "un isbn tiene 10 o 13 cifras."; Haptica.error() } else { manual = ""; Task { await buscar(limpio) } }
+                    aviso = "un código de barras tiene 8, 10, 12 o 13 cifras."; Haptica.error()
                 }
             }
             .buttonStyle(.capsula(.oscuro))
-            .disabled(manual.filter(\.isNumber).count < (esJuego ? 8 : 10))
+            .disabled(manual.filter(\.isNumber).count < 8)
         }
     }
 
@@ -488,6 +494,8 @@ struct HojaEscanerOcio: View {
 
     private func leido(_ codigo: String) {
         guard paso == .escaneando else { return }
+        if let _ = BuscarISBN.deCodigo(codigo) { cambiarModo(juego: false) }
+        else if let _ = BuscarJuegoEAN.deCodigo(codigo) { cambiarModo(juego: true) }
         let valido = esJuego ? BuscarJuegoEAN.deCodigo(codigo) : BuscarISBN.deCodigo(codigo)
         guard let valido else {
             if aviso == nil { aviso = esJuego ? "ese código es de un libro." : "ese código no es de un libro."; Haptica.tope() }
@@ -495,6 +503,12 @@ struct HojaEscanerOcio: View {
         }
         Haptica.media()
         Task { await buscar(valido) }
+    }
+
+    private func cambiarModo(juego: Bool) {
+        guard modoJuego != juego else { return }
+        modoJuego = juego
+        estado = juego ? "Por jugar" : "Por leer"
     }
 
     private func buscar(_ codigo: String) async {
