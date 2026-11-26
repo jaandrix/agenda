@@ -593,25 +593,34 @@ struct OcioView: View {
         }
     }
 
-    // 3.2: portadas que se buscan solas al abrir Ocio (6 por vez; cada entrada se intenta una sola vez por iPhone).
+    // 3.2: portadas que se buscan solas al abrir Ocio; cada entrada se intenta una sola vez por iPhone. 3.4 (Alejandro
+    // añadió 93 juegos de golpe): todas las que faltan, no 6 por visita, de 4 en 4 y guardando cada tanda para que se
+    // vean llegar. Solo corre en la primera carga de la vista.
     private func rellenarPortadas() async {
         let clave = "ocio.portadasIntentadas"
         var intentadas = Set(UserDefaults.standard.stringArray(forKey: clave) ?? [])
-        let faltan = (vista?.entradas ?? []).filter { $0.portada.isEmpty && !intentadas.contains($0.id) }.prefix(6)
-        var ops: [OperacionBitacora] = []
-        for e in faltan {
-            intentadas.insert(e.id)
-            var img: String?
-            if !e.isbn.isEmpty { img = await BuscarISBN.portada(e.isbn) }
-            if img == nil {
-                let r = await BuscarPortadas.buscar(c, tipo: e.tipo, q: e.tipo == "book" && !e.autor.isEmpty ? e.titulo + " " + e.autor : e.titulo,
-                                                    anio: e.tipo == "movie" || e.tipo == "series" ? e.anio : "")
-                img = await BuscarPortadas.primeraQueCarga(BuscarPortadas.ordenadas(r, titulo: e.titulo, autor: e.autor, anio: e.anio))
+        let faltan = (vista?.entradas ?? []).filter { $0.portada.isEmpty && !intentadas.contains($0.id) }
+        let coordinador = c
+        for inicio in stride(from: 0, to: faltan.count, by: 4) {
+            guard !Task.isCancelled else { break }
+            let tanda = Array(faltan[inicio..<min(inicio + 4, faltan.count)])
+            let halladas: [(id: String, img: String)] = await withTaskGroup(of: (String, String?).self) { g in
+                for e in tanda { g.addTask { (e.id, await Self.portadaPara(e, coordinador)) } }
+                var r: [(id: String, img: String)] = []
+                for await (id, img) in g { if let img { r.append((id, img)) } }
+                return r
             }
-            if let img { ops.append(OcioDatosOp.op(id: e.id, portadaSiFalta: img)) }
+            tanda.forEach { intentadas.insert($0.id) }
+            UserDefaults.standard.set(Array(intentadas.suffix(4000)), forKey: clave)
+            if !halladas.isEmpty { _ = await c.guardar(halladas.map { OcioDatosOp.op(id: $0.id, portadaSiFalta: $0.img) }) }
         }
-        UserDefaults.standard.set(Array(intentadas.suffix(2000)), forKey: clave)
-        if !ops.isEmpty { _ = await c.guardar(ops) }
+    }
+
+    nonisolated private static func portadaPara(_ e: EntradaOcio, _ c: AppCoordinator) async -> String? {
+        if !e.isbn.isEmpty, let p = await BuscarISBN.portada(e.isbn) { return p }
+        let r = await BuscarPortadas.buscar(c, tipo: e.tipo, q: e.tipo == "book" && !e.autor.isEmpty ? e.titulo + " " + e.autor : e.titulo,
+                                            anio: e.tipo == "movie" || e.tipo == "series" ? e.anio : "")
+        return await BuscarPortadas.primeraQueCarga(BuscarPortadas.ordenadas(r, titulo: e.titulo, autor: e.autor, anio: e.anio))
     }
 
     private func guardarLista(_ previa: ListaOcio?, _ nombre: String, _ ids: [String]) async {

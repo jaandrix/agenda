@@ -1107,6 +1107,7 @@ const HERRAMIENTAS = [
                 formato: { type: 'string', enum: ['fisico', 'digital', 'otro'], description: 'Solo videojuegos' },
                 isbn: { type: 'string', description: 'Solo libros' },
                 portada: { type: 'string', description: 'URL https de la portada, si se conoce' },
+                titulo_nuevo: { type: 'string', description: 'Para renombrar uno que ya existe (por ejemplo, añadir la edición)' },
             },
             required: ['tipo', 'titulo'],
         },
@@ -1993,6 +1994,7 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (t === 'game' && ['fisico', 'digital', 'otro'].includes(a.formato)) datos.format = a.formato;
             if (t === 'book' && a.isbn) { const i = String(a.isbn).toUpperCase().replace(/[^0-9X]/g, ''); if (i.length === 10 || i.length === 13) datos.isbn = i; }
             if (typeof a.portada === 'string' && a.portada.startsWith('https://')) datos.portada = a.portada.slice(0, 2000);
+            if (existente && typeof a.titulo_nuevo === 'string' && a.titulo_nuevo.trim()) datos.title = a.titulo_nuevo.trim().slice(0, 200);
             const terminado: Record<string, string> = { book: 'Completado', series: 'Completada', game: 'Completado' };
             const empezado: Record<string, string> = { book: 'Leyendo', series: 'Viendo', game: 'Jugando' };
             if (a.estado && t !== 'movie') datos.status = String(a.estado);
