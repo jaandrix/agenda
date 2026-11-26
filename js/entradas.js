@@ -318,7 +318,7 @@
 
             // ===== SERIES =====
             else if (type === 'series') {
-                const statuses = ['Viendo', 'Completada', 'Abandonada'];
+                const statuses = ['Viendo', 'Por ver', 'Completada', 'Abandonada'];
                 // 3.4: «tiene 3 temporadas pero solo vi 2» (vacío = sin indicar).
                 const temporadas = `<div style="display:flex;gap:10px"><div style="flex:1"><div class="modal-label">temporadas vistas</div><input type="number" min="0" max="99" id="modal-seasons-seen" class="modal-input" value="${isEdit && entry.seasonsSeen ? entry.seasonsSeen : ''}"></div><div style="flex:1"><div class="modal-label">temporadas en total</div><input type="number" min="0" max="99" id="modal-seasons-total" class="modal-input" value="${isEdit && entry.seasonsTotal ? entry.seasonsTotal : ''}"></div></div>`;
                 extraFields = `${temporadas}

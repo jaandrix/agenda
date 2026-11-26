@@ -1098,7 +1098,7 @@ const HERRAMIENTAS = [
             properties: {
                 tipo: { type: 'string', enum: Object.keys(OCIO_TIPOS) }, titulo: { type: 'string' }, autor: { type: 'string', description: 'Solo libros' },
                 fecha_inicio: { type: 'string' }, fecha_fin: { type: 'string' }, valoracion: { type: 'number', minimum: 1, maximum: 5 },
-                estado: { type: 'string', description: 'Libros: Leyendo/Por leer/Completado/Abandonado. Series: Viendo/Completada/Abandonada. Videojuegos: Jugando/Por jugar/Completado/Abandonado.' },
+                estado: { type: 'string', description: 'Libros: Leyendo/Por leer/Completado/Abandonado. Series: Viendo/Por ver/Completada/Abandonada. Videojuegos: Jugando/Por jugar/Completado/Abandonado.' },
                 anio: { type: 'string', description: 'Año de estreno o de publicación (películas y series: ayuda a encontrar la portada)' },
                 notas: { type: 'string' },
                 temporadas_vistas: { type: 'number', minimum: 0, description: 'Solo series: cuántas temporadas ha visto (0 = sin indicar)' },

@@ -985,7 +985,7 @@ private struct EditorOcio: View {
         let base: [String]
         switch tipo {
         case "book": base = ["Leyendo", "Por leer", "Completado", "Abandonado"]
-        case "series": base = ["Viendo", "Completada", "Abandonada"]
+        case "series": base = ["Viendo", "Por ver", "Completada", "Abandonada"]
         case "game": base = ["Jugando", "Por jugar", "Completado", "Abandonado"]
         default: base = []
         }

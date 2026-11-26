@@ -928,7 +928,7 @@
             const { items: series, banner } = applyMonthFilterTo('series', allSeries);
             if (!series.length) return banner + `<div class="empty-state"><div class="empty-title">ninguna serie ese mes.</div></div>`;
 
-            const statusOrder = { 'Viendo': 0, 'Completada': 1, 'Abandonada': 2 };
+            const statusOrder = { 'Viendo': 0, 'Por ver': 1, 'Completada': 2, 'Abandonada': 3 };
             // Estado efectivo: si hay fecha de fin y el estado guardado sigue en
             // "Viendo" (dato antiguo sin reeditar), se muestra como "Completada".
             const effectiveStatus = s => (s.endDate && s.status === 'Viendo') ? 'Completada' : s.status;
