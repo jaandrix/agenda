@@ -1092,13 +1092,21 @@ const HERRAMIENTAS = [
     },
     {
         name: 'ocio',
-        description: 'Añade o actualiza un libro, una película, una serie o un videojuego en Ocio (se aplica solo, sin validar). Si ya existe uno con ese título, lo actualiza: por ejemplo, terminarlo (fecha_fin), valorarlo (1 a 5) o cambiar su estado.',
+        description: 'Añade o actualiza un libro, una película, una serie o un videojuego en Ocio (se aplica solo, sin validar). Si ya existe uno con ese título, lo actualiza: terminarlo (fecha_fin), valorarlo (1 a 5), cambiar su estado, sus temporadas, su plataforma, su portada o sus notas. Una serie a medias («tiene 3 temporadas y vi 2») va con temporadas_vistas y temporadas_total, y si se dejó, estado Abandonada: así no sale ni en viendo ni en terminadas. Para saber qué hay ya, usa la herramienta apartado con ocio.',
         inputSchema: {
             type: 'object',
             properties: {
                 tipo: { type: 'string', enum: Object.keys(OCIO_TIPOS) }, titulo: { type: 'string' }, autor: { type: 'string', description: 'Solo libros' },
                 fecha_inicio: { type: 'string' }, fecha_fin: { type: 'string' }, valoracion: { type: 'number', minimum: 1, maximum: 5 },
-                estado: { type: 'string', description: 'Libros: Leyendo/Completado. Series: Viendo/Completada/Abandonada. Videojuegos: Jugando/Completado/Abandonado.' },
+                estado: { type: 'string', description: 'Libros: Leyendo/Por leer/Completado/Abandonado. Series: Viendo/Completada/Abandonada. Videojuegos: Jugando/Por jugar/Completado/Abandonado.' },
+                anio: { type: 'string', description: 'Año de estreno o de publicación (películas y series: ayuda a encontrar la portada)' },
+                notas: { type: 'string' },
+                temporadas_vistas: { type: 'number', minimum: 0, description: 'Solo series: cuántas temporadas ha visto (0 = sin indicar)' },
+                temporadas_total: { type: 'number', minimum: 0, description: 'Solo series: cuántas temporadas tiene (0 = sin indicar)' },
+                plataforma: { type: 'string', description: 'Solo videojuegos: PS5, PS4, PS3, PS2, PS1, Switch 2, Switch, 3DS, NDS, Xbox Series, Xbox One, Xbox 360, PC...' },
+                formato: { type: 'string', enum: ['fisico', 'digital', 'otro'], description: 'Solo videojuegos' },
+                isbn: { type: 'string', description: 'Solo libros' },
+                portada: { type: 'string', description: 'URL https de la portada, si se conoce' },
             },
             required: ['tipo', 'titulo'],
         },
@@ -1972,6 +1980,19 @@ async function llamar(userId: string, nombre: string, a: any) {
             if (t === 'movie' && (esFecha(a.fecha_fin) || esFecha(a.fecha_inicio))) datos.date = esFecha(a.fecha_fin) ? a.fecha_fin : a.fecha_inicio;
             const v = Math.round(Number(a.valoracion));
             if (v >= 1 && v <= 5) datos.rating = v;
+            // 3.4: lo demás que guardan la web y el iPhone en Ocio.
+            if (a.anio && /^\d{4}/.test(String(a.anio))) datos.year = String(a.anio).slice(0, 4);
+            if (typeof a.notas === 'string' && a.notas.trim()) datos.notes = a.notas.trim().slice(0, 2000);
+            if (t === 'series') {
+                for (const [campo, valor] of [['seasonsSeen', a.temporadas_vistas], ['seasonsTotal', a.temporadas_total]] as const) {
+                    const n = Math.round(Number(valor));
+                    if (Number.isFinite(n) && n >= 0 && valor !== undefined && valor !== null && valor !== '') datos[campo] = Math.min(n, 99);
+                }
+            }
+            if (t === 'game' && typeof a.plataforma === 'string' && a.plataforma.trim()) datos.platform = a.plataforma.trim().slice(0, 60);
+            if (t === 'game' && ['fisico', 'digital', 'otro'].includes(a.formato)) datos.format = a.formato;
+            if (t === 'book' && a.isbn) { const i = String(a.isbn).toUpperCase().replace(/[^0-9X]/g, ''); if (i.length === 10 || i.length === 13) datos.isbn = i; }
+            if (typeof a.portada === 'string' && a.portada.startsWith('https://')) datos.portada = a.portada.slice(0, 2000);
             const terminado: Record<string, string> = { book: 'Completado', series: 'Completada', game: 'Completado' };
             const empezado: Record<string, string> = { book: 'Leyendo', series: 'Viendo', game: 'Jugando' };
             if (a.estado && t !== 'movie') datos.status = String(a.estado);

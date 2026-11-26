@@ -157,6 +157,15 @@ enum CrearApunte {
             deshacer = ["tipo": .string("evento"), "eventoId": .string(eid)]
         case let t where ocio[t] != nil:
             guard !titulo.isEmpty, let tipoEntrada = ocio[t] else { return falla("falta el título") }
+            // 3.4: si ya está en Ocio, se pone en marcha en vez de repetirla (como la web, apuntarCrear).
+            let plano = { (s: String) in BuscarPortadas.clave(s) }
+            if tipoEntrada != "movie", let ya = LecturaOcio.vista(doc).entradas.first(where: { $0.tipo == tipoEntrada && plano($0.titulo) == plano(titulo) }) {
+                let enMarcha = ["book": "Leyendo", "series": "Viendo", "game": "Jugando"][tipoEntrada]!
+                ops.append(.guardarOcio(id: ya.id, tipo: ya.tipo, titulo: ya.titulo, autor: ya.autor, estado: enMarcha,
+                                        fechaInicio: ya.fechaInicio.isEmpty ? hoy : ya.fechaInicio, fechaFin: "", anio: ya.anio,
+                                        valoracion: String(ya.valoracion), notas: ya.notas, enlace: ya.enlace, portada: ya.portada))
+                break
+            }
             let eid = id("ap_ocio", ahora)
             var o: [String: JSONValue] = ["id": .string(eid), "type": .string(tipoEntrada), "categoryId": .string(categoriaOcio[tipoEntrada]!), "tags": .array([]), "date": .string("")]
             if tipoEntrada == "movie" {

@@ -183,7 +183,9 @@ function interpretarApunte(texto) {
     // las 13:30», «serie Los hombres de Paco», «leer el libro …».
     const OCIO_PALABRA = { serie: 'serie', peli: 'peli', pelicula: 'peli', libro: 'libro', videojuego: 'juego', juego: 'juego' };
     const dicho = quitar(/^\s*(evento|tarea|serie|peli|pelicula|libro|videojuego|juego)\s*:?\s+(?=\S)/)
-        || quitar(/^\s*(?:ver|empezar|acabar|terminar)\s+(?:la\s+)?(serie|peli|pelicula)\s+(?=\S)/) || quitar(/^\s*leer\s+(?:el\s+)?(libro)\s+(?=\S)/) || quitar(/^\s*jugar\s+(?:al?\s+)?(videojuego|juego)\s+(?=\S)/);
+        || quitar(/^\s*(?:ver|empezar|acabar|terminar)\s+(?:la\s+)?(serie|peli|pelicula)\s+(?=\S)/) || quitar(/^\s*leer\s+(?:el\s+)?(libro)\s+(?=\S)/) || quitar(/^\s*jugar\s+(?:al?\s+)?(videojuego|juego)\s+(?=\S)/)
+        // 3.4: «viendo serie Pluribus», «estoy leyendo el libro …», «jugando al juego …».
+        || quitar(/^\s*(?:estoy\s+)?viendo\s+(?:la\s+)?(serie|peli|pelicula)\s+(?=\S)/) || quitar(/^\s*(?:estoy\s+)?leyendo\s+(?:el\s+)?(libro)\s+(?=\S)/) || quitar(/^\s*(?:estoy\s+)?jugando\s+(?:al?\s+)?(videojuego|juego)\s+(?=\S)/);
     if (dicho) r.forzado = OCIO_PALABRA[dicho[1]] || dicho[1];
     // De Ocio solo interesa el título, tal cual (en «El día de mañana» no hay fecha).
     if (OCIO_PALABRA[dicho?.[1]]) {
@@ -731,6 +733,13 @@ function apuntarCrear(texto, r, tipo) {
         if (!r.titulo) return { error: 'falta el título' };
         const hoy = todayISO();
         const entryType = APUNTAR_OCIO[tipo];
+        // 3.4: si ya está en Ocio («viendo serie The Office» con la serie ya apuntada), se pone en marcha en vez de repetirla.
+        const plano = t => stripAccents(String(t || '').toLowerCase()).replace(/[^a-z0-9]+/g, ' ').trim();
+        const ya = entries.find(e => e.type === entryType && plano(e.title) === plano(r.titulo));
+        if (ya && entryType !== 'movie') {
+            const enMarcha = { book: 'Leyendo', series: 'Viendo', game: 'Jugando' }[entryType];
+            return conector({ tipo: 'ocio', id: ya.id, entryType, titulo: ya.title, datos: { status: enMarcha, endDate: '', ...(ya.startDate ? {} : { startDate: hoy, date: hoy }) } }, 'ap_ocio');
+        }
         const datos = entryType === 'movie' ? { date: hoy, rating: 0, notes: '' } : { status: { book: 'Leyendo', series: 'Viendo', game: 'Jugando' }[entryType], startDate: hoy, date: hoy, endDate: '', rating: 0 };
         return conector({ tipo: 'ocio', entryType, titulo: r.titulo, datos }, 'ap_ocio');
     }
