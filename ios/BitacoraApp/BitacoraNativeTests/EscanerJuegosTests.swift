@@ -33,5 +33,8 @@ final class EscanerJuegosTests: XCTestCase {
         XCTAssertEqual(BuscarJuegoEAN.limpiar("Pokemon Y (Nintendo 3DS)"), "Pokemon Y")
         XCTAssertEqual(BuscarJuegoEAN.limpiar("Gran Turismo 4 PS2"), "Gran Turismo 4")
         XCTAssertEqual(BuscarJuegoEAN.limpiar("Lords of the Fallen PS5"), "Lords of the Fallen")
+        XCTAssertEqual(BuscarJuegoEAN.limpiar("Nintendo Switch: The Legend of Zelda: Breath of the Wild EU Version Region Free"),
+                       "The Legend of Zelda: Breath of the Wild")
+        XCTAssertEqual(BuscarJuegoEAN.limpiar("Gran Turismo 3 A-Spec PAL Standard Edition"), "Gran Turismo 3 A-Spec")
     }
 }

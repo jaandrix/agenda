@@ -164,7 +164,10 @@ enum BuscarJuegoEAN {
         let ruido = [#"nintendo\s*switch(\s*2)?"#, #"\bswitch(\s*2)?\b"#, #"\b(new\s*)?(nintendo\s*)?[23]?ds\b"#,
                      #"(sony\s*)?playstation(\s*\d)?"#, #"\bps\s*\d\b|\bpsx\b|\bpsone\b"#,
                      #"(microsoft\s*)?xbox(\s*(series\s*[xs](\s*[|/]\s*[xs])?|one|360))?"#, #"\bpc(\s*(dvd|cd)(-rom)?)?\b"#,
-                     #"\b(videojuego|video\s*game|pegi\s*\d+)\b"#, #"\b(nintendo|sony|microsoft)\b"#]
+                     #"\b(videojuego|video\s*game|pegi\s*\d+)\b"#, #"\b(nintendo|sony|microsoft)\b"#,
+                     // 3.4: lo que el catálogo añade de la edición («EU Version Region Free», «PAL», «Standard Edition»).
+                     #"\b(eu|us|uk|pal|ntsc|jp|esp?)\s*(version|versión)\b"#, #"\bregion\s*free\b"#,
+                     #"\b(standard|est[aá]ndar)\s*(edition|edici[oó]n)\b"#, #"\b(pal|ntsc)(-[a-z]+)?\b"#]
         for r in ruido { t = t.replacingOccurrences(of: r, with: " ", options: [.regularExpression, .caseInsensitive]) }
         t = t.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
         // Separadores que se quedan colgando o repetidos al quitar la plataforma.
